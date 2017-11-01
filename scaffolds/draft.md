@@ -1,12 +1,13 @@
 ---
 title: {{ title }}
-tags:
-  - 
-  - 
 categories: 
   - 
   - 
+tags:
+  - 
+  - 
 top: 
+sticky: 
 comments: true
 password: 
 ---
