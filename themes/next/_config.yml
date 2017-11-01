@@ -19,8 +19,8 @@ override: false
 # For example, you put your favicons into `hexo-site/source/images` directory.
 # Then need to rename & redefine they on any other names, otherwise icons from Next will rewrite your custom icons in Hexo.
 favicon:
-  small: /images/favicon-16x16.png
-  medium: /images/favicon-32x32.png
+  small: http://oy5vmf70e.bkt.clouddn.com/favicon-16x16.png
+  medium: http://oy5vmf70e.bkt.clouddn.com/favicon-32x32.png
   apple_touch_icon: /images/apple-touch-icon-next.png
   safari_pinned_tab: /images/logo.svg
   android_manifest: /images/manifest.json
@@ -150,7 +150,7 @@ links:
 # Sidebar Avatar
 # in theme directory(source/images): /images/avatar.gif
 # in site  directory(source/uploads): /uploads/avatar.gif
-avatar: /images/avatar.jpg
+avatar: http://oy5vmf70e.bkt.clouddn.com/avatar.jpg
 
 # Table Of Contents in the Sidebar
 toc:
@@ -487,7 +487,7 @@ duoshuo_info:
 # Facebook SDK Support.
 # https://github.com/iissnan/hexo-theme-next/pull/410
 facebook_sdk:
-  enable:       true
+  enable:       false
   app_id:       #<app_id>
   fb_admin:     #<user_id>
   like_button:  true
