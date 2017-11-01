@@ -1,0 +1,324 @@
+// Custom styles.
+//修改文章内链接文本样式
+.post-body p a{
+  color: #0593d3;
+  border-bottom: none;
+  border-bottom: 1px solid #0593d3;
+  &:hover {
+    color: #fc6423;
+    border-bottom: none;
+    border-bottom: 1px solid #fc6423;
+  }
+}
+//修改背景图片
+body {
+    background-image:url(/images/background.jpg);
+    background-position:50% 50%; 
+    background-attachment:fixed;
+}
+//修改博客主体样式
+/*.main-inner {
+    margin-top: 30px;
+    padding: 30px 30px 30px 30px;
+    background: rgba(255, 255, 255, 0);
+    min-height: 50px;
+}*/
+//设置头部图片
+.header { background: url('/images/header-background.png');background-size:cover; }
+//修改侧边栏背景及毛玻璃效果/滚动
+.sidebar {
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 1040;
+    box-shadow: inset 0 2px 6px #000;
+}
+.sidebar {
+    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: hidden;
+}
+.sidebar-inner {
+    padding: 6% 3%;
+    padding-top: 6%;
+    padding-right: 3%;
+    padding-bottom: 6%;
+    padding-left: 3%;
+    height: 99%;
+    background: url('/images/pattern.png') rgba(50, 50, 50, 0.42);
+    background-image: url('/images/pattern.png');
+    background-position-x: initial;
+    background-position-y: initial;
+    background-size: initial;
+    background-repeat-x: initial;
+    background-repeat-y: initial;
+    background-attachment: initial;
+    background-origin: initial;
+    background-clip: initial;
+    background-color: rgba(50, 50, 50, 0.42);
+}
+.sidebar-inner {
+    position: relative;
+    color: #999;
+    text-align: center;
+}
+.sidebar.sidebar-active {
+    background: url('/images/slide-bg.jpg') #555 right/cover;
+    background-image: url('/images/slide-bg.jpg');
+    background-position-x: right;
+    background-position-y: center;
+    background-size: cover;
+    background-repeat-x: initial;
+    background-repeat-y: initial;
+    background-attachment: initial;
+    background-origin: initial;
+    background-clip: initial;
+    background-color: rgb(85, 85, 85);
+	animation: ani-slide 80s infinite linear;
+    animation-name: ani-slide;
+    animation-duration: 80s;
+    animation-timing-function: linear;
+    animation-delay: initial;
+    animation-iteration-count: infinite;
+    animation-direction: initial;
+    animation-fill-mode: initial;
+    animation-play-state: initial;
+}
+@keyframes ani-slide {
+	50% {
+		background-position: 0;
+		background-position-x: 0px;
+		background-position-y: center;
+	}
+	100% {
+		background-position: 100%;
+		background-position-x: 100%;
+		background-position-y: center;
+	}
+}
+//修改作者头像并旋转
+.site-author-image {
+/* 头像圆形 */
+  border-radius: 80px;
+  -webkit-border-radius: 80px;
+  -moz-border-radius: 80px;
+  box-shadow: inset 0 -1px 0 #333sf;
+  /* 设置循环动画 [animation: (play)动画名称 (2s)动画播放时长单位秒或微秒 (ase-out)动画播放的速度曲线为以低速结束 
+    (1s)等待1秒然后开始动画 (1)动画播放次数(infinite为循环播放) ]*/
+ 
+  /* 鼠标经过头像旋转360度 */
+  -webkit-transition: -webkit-transform 1.0s ease-out;
+  -moz-transition: -moz-transform 1.0s ease-out;
+  transition: transform 1.0s ease-out;
+}
+img:hover {
+  /* 鼠标经过停止头像旋转 
+  -webkit-animation-play-state:paused;
+  animation-play-state:paused;*/
+  /* 鼠标经过头像旋转360度 */
+  -webkit-transform: rotateZ(360deg);
+  -moz-transform: rotateZ(360deg);
+  transform: rotateZ(360deg);
+}
+/* Z 轴旋转动画 */
+@-webkit-keyframes play {
+  0% {
+    -webkit-transform: rotateZ(0deg);
+  }
+  100% {
+    -webkit-transform: rotateZ(-360deg);
+  }
+}
+@-moz-keyframes play {
+  0% {
+    -moz-transform: rotateZ(0deg);
+  }
+  100% {
+    -moz-transform: rotateZ(-360deg);
+  }
+}
+@keyframes play {
+  0% {
+    transform: rotateZ(0deg);
+  }
+  100% {
+    transform: rotateZ(-360deg);
+  }
+}
+// 主页文章添加阴影效果
+.post {
+   margin-top: 60px;
+   margin-bottom: 60px;
+   padding: 25px;
+   -webkit-box-shadow: 0 0 5px rgba(202, 203, 203, .5);
+   -moz-box-shadow: 0 0 5px rgba(202, 203, 204, .5);
+}
+//修改代码块``自定义样式
+code {
+    color: #fff;
+    background: rgba(153, 204, 153, 0.75);
+    margin: 2px;
+}
+/*网页加载条*/
+/* This is a compiled file, you should be editing the file in the templates directory */
+.pace {
+  -webkit-pointer-events: none;
+  pointer-events: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+}
+
+.pace-inactive {
+  display: none;
+}
+
+.pace .pace-progress {
+  background: #1e92fb;
+  position: fixed;
+  z-index: 2000;
+  top: 0;
+  right: 100%;
+  width: 100%;
+  height: 3px;
+}
+
+.pace .pace-progress-inner {
+  display: block;
+  position: absolute;
+  right: 0px;
+  width: 100px;
+  height: 100%;
+  box-shadow: 0 0 10px #e90f92, 0 0 5px #e90f92;
+  opacity: 1.0;
+  -webkit-transform: rotate(3deg) translate(0px, -4px);
+  -moz-transform: rotate(3deg) translate(0px, -4px);
+  -ms-transform: rotate(3deg) translate(0px, -4px);
+  -o-transform: rotate(3deg) translate(0px, -4px);
+  transform: rotate(3deg) translate(0px, -4px);
+}
+
+.pace .pace-activity {
+  display: block;
+  position: fixed;
+  z-index: 2000;
+  top: 15px;
+  right: 15px;
+  width: 14px;
+  height: 14px;
+  border: solid 2px transparent;
+  border-top-color: #e90f92;
+  border-left-color: #e90f92;
+  border-radius: 10px;
+  -webkit-animation: pace-spinner 400ms linear infinite;
+  -moz-animation: pace-spinner 400ms linear infinite;
+  -ms-animation: pace-spinner 400ms linear infinite;
+  -o-animation: pace-spinner 400ms linear infinite;
+  animation: pace-spinner 400ms linear infinite;
+}
+
+@-webkit-keyframes pace-spinner {
+  0% { -webkit-transform: rotate(0deg); transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); transform: rotate(360deg); }
+}
+@-moz-keyframes pace-spinner {
+  0% { -moz-transform: rotate(0deg); transform: rotate(0deg); }
+  100% { -moz-transform: rotate(360deg); transform: rotate(360deg); }
+}
+@-o-keyframes pace-spinner {
+  0% { -o-transform: rotate(0deg); transform: rotate(0deg); }
+  100% { -o-transform: rotate(360deg); transform: rotate(360deg); }
+}
+@-ms-keyframes pace-spinner {
+  0% { -ms-transform: rotate(0deg); transform: rotate(0deg); }
+  100% { -ms-transform: rotate(360deg); transform: rotate(360deg); }
+}
+@keyframes pace-spinner {
+  0% { transform: rotate(0deg); transform: rotate(0deg); }
+  100% { transform: rotate(360deg); transform: rotate(360deg); }
+}
+/*网页加载条 END*/
+
+//侧栏日志/分类等字体颜色
+.sidebar a {
+    color: #b1b716;
+}
+//侧栏日志/分类等字体选中颜色
+.sidebar a:hover {
+    color: #1adb2b;
+}
+
+//目录和概览未选择时颜色
+.sidebar-nav li {
+    color: #ffffff;
+}
+//目录和概览选中未点击颜色
+.sidebar-nav li:hover {
+    color: #1adb2b;
+}
+//目录和概览激活后颜色
+.sidebar-nav .sidebar-nav-active {
+    color: #1adb2b;
+    border-bottom-color: #1adb2b;
+}
+//目录和概览选中当前激活颜色
+.sidebar-nav .sidebar-nav-active:hover {
+    color: #1adb2b;
+}
+//推荐阅读4个字颜色
+.sidebar-inner {
+    color: #13a490;
+}
+
+//全局字体黑色
+a {
+    color: #242424;
+}
+//菜单栏字体大小
+.menu .menu-item a {
+    font-size: 16px;
+}
+//修改网站标题字体大小
+.site-title {
+    display: inline-block;
+    vertical-align: top;
+    line-height: 56px;
+    font-size: 48px;
+    font-weight: normal;
+    color: #fe2727;
+}
+//网站标题背景黑色改为透明
+.brand {
+    background: transparent;
+}
+//toc未点击前颜色
+.post-toc ol a {
+    color: #ffffff;
+    border-bottom-color: #ffffff;
+}
+//toc选中未点击颜色
+.post-toc ol a:hover {
+    color: #1adb2b;
+    border-bottom-color: #1adb2b;
+}
+//toc激活后颜色
+.post-toc .nav .active > a {
+    color: #fc6423;
+    border-bottom-color: #fc6423;
+}
+//toc当前激活颜色
+.post-toc .nav .active-current > a {
+    color: #fc6423;
+}
+//toc选中当前激活的颜色
+.post-toc .nav .active-current > a:hover {
+    color: #1adb2b;
+}
+.post-nav-item a:hover{
+    color: #1adb2b;
+}
+hr {
+  margin: 20px 0;
+  height: 2px;
+}
