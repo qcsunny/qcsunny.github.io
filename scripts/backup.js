@@ -1,4 +1,4 @@
-require('shelljs/global');
+/*require('shelljs/global');
 try {
 	hexo.on('deployAfter', function() {//当deploy完成后执行备份
 		run();
@@ -28,3 +28,4 @@ function run() {
 		echo("==================Auto Backup Complete============================")
 	}
 }
+*/
