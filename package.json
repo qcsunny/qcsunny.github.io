@@ -8,6 +8,7 @@
   "dependencies": {
     "hexo": "^3.2.0",
     "hexo-admin-qiniu": "^2.2.0",
+    "hexo-browsersync": "^0.2.0",
     "hexo-deployer-git": "^0.3.1",
     "hexo-filter-flowchart": "^1.0.4",
     "hexo-filter-plantuml": "^1.0.1",
