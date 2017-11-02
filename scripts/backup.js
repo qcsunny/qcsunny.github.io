@@ -17,7 +17,7 @@ function run() {
 			echo('Error: Git add failed');
 			exit(1);
 		}
-		if (exec('git commit -am ":red_book:修改图片qiniu"').code !== 0) {
+		if (exec('git commit -am ":green_book:autobackup"').code !== 0) {
 			echo('Error: Git commit failed');
 			exit(1);
 		}
