@@ -14,15 +14,12 @@ date: 2017-09-01 09:53:49
 top:
 password:
 ---
+
 PT三大客户端，Deluge、Transmission、Rtorrent
 
 <!-- more -->
-# 安装deluge:
 
-```
-sudo apt-get install python-software-properties  //树莓派不用添加repo
-sudo add-apt-repository ppa:deluge-team/ppa   //树莓派不用添加repo，直接执行下面两步
-```
+# 安装deluge
 
 ```
 sudo apt-get update
@@ -31,7 +28,7 @@ sudo apt-get install deluge deluged deluge-web
 
 ```
 cd /etc
-sudo nano rc.local      //ubuntu1610无此文件，已服务化
+sudo nano rc.local      //有可能失效了
 deluge-web --fork        //后台运行
 ```
 
