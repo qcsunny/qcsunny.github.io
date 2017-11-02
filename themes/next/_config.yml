@@ -397,7 +397,7 @@ gitment:
   count: true # Show comments count in post meta area
   lazy: false # Comments lazy loading with a button
   cleanly: true # Hide 'Powered by ...' on footer, and more
-  language: zh-Hans # Force language, or auto switch by theme
+  language: en # Force language, or auto switch by theme
   github_user: qcsunny # MUST HAVE, Your Github ID
   github_repo: git@github.com:qcsunny/qcsunny.github.io.git # MUST HAVE, The repo you use to store Gitment comments
   client_id: dff501aadba9b240d521 # MUST HAVE, Github client id for the Gitment
