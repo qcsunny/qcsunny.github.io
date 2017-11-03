@@ -123,9 +123,9 @@ scheme: Muse
 social:
   GitHub: https://github.com/qcsunny || github
   E-Mail: mailto:lhj2397018128@gmail.com || envelope
-  #Google: https://plus.google.com/yourname || google
+  Google: https://plus.google.com/107326926667969544394 || google
   #Twitter: https://twitter.com/yourname || twitter
-  #FB Page: https://www.facebook.com/yourname || facebook
+  FB Page: https://www.facebook.com/100005201404772 || facebook
   #VK Group: https://vk.com/yourname || vk
   #StackOverflow: https://stackoverflow.com/yourname || stack-overflow
   #YouTube: https://youtube.com/yourname || youtube
@@ -144,8 +144,7 @@ links_title: 推荐阅读
 links_layout: inline
 links:
   #Title: http://example.com/
-  Markdown书写风格规范: https://qcsunny.github.io/2017/10-31-MakeDown书写风格规范 
-
+  Markdown: https://qcsunny.github.io/2017/10-31-MakeDown书写风格规范
 
 # Sidebar Avatar
 # in theme directory(source/images): /images/avatar.gif
