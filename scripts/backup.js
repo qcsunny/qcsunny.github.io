@@ -13,7 +13,7 @@ function run() {
 	} else {
 		echo("======================Auto Backup Begin===========================");
 		cd('~/blog');
-		if (exec('git add --all').code !== 0) {
+		if (exec('git add .').code !== 0) {
 			echo('Error: Git add failed');
 			exit(1);
 		}
