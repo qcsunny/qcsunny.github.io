@@ -239,31 +239,60 @@ code {
   100% { transform: rotate(360deg); transform: rotate(360deg); }
 }
 /*网页加载条 END*/
-
+//目录和概览未选择时颜色(白)
+.sidebar-nav li {
+    color: #ffffff;
+}
+//目录和概览选中未点击颜色(绿)
+.sidebar-nav li:hover {
+    color: #1adb2b;
+}
+//目录和概览激活后颜色(绿)
+.sidebar-nav .sidebar-nav-active {
+    color: #1adb2b;
+    border-bottom-color: #1adb2b;
+}
+//目录和概览选中当前激活颜色(绿)
+.sidebar-nav .sidebar-nav-active:hover {
+    color: #1adb2b;
+}
+//toc未点击前颜色(白)
+.post-toc ol a {
+    color: #ffffff;
+    border-bottom-color: #ffffff;
+}
+//toc选中未点击颜色(绿)
+.post-toc ol a:hover {
+    color: #1adb2b;
+    border-bottom-color: #1adb2b;
+}
+//toc激活后颜色(橙)
+.post-toc .nav .active > a {
+    color: #fc6423;
+    border-bottom-color: #fc6423;
+}
+//toc当前激活颜色(橙)
+.post-toc .nav .active-current > a {
+    color: #fc6423;
+}
+//toc选中当前激活的颜色(绿)
+.post-toc .nav .active-current > a:hover {
+    color: #1adb2b;
+}
+.post-nav-item a:hover{
+    color: #1adb2b;
+}
+//侧栏作者字体颜色及大小(深绿)
+.site-author-name {
+    color: #13a490;
+    font-size: x-large;
+}
 //侧栏日志/分类等字体颜色
 .sidebar a {
     color: #b1b716;
 }
 //侧栏日志/分类等字体选中颜色
 .sidebar a:hover {
-    color: #1adb2b;
-}
-
-//目录和概览未选择时颜色
-.sidebar-nav li {
-    color: #ffffff;
-}
-//目录和概览选中未点击颜色
-.sidebar-nav li:hover {
-    color: #1adb2b;
-}
-//目录和概览激活后颜色
-.sidebar-nav .sidebar-nav-active {
-    color: #1adb2b;
-    border-bottom-color: #1adb2b;
-}
-//目录和概览选中当前激活颜色
-.sidebar-nav .sidebar-nav-active:hover {
     color: #1adb2b;
 }
 //推荐阅读4个字颜色
@@ -292,33 +321,16 @@ a {
 .brand {
     background: transparent;
 }
-//toc未点击前颜色
-.post-toc ol a {
-    color: #ffffff;
-    border-bottom-color: #ffffff;
-}
-//toc选中未点击颜色
-.post-toc ol a:hover {
-    color: #1adb2b;
-    border-bottom-color: #1adb2b;
-}
-//toc激活后颜色
-.post-toc .nav .active > a {
-    color: #fc6423;
-    border-bottom-color: #fc6423;
-}
-//toc当前激活颜色
-.post-toc .nav .active-current > a {
-    color: #fc6423;
-}
-//toc选中当前激活的颜色
-.post-toc .nav .active-current > a:hover {
-    color: #1adb2b;
-}
+//文章底部上下文点击颜色
 .post-nav-item a:hover{
     color: #1adb2b;
 }
+//md分割线样式
 hr {
   margin: 20px 0;
   height: 2px;
+}
+//文章顶部留白
+.post {
+    margin-top: auto;
 }
