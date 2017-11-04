@@ -81,8 +81,11 @@ theme: next
 # Deployment
 ## Docs: https://hexo.io/docs/deployment.html
 deploy:
-  type: git
+- type: git
   repo: git@git.coding.net:qcsunny/qcsunny-blog.git
+  branch: master
+- type: git
+  repo: git@github.com:qcsunny/qcsunny.github.io.git
   branch: master
 search:
   path: search.xml
