@@ -325,6 +325,8 @@
         {{ post.content }}
       {% endif  %}
     </div>
+推荐阅读
+{{ popular_posts( {} , post ) }}
     {#####################}
     {### END POST BODY ###}
     {#####################}

@@ -30,9 +30,9 @@ skip_render: README.md
 # Writing
 new_post_name: :year-:month-:day-:title.md # File name of new posts
 default_layout: post
-titlecase: true # Transform title into titlecase
+titlecase: false # Transform title into titlecase
 external_link: true # Open external links in new tab
-filename_case: 0
+filename_case: false
 render_drafts: false
 post_asset_folder: false
 relative_link: false
@@ -97,7 +97,7 @@ live2d:
   width: 150 # 宽度 默认值: 150
   height: 300 # 高度 默认值: 300
   opacity: 0.9 # 透明度 默认值: 0.9
-  mobileShow: false # 是否在移动设备上显示 默认值: true
+  mobileShow: true # 是否在移动设备上显示 默认值: true
   mobileWidth: 75 # 移动设备上的宽度 默认值: 75
   mobileHeight: 150 # 移动设备上的高度 默认值: 150
   mobileOpacity: 0.8  # 移动设备上的透明度 默认值: 0.8
