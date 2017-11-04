@@ -55,7 +55,7 @@ archive_generator:
   per_page: 25
   yearly: true
   monthly: true
-  
+
 # Category & Tag
 default_category: uncategorized
 category_map:
@@ -93,8 +93,19 @@ search:
   format: html
   limit: 10000
 live2d:
-  model: hijiki
-  bottom: -30
+  model: hijiki  # 模型名称 默认值: z16
+  width: 150 # 宽度 默认值: 150
+  height: 300 # 高度 默认值: 300
+  opacity: 0.9 # 透明度 默认值: 0.9
+  mobileShow: false # 是否在移动设备上显示 默认值: true
+  mobileWidth: 75 # 移动设备上的宽度 默认值: 75
+  mobileHeight: 150 # 移动设备上的高度 默认值: 150
+  mobileOpacity: 0.8  # 移动设备上的透明度 默认值: 0.8
+  position: left # 模型左右侧放置位置 默认值: right
+  horizontalOffset: 0 # 元素的水平偏移 默认值: 0
+  verticalOffset: -20 # 元素的底部偏移 默认值: -20
+  className: live2d # 元素的类名 默认值: live2d
+  id: live2dcanvas # 元素的id 默认值: live2dcanvas
 markdown_it_plus:
     highlight: true
     html: true
