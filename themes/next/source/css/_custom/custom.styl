@@ -157,6 +157,7 @@ img:hover {
 }
 //修改代码块``自定义样式
 code {
+    font-size: 16px;
     color: #fff;
     background: rgba(153, 204, 153, 0.75);
     margin: 2px;
@@ -343,3 +344,25 @@ hr {
 .links-of-blogroll-title {
     margin-top: auto;
 }
+//标签页动画效果
+.tag-cloud a:hover {
+    background-color: #f5ede0;
+    -webkit-transform: scale(1.6);
+    -moz-transform: scale(1.6);
+    -ms-transform: scale(1.6);
+    -o-transform: scale(1.6);
+    transform: scale(1.6);
+}
+.tag-cloud a {
+    display: inline-block;
+    margin: 10px;
+    padding: 0px 3px;
+    border-radius: 4px;
+    transition: all 0.6s;
+}
+//右下角置顶按钮改为圆形
+.sidebar-toggle {
+    border-radius: 50%;
+}
+
+
