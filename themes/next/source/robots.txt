@@ -1,0 +1,23 @@
+# hexo robots.txt
+User-agent: *
+Allow: /
+Allow: /archives/
+Allow: /2017/
+Allow: /about/
+Allow: /categories/
+Allow: /talks/
+Allow: /archives/
+Allow: /tags/
+Allow: /uploads/
+Allow: /images/
+
+Disallow: /vendors/
+Disallow: /js/
+Disallow: /css/
+Disallow: /fonts/
+Disallow: /vendors/
+Disallow: /fancybox/
+
+Sitemap: https://qcsunny.github.io/sitemap.xml
+Sitemap: https://qcsunny.github.io/baidusitemap.xml
+Sitemap: https://qcsunny.github.io/search.xml

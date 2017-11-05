@@ -20,37 +20,39 @@ raspi-config在raspbian中是预装的，而在kali、ubuntu mate、osmc等系�
 
 有时甚至可能误操作在raspbian中把raspi-config卸载了，而我自己也亲身经历了一次。。。
 在其它系统中手动安装raspi-config的方法：
+
 # 手动下载deb包
 
-```
+```bash
 wget http://mirrors.ustc.edu.cn/archive.raspberrypi.org/pool/main/r/raspi-config/raspi-config_20170811_all.deb
 ```
 
 # 解决依赖问题
 
-```
+```bash
 sudo apt install whiptail parted lua5.1  alsa-utils psmisc
 ```
 
 # 安装软件
 
-```
+```bash
 dpkg -i raspi-config_20170811_all.deb
 ```
 
 # 运行raspi-config
 
-需要sudo或以上权限
+需要root权限
 
-```
+```bash
 sudo raspi-config
 ```
 
-# raspi-config能够运行的还有一个重要前提，boot分区已被正常挂载
+# 挂载/boot分区
+raspi-config能够运行的还有一个重要前提，boot分区已被正常挂载
 先查看一下boot分区所在设备号
 
-```
+```bash
 fdisk -l
-再把它挂载到/boot上(以下是示例，不一定是mmcblk0p6，需根据实际情况决定)
-mount /dev/mmcblk0p6 /boot
+再把它挂载到/boot上(以下是示例，不一定是mmcblk0p1，需根据实际情况决定)
+mount /dev/mmcblk0p1 /boot
 ```
