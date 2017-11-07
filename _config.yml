@@ -121,3 +121,8 @@ tag_cloud:
     textColour: \#f00
     textHeight: 25
     outlineColour: \#E2E1D1
+# Sitemap Setting
+sitemap:
+  path: sitemap.xml
+baidusitemap:
+  path: baidusitemap.xml
