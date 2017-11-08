@@ -23,7 +23,7 @@ make modules_install    //安装内核模块/lib/modules
 ```
 <!-- more -->
 
-有三个重要的目录或文件，`kernel7.img``modules/*``dts/*`,将其复制到/boot下
+有三个重要的目录或文件，`kernel7.img` `modules/*` `dts/*` ,将其复制到/boot下
 ```bash
 sudo cp kernel7.img /boot/
 sudo cp modules/4.9* /lib/modules
