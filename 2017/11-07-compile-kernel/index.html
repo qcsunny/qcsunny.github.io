@@ -115,7 +115,7 @@
 <meta property="og:site_name" content="qcsunny">
 <meta property="og:description" content="编译内核 12345git clone -b rpi-4.9.y --depth=1 https://github.com/raspberrypi/linux /usr/src/kernels/rpi-4.9/     //-b指定分支，这里选4.9；--depth=1只克隆最新版本cd /usr/src/kernels/rpi-4.9/sudo make menuconfigmake all">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2017-11-08T08:24:33.150Z">
+<meta property="og:updated_time" content="2017-11-08T10:13:05.336Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="树莓派-编译内核">
 <meta name="twitter:description" content="编译内核 12345git clone -b rpi-4.9.y --depth=1 https://github.com/raspberrypi/linux /usr/src/kernels/rpi-4.9/     //-b指定分支，这里选4.9；--depth=1只克隆最新版本cd /usr/src/kernels/rpi-4.9/sudo make menuconfigmake all">
@@ -379,7 +379,7 @@
               
                 <span class="post-meta-item-text">更新于&#58;</span>
               
-              <time title="更新于" itemprop="dateModified" datetime="2017-11-08T16:24:33+08:00">
+              <time title="更新于" itemprop="dateModified" datetime="2017-11-08T18:13:05+08:00">
                 2017-11-08
               </time>
             
@@ -501,7 +501,7 @@
         <p>编译内核</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> -b rpi-4.9.y --depth=1 https://github.com/raspberrypi/linux /usr/src/kernels/rpi-4.9/     //-b指定分支，这里选4.9；--depth=1只克隆最新版本</span><br><span class="line"><span class="built_in">cd</span> /usr/src/kernels/rpi-4.9/</span><br><span class="line">sudo make menuconfig</span><br><span class="line">make all    //编译后的文件放在当前目录</span><br><span class="line">make modules_install    //安装内核模块/lib/modules</span><br></pre></td></tr></table></figure>
 <a id="more"></a>
-<p>有三个重要的目录或文件，<code>kernel7.img``modules/*``dts/*</code>,将其复制到/boot下</p>
+<p>有三个重要的目录或文件，<code>kernel7.img</code> <code>modules/*</code> <code>dts/*</code> ,将其复制到/boot下</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">sudo cp kernel7.img /boot/</span><br><span class="line">sudo cp modules/4.9* /lib/modules</span><br><span class="line">sudo cp dts/*.dtb /boot/</span><br><span class="line">sudo cp dts/overlays/*.dtb* /boot/overlays/</span><br><span class="line">sudo cp dts/overlays/README /boot/overlays/</span><br></pre></td></tr></table></figure>
 <p>报错1：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">In file included from scripts/kconfig/mconf.c:23:0:</span><br><span class="line">scripts/kconfig/lxdialog/dialog.h:38:20: fatal error: curses.h: No such file or directory</span><br><span class="line"> <span class="comment">#include CURSES_LOC</span></span><br><span class="line">                    ^</span><br><span class="line">compilation terminated.</span><br><span class="line">scripts/Makefile.host:124: recipe <span class="keyword">for</span> target <span class="string">'scripts/kconfig/mconf.o'</span> failed</span><br><span class="line">make[1]: *** [scripts/kconfig/mconf.o] Error 1</span><br><span class="line">Makefile:546: recipe <span class="keyword">for</span> target <span class="string">'menuconfig'</span> failed</span><br><span class="line">make: *** [menuconfig] Error 2</span><br></pre></td></tr></table></figure>
@@ -517,7 +517,7 @@
       
     </div>
 <h5>相关文章:</h5>
-<ul class="popular-posts"><li class="popular-posts-item"><div class="popular-posts-title"><h3><a href="/2017/10-05-树莓派3B-修改网卡命名规则/" title="树莓派3B-修改网卡命名规则" rel="bookmark">树莓派3B-修改网卡命名规则</a></h3></div></li><li class="popular-posts-item"><div class="popular-posts-title"><h3><a href="/2017/09-02-树莓派3B之CPUGPU和内存超频稳定性测试/" title="树莓派3B之CPUGPU和内存超频稳定性测试" rel="bookmark">树莓派3B之CPUGPU和内存超频稳定性测试</a></h3></div></li><li class="popular-posts-item"><div class="popular-posts-title"><h3><a href="/2017/09-04-树莓派-重装所有已安装的软件/" title="树莓派-重装所有已安装的软件" rel="bookmark">树莓派-重装所有已安装的软件</a></h3></div></li><li class="popular-posts-item"><div class="popular-posts-title"><h3><a href="/2017/09-15-树莓派-简单对比远程桌面的三种方式/" title="树莓派-简单对比远程桌面的三种方式" rel="bookmark">树莓派-简单对比远程桌面的三种方式</a></h3></div></li><li class="popular-posts-item"><div class="popular-posts-title"><h3><a href="/2017/09-23-NOOBS自定义多系统启动/" title="NOOBS自定义多系统启动" rel="bookmark">NOOBS自定义多系统启动</a></h3></div></li></ul>
+<ul class="popular-posts"><li class="popular-posts-item"><div class="popular-posts-title"><h5><a href="/2017/10-05-树莓派3B-修改网卡命名规则/" title="树莓派3B-修改网卡命名规则" rel="bookmark">树莓派3B-修改网卡命名规则</a></h5></div></li><li class="popular-posts-item"><div class="popular-posts-title"><h5><a href="/2017/09-02-树莓派3B之CPUGPU和内存超频稳定性测试/" title="树莓派3B之CPUGPU和内存超频稳定性测试" rel="bookmark">树莓派3B之CPUGPU和内存超频稳定性测试</a></h5></div></li></ul>
     
     
     
