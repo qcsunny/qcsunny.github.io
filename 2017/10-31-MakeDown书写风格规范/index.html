@@ -1,0 +1,2416 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+<script>
+    (function(){
+        if(''){
+            if (prompt('请输入文章密码') !== ''){
+                alert('密码错误！');
+                history.back();
+            }
+        }
+    })();
+</script>
+
+
+
+
+  
+  
+    
+    
+  <script src="/lib/pace/pace.min.js?v=1.0.2"></script>
+  <link href="/lib/pace/pace-theme-minimal.min.css?v=1.0.2" rel="stylesheet">
+
+
+
+
+  
+  
+  <link rel="stylesheet" media="all" href="/lib/Han/dist/han.min.css?v=3.3">
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="http://oy5vmf70e.bkt.clouddn.com/favicon-32x32.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="http://oy5vmf70e.bkt.clouddn.com/favicon-16x16.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+  <link rel="manifest" href="/images/manifest.json">
+
+
+  <meta name="msapplication-config" content="/images/browserconfig.xml" />
+
+
+
+  <meta name="keywords" content="Markdown,Blog," />
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="qcsunny" type="application/atom+xml" />
+
+
+
+
+
+
+<meta name="description" content="通用规则  文件  文件扩展名 使用 .md. 解释: 为什么不使用 .mkd 或者 .markdown?  更短 更加流行 没有明显冲突">
+<meta name="keywords" content="Markdown,Blog">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Makedown书写风格规范">
+<meta property="og:url" content="https://qcsunny.github.io/2017/10-31-MakeDown书写风格规范/index.html">
+<meta property="og:site_name" content="qcsunny">
+<meta property="og:description" content="通用规则  文件  文件扩展名 使用 .md. 解释: 为什么不使用 .mkd 或者 .markdown?  更短 更加流行 没有明显冲突">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2017-11-08T03:38:23.628Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Makedown书写风格规范">
+<meta name="twitter:description" content="通用规则  文件  文件扩展名 使用 .md. 解释: 为什么不使用 .mkd 或者 .markdown?  更短 更加流行 没有明显冲突">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":true,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://qcsunny.github.io/2017/10-31-MakeDown书写风格规范/"/>
+
+
+
+
+
+  <title>Makedown书写风格规范 | qcsunny</title>
+  
+
+
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-108104973-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"><a href="https://github.com/qcsunny"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/365986a132ccd6a44c23a9169022c0b5c890c387/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f7265645f6161303030302e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png"></a></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">qcsunny</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <h1 class="site-subtitle" itemprop="description">我读的书愈多，就愈亲近世界，愈明了生活的意义，愈觉得生活的重要。</h1>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-guestbook">
+          <a href="/guestbook/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-comments"></i> <br />
+            
+            留言
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br />
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off"
+             placeholder="搜索..." spellcheck="false"
+             type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+    
+  
+
+  <article class="post post-type-normal post-sticky" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://qcsunny.github.io/2017/10-31-MakeDown书写风格规范/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="qcsunny">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://oy5vmf70e.bkt.clouddn.com/avatar.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="qcsunny">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">Makedown书写风格规范</h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-10-31T09:35:00+08:00">
+                2017-10-31
+              </time>
+            
+
+            
+              <span class="post-meta-divider">|</span>
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-check-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">更新于&#58;</span>
+              
+              <time title="更新于" itemprop="dateModified" datetime="2017-11-08T11:38:23+08:00">
+                2017-11-08
+              </time>
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Blog/" itemprop="url" rel="index">
+                    <span itemprop="name">Blog</span>
+                  </a>
+                </span>
+
+                
+                
+                  ， 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Blog/Markdown/" itemprop="url" rel="index">
+                    <span itemprop="name">Markdown</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2017/10-31-MakeDown书写风格规范/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count gitment-comments-count" data-xid="/2017/10-31-MakeDown书写风格规范/" itemprop="commentsCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+             <span id="/2017/10-31-MakeDown书写风格规范/" class="leancloud_visitors" data-flag-title="Makedown书写风格规范">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数&#58;</span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+            <div class="post-wordcount">
+              
+                
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">字数统计&#58;</span>
+                
+                <span title="字数统计">
+                  6,091
+                </span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">阅读时长 &asymp;</span>
+                
+                <span title="阅读时长">
+                  25
+                </span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body han-init-context" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="通用规则"><a class="markdownIt-Anchor" href="#通用规则"></a> 通用规则</h1>
+<h2 id="文件"><a class="markdownIt-Anchor" href="#文件"></a> 文件</h2>
+<h3 id="文件扩展名"><a class="markdownIt-Anchor" href="#文件扩展名"></a> 文件扩展名</h3>
+<p>使用 .md.<br>
+解释: 为什么不使用 .mkd 或者 .markdown?</p>
+<ul>
+<li>更短</li>
+<li>更加流行</li>
+<li>没有明显冲突</li>
+</ul>
+<a id="more"></a>
+<h3 id="文件名"><a class="markdownIt-Anchor" href="#文件名"></a> 文件名</h3>
+<p>文件名建议使用如下的风格:</p>
+<ul>
+<li>用小写代替大写</li>
+<li>把开头 <code>the</code>, <code>a</code>, <code>an</code> 除去</li>
+<li>用连字符代替标点和空格</li>
+<li>用一个连字符代替连续多个连字符，当多个连字符出现时，只使用一个</li>
+<li>不在文件名前后使用连字符</li>
+</ul>
+<p>建议使用:<br>
+<code>file-name.md</code><br>
+不建议, 多个连续的连字符:<br>
+<code>file--name.md</code><br>
+不建议, 包围的连字符:<br>
+<code>-file-name-.md</code><br>
+解释: 为何不使用下划线和驼峰大小写？连字符是现在最流行的网址分隔符，并且 Markdown 文件在上下文中经常使用:</p>
+<ul>
+<li>可能在同一个项目中有连字符分割的HTML文件使用Markdown相同的目录。</li>
+<li>文件名会被直接使用到 URL 中. 比如: GitHub blobs.</li>
+</ul>
+<h2 id="空白"><a class="markdownIt-Anchor" href="#空白"></a> 空白</h2>
+<h3 id="新行"><a class="markdownIt-Anchor" href="#新行"></a> 新行</h3>
+<ul>
+<li><em>不要</em> 使用连续两空行，也就是说，<em>不要</em> 连续使用两个换行符，除非是在代码块中不得已而必须出现。</li>
+<li>以回车换行结束文件。<em>不要</em> 在文件结束时留下空行。</li>
+<li><em>不要</em> 在行尾留空格除非是在行尾空出两个空格插入换行符。</li>
+</ul>
+<p>建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">- list</span><br><span class="line">- list</span><br><span class="line"></span><br><span class="line"># Header</span><br></pre></td></tr></table></figure>
+<p>建议, 代码区块:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">The markup language X requires you to use triple newlines to separate paragraphs:</span><br><span class="line"></span><br><span class="line">    p1</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    p2</span><br></pre></td></tr></table></figure>
+<p>不建议：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">- list</span><br><span class="line">- list</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"># Header</span><br></pre></td></tr></table></figure>
+<p>解释: 多空行占用更多的竖直屏幕空间，并且会严重影响到可读性。</p>
+<h3 id="句子结束空格"><a class="markdownIt-Anchor" href="#句子结束空格"></a> 句子结束空格</h3>
+<p>句子结束使用一个空格<br>
+建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">First sentence. Second sentence.</span><br></pre></td></tr></table></figure>
+<p>不建议, 使用2个空格:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">First sentence.  Second sentence.</span><br></pre></td></tr></table></figure>
+<p>解释: 相比于<code>使用两个空格</code>的优点:</p>
+<ul>
+<li>容易编辑</li>
+<li>通常不是必须的，如果使用 wrap:inner-sentence or wrap:sentence</li>
+<li>space-sentence:2 对可读性造成一种错误的感觉，因为忽略了输出的 HTML 文件。</li>
+<li>容易查看一句话的结束</li>
+</ul>
+<h2 id="自动换行"><a class="markdownIt-Anchor" href="#自动换行"></a> 自动换行</h2>
+<p>尝试将一行限制在 80 个字符以下，将长段落按照以下的逻辑分开，例如:</p>
+<ul>
+<li>句子: 一句话结束 . 之后, 问句问号 ? 或者感叹句 ! 之后</li>
+<li><a href="clauseshttp://www.oxforddictionaries.com/words/clauses" target="_blank" rel="external">子句</a>: 在单词 and, which, if … then, 逗号 , 之后</li>
+<li><a href="http://www.oxforddictionaries.com/words/phrases" target="_blank" rel="external">短语 phrases</a></li>
+</ul>
+<p>一行中超过80个字符是可以接受的，但是记住长句子不适合阅读，并且在 git diff 中会很难看。</p>
+<p>设置你的文本编辑器对 Markdown 文件一行<em>不要</em> 超过80字符，以免忘记。</p>
+<p>建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">This is a very very very very very very very very very very very very very long not wrapped sentence.</span><br><span class="line">Second sentence of of the paragraph,</span><br><span class="line">third sentence of a paragraph</span><br><span class="line">and the fourth one.</span><br></pre></td></tr></table></figure>
+<p>解释:</p>
+<ul>
+<li>Diffs 工具看起来更好, 因为一个子句的修改在 diff 工具中显示为一行修改.</li>
+<li>临时的换行不会降低对 Markdown 文件的可读性， 因为唯一的语言特性，可以缩进表示层次结构的就是嵌套列表。</li>
+<li>现在除了 GitHub 在 README 和评论中将单独一行解释成回车。 没有其他主流的解释引擎这么做，使用换行是非常安全的。</li>
+<li>一些工具对较长的一行不友好，比如 Vim 并且 git diff 默认并不换行. 这些不友好都可以通过配置除去，对于git，使用 git config --global core.pager ‘less -r’ 对于Vim可以使用 set wrap 来自动换行.</li>
+</ul>
+<p>缺点:</p>
+<ul>
+<li>需要在写作时增加顾虑，尤其是在修改代码的时候。</li>
+<li>Markdown 看起来和渲染输出不同, 输出没有换行符。</li>
+<li>手动的换行可以让 Markdown 比生成的文档更加易读， 当然这样做的同时，也造成了一种虚假的可读性错觉，让人感觉没有长段落。</li>
+<li>需要用户拥有使用可编程文本编辑器，类似 Vim，可以通过配置来换行。<a href="https://github.com/editorconfig/editorconfig/issues/168" target="_blank" rel="external">EditorConfig gave it WONTFIX</a></li>
+</ul>
+<h2 id="代码"><a class="markdownIt-Anchor" href="#代码"></a> 代码</h2>
+<h3 id="shell中美元符号"><a class="markdownIt-Anchor" href="#shell中美元符号"></a> Shell中美元符号</h3>
+<p><em>不要</em> 在 shell 代码前加 $ 符号，除非你想要展示命令的输出。<br>
+如果目的是表明确切的语言，那么直接在代码前标明。<br>
+解释: 复制粘贴比较困难，不利于阅读。<br>
+建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">echo a</span><br><span class="line">echo a &gt; file</span><br></pre></td></tr></table></figure>
+<p>不建议：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ echo a</span><br><span class="line">$ echo a &gt; file</span><br></pre></td></tr></table></figure>
+<p>建议, 展示输出:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ echo a</span><br><span class="line">a</span><br><span class="line">$ echo a &gt; file</span><br></pre></td></tr></table></figure>
+<p>建议, 在代码前标明代码语言:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Use the following Bash code:</span><br><span class="line">echo a</span><br><span class="line">echo a &gt; file</span><br></pre></td></tr></table></figure>
+<h3 id="标记代码内容"><a class="markdownIt-Anchor" href="#标记代码内容"></a> 标记代码内容</h3>
+<p>使用代码块，或者行内代码：</p>
+<ul>
+<li>可执行文件。 比如：</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">`gcc` is the best compiler available.</span><br></pre></td></tr></table></figure>
+<p>注意将工具名字和项目工程名字区别开来。比如： <code>gcc</code> vs GCC.</p>
+<ul>
+<li>文件路径</li>
+<li>程序版本号</li>
+<li>大写的缩写解释:</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">xinetd stands for `eXtended Internet daemon`</span><br></pre></td></tr></table></figure>
+<ul>
+<li>其他和电脑相关的术语，想要单独标明<br>
+<em>不要</em>标记为代码：<br>
+项目名。 比如： GCC<br>
+函数库名。比如： libc, glibc</li>
+</ul>
+<h3 id="拼写和语法"><a class="markdownIt-Anchor" href="#拼写和语法"></a> 拼写和语法</h3>
+<p>使用正确的拼写和语法。<br>
+尽量选用英语，更准确的说美式英语。 解释: 美式英语使用者占有最大的GDP，尤其是在计算机行业。<br>
+类似 URL 或者代码，添加代码标记，这样拼写检查程序会自动忽略。<br>
+注意大小写敏感的拼写错误，尤其是项目名，品牌名，或者缩写。</p>
+<ul>
+<li>建议使用: URL, LinkedIn, DoS attack</li>
+<li>不建议： url, Linkedin, dos attack</li>
+</ul>
+<p>一旦有疑惑，尽量选用和维基百科相同的缩写。<br>
+避免使用非正式的缩写:</p>
+<ul>
+<li>建议使用: biography, repository, directory</li>
+<li>不建议： bio, repo, dir</li>
+</ul>
+<h1 id="区块"><a class="markdownIt-Anchor" href="#区块"></a> 区块</h1>
+<h2 id="换行符"><a class="markdownIt-Anchor" href="#换行符"></a> 换行符</h2>
+<p>避免使用换行符, 因为他们没有被广泛认可的语义。<br>
+在少数确实需要使用的时候，在行尾使用两个空格。</p>
+<h2 id="标题"><a class="markdownIt-Anchor" href="#标题"></a> 标题</h2>
+<h3 id="atx风格"><a class="markdownIt-Anchor" href="#atx风格"></a> atx风格</h3>
+<p>建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># Header 1</span><br><span class="line"></span><br><span class="line">## Header 2</span><br><span class="line"></span><br><span class="line">### Header 3</span><br></pre></td></tr></table></figure>
+<p>不建议：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Header 1</span><br><span class="line">========</span><br><span class="line"></span><br><span class="line">Header 2</span><br><span class="line">--------</span><br><span class="line"></span><br><span class="line">### Header 3</span><br></pre></td></tr></table></figure>
+<ul>
+<li>
+<p>解释: 相比 Setex 优势有:</p>
+</li>
+<li>
+<p>容易书写，因为在 Setex 中，为了好看需要书写和标题相同数量的符号</p>
+</li>
+<li>
+<p>可以生成所有的等级，而 Setex 只能生成两种等级</p>
+</li>
+<li>
+<p>只占用一行，而 Setex 占用两行</p>
+</li>
+<li>
+<p>更加明显。 Not very important if you have syntax highlighting.</p>
+</li>
+<li>
+<p>在 <code>#</code> 和标题之间加入一个空格.<br>
+建议使用:</p>
+</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># Header</span><br></pre></td></tr></table></figure>
+<p>不建议：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">#Header</span><br><span class="line"></span><br><span class="line">#..Header</span><br></pre></td></tr></table></figure>
+<ul>
+<li><em>不要</em> 使用闭合的<code>#</code>.<br>
+建议使用:</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># Header</span><br></pre></td></tr></table></figure>
+<p>不建议：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># Header #</span><br></pre></td></tr></table></figure>
+<p>解释: 容易维护。</p>
+<ul>
+<li><em>不要</em> 在<code>#</code>前加入空格.<br>
+建议使用:</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># Header</span><br></pre></td></tr></table></figure>
+<p>不建议：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.# Header</span><br></pre></td></tr></table></figure>
+<ul>
+<li><em>不要</em> 跳跃使用标题等级.<br>
+建议使用:</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"># Header 1</span><br><span class="line"></span><br><span class="line">## Header 2</span><br></pre></td></tr></table></figure>
+<p>不建议：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"># Header 1</span><br><span class="line"></span><br><span class="line">### Header 3</span><br></pre></td></tr></table></figure>
+<ul>
+<li>在标题上下用空行隔开，除非标题在文档开头。<br>
+建议使用:</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Before.</span><br><span class="line"></span><br><span class="line"># Header 1</span><br><span class="line"></span><br><span class="line">## Header 2</span><br><span class="line"></span><br><span class="line">After.</span><br></pre></td></tr></table></figure>
+<p>不建议：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Before.</span><br><span class="line"># Header 1</span><br><span class="line"></span><br><span class="line">## Header 2</span><br><span class="line">After.</span><br></pre></td></tr></table></figure>
+<ul>
+<li>避免 在相同 Markdown 文件中使用相同的标题.<br>
+解释: 许多的 Markdown 解释器会依据标题的内容生成标题的IDs。<br>
+建议使用:</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"># Dogs</span><br><span class="line"></span><br><span class="line">## Anatomy of the dog</span><br><span class="line"></span><br><span class="line"># Cats</span><br><span class="line"></span><br><span class="line">## Anatomy of the cat</span><br></pre></td></tr></table></figure>
+<p>不建议：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"># Dogs</span><br><span class="line"></span><br><span class="line">## Anatomy</span><br><span class="line"></span><br><span class="line"># Cats</span><br><span class="line"></span><br><span class="line">## Anatomy</span><br></pre></td></tr></table></figure>
+<h3 id="顶级标题"><a class="markdownIt-Anchor" href="#顶级标题"></a> 顶级标题</h3>
+<p>如果你想要 HTML 直接输出，这样唯一的<code>h1</code>标记就是输出的第一件事，并且会成为文档的标题。这就是HTML的顶级标题。<br>
+<code>h1</code>标题的产生受到使用的 Markdown 引擎的直接影响： 一些引擎会从元数据（metadata）中产生标题，比如 Jekyll 就是从 front-matter 中产生标题。<br>
+将顶级标题保存为元数据（metadata）可以更加方便的在其他地方使用， 比如，在全局索引中，但也有缺点，比如降低了可读性和移植性。<br>
+如果目的不是生成顶级标题， include it in your markdown file. E.g., GitHub.<br>
+索引文件中的顶级标题比如<code>README.md</code>或者<code>index.md</code>应该作为他们父目录的标题。<br>
+顶级标题的缺点：</p>
+<ul>
+<li>
+<p>占用了一级标题。这就意味只剩下5个层级标题可以使用。 并且这样每一个新的标题就会多使用一个 <code>#</code>符号,这样看起来不好。</p>
+</li>
+<li>
+<p>重复了文件名, 通常已经可以直接从 URL 中读到。 在大多数的情况下，文件名可以直接转换成顶级标题， 比如: 从 <a href="http://some-filename.md" target="_blank" rel="external">some-filename.md</a> 到 Some filename.</p>
+</li>
+</ul>
+<p>顶级标题的优点:</p>
+<ul>
+<li>比URL更加易读，尤其是对非技术出身用户。</li>
+</ul>
+<h3 id="标题大小写"><a class="markdownIt-Anchor" href="#标题大小写"></a> 标题大小写</h3>
+<ul>
+<li>标题开头使用大写字母，除非标题内容总是以小写出现, 例如，计算机代码。<br>
+建议使用:</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># Header</span><br></pre></td></tr></table></figure>
+<p>建议使用, 代码通常以小写开始：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># int main</span><br></pre></td></tr></table></figure>
+<p>不建议：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># header</span><br></pre></td></tr></table></figure>
+<ul>
+<li>其他字母按照句子中原始大小写。<br>
+建议使用:</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># The header of the example</span><br></pre></td></tr></table></figure>
+<p>不建议：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># The Header of the Example</span><br></pre></td></tr></table></figure>
+<p>例外,<a href="http://en.wikipedia.org/wiki/Title_case#Title_case" target="_blank" rel="external">首字大写</a> 对 <a href="http://einverne.github.io/markdown-style-guide/zh.html#top-level-header" target="_blank" rel="external">顶级标题</a> 可选择性支持。 请异常谨慎地使用, in cases where typographical perfection is important, 比如：项目的 README .<br>
+解释: 为什么对所有标题<a href="http://en.wikipedia.org/wiki/Title_case#Title_case" target="_blank" rel="external">首字大写</a>? 如果要决定句子中每一个单词大小写会花费太多精力。</p>
+<h3 id="标题结尾"><a class="markdownIt-Anchor" href="#标题结尾"></a> 标题结尾</h3>
+<p>显示标题的内容，而不是用新标题和水平线紧随其后：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"># Header</span><br><span class="line"></span><br><span class="line">Content</span><br><span class="line"></span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">Outside header.</span><br></pre></td></tr></table></figure>
+<h3 id="标题长度"><a class="markdownIt-Anchor" href="#标题长度"></a> 标题长度</h3>
+<p>保证标题越短越好。<br>
+避免使用长句子，总结长句子作为标题，然后将长句子作为标题下的第一小节。<br>
+解释: 以后引用方便，尤其是自动生成 IDs 或者生成 TOC 。<br>
+建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"># Huge header</span><br><span class="line"></span><br><span class="line">Huge header that talks about a complex subject.</span><br></pre></td></tr></table></figure>
+<p>不建议：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># Huge header that talks about a complex subject</span><br></pre></td></tr></table></figure>
+<h3 id="标题结尾标点"><a class="markdownIt-Anchor" href="#标题结尾标点"></a> 标题结尾标点</h3>
+<p><em>不要</em> 在标题中以<code>:</code>结尾。<br>
+解释: 每一个标题都是接下来内容的简介，这也就正是冒号的作用。<br>
+<em>不要</em> 在标题中以<code>.</code>结尾。<br>
+解释: 每一个标题都包含一个简短的句子，也就不需要句号来分隔他们。<br>
+建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># How to do make omelet</span><br></pre></td></tr></table></figure>
+<p>不建议：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># How to do make omelet:</span><br></pre></td></tr></table></figure>
+<p>不建议：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># How to do make omelet.</span><br></pre></td></tr></table></figure>
+<h3 id="标题同义词"><a class="markdownIt-Anchor" href="#标题同义词"></a> 标题同义词</h3>
+<p>标题用作用户索引的关键词。<br>
+正由于这个原因，你可能希望在标题中用多个关键词。<br>
+要做到这一点，简单的创建一个同义词标题在主标题之前，并且标题下不包含内容。<br>
+比如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># Purchase</span><br><span class="line"></span><br><span class="line"># Buy</span><br><span class="line"></span><br><span class="line">You give money and get something in return.</span><br></pre></td></tr></table></figure>
+<p>每一个同层级的空标题都假定是同义的。如果层级不一样，那就是另外的含义：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"># Animals</span><br><span class="line"></span><br><span class="line">## Dog</span><br></pre></td></tr></table></figure>
+<h2 id="引用"><a class="markdownIt-Anchor" href="#引用"></a> 引用</h2>
+<ul>
+<li>在符号 <code>&gt;</code> 后面接一个空格。<br>
+建议使用:</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&gt; a</span><br></pre></td></tr></table></figure>
+<p>不建议：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&gt;a</span><br></pre></td></tr></table></figure>
+<p>不建议, 2个空格:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&gt;  a</span><br></pre></td></tr></table></figure>
+<ul>
+<li>在每一行使用 &gt; 符号，包括换行的句子。<br>
+建议使用:</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&gt; Long line</span><br><span class="line">&gt; that was wrapped.</span><br></pre></td></tr></table></figure>
+<p>不建议：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&gt; Long line</span><br><span class="line">that was wrapped.</span><br></pre></td></tr></table></figure>
+<ul>
+<li><em>不要</em> 在单独的引用中使用空行。<br>
+建议使用:</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&gt; a</span><br><span class="line">&gt;</span><br><span class="line">&gt; b</span><br></pre></td></tr></table></figure>
+<p>不建议：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&gt; a</span><br><span class="line"></span><br><span class="line">&gt; b</span><br></pre></td></tr></table></figure>
+<h2 id="列表"><a class="markdownIt-Anchor" href="#列表"></a> 列表</h2>
+<h3 id="标记"><a class="markdownIt-Anchor" href="#标记"></a> 标记</h3>
+<h4 id="无序"><a class="markdownIt-Anchor" href="#无序"></a> 无序</h4>
+<p>使用连字符.<br>
+建议使用：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">- a</span><br><span class="line">- b</span><br></pre></td></tr></table></figure>
+<p>不建议：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">* a</span><br><span class="line">* b</span><br><span class="line">+ a</span><br><span class="line">+ b</span><br></pre></td></tr></table></figure>
+<p>解释:</p>
+<ul>
+<li>星号 * 可能和加粗和斜体符号产生混淆。</li>
+<li>加号 + 不流行。</li>
+</ul>
+<h4 id="有序"><a class="markdownIt-Anchor" href="#有序"></a> 有序</h4>
+<p>尽量选用 <code>1.</code>来标记有序的列表, 除非你打算通过数字在相同 Markdown 文件或者外部文件中引用他们。<br>
+尽量使用无序的列表，除非有通过数字引用的需求。<br>
+最佳则是从来不通过序号来引用他们：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">- a</span><br><span class="line">- c</span><br><span class="line">- b</span><br></pre></td></tr></table></figure>
+<p>较好的方法, 仅仅使用 1.:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">1. a</span><br><span class="line">1. c</span><br><span class="line">1. b</span><br></pre></td></tr></table></figure>
+<p>较差的方法, <em>不要</em> 通过序号来标注列表项的顺序:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">1. a</span><br><span class="line">2. c</span><br><span class="line">3. b</span><br></pre></td></tr></table></figure>
+<p>可接受的, 使用文本引用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">The ouput of the `ls` command is of the form:</span><br><span class="line"></span><br><span class="line">    drwx------  2 ciro ciro        4096 Jul  5  2013 dir0</span><br><span class="line">    drwx------  4 ciro ciro        4096 Apr 27 08:00 dir1</span><br><span class="line">    1           2</span><br><span class="line"></span><br><span class="line">Where:</span><br><span class="line"></span><br><span class="line">1. permissions</span><br><span class="line">2. number of files directory contains</span><br></pre></td></tr></table></figure>
+<p>可接受，通过外部 markdown 文件引用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Terms of use.</span><br><span class="line"></span><br><span class="line">1. I will not do anything illegal.</span><br><span class="line">2. I will not do anything that can harm the website.</span><br></pre></td></tr></table></figure>
+<p>解释:</p>
+<ul>
+<li>如果你想要改变列表中的一个列表项，你<em>不要</em> 修改它下面的列表项。<br>
+Diffs 工具只会显示被修改的重要的内容。</li>
+<li>如果序列有两位，也不需要额外注意，内容保持一致。 比如：下面不对齐：</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">9. a</span><br><span class="line">10. b</span><br></pre></td></tr></table></figure>
+<ul>
+<li>如果新列表项被加入，引用会破坏。尽量减少这种问题：</li>
+<li>保证引用靠近列表，这样作者会更少可能的忘记去更新</li>
+<li>当从外部引用时，总是引用到一个固定版本的 markdown 文件</li>
+</ul>
+<h3 id="列表项中的空格"><a class="markdownIt-Anchor" href="#列表项中的空格"></a> 列表项中的空格</h3>
+<p>列表项标记前总是留有一个空格。<br>
+建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">- a</span><br><span class="line"></span><br><span class="line">  b</span><br><span class="line"></span><br><span class="line">- c</span><br></pre></td></tr></table></figure>
+<p>不建议, 两个空格:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">-  a</span><br><span class="line"></span><br><span class="line">   b</span><br><span class="line"></span><br><span class="line">-  c</span><br></pre></td></tr></table></figure>
+<h3 id="列表内容的缩进"><a class="markdownIt-Anchor" href="#列表内容的缩进"></a> 列表内容的缩进</h3>
+<p>列表中内容的缩进层级必须和第一个列表项一致：<br>
+建议(如果符合列表标记之后的空格):</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">- item 1</span><br><span class="line"></span><br><span class="line">  Content 1</span><br><span class="line"></span><br><span class="line">- item 2</span><br><span class="line"></span><br><span class="line">  Content 2</span><br></pre></td></tr></table></figure>
+<p>不建议：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">- item 1</span><br><span class="line"></span><br><span class="line">    Content 1</span><br><span class="line"></span><br><span class="line">- item 2</span><br><span class="line"></span><br><span class="line">    Content 2</span><br></pre></td></tr></table></figure>
+<p>避免开始直接使用缩进的代码列表项，因为这样不容易实现。<a href="http://spec.commonmark.org/0.12/#example-176" target="_blank" rel="external">CommonMark states that</a>一个单独的空格需要加入:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">-     code</span><br><span class="line"></span><br><span class="line">  a</span><br></pre></td></tr></table></figure>
+<h3 id="列表中的空行"><a class="markdownIt-Anchor" href="#列表中的空行"></a> 列表中的空行</h3>
+<p>如果每一个列表项只有一行, <em>不要</em> 在列表项之间增加空行，否则，在每一个列表项之间增加空行。<br>
+建议使用, single lines:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">- item 1</span><br><span class="line">- item 2</span><br><span class="line">- item 3</span><br></pre></td></tr></table></figure>
+<p>不建议, single lines:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">- item 1</span><br><span class="line"></span><br><span class="line">- item 2</span><br><span class="line"></span><br><span class="line">- item 3</span><br></pre></td></tr></table></figure>
+<p>多行情况下，建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">- item that</span><br><span class="line">  is wrapped</span><br><span class="line"></span><br><span class="line">- item 2</span><br><span class="line"></span><br><span class="line">- item 3</span><br></pre></td></tr></table></figure>
+<p>多行情况下，不建议:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">- item that</span><br><span class="line">  is wrapped</span><br><span class="line">- item 2</span><br><span class="line">- item 3</span><br></pre></td></tr></table></figure>
+<p>建议使用, 多行:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">- item 1</span><br><span class="line"></span><br><span class="line">  - item 11</span><br><span class="line">  - item 12</span><br><span class="line">  - item 13</span><br><span class="line"></span><br><span class="line">- item 2</span><br><span class="line"></span><br><span class="line">- item 3</span><br></pre></td></tr></table></figure>
+<p>不建议, 多行:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">- item 1</span><br><span class="line"></span><br><span class="line">  - item 11</span><br><span class="line">  - item 12</span><br><span class="line">  - item 13</span><br><span class="line"></span><br><span class="line">- item 2</span><br><span class="line">- item 3</span><br></pre></td></tr></table></figure>
+<p>解释: 如果没有空行，很难分别多行的列表项开始和结束。</p>
+<h3 id="列表外的空行"><a class="markdownIt-Anchor" href="#列表外的空行"></a> 列表外的空行</h3>
+<p>列表外建议留有一空行。<br>
+建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Before.</span><br><span class="line"></span><br><span class="line">- list</span><br><span class="line">- list</span><br><span class="line"></span><br><span class="line">After.</span><br></pre></td></tr></table></figure>
+<p>不建议：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Before.</span><br><span class="line">- item</span><br><span class="line">- item</span><br><span class="line">After.</span><br></pre></td></tr></table></figure>
+<h3 id="列表项首字母大小写"><a class="markdownIt-Anchor" href="#列表项首字母大小写"></a> 列表项首字母大小写</h3>
+<p>每一个 list 使用原来在句子中的大小写.<br>
+建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">I want to eat:</span><br><span class="line"></span><br><span class="line">- apples</span><br><span class="line">- bananas</span><br><span class="line">- grapes</span><br></pre></td></tr></table></figure>
+<p>因为它可以被如下替换：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">I want to eat apples</span><br><span class="line">I want to eat babanas</span><br><span class="line">I want to eat grapes</span><br></pre></td></tr></table></figure>
+<p>建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">To ride a bike you have to:</span><br><span class="line"></span><br><span class="line">- get on top of the bike. This step is easy.</span><br><span class="line">- put your foot on the pedal.</span><br><span class="line">- push t the pedal. This is the most fun part.</span><br></pre></td></tr></table></figure>
+<p>因为它可以被如下替换：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">To ride a bike you have to get on top of the bike. This step is easy.</span><br><span class="line">To ride a bike you have to put your foot on the pedal.</span><br><span class="line">To ride a bike you have to push the pedal. This is the most fun part.</span><br></pre></td></tr></table></figure>
+<p>建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># How to ride a bike</span><br><span class="line"></span><br><span class="line">- Get on top of the bike.</span><br><span class="line">- Put your feet on the pedal.</span><br><span class="line">- Make the pedal turn.</span><br></pre></td></tr></table></figure>
+<p>因为它可以被如下替换：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># How to ride a bike</span><br><span class="line"></span><br><span class="line">Get on top of the bike.</span><br><span class="line">Put your feet on the pedal.</span><br><span class="line">Push the the pedal.</span><br></pre></td></tr></table></figure>
+<h3 id="列表项结尾标点"><a class="markdownIt-Anchor" href="#列表项结尾标点"></a> 列表项结尾标点</h3>
+<p>列表项结尾标点，除非:</p>
+<ul>
+<li>包含多个句子或者短语</li>
+<li>以大写字母开头</li>
+</ul>
+<p>否则, 如果以句号结尾的话，省略标点.<br>
+建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">- apple</span><br><span class="line">- banana</span><br><span class="line">- orange</span><br></pre></td></tr></table></figure>
+<p>不建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">- apple.</span><br><span class="line">- banana.</span><br><span class="line">- orange.</span><br></pre></td></tr></table></figure>
+<p>建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">- go to the market</span><br><span class="line">- then buy some fruit</span><br><span class="line">- finally eat the fruit</span><br></pre></td></tr></table></figure>
+<p>建议使用, 不以句号结尾，而是以其他标点结尾：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">- go to the marked</span><br><span class="line">- then buy fruit?</span><br><span class="line">- of course!</span><br></pre></td></tr></table></figure>
+<p>不建议, 多个句子时末尾不加标点:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">- go to the market</span><br><span class="line">- then buy some fruit. Bad for wallet</span><br><span class="line">- finally eat the fruit. Good for tummy</span><br></pre></td></tr></table></figure>
+<p>建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">- go to the market</span><br><span class="line">- then buy some fruit. Bad for wallet.</span><br><span class="line">- finally eat the fruit. Good for tummy.</span><br></pre></td></tr></table></figure>
+<p>注意：没有任何理由阻止，一个列表项以句号结尾，另一个列表项没有。</p>
+<p>不建议, 多段落:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">- go to the market</span><br><span class="line"></span><br><span class="line">- then buy some fruit</span><br><span class="line"></span><br><span class="line">  Bad for wallet</span><br><span class="line"></span><br><span class="line">- finally eat the fruit</span><br><span class="line"></span><br><span class="line">  Good for tummy</span><br></pre></td></tr></table></figure>
+<p>建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">- go to the market</span><br><span class="line"></span><br><span class="line">- then buy some fruit.</span><br><span class="line"></span><br><span class="line">  Bad for wallet.</span><br><span class="line"></span><br><span class="line">- finally eat the fruit.</span><br><span class="line"></span><br><span class="line">  Good for tummy.</span><br></pre></td></tr></table></figure>
+<p>不建议, 如果以大写字母开头，添加标点:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">- Go to the market</span><br><span class="line">- Then buy some fruit</span><br><span class="line">- Finally eat the fruit</span><br></pre></td></tr></table></figure>
+<p>建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">- Go to the market.</span><br><span class="line">- Then buy some fruit.</span><br><span class="line">- Finally eat the fruit.</span><br></pre></td></tr></table></figure>
+<h2 id="定义列表"><a class="markdownIt-Anchor" href="#定义列表"></a> 定义列表</h2>
+<p><em>避免</em> 使用定义列表扩展，因为他并没有被多数实现，也没有出现在 CommonMark.<br>
+相反, 使用:</p>
+<ul>
+<li>
+<p>格式化列表:</p>
+</li>
+<li>
+<p>用加粗，链接，或者代码，格式化需要定义的内容</p>
+</li>
+<li>
+<p>将内容和定义使用冒号和空格分割 <code>:.</code></p>
+</li>
+<li>
+<p><em>不要</em> 对齐定义，这样难以维护，并且不会显示在 HTML 输出</p>
+</li>
+</ul>
+<p>建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">- **apple**: red fruit</span><br><span class="line">- **dog**: noisy animal</span><br></pre></td></tr></table></figure>
+<p>建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">- **apple**: red fruit.</span><br><span class="line"></span><br><span class="line">  Very tasty.</span><br><span class="line"></span><br><span class="line">- **dog**: noisy animal.</span><br><span class="line"></span><br><span class="line"> Not tasty.</span><br></pre></td></tr></table></figure>
+<p>建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">- [apple](http://apple.com): red fruit</span><br><span class="line">- [dot](http://dog.com): red fruit</span><br></pre></td></tr></table></figure>
+<p>建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">- `-f`: force</span><br><span class="line">- `-r`: recursive</span><br></pre></td></tr></table></figure>
+<p>不建议, 没有冒号:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">- **apple** red fruit</span><br><span class="line">- **dog** noisy animal</span><br></pre></td></tr></table></figure>
+<p>不建议, 在术语和冒号之间有空格:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">- **apple** : red fruit</span><br><span class="line">- **dog** : noisy animal</span><br></pre></td></tr></table></figure>
+<p>不建议, 定义对齐:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">- **apple**: red fruit</span><br><span class="line">- **dog**:   noisy animal</span><br></pre></td></tr></table></figure>
+<ul>
+<li>headers.</li>
+</ul>
+<p>建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"># Apple</span><br><span class="line"></span><br><span class="line">Red fruit</span><br><span class="line"></span><br><span class="line"># Dog</span><br><span class="line"></span><br><span class="line">Noisy animal</span><br></pre></td></tr></table></figure>
+<h2 id="代码区域"><a class="markdownIt-Anchor" href="#代码区域"></a> 代码区域</h2>
+<h3 id="可选-codefenced"><a class="markdownIt-Anchor" href="#可选-codefenced"></a> 可选 code:fenced</h3>
+<p>仅仅使用 fenced code blocks.<br>
+和缩进代码区块比较：</p>
+<ul>
+<li>不足: 不是标准 markdown 语法, 因此缺少移植性，但是加入到CommonMark.</li>
+<li>优点: 实现方式多, 包括 GitHub’s, 并且允许指定代码的语言。</li>
+</ul>
+<p><em>不要</em> 缩进 fenced code blocks.<br>
+总是指定代码的语言。<br>
+建议使用:</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">a = <span class="number">1</span></span><br></pre></td></tr></table></figure>
+<p>不建议：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">a = 1</span><br></pre></td></tr></table></figure>
+<h3 id="可选-codeindented"><a class="markdownIt-Anchor" href="#可选-codeindented"></a> 可选 code:indented</h3>
+<p>仅仅使用缩进代码区域。<br>
+代码区域缩进4个空格。</p>
+<p>代码区块必须以一空行隔开。<br>
+尽量在代码块之前使用冒号结束短语<code>:</code>。<br>
+建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">use this code to blow up your PC:</span><br><span class="line"></span><br><span class="line">    sudo rm -rf /</span><br></pre></td></tr></table></figure>
+<p>不建议, 没有冒号</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">use this code to blow up your PC</span><br><span class="line"></span><br><span class="line">    sudo rm -rf /</span><br></pre></td></tr></table></figure>
+<h2 id="水平横线"><a class="markdownIt-Anchor" href="#水平横线"></a> 水平横线</h2>
+<p><em>不要</em> 使用水平线除非表明<a href="http://einverne.github.io/markdown-style-guide/zh.html#end-of-a-header" target="_blank" rel="external">End of a header</a>.<br>
+解释:</p>
+<ul>
+<li>标题比区块更好，因为标题就是区块的开始，并且说明了区块的内容。</li>
+<li>水平线没有可接受的语义。 这份风格指南给了语义。</li>
+</ul>
+<p>使用 3 个无空格连字符:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">---</span><br></pre></td></tr></table></figure>
+<h2 id="表格"><a class="markdownIt-Anchor" href="#表格"></a> 表格</h2>
+<p>扩展.</p>
+<ul>
+<li>用一空行包围表格。</li>
+<li><em>不要</em> 缩进表格。</li>
+<li>用 <code>|</code>包裹表格的每一行。</li>
+<li>竖直对齐所有表格边框。</li>
+<li>将标题和内容用连字符分割，用对齐的 <code>|</code>。</li>
+<li><code>|</code> 周围必须要有一个空格，除非是外部的 <code>|</code>。</li>
+<li>列的宽度通过列中最长的单元格确定。</li>
+</ul>
+<p>建议表格:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Before.</span><br><span class="line"></span><br><span class="line">| h    | Long header |</span><br><span class="line">|------|-------------|</span><br><span class="line">| abc  | def         |</span><br><span class="line">| abc2 | def2        |</span><br><span class="line"></span><br><span class="line">After.</span><br></pre></td></tr></table></figure>
+<p>解释:</p>
+<ul>
+<li>不对齐的表格很容易书写，但是对齐的表格更加易读，并且人们读代码比编辑要更多。</li>
+<li>开始的 <code>|</code> 更加容易看出表格的开始和结束。结尾的<code>|</code>让人看起来更加舒服，因为对称。</li>
+<li>这些工具让表格对齐更加容易。比如，Vim 有 <a href="https://github.com/godlygeek/tabular" target="_blank" rel="external">Tabular plugin</a>插件，这个插件让我们可以使用 <code>:Tabular /|</code>来使整个表格对齐。</li>
+<li>为什么在连字符分割行 <code>|</code> 没有空格包围, 比如: <code>|---|</code>而不是 <code>| - |</code>? 没有空格看起来更好，在GitHub可行， 缺点: 编辑器中自动对齐实现困难，因为对于分割行需要特殊的规则。</li>
+</ul>
+<h2 id="分离相连的列表"><a class="markdownIt-Anchor" href="#分离相连的列表"></a> 分离相连的列表</h2>
+<p>分离连续:</p>
+<ul>
+<li>列表</li>
+<li>缩进的代码块</li>
+<li>引用</li>
+<li>列表之后跟随额外的代码块</li>
+</ul>
+<p>使用一个空白的 HTML 注释 <code>&lt;!-- --&gt;</code>.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">- list 1</span><br><span class="line">- list 1</span><br><span class="line"></span><br><span class="line">&lt;!-- --&gt;</span><br><span class="line"></span><br><span class="line">- list 2</span><br><span class="line">- list 2</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">    code 1</span><br><span class="line">    code 1</span><br><span class="line"></span><br><span class="line">&lt;!-- --&gt;</span><br><span class="line"></span><br><span class="line">    code 2</span><br><span class="line">    code 2</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&gt; blockquote 1</span><br><span class="line">&gt; blockquote 1</span><br><span class="line"></span><br><span class="line">&lt;!-- --&gt;</span><br><span class="line"></span><br><span class="line">&gt; blockquote 2</span><br><span class="line">&gt; blockquote 2</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">- list</span><br><span class="line">- list</span><br><span class="line"></span><br><span class="line">&lt;!-- --&gt;</span><br><span class="line"></span><br><span class="line">    code outside list</span><br><span class="line">    code outside list</span><br></pre></td></tr></table></figure>
+<h1 id="span元素"><a class="markdownIt-Anchor" href="#span元素"></a> Span元素</h1>
+<p><em>不要</em> 使用内部空格。<br>
+建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">**bold**</span><br><span class="line">`code`</span><br><span class="line">[link](http://a.com)</span><br><span class="line">[text][name]</span><br></pre></td></tr></table></figure>
+<p>不建议：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">** bold **</span><br><span class="line">` code `</span><br><span class="line">[ link ]( http://a.com )</span><br><span class="line">[text] [name]</span><br></pre></td></tr></table></figure>
+<p>对于空格至关重要的行内代码：</p>
+<ul>
+<li>在写作过程中解释空格存在的必要性</li>
+<li>如果可能在空格之后加入其他内容</li>
+</ul>
+<p>建议使用:<br>
+<code>使用连字符并跟随一个空格来表示无序列表。</code><br>
+解释: 大多数的浏览器不会生成包围的空格，或者复制的时候不会将他们添加到粘贴板。</p>
+<h2 id="链接"><a class="markdownIt-Anchor" href="#链接"></a> 链接</h2>
+<h3 id="参考样式链接"><a class="markdownIt-Anchor" href="#参考样式链接"></a> 参考样式链接</h3>
+<p>链接:</p>
+<ul>
+<li>使用结尾的<code>[]</code>隐式链接：<br>
+建议使用:</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[a][]</span><br></pre></td></tr></table></figure>
+<p>不建议：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[a]</span><br></pre></td></tr></table></figure>
+<p>解释: 省略<code>[]</code>大多数主要的实现都可以使用，但是这种方式并没有在文档中有实现，原始 Markdown 也没有提到。</p>
+<p>定义:</p>
+<ul>
+<li>必须写到文件末</li>
+<li>必须以ID字符顺序排列</li>
+<li><em>不要</em> 使用尖括号包裹URL</li>
+<li>align URLs and link names as in a table</li>
+<li>链接 IDs 仅仅使用小写字母. 解释: 因为 IDs 区分大小写,</li>
+<li>只用小写容易书写，并且可读性比大小写混合单词大很多。</li>
+</ul>
+<p>建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[id2]     http://long-url.com</span><br><span class="line">[long id] http://a.com        &quot;name 1&quot;</span><br></pre></td></tr></table></figure>
+<p>不建议, 没有安装 id 排序:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[b] http://a.com</span><br><span class="line">[a] http://b.com</span><br></pre></td></tr></table></figure>
+<p>不建议, 没有对齐:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[id] http://id.com</span><br><span class="line">[long id] http://long-id.com</span><br></pre></td></tr></table></figure>
+<h3 id="单引号或双引号标题"><a class="markdownIt-Anchor" href="#单引号或双引号标题"></a> 单引号或双引号标题</h3>
+<p>使用双引号，<em>不要</em> 使用单引号。<br>
+解释: 单引号并不是在所有的实现中都有效，但是双引号可以。</p>
+<h2 id="强调"><a class="markdownIt-Anchor" href="#强调"></a> 强调</h2>
+<h3 id="加粗"><a class="markdownIt-Anchor" href="#加粗"></a> 加粗</h3>
+<p>使用双星号格式: <code>**bold**</code>.<br>
+解释: 比双下划线格式<code>__bold__</code>更加常见和可读性更高.</p>
+<h3 id="斜体"><a class="markdownIt-Anchor" href="#斜体"></a> 斜体</h3>
+<p>使用单星号格式: <code>*italic*</code>.<br>
+解释:</p>
+<ul>
+<li>比下划线格式更加常见，易读性更高</li>
+<li>与加粗格式一致, 同样使用星号标记</li>
+</ul>
+<h3 id="大写强调"><a class="markdownIt-Anchor" href="#大写强调"></a> 大写强调</h3>
+<p><em>不要</em> 使用大写来强调: 使用强调语法例如 <strong>加粗</strong>或者<em>斜体</em> 。</p>
+<p>解释: CSS 有<code>text-transform:uppercase</code>属性,如果你愿意的话，可以轻松在全网站实现相同的效果。</p>
+<h3 id="强调与标题"><a class="markdownIt-Anchor" href="#强调与标题"></a> 强调与标题</h3>
+<p><em>不要</em> 使用强调元素(加粗或者斜体) 来介绍多行区块: 使用标题代替.</p>
+<p>解释: 这个就是确切的标题的语义, 使用强调的并不是必须的。作为结果，许多实现，给标题增加有用的功能，并没有给强调元素，比如自动 <code>id</code>来更加容易的引用标题。</p>
+<p>建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"># How to make omelets</span><br><span class="line"></span><br><span class="line">Break an egg.</span><br><span class="line"></span><br><span class="line">...</span><br><span class="line"></span><br><span class="line"># How to bake bread</span><br><span class="line"></span><br><span class="line">Open the flour sack.</span><br><span class="line"></span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>不建议：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">**How to make omelets:**</span><br><span class="line"></span><br><span class="line">Break an egg.</span><br><span class="line"></span><br><span class="line">...</span><br><span class="line"></span><br><span class="line">**How to bake bread:**</span><br><span class="line"></span><br><span class="line">Open the flour sack.</span><br><span class="line"></span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<h2 id="自动链接"><a class="markdownIt-Anchor" href="#自动链接"></a> 自动链接</h2>
+<h3 id="使用尖括号自动链接"><a class="markdownIt-Anchor" href="#使用尖括号自动链接"></a> 使用尖括号自动链接</h3>
+<ul>
+<li><em>不要</em> 使用不带尖括号的自动链接。<br>
+建议使用:</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;http://a.com&gt;</span><br></pre></td></tr></table></figure>
+<p>不建议：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://a.com</span><br></pre></td></tr></table></figure>
+<p>解释: 这个扩展中,<code>&lt;&gt;</code>容易从键盘敲出，也同样容易读。</p>
+<ul>
+<li>如果你不想文字链接自动链接，将他们以代码区块方式包裹，例如：</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">`http://not-a-link.com`</span><br></pre></td></tr></table></figure>
+<p>解释: 许多工具自动将 http 开头的字串解释成链接。</p>
+<h3 id="内容的自动链接"><a class="markdownIt-Anchor" href="#内容的自动链接"></a> 内容的自动链接</h3>
+<p>所有自动链接必须以字串<code>http</code>开始。<br>
+特别的, <em>不要</em> 在相对链接时使用自动链接。如果遇到相对链接，使用括号的方式创建链接。<br>
+建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[file.html](file.html)</span><br></pre></td></tr></table></figure>
+<p>不建议：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;file.html&gt;</span><br></pre></td></tr></table></figure>
+<p>建议使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;https://github.com&gt;</span><br></pre></td></tr></table></figure>
+<p>不建议：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;github.com&gt;</span><br></pre></td></tr></table></figure>
+<p>解释: 将自动链接从HTML tags区分开很困难. 如果你想要一个相对的链接指向一个 <code>script</code> 的文件？</p>
+<h3 id="电子邮件自动链接"><a class="markdownIt-Anchor" href="#电子邮件自动链接"></a> 电子邮件自动链接</h3>
+<p><em>不要</em> 使用电子邮件自动链接 <code>&lt;address@example.com&gt;</code>. 使用纯HTML .</p>
+<p>解释: 标准 markdown 设计规范这样描述:</p>
+<blockquote>
+<p>“performs a bit of randomized decimal and hex entity-encoding to help obscure your address from address-harvesting spambots”.</p>
+</blockquote>
+<p>因此, 输出是随机的，丑陋的, 并且像规范中提到的:</p>
+<blockquote>
+<p>but an address published in this way will probably eventually start receiving spam</p>
+</blockquote>
+<h1 id="license"><a class="markdownIt-Anchor" href="#license"></a> License</h1>
+<p>Markdown 风格指南 is licensed under a <a href="http://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="external">Creative Commons Attribution-ShareAlike 4.0 International License</a>. Based on a work at <a href="http://www.cirosantilli.com/markdown-style-guide" target="_blank" rel="external">http://www.cirosantilli.com/markdown-style-guide</a><br>
+License</p>
+<p>Adapted from Markdown Style Guide by Ciro Santilli is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.</p>
+
+      
+    </div>
+<h5>相关文章:</h5>
+<ul class="popular-posts"><li class="popular-posts-item"><div class="popular-posts-title"><h3><a href="/2017/10-31-如何正确的写一篇Makedown博文/" title="如何正确的写一篇Makedown博文" rel="bookmark">如何正确的写一篇Makedown博文</a></h3></div></li><li class="popular-posts-item"><div class="popular-posts-title"><h3><a href="/2017/11-05-codepen/" title="codepen" rel="bookmark">codepen</a></h3></div></li></ul>
+    
+    
+    
+<div>
+  
+    <div>
+    
+        <div style="text-align:center;color: #ccc;font-size:14px;">-------------本文结束<i class="fa fa-paw"></i>感谢您的阅读-------------</div>
+    
+</div>
+
+  
+</div>
+    
+
+    
+
+    
+      <div>
+        <ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者：</strong>
+    qcsunny
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://qcsunny.github.io/2017/10-31-MakeDown书写风格规范/" title="Makedown书写风格规范">https://qcsunny.github.io/2017/10-31-MakeDown书写风格规范/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>
+    本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注意礼节，注明出处！
+  </li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Markdown/" rel="tag"><i class="fa fa-tag" aria-hidden="true"></i> Markdown</a>
+          
+            <a href="/tags/Blog/" rel="tag"><i class="fa fa-tag" aria-hidden="true"></i> Blog</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/10-31-test/" rel="next" title="test">
+                <i class="fa fa-chevron-left"></i> test
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/10-31-如何正确的写一篇Makedown博文/" rel="prev" title="如何正确的写一篇Makedown博文">
+                如何正确的写一篇Makedown博文 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      
+        <div id="gitment-container"></div>
+      
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://oy5vmf70e.bkt.clouddn.com/avatar.jpg"
+                alt="qcsunny" />
+            
+              <p class="site-author-name" itemprop="name">qcsunny</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">24</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">16</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">26</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            
+              <a title="收藏到书签，偶尔High一下^_^" rel="alternate" class="mw-harlem_shake_slow wobble shake" href='javascript:(
+    /*
+     * Copyright (C) 2015 Rocko (rocko.xyz) <rocko.zxp@gmail.com>
+     *
+     * Licensed under the Apache License, Version 2.0 (the "License");
+     * you may not use this file except in compliance with the License.
+     * You may obtain a copy of the License at
+     *
+     *      http://www.apache.org/licenses/LICENSE-2.0
+     *
+     * Unless required by applicable law or agreed to in writing, software
+     * distributed under the License is distributed on an "AS IS" BASIS,
+     * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     * See the License for the specific language governing permissions and
+     * limitations under the License.
+     */
+    function go() {
+
+
+    var songs = [
+                "//s3.amazonaws.com/moovweb-marketing/playground/harlem-shake.mp3",
+                "......"
+    ];
+
+
+    function c() {
+        var e = document.createElement("link");
+        e.setAttribute("type", "text/css");
+        e.setAttribute("rel", "stylesheet");
+        e.setAttribute("href", f);
+        e.setAttribute("class", l);
+        document.body.appendChild(e)
+    }
+
+    function h() {
+        var e = document.getElementsByClassName(l);
+        for (var t = 0; t < e.length; t++) {
+            document.body.removeChild(e[t])
+        }
+    }
+
+    function p() {
+        var e = document.createElement("div");
+        e.setAttribute("class", a);
+        document.body.appendChild(e);
+        setTimeout(function() {
+            document.body.removeChild(e)
+        }, 100)
+    }
+
+    function d(e) {
+        return {
+            height : e.offsetHeight,
+            width : e.offsetWidth
+        }
+    }
+
+    function v(i) {
+        var s = d(i);
+        return s.height > e && s.height < n && s.width > t && s.width < r
+    }
+
+    function m(e) {
+        var t = e;
+        var n = 0;
+        while (!!t) {
+            n += t.offsetTop;
+            t = t.offsetParent
+        }
+        return n
+    }
+
+    function g() {
+        var e = document.documentElement;
+        if (!!window.innerWidth) {
+            return window.innerHeight
+        } else if (e && !isNaN(e.clientHeight)) {
+            return e.clientHeight
+        }
+        return 0
+    }
+
+    function y() {
+        if (window.pageYOffset) {
+            return window.pageYOffset
+        }
+        return Math.max(document.documentElement.scrollTop, document.body.scrollTop)
+    }
+
+    function E(e) {
+        var t = m(e);
+        return t >= w && t <= b + w
+    }
+
+    function S() {
+        var e = document.getElementById("audio_element_id");
+        if(e != null){
+            var index = parseInt(e.getAttribute("curSongIndex"));
+            if(index > songs.length - 2) {
+                index = 0;
+            } else {
+                index++;
+            }
+            e.setAttribute("curSongIndex", index);
+            N();
+        }
+
+        e.src = i;
+        e.play()
+    }
+
+    function x(e) {
+        e.className += " " + s + " " + o
+    }
+
+    function T(e) {
+        e.className += " " + s + " " + u[Math.floor(Math.random() * u.length)]
+    }
+
+    function N() {
+        var e = document.getElementsByClassName(s);
+        var t = new RegExp("\\b" + s + "\\b");
+        for (var n = 0; n < e.length; ) {
+            e[n].className = e[n].className.replace(t, "")
+        }
+    }
+
+    function initAudioEle() {
+        var e = document.getElementById("audio_element_id");
+        if(e === null){
+            e = document.createElement("audio");
+            e.setAttribute("class", l);
+            e.setAttribute("curSongIndex", 0);
+            e.id = "audio_element_id";
+            e.loop = false;
+            e.bgcolor = 0;
+            e.addEventListener("canplay", function() {
+            setTimeout(function() {
+                x(k)
+            }, 500);
+            setTimeout(function() {
+                N();
+                p();
+                for (var e = 0; e < O.length; e++) {
+                    T(O[e])
+                }
+            }, 15500)
+        }, true);
+        e.addEventListener("ended", function() {
+            N();
+            h();
+            go();
+        }, true);
+        e.innerHTML = " <p>If you are reading this, it is because your browser does not support the audio element. We recommend that you get a new browser.</p> <p>";
+        document.body.appendChild(e);
+        }
+    }
+
+    initAudioEle();
+    var e = 30;
+    var t = 30;
+    var n = 350;
+    var r = 350;
+
+    var curSongIndex = parseInt(document.getElementById("audio_element_id").getAttribute("curSongIndex"));
+    var i = songs[curSongIndex];
+
+    var s = "mw-harlem_shake_me";
+    var o = "im_first";
+    var u = ["im_drunk", "im_baked", "im_trippin", "im_blown"];
+    var a = "mw-strobe_light";
+
+    /* harlem-shake-style.css，替换成你的位置，也可以直接使用：//s3.amazonaws.com/moovweb-marketing/playground/harlem-shake-style.css */
+    var f = "//s3.amazonaws.com/moovweb-marketing/playground/harlem-shake-style.css";
+
+    var l = "mw_added_css";
+    var b = g();
+    var w = y();
+    var C = document.getElementsByTagName("*");
+    var k = null;
+    for (var L = 0; L < C.length; L++) {
+        var A = C[L];
+        if (v(A)) {
+            if (E(A)) {
+                k = A;
+                break
+            }
+        }
+    }
+    if (A === null) {
+        console.warn("Could not find a node of the right size. Please try a different page.");
+        return
+    }
+    c();
+    S();
+    var O = [];
+    for (var L = 0; L < C.length; L++) {
+        var A = C[L];
+        if (v(A)) {
+            O.push(A)
+        }
+    }
+})()'><i class="fa fa-music"></i> High</a>
+
+            
+            </div>
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/qcsunny" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:lhj2397018128@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="https://plus.google.com/107326926667969544394" target="_blank" title="Google">
+                    
+                      <i class="fa fa-fw fa-google"></i>Google</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="https://www.facebook.com/100005201404772" target="_blank" title="FB Page">
+                    
+                      <i class="fa fa-fw fa-facebook"></i>FB Page</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+            <div class="cc-license motion-element" itemprop="license">
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" target="_blank">
+                <img src="/images/cc-by-nc-sa.svg" alt="Creative Commons" />
+              </a>
+            </div>
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-inline">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                推荐阅读
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://qcsunny.github.io/2017/10-31-MakeDown书写风格规范" title="Markdown" target="_blank">Markdown</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#通用规则"><span class="nav-number">1.</span> <span class="nav-text"> 通用规则</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#文件"><span class="nav-number">1.1.</span> <span class="nav-text"> 文件</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#文件扩展名"><span class="nav-number">1.1.1.</span> <span class="nav-text"> 文件扩展名</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#文件名"><span class="nav-number">1.1.2.</span> <span class="nav-text"> 文件名</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#空白"><span class="nav-number">1.2.</span> <span class="nav-text"> 空白</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#新行"><span class="nav-number">1.2.1.</span> <span class="nav-text"> 新行</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#句子结束空格"><span class="nav-number">1.2.2.</span> <span class="nav-text"> 句子结束空格</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#自动换行"><span class="nav-number">1.3.</span> <span class="nav-text"> 自动换行</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#代码"><span class="nav-number">1.4.</span> <span class="nav-text"> 代码</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#shell中美元符号"><span class="nav-number">1.4.1.</span> <span class="nav-text"> Shell中美元符号</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#标记代码内容"><span class="nav-number">1.4.2.</span> <span class="nav-text"> 标记代码内容</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#拼写和语法"><span class="nav-number">1.4.3.</span> <span class="nav-text"> 拼写和语法</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#区块"><span class="nav-number">2.</span> <span class="nav-text"> 区块</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#换行符"><span class="nav-number">2.1.</span> <span class="nav-text"> 换行符</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#标题"><span class="nav-number">2.2.</span> <span class="nav-text"> 标题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#atx风格"><span class="nav-number">2.2.1.</span> <span class="nav-text"> atx风格</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#顶级标题"><span class="nav-number">2.2.2.</span> <span class="nav-text"> 顶级标题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#标题大小写"><span class="nav-number">2.2.3.</span> <span class="nav-text"> 标题大小写</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#标题结尾"><span class="nav-number">2.2.4.</span> <span class="nav-text"> 标题结尾</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#标题长度"><span class="nav-number">2.2.5.</span> <span class="nav-text"> 标题长度</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#标题结尾标点"><span class="nav-number">2.2.6.</span> <span class="nav-text"> 标题结尾标点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#标题同义词"><span class="nav-number">2.2.7.</span> <span class="nav-text"> 标题同义词</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#引用"><span class="nav-number">2.3.</span> <span class="nav-text"> 引用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#列表"><span class="nav-number">2.4.</span> <span class="nav-text"> 列表</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#标记"><span class="nav-number">2.4.1.</span> <span class="nav-text"> 标记</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#无序"><span class="nav-number">2.4.1.1.</span> <span class="nav-text"> 无序</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#有序"><span class="nav-number">2.4.1.2.</span> <span class="nav-text"> 有序</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#列表项中的空格"><span class="nav-number">2.4.2.</span> <span class="nav-text"> 列表项中的空格</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#列表内容的缩进"><span class="nav-number">2.4.3.</span> <span class="nav-text"> 列表内容的缩进</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#列表中的空行"><span class="nav-number">2.4.4.</span> <span class="nav-text"> 列表中的空行</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#列表外的空行"><span class="nav-number">2.4.5.</span> <span class="nav-text"> 列表外的空行</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#列表项首字母大小写"><span class="nav-number">2.4.6.</span> <span class="nav-text"> 列表项首字母大小写</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#列表项结尾标点"><span class="nav-number">2.4.7.</span> <span class="nav-text"> 列表项结尾标点</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#定义列表"><span class="nav-number">2.5.</span> <span class="nav-text"> 定义列表</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#代码区域"><span class="nav-number">2.6.</span> <span class="nav-text"> 代码区域</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#可选-codefenced"><span class="nav-number">2.6.1.</span> <span class="nav-text"> 可选 code:fenced</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#可选-codeindented"><span class="nav-number">2.6.2.</span> <span class="nav-text"> 可选 code:indented</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#水平横线"><span class="nav-number">2.7.</span> <span class="nav-text"> 水平横线</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#表格"><span class="nav-number">2.8.</span> <span class="nav-text"> 表格</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#分离相连的列表"><span class="nav-number">2.9.</span> <span class="nav-text"> 分离相连的列表</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#span元素"><span class="nav-number">3.</span> <span class="nav-text"> Span元素</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#链接"><span class="nav-number">3.1.</span> <span class="nav-text"> 链接</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#参考样式链接"><span class="nav-number">3.1.1.</span> <span class="nav-text"> 参考样式链接</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#单引号或双引号标题"><span class="nav-number">3.1.2.</span> <span class="nav-text"> 单引号或双引号标题</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#强调"><span class="nav-number">3.2.</span> <span class="nav-text"> 强调</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#加粗"><span class="nav-number">3.2.1.</span> <span class="nav-text"> 加粗</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#斜体"><span class="nav-number">3.2.2.</span> <span class="nav-text"> 斜体</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#大写强调"><span class="nav-number">3.2.3.</span> <span class="nav-text"> 大写强调</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#强调与标题"><span class="nav-number">3.2.4.</span> <span class="nav-text"> 强调与标题</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#自动链接"><span class="nav-number">3.3.</span> <span class="nav-text"> 自动链接</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#使用尖括号自动链接"><span class="nav-number">3.3.1.</span> <span class="nav-text"> 使用尖括号自动链接</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#内容的自动链接"><span class="nav-number">3.3.2.</span> <span class="nav-text"> 内容的自动链接</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#电子邮件自动链接"><span class="nav-number">3.3.3.</span> <span class="nav-text"> 电子邮件自动链接</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#license"><span class="nav-number">4.</span> <span class="nav-text"> License</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+
+<script type="text/javascript" charset="utf-8" src="/js/tagcloud.js"></script>
+<script type="text/javascript" charset="utf-8" src="/js/tagcanvas.js"></script>
+<div class="widget-wrap">
+    <div id="myCanvasContainer" class="widget tagcloud">
+        <canvas width="250" height="250" id="resCanvas" style="width=100%">
+            <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Blog/">Blog</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Compile/">Compile</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Dashboard/">Dashboard</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Deluge/">Deluge</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Establish/">Establish</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Games/">Games</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hardware/">Hardware</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Interface/">Interface</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Kernel/">Kernel</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/">Linux</a><span class="tag-list-count">16</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Markdown/">Markdown</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Monitor/">Monitor</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/NAS/">NAS</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Neofetch/">Neofetch</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Noobs/">Noobs</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OMV/">OMV</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Overclock/">Overclock</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Raspberry/">Raspberry</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Raspbian/">Raspbian</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Rtorrent/">Rtorrent</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ryzen/">Ryzen</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Software/">Software</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Transmission/">Transmission</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/VNC/">VNC</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Zsh/">Zsh</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/test/">test</a><span class="tag-list-count">2</span></li></ul>
+        </canvas>
+    </div>
+</div>
+
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2017</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">qcsunny</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">本站字数总计&#58;</span>
+    
+    <span title="本站字数总计">22.3k</span>
+
+</div>
+
+
+
+
+
+
+
+
+<!-- time -->
+  <div id="show-time">
+    <span id="span_dt_dt"></span>
+  </div>
+  <script>
+      function show_date_time() {
+        window.setTimeout("show_date_time()", 1000);
+        BirthDay = new Date("2017-11-01 00:00:00");
+        today = new Date();
+        //总时间
+        timeold = (today.getTime() - BirthDay.getTime());
+        sectimeold = timeold / 1000
+        secondsold = Math.floor(sectimeold);
+        msPerDay = 24 * 60 * 60 * 1000
+        e_daysold = timeold / msPerDay
+        daysold = Math.floor(e_daysold);
+        e_hrsold = (e_daysold - daysold) * 24;
+        hrsold = Math.floor(e_hrsold);
+        e_minsold = (e_hrsold - hrsold) * 60;
+        minsold = Math.floor((e_hrsold - hrsold) * 60);
+        seconds = Math.floor((e_minsold - minsold) * 60);
+        span_dt_dt.innerHTML = "本站已运行 " + daysold + " 天 " + hrsold + " 小时 " + minsold + " 分 " + seconds + " 秒";
+    }
+show_date_time();
+  </script>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="site-uv">
+      您是第
+      <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+      个小伙伴
+    </span>
+  
+
+  
+    <span class="site-pv">
+      本站总浏览
+      <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+      次
+    </span>
+  
+</div>
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+      <div id="needsharebutton-float">
+        <span class="btn">
+          <i class="fa fa-share-alt" aria-hidden="true"></i>
+        </span>
+      </div>
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+<!-- LOCAL: You can save these files to your site and update links -->
+    
+        
+        <link rel="stylesheet" href="https://aimingoo.github.io/gitmint/style/default.css">
+        <script src="https://aimingoo.github.io/gitmint/dist/gitmint.browser.js"></script>
+    
+<!-- END LOCAL -->
+
+    
+      <style>
+        a.gitment-editor-footer-tip { display: none; }
+        .gitment-container.gitment-footer-container { display: none; }
+      </style>
+    
+
+    
+      <script type="text/javascript">
+      function renderGitment(){
+        var gitment = new Gitmint({
+            id: window.location.pathname, 
+            owner: 'qcsunny',
+            repo: 'qcsunny.github.io',
+            
+            lang: "en" || navigator.language || navigator.systemLanguage || navigator.userLanguage,
+            
+            oauth: {
+            
+            
+                client_secret: 'f7ebaf76c8599b4f2b5c0c92d559d507a6212044',
+            
+                client_id: 'dff501aadba9b240d521'
+            }});
+        gitment.render('gitment-container');
+      }
+
+      
+      renderGitment();
+      
+      </script>
+    
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+  <script src="https://cdn1.lncld.net/static/js/av-core-mini-0.6.4.js"></script>
+  <script>AV.initialize("EEL2CdV35FYkHCi3eKBVuOCW-gzGzoHsz", "W0OJFXGPOos9NFwBdn1nVR7G");</script>
+  <script>
+    function showTime(Counter) {
+      var query = new AV.Query(Counter);
+      var entries = [];
+      var $visitors = $(".leancloud_visitors");
+
+      $visitors.each(function () {
+        entries.push( $(this).attr("id").trim() );
+      });
+
+      query.containedIn('url', entries);
+      query.find()
+        .done(function (results) {
+          var COUNT_CONTAINER_REF = '.leancloud-visitors-count';
+
+          if (results.length === 0) {
+            $visitors.find(COUNT_CONTAINER_REF).text(0);
+            return;
+          }
+
+          for (var i = 0; i < results.length; i++) {
+            var item = results[i];
+            var url = item.get('url');
+            var time = item.get('time');
+            var element = document.getElementById(url);
+
+            $(element).find(COUNT_CONTAINER_REF).text(time);
+          }
+          for(var i = 0; i < entries.length; i++) {
+            var url = entries[i];
+            var element = document.getElementById(url);
+            var countSpan = $(element).find(COUNT_CONTAINER_REF);
+            if( countSpan.text() == '') {
+              countSpan.text(0);
+            }
+          }
+        })
+        .fail(function (object, error) {
+          console.log("Error: " + error.code + " " + error.message);
+        });
+    }
+
+    function addCount(Counter) {
+      var $visitors = $(".leancloud_visitors");
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+      var query = new AV.Query(Counter);
+
+      query.equalTo("url", url);
+      query.find({
+        success: function(results) {
+          if (results.length > 0) {
+            var counter = results[0];
+            counter.fetchWhenSave(true);
+            counter.increment("time");
+            counter.save(null, {
+              success: function(counter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.get('time'));
+              },
+              error: function(counter, error) {
+                console.log('Failed to save Visitor num, with error message: ' + error.message);
+              }
+            });
+          } else {
+            var newcounter = new Counter();
+            /* Set ACL */
+            var acl = new AV.ACL();
+            acl.setPublicReadAccess(true);
+            acl.setPublicWriteAccess(true);
+            newcounter.setACL(acl);
+            /* End Set ACL */
+            newcounter.set("title", title);
+            newcounter.set("url", url);
+            newcounter.set("time", 1);
+            newcounter.save(null, {
+              success: function(newcounter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(newcounter.get('time'));
+              },
+              error: function(newcounter, error) {
+                console.log('Failed to create');
+              }
+            });
+          }
+        },
+        error: function(error) {
+          console.log('Error:' + error.code + " " + error.message);
+        }
+      });
+    }
+
+    $(function() {
+      var Counter = AV.Object.extend("Counter");
+      if ($('.leancloud_visitors').length == 1) {
+        addCount(Counter);
+      } else if ($('.post-title-link').length > 1) {
+        showTime(Counter);
+      }
+    });
+  </script>
+
+
+
+  
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+
+  
+  
+  
+  <link rel="stylesheet" href="/lib/needsharebutton/needsharebutton.css">
+
+  
+  
+  <script src="/lib/needsharebutton/needsharebutton.js"></script>
+
+  <script>
+    
+    
+      flOptions = {};
+      
+          flOptions.iconStyle = "box";
+      
+          flOptions.boxForm = "horizontal";
+      
+          flOptions.position = "middleRight";
+      
+          flOptions.networks = "Weibo,Wechat,Douban,QQZone,Twitter,Facebook";
+      
+      new needShareButton('#needsharebutton-float', flOptions);
+    
+  </script>
+
+  
+
+  
+
+  
+
+  
+  <script type="text/javascript" src="/js/src/exturl.js?v=5.1.3"></script>
+
+
+
+	<div id="hexo-helper-live2d">
+      <canvas id="live2dcanvas" width="150" height="300" class="live2d"></canvas>
+	</div>
+    <style>
+      #live2dcanvas {
+        position: fixed;
+        left: 0px;
+        z-index: 999;
+        pointer-events: none;
+        bottom: -20px;
+      }
+    </style>
+    <script src="/live2d/device.min.js"></script>
+    <script type="text/javascript">
+    (function(){
+    if(device.mobile()){
+      
+      document.getElementById("live2dcanvas").width = 75;
+      document.getElementById("live2dcanvas").height = 150;
+      document.write('<script type="text/javascript" src="/live2d/script.js"><\/script>');
+      document.write('<script>loadlive2d("live2dcanvas", "/live2d/assets/hijiki.model.json", 0.5)<\/script>');
+      
+    }else{
+      document.write('<script type="text/javascript" src="/live2d/script.js"><\/script>');
+      document.write('<script>loadlive2d("live2dcanvas", "/live2d/assets/hijiki.model.json", 0.5)<\/script>');
+    }
+    })();
+    </script>
+
+</body>
+</html>
+<!-- 页面点击小红心 -->
+<script type="text/javascript" src="/js/src/love.js"></script>
+<!-- 代码全选 -->
+<script type="text/javascript" src="/js/src/select-code.js"></script>
+<!--崩溃欺骗-->
+<script type="text/javascript" src="/js/src/dytitle.js"></script>

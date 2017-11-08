@@ -1,0 +1,633 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+
+    
+  <url>
+    <loc>https://qcsunny.github.io/2017/11-07-compile-kernel/</loc>
+    <lastmod>2017-11-08T08:24:33.150Z</lastmod>
+    <data>
+        <display>
+        <title>树莓派-编译内核</title>
+        <pubTime>2017-11-07T06:27:16.000Z</pubTime>
+        
+        <tag>Linux</tag>
+         
+        <tag>Kernel</tag>
+         
+        <tag>Compile</tag>
+         
+         
+           
+             
+              <breadCrumb title="Linux" url="https://qcsunny.github.io/categories/Linux/"/>
+          
+             
+              <breadCrumb title="Kernel" url="https://qcsunny.github.io/categories/Linux/Kernel/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://qcsunny.github.io/2017/09-14-%E6%A0%91%E8%8E%93%E6%B4%BE3B%E8%A7%84%E6%A0%BC-GPIO%E5%BC%95%E8%84%9A%E5%9B%BE-%E8%B4%9F%E8%BD%BD%E7%94%B5%E6%B5%81%E5%8F%82%E8%80%83/</loc>
+    <lastmod>2017-11-08T08:19:55.192Z</lastmod>
+    <data>
+        <display>
+        <title>树莓派3B规格-GPIO引脚图-负载电流参考</title>
+        <pubTime>2017-09-14T01:04:55.000Z</pubTime>
+        
+        <tag>Raspberry</tag>
+         
+        <tag>Hardware</tag>
+         
+         
+           
+             
+              <breadCrumb title="Linux" url="https://qcsunny.github.io/categories/Linux/"/>
+          
+             
+              <breadCrumb title="Raspberry" url="https://qcsunny.github.io/categories/Linux/Raspberry/"/>
+          
+             
+              <breadCrumb title="Hardware" url="https://qcsunny.github.io/categories/Linux/Raspberry/Hardware/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+    
+  <url>
+    <loc>https://qcsunny.github.io/2017/10-06-%E6%A0%91%E8%8E%93%E6%B4%BE3b-%E4%B8%80%E7%99%BE%E5%A4%9A%E6%AC%BE%E5%A5%BD%E7%8E%A9%E7%9A%84%E5%B0%8F%E6%B8%B8%E6%88%8F/</loc>
+    <lastmod>2017-11-08T08:19:55.192Z</lastmod>
+    <data>
+        <display>
+        <title>树莓派3b-一百多款好玩的小游戏</title>
+        <pubTime>2017-10-06T01:18:49.000Z</pubTime>
+        
+        <tag>Linux</tag>
+         
+        <tag>Raspbian</tag>
+         
+        <tag>Games</tag>
+         
+         
+           
+             
+              <breadCrumb title="Linux" url="https://qcsunny.github.io/categories/Linux/"/>
+          
+             
+              <breadCrumb title="Raspbian" url="https://qcsunny.github.io/categories/Linux/Raspbian/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://qcsunny.github.io/2017/09-01-%E6%A0%91%E8%8E%93%E6%B4%BENAS-OMV%E5%AE%89%E8%A3%85%E7%AF%87%E4%B8%80/</loc>
+    <lastmod>2017-11-08T08:19:55.192Z</lastmod>
+    <data>
+        <display>
+        <title>树莓派NAS-OMV安装篇一</title>
+        <pubTime>2017-09-01T01:28:23.000Z</pubTime>
+        
+        <tag>Linux</tag>
+         
+        <tag>NAS</tag>
+         
+        <tag>OMV</tag>
+         
+         
+           
+             
+              <breadCrumb title="Linux" url="https://qcsunny.github.io/categories/Linux/"/>
+          
+             
+              <breadCrumb title="OMV" url="https://qcsunny.github.io/categories/Linux/OMV/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://qcsunny.github.io/2017/09-01-%E6%A0%91%E8%8E%93%E6%B4%BENAS-OMV%E7%AE%80%E5%8D%95%E9%85%8D%E7%BD%AE%E7%AF%87%E4%BA%8C/</loc>
+    <lastmod>2017-11-08T08:19:55.192Z</lastmod>
+    <data>
+        <display>
+        <title>树莓派NAS-OMV简单配置篇二</title>
+        <pubTime>2017-09-01T01:43:38.000Z</pubTime>
+        
+        <tag>Linux</tag>
+         
+        <tag>NAS</tag>
+         
+        <tag>OMV</tag>
+         
+         
+           
+             
+              <breadCrumb title="Linux" url="https://qcsunny.github.io/categories/Linux/"/>
+          
+             
+              <breadCrumb title="OMV" url="https://qcsunny.github.io/categories/Linux/OMV/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://qcsunny.github.io/2017/09-01-%E6%A0%91%E8%8E%93%E6%B4%BEpt%E4%B8%8B%E8%BD%BD%E6%9C%BA-Deluge-Transmission-Rtorrent/</loc>
+    <lastmod>2017-11-08T08:19:55.192Z</lastmod>
+    <data>
+        <display>
+        <title>树莓派pt下载机-Deluge-Transmission-Rtorrent</title>
+        <pubTime>2017-09-01T01:53:49.000Z</pubTime>
+        
+        <tag>Linux</tag>
+         
+        <tag>Software</tag>
+         
+        <tag>Deluge</tag>
+         
+        <tag>Transmission</tag>
+         
+        <tag>Rtorrent</tag>
+         
+         
+           
+             
+              <breadCrumb title="Linux" url="https://qcsunny.github.io/categories/Linux/"/>
+          
+             
+              <breadCrumb title="Software" url="https://qcsunny.github.io/categories/Linux/Software/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://qcsunny.github.io/2017/11-05-codepen/</loc>
+    <lastmod>2017-11-08T08:19:55.192Z</lastmod>
+    <data>
+        <display>
+        <title>codepen</title>
+        <pubTime>2017-11-05T02:49:34.000Z</pubTime>
+        
+        <tag>Blog</tag>
+         
+        <tag>Establish</tag>
+         
+         
+           
+             
+              <breadCrumb title="test" url="https://qcsunny.github.io/categories/test/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://qcsunny.github.io/2017/11-06-monitor/</loc>
+    <lastmod>2017-11-08T08:19:55.192Z</lastmod>
+    <data>
+        <display>
+        <title>资源监视器</title>
+        <pubTime>2017-11-06T07:13:52.000Z</pubTime>
+        
+        <tag>Linux</tag>
+         
+        <tag>Monitor</tag>
+         
+        <tag>Dashboard</tag>
+         
+         
+           
+             
+              <breadCrumb title="Linux" url="https://qcsunny.github.io/categories/Linux/"/>
+          
+             
+              <breadCrumb title="Monitor" url="https://qcsunny.github.io/categories/Linux/Monitor/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://qcsunny.github.io/2017/11-01-Ryzen%E8%B6%85%E9%A2%91%E6%8A%98%E8%85%BE%E8%AE%B0/</loc>
+    <lastmod>2017-11-08T08:19:55.182Z</lastmod>
+    <data>
+        <display>
+        <title>Ryzen超频折腾记</title>
+        <pubTime>2017-11-01T05:32:02.000Z</pubTime>
+        
+        <tag>Ryzen</tag>
+         
+        <tag>Overclock</tag>
+         
+         
+           
+             
+              <breadCrumb title="Hardware" url="https://qcsunny.github.io/categories/Hardware/"/>
+          
+             
+              <breadCrumb title="Computer" url="https://qcsunny.github.io/categories/Hardware/Computer/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://qcsunny.github.io/2017/09-04-%E6%A0%91%E8%8E%93%E6%B4%BE-neofetch%E9%85%8D%E7%BD%AE/</loc>
+    <lastmod>2017-11-08T08:19:55.182Z</lastmod>
+    <data>
+        <display>
+        <title>树莓派-neofetch配置</title>
+        <pubTime>2017-09-04T01:48:00.000Z</pubTime>
+        
+        <tag>Linux</tag>
+         
+        <tag>Software</tag>
+         
+        <tag>Neofetch</tag>
+         
+         
+           
+             
+              <breadCrumb title="Linux" url="https://qcsunny.github.io/categories/Linux/"/>
+          
+             
+              <breadCrumb title="Software" url="https://qcsunny.github.io/categories/Linux/Software/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://qcsunny.github.io/2017/10-05-%E6%A0%91%E8%8E%93%E6%B4%BE3B-%E4%BF%AE%E6%94%B9%E7%BD%91%E5%8D%A1%E5%91%BD%E5%90%8D%E8%A7%84%E5%88%99/</loc>
+    <lastmod>2017-11-08T08:19:55.182Z</lastmod>
+    <data>
+        <display>
+        <title>树莓派3B-修改网卡命名规则</title>
+        <pubTime>2017-10-05T01:15:57.000Z</pubTime>
+        
+        <tag>Linux</tag>
+         
+        <tag>Interface</tag>
+         
+         
+           
+             
+              <breadCrumb title="Linux" url="https://qcsunny.github.io/categories/Linux/"/>
+          
+             
+              <breadCrumb title="Raspberry" url="https://qcsunny.github.io/categories/Linux/Raspberry/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://qcsunny.github.io/2017/10-05-%E6%A0%91%E8%8E%93%E6%B4%BE3B-%E5%AE%8C%E5%85%A8u%E7%9B%98%E5%90%AF%E5%8A%A8%E7%B3%BB%E7%BB%9F/</loc>
+    <lastmod>2017-11-08T08:19:55.182Z</lastmod>
+    <data>
+        <display>
+        <title>树莓派3B-完全u盘启动系统</title>
+        <pubTime>2017-10-05T01:09:21.000Z</pubTime>
+        
+        <tag>Linux</tag>
+         
+        <tag>Raspberry</tag>
+         
+         
+           
+             
+              <breadCrumb title="Linux" url="https://qcsunny.github.io/categories/Linux/"/>
+          
+             
+              <breadCrumb title="Raspberry" url="https://qcsunny.github.io/categories/Linux/Raspberry/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://qcsunny.github.io/2017/09-23-%E6%A0%91%E8%8E%93%E6%B4%BE3B-%E6%89%93%E5%BC%80%E7%A1%AC%E4%BB%B6%E5%8A%A0%E9%80%9FOpenGL/</loc>
+    <lastmod>2017-11-08T08:19:55.182Z</lastmod>
+    <data>
+        <display>
+        <title>树莓派3B-打开硬件加速OpenGL</title>
+        <pubTime>2017-09-23T00:57:51.000Z</pubTime>
+        
+        <tag>Linux</tag>
+         
+        <tag>Raspbian</tag>
+         
+         
+           
+             
+              <breadCrumb title="Linux" url="https://qcsunny.github.io/categories/Linux/"/>
+          
+             
+              <breadCrumb title="Raspbian" url="https://qcsunny.github.io/categories/Linux/Raspbian/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://qcsunny.github.io/2017/09-04-%E6%A0%91%E8%8E%93%E6%B4%BE-%E5%AE%89%E8%A3%85raspi-config/</loc>
+    <lastmod>2017-11-08T08:19:55.182Z</lastmod>
+    <data>
+        <display>
+        <title>树莓派-安装raspi-config</title>
+        <pubTime>2017-09-04T02:11:00.000Z</pubTime>
+        
+        <tag>Linux</tag>
+         
+        <tag>Raspberry</tag>
+         
+        <tag>Software</tag>
+         
+         
+           
+             
+              <breadCrumb title="Linux" url="https://qcsunny.github.io/categories/Linux/"/>
+          
+             
+              <breadCrumb title="Software" url="https://qcsunny.github.io/categories/Linux/Software/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://qcsunny.github.io/2017/10-06-%E6%A0%91%E8%8E%93%E6%B4%BE-raspbian%E8%BD%AF%E4%BB%B6%E6%BA%90/</loc>
+    <lastmod>2017-11-08T08:19:55.182Z</lastmod>
+    <data>
+        <display>
+        <title>树莓派-raspbian软件源</title>
+        <pubTime>2017-10-06T01:59:54.000Z</pubTime>
+        
+        <tag>Linux</tag>
+         
+        <tag>Raspbian</tag>
+         
+         
+           
+             
+              <breadCrumb title="Linux" url="https://qcsunny.github.io/categories/Linux/"/>
+          
+             
+              <breadCrumb title="Raspbian" url="https://qcsunny.github.io/categories/Linux/Raspbian/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://qcsunny.github.io/2017/09-04-%E6%A0%91%E8%8E%93%E6%B4%BE%E6%8F%90%E9%AB%98shell%E9%80%BC%E6%A0%BCoh-my-zsh/</loc>
+    <lastmod>2017-11-08T08:19:55.182Z</lastmod>
+    <data>
+        <display>
+        <title>树莓派提高shell逼格oh-my-zsh</title>
+        <pubTime>2017-09-04T02:28:00.000Z</pubTime>
+        
+        <tag>Software</tag>
+         
+        <tag>Zsh</tag>
+         
+         
+           
+             
+              <breadCrumb title="Linux" url="https://qcsunny.github.io/categories/Linux/"/>
+          
+             
+              <breadCrumb title="Software" url="https://qcsunny.github.io/categories/Linux/Software/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://qcsunny.github.io/2017/09-15-%E6%A0%91%E8%8E%93%E6%B4%BE-%E7%AE%80%E5%8D%95%E5%AF%B9%E6%AF%94%E8%BF%9C%E7%A8%8B%E6%A1%8C%E9%9D%A2%E7%9A%84%E4%B8%89%E7%A7%8D%E6%96%B9%E5%BC%8F/</loc>
+    <lastmod>2017-11-08T08:19:55.182Z</lastmod>
+    <data>
+        <display>
+        <title>树莓派-简单对比远程桌面的三种方式</title>
+        <pubTime>2017-09-15T02:39:00.000Z</pubTime>
+        
+        <tag>Linux</tag>
+         
+        <tag>Software</tag>
+         
+        <tag>VNC</tag>
+         
+         
+           
+             
+              <breadCrumb title="Linux" url="https://qcsunny.github.io/categories/Linux/"/>
+          
+             
+              <breadCrumb title="Software" url="https://qcsunny.github.io/categories/Linux/Software/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://qcsunny.github.io/2017/09-02-%E6%A0%91%E8%8E%93%E6%B4%BE3B%E4%B9%8BCPUGPU%E5%92%8C%E5%86%85%E5%AD%98%E8%B6%85%E9%A2%91%E7%A8%B3%E5%AE%9A%E6%80%A7%E6%B5%8B%E8%AF%95/</loc>
+    <lastmod>2017-11-08T08:19:55.182Z</lastmod>
+    <data>
+        <display>
+        <title>树莓派3B之CPUGPU和内存超频稳定性测试</title>
+        <pubTime>2017-09-01T16:00:00.000Z</pubTime>
+        
+        <tag>Linux</tag>
+         
+        <tag>Raspberry</tag>
+         
+         
+           
+             
+              <breadCrumb title="Linux" url="https://qcsunny.github.io/categories/Linux/"/>
+          
+             
+              <breadCrumb title="Raspbian" url="https://qcsunny.github.io/categories/Linux/Raspbian/"/>
+          
+             
+              <breadCrumb title="Overclock" url="https://qcsunny.github.io/categories/Linux/Raspbian/Overclock/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://qcsunny.github.io/2017/09-23-NOOBS%E8%87%AA%E5%AE%9A%E4%B9%89%E5%A4%9A%E7%B3%BB%E7%BB%9F%E5%90%AF%E5%8A%A8/</loc>
+    <lastmod>2017-11-08T08:19:55.182Z</lastmod>
+    <data>
+        <display>
+        <title>NOOBS自定义多系统启动</title>
+        <pubTime>2017-09-23T10:54:35.000Z</pubTime>
+        
+        <tag>Linux</tag>
+         
+        <tag>Raspberry</tag>
+         
+        <tag>Noobs</tag>
+         
+         
+           
+             
+              <breadCrumb title="Linux" url="https://qcsunny.github.io/categories/Linux/"/>
+          
+             
+              <breadCrumb title="Raspberry" url="https://qcsunny.github.io/categories/Linux/Raspberry/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://qcsunny.github.io/2017/09-04-%E6%A0%91%E8%8E%93%E6%B4%BE-%E9%87%8D%E8%A3%85%E6%89%80%E6%9C%89%E5%B7%B2%E5%AE%89%E8%A3%85%E7%9A%84%E8%BD%AF%E4%BB%B6/</loc>
+    <lastmod>2017-11-08T08:19:55.182Z</lastmod>
+    <data>
+        <display>
+        <title>树莓派-重装所有已安装的软件</title>
+        <pubTime>2017-09-04T02:32:00.000Z</pubTime>
+        
+        <tag>Linux</tag>
+         
+        <tag>Software</tag>
+         
+         
+           
+             
+              <breadCrumb title="Linux" url="https://qcsunny.github.io/categories/Linux/"/>
+          
+             
+              <breadCrumb title="Software" url="https://qcsunny.github.io/categories/Linux/Software/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://qcsunny.github.io/2017/10-31-%E5%A6%82%E4%BD%95%E6%AD%A3%E7%A1%AE%E7%9A%84%E5%86%99%E4%B8%80%E7%AF%87Makedown%E5%8D%9A%E6%96%87/</loc>
+    <lastmod>2017-11-08T08:19:55.182Z</lastmod>
+    <data>
+        <display>
+        <title>如何正确的写一篇Makedown博文</title>
+        <pubTime>2017-10-31T01:49:26.000Z</pubTime>
+        
+        <tag>Markdown</tag>
+         
+        <tag>Blog</tag>
+         
+         
+           
+             
+              <breadCrumb title="Blog" url="https://qcsunny.github.io/categories/Blog/"/>
+          
+             
+              <breadCrumb title="Markdown" url="https://qcsunny.github.io/categories/Blog/Markdown/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+    
+  <url>
+    <loc>https://qcsunny.github.io/2017/10-31-test/</loc>
+    <lastmod>2017-11-08T03:38:23.628Z</lastmod>
+    <data>
+        <display>
+        <title>test</title>
+        <pubTime>2017-10-31T01:25:57.000Z</pubTime>
+        
+        <tag>test</tag>
+         
+         
+           
+             
+              <breadCrumb title="test" url="https://qcsunny.github.io/categories/test/"/>
+          
+             
+              <breadCrumb title="Music" url="https://qcsunny.github.io/categories/test/Music/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://qcsunny.github.io/2017/01-01-hello-world/</loc>
+    <lastmod>2017-11-08T03:38:23.628Z</lastmod>
+    <data>
+        <display>
+        <title>Hello World</title>
+        <pubTime>2016-12-31T16:00:01.000Z</pubTime>
+        
+        <tag>test</tag>
+         
+         
+           
+             
+              <breadCrumb title="test" url="https://qcsunny.github.io/categories/test/"/>
+          
+             
+              <breadCrumb title="HelloWorld" url="https://qcsunny.github.io/categories/test/HelloWorld/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://qcsunny.github.io/2017/10-31-MakeDown%E4%B9%A6%E5%86%99%E9%A3%8E%E6%A0%BC%E8%A7%84%E8%8C%83/</loc>
+    <lastmod>2017-11-08T03:38:23.628Z</lastmod>
+    <data>
+        <display>
+        <title>Makedown书写风格规范</title>
+        <pubTime>2017-10-31T01:35:00.000Z</pubTime>
+        
+        <tag>Markdown</tag>
+         
+        <tag>Blog</tag>
+         
+         
+           
+             
+              <breadCrumb title="Blog" url="https://qcsunny.github.io/categories/Blog/"/>
+          
+             
+              <breadCrumb title="Markdown" url="https://qcsunny.github.io/categories/Blog/Markdown/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+    
+    
+</urlset>
