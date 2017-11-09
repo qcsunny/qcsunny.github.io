@@ -326,7 +326,7 @@
       {% endif  %}
     </div>
 <h5>相关文章:</h5>
-{{ popular_posts( {} , post ) }}
+{{ popular_posts( {maxCount: 1} , post ) }}
     {#####################}
     {### END POST BODY ###}
     {#####################}
