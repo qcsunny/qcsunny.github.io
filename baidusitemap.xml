@@ -32,34 +32,6 @@
     
     
   <url>
-    <loc>https://qcsunny.github.io/2017/09-14-%E6%A0%91%E8%8E%93%E6%B4%BE3B%E8%A7%84%E6%A0%BC-GPIO%E5%BC%95%E8%84%9A%E5%9B%BE-%E8%B4%9F%E8%BD%BD%E7%94%B5%E6%B5%81%E5%8F%82%E8%80%83/</loc>
-    <lastmod>2017-11-08T08:19:55.192Z</lastmod>
-    <data>
-        <display>
-        <title>树莓派3B规格-GPIO引脚图-负载电流参考</title>
-        <pubTime>2017-09-14T01:04:55.000Z</pubTime>
-        
-        <tag>Raspberry</tag>
-         
-        <tag>Hardware</tag>
-         
-         
-           
-             
-              <breadCrumb title="Linux" url="https://qcsunny.github.io/categories/Linux/"/>
-          
-             
-              <breadCrumb title="Raspberry" url="https://qcsunny.github.io/categories/Linux/Raspberry/"/>
-          
-             
-              <breadCrumb title="Hardware" url="https://qcsunny.github.io/categories/Linux/Raspberry/Hardware/"/>
-          
-        </display>
-    </data>
-    </url>
-
-    
-  <url>
     <loc>https://qcsunny.github.io/2017/10-06-%E6%A0%91%E8%8E%93%E6%B4%BE3b-%E4%B8%80%E7%99%BE%E5%A4%9A%E6%AC%BE%E5%A5%BD%E7%8E%A9%E7%9A%84%E5%B0%8F%E6%B8%B8%E6%88%8F/</loc>
     <lastmod>2017-11-08T08:19:55.192Z</lastmod>
     <data>
@@ -165,6 +137,34 @@
           
              
               <breadCrumb title="Software" url="https://qcsunny.github.io/categories/Linux/Software/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://qcsunny.github.io/2017/09-14-%E6%A0%91%E8%8E%93%E6%B4%BE3B%E8%A7%84%E6%A0%BC-GPIO%E5%BC%95%E8%84%9A%E5%9B%BE-%E8%B4%9F%E8%BD%BD%E7%94%B5%E6%B5%81%E5%8F%82%E8%80%83/</loc>
+    <lastmod>2017-11-08T08:19:55.192Z</lastmod>
+    <data>
+        <display>
+        <title>树莓派3B规格-GPIO引脚图-负载电流参考</title>
+        <pubTime>2017-09-14T01:04:55.000Z</pubTime>
+        
+        <tag>Raspberry</tag>
+         
+        <tag>Hardware</tag>
+         
+         
+           
+             
+              <breadCrumb title="Linux" url="https://qcsunny.github.io/categories/Linux/"/>
+          
+             
+              <breadCrumb title="Raspberry" url="https://qcsunny.github.io/categories/Linux/Raspberry/"/>
+          
+             
+              <breadCrumb title="Hardware" url="https://qcsunny.github.io/categories/Linux/Raspberry/Hardware/"/>
           
         </display>
     </data>
