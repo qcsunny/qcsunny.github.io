@@ -110,8 +110,14 @@ function render(): void {
 		state.view === 'month' ? `${MONTHS_LONG[state.month]} ${state.year}` : String(state.year);
 	monthHost.hidden = state.view !== 'month';
 	yearHost.hidden = state.view !== 'year';
-	if (state.view === 'month') renderMonth();
-	else renderYear();
+	// drop the inactive view's stale DOM (it would otherwise linger hidden)
+	if (state.view === 'month') {
+		yearHost.innerHTML = '';
+		renderMonth();
+	} else {
+		monthHost.innerHTML = '';
+		renderYear();
+	}
 	viewButtons.forEach((btn) => {
 		btn.setAttribute('aria-pressed', String(btn.dataset.view === state.view));
 	});

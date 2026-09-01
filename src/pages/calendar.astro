@@ -180,6 +180,11 @@ import BaseHead from '../components/BaseHead.astro';
 			}
 
 			/* --- month grid --- */
+			/* display:grid would override the hidden attribute's UA display:none */
+			.cal-month[hidden],
+			.cal-year[hidden] {
+				display: none;
+			}
 			.cal-month {
 				display: grid;
 				grid-template-columns: 2.2em repeat(7, 1fr);
