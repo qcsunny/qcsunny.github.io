@@ -10,7 +10,9 @@
 	<button id="graph-add" type="button" class="graph-add">+ Add function</button>
 </div>
 
-<style>
+<style is:global>
+	/* is:global: function rows are created at runtime and would not receive
+	   the scoped data-astro-cid attribute */
 	.graph-toolbar {
 		display: flex;
 		align-items: center;

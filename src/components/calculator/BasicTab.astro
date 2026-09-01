@@ -137,7 +137,9 @@ const scientificKeys: Key[] = [
 	</section>
 </div>
 
-<style>
+<style is:global>
+	/* is:global: chips and history rows are created at runtime and would not
+	   receive the scoped data-astro-cid attribute */
 	.calc-display {
 		width: 100%;
 		box-sizing: border-box;
