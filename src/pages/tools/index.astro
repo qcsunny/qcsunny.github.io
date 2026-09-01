@@ -1,0 +1,40 @@
+---
+// Tools hub: every tool across the four categories, grouped in sections.
+import ToolShell from '../../components/tools/ToolShell.astro';
+import {
+	CALCULATOR_FEATURED,
+	CATEGORIES,
+	REGISTRY,
+	type ToolMeta,
+} from '../../tools/registry';
+
+const byCategory = (id: string): ToolMeta[] => [
+	...(id === 'calculators' ? CALCULATOR_FEATURED : []),
+	...REGISTRY.filter((e) => e.category === id && e.kind !== 'redirect'),
+];
+---
+
+<ToolShell
+	title="Tools"
+	description="Free browser-based tools: calculators, unit converters, finance helpers and text utilities."
+>
+	{
+		CATEGORIES.map((cat) => {
+			const entries = byCategory(cat.id);
+			return (
+				<section class="t-section">
+					<h2>{cat.label}</h2>
+					<p class="t-section-blurb">{cat.blurb}</p>
+					<div class="t-cards">
+						{entries.map((e) => (
+							<a class="t-card" href={`/${e.category}/${e.slug}/`}>
+								<h3>{e.name}</h3>
+								<p>{e.description}</p>
+							</a>
+						))}
+					</div>
+				</section>
+			);
+		})
+	}
+</ToolShell>

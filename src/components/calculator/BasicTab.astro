@@ -147,10 +147,10 @@ const scientificKeys: Key[] = [
 		font-size: clamp(1.15rem, 3.5vw, 1.5rem);
 		text-align: right;
 		padding: 0.65em 0.75em;
-		border: 1px solid rgb(var(--gray-light));
+		border: 1px solid var(--gridline);
 		border-radius: 10px;
-		background: white;
-		color: rgb(var(--black));
+		background: var(--bg);
+		color: var(--fg);
 	}
 	.calc-display:focus {
 		outline: 2px solid var(--accent);
@@ -162,10 +162,10 @@ const scientificKeys: Key[] = [
 		text-align: right;
 		font-family: ui-monospace, 'SFMono-Regular', Consolas, Menlo, monospace;
 		font-size: 0.95rem;
-		color: rgb(var(--gray));
+		color: var(--dim);
 	}
 	.calc-preview.err {
-		color: var(--accent-dark);
+		color: var(--accent);
 	}
 	.calc-vars {
 		display: flex;
@@ -178,8 +178,8 @@ const scientificKeys: Key[] = [
 		display: inline-flex;
 		align-items: center;
 		gap: 0.15em;
-		background: white;
-		border: 1px solid rgb(var(--gray-light));
+		background: var(--bg);
+		border: 1px solid var(--gridline);
 		border-radius: 999px;
 		box-shadow: 0 1px 3px rgba(var(--gray), 20%);
 		overflow: hidden;
@@ -192,7 +192,7 @@ const scientificKeys: Key[] = [
 		font-family: ui-monospace, 'SFMono-Regular', Consolas, Menlo, monospace;
 		padding: 0.25em 0.3em 0.25em 0.75em;
 		cursor: pointer;
-		color: rgb(var(--black));
+		color: var(--fg);
 	}
 	.chip > button:first-child:hover {
 		color: var(--accent);
@@ -204,14 +204,14 @@ const scientificKeys: Key[] = [
 		line-height: 1;
 		padding: 0.25em 0.6em 0.25em 0.3em;
 		cursor: pointer;
-		color: rgb(var(--gray));
+		color: var(--dim);
 	}
 	.chip-del:hover {
-		color: var(--accent-dark);
+		color: var(--accent);
 	}
 	.calc-mode-toggle {
 		display: inline-flex;
-		border: 1px solid rgb(var(--gray-light));
+		border: 1px solid var(--gridline);
 		border-radius: 8px;
 		overflow: hidden;
 		margin-bottom: 0.75em;
@@ -221,13 +221,13 @@ const scientificKeys: Key[] = [
 		font-size: 0.85rem;
 		padding: 0.4em 1em;
 		border: none;
-		background: white;
-		color: rgb(var(--gray));
+		background: var(--bg);
+		color: var(--dim);
 		cursor: pointer;
 	}
 	.calc-mode-toggle button[aria-pressed='true'] {
 		background: var(--accent);
-		color: white;
+		color: var(--on-accent);
 		font-weight: 600;
 	}
 	.calc-mode-toggle button:focus-visible {
@@ -255,8 +255,8 @@ const scientificKeys: Key[] = [
 		padding: clamp(0.55em, 1.8vw, 0.75em) 0.1em;
 		border: none;
 		border-radius: 8px;
-		background: rgb(var(--gray-light));
-		color: rgb(var(--gray-dark));
+		background: var(--gridline);
+		color: var(--fg);
 		cursor: pointer;
 		transition: background 0.1s ease;
 	}
@@ -275,16 +275,16 @@ const scientificKeys: Key[] = [
 		font-weight: 600;
 	}
 	.k-sci {
-		background: white;
-		border: 1px solid rgb(var(--gray-light));
+		background: var(--bg);
+		border: 1px solid var(--gridline);
 	}
 	.k-fn {
-		background: white;
-		border: 1px solid rgb(var(--gray-light));
+		background: var(--bg);
+		border: 1px solid var(--gridline);
 		font-weight: 600;
 	}
 	.k-mode {
-		background: white;
+		background: var(--bg);
 		border: 1px solid var(--accent);
 		color: var(--accent);
 		font-weight: 600;
@@ -292,7 +292,7 @@ const scientificKeys: Key[] = [
 	}
 	.k-eq {
 		background: var(--accent);
-		color: white;
+		color: var(--on-accent);
 		font-weight: 700;
 	}
 	.k-blank {
@@ -302,6 +302,8 @@ const scientificKeys: Key[] = [
 		margin-top: 2em;
 	}
 	.calc-history h2 {
+		/* global.css colors headings near-black — override for the tool theme */
+		color: var(--fg);
 		font-size: 1.25em;
 		margin-bottom: 0.5em;
 	}
@@ -311,7 +313,7 @@ const scientificKeys: Key[] = [
 		padding: 0;
 	}
 	.calc-history li + li {
-		border-top: 1px solid rgb(var(--gray-light));
+		border-top: 1px solid var(--gridline);
 	}
 	.calc-history li button {
 		display: flex;
@@ -327,21 +329,21 @@ const scientificKeys: Key[] = [
 		text-align: left;
 	}
 	.calc-history li button:hover {
-		background: rgb(var(--gray-light));
+		background: var(--gridline);
 		border-radius: 6px;
 	}
 	.calc-history .h-expr {
 		font-family: ui-monospace, 'SFMono-Regular', Consolas, Menlo, monospace;
-		color: rgb(var(--black));
+		color: var(--fg);
 		overflow-wrap: anywhere;
 	}
 	.calc-history .h-res {
 		font-family: ui-monospace, 'SFMono-Regular', Consolas, Menlo, monospace;
-		color: rgb(var(--gray));
+		color: var(--dim);
 		white-space: nowrap;
 	}
 	.calc-history-empty {
-		color: rgb(var(--gray));
+		color: var(--dim);
 		font-size: 0.9rem;
 	}
 	.calc-history .k-fn {

@@ -1,0 +1,20 @@
+---
+import ToolShell from '../../components/tools/ToolShell.astro';
+import { REGISTRY } from '../../tools/registry';
+
+const entries = [
+	...REGISTRY.filter((e) => e.category === 'converters')
+].filter((e) => e.kind !== 'redirect');
+---
+<ToolShell title="Converters" description="Unit converters for length, weight, temperature, area, volume, speed, time and data sizes.">
+	<div class="t-cards">
+		{
+			entries.map((e) => (
+				<a class="t-card" href={`/${e.category}/${e.slug}/`}>
+					<h2>{e.name}</h2>
+					<p>{e.description}</p>
+				</a>
+			))
+		}
+	</div>
+</ToolShell>

@@ -25,10 +25,10 @@
 		font-size: 0.9rem;
 		min-width: 2.2em;
 		padding: 0.35em 0.7em;
-		border: 1px solid rgb(var(--gray-light));
+		border: 1px solid var(--gridline);
 		border-radius: 6px;
-		background: white;
-		color: rgb(var(--gray-dark));
+		background: var(--bg);
+		color: var(--fg);
 		cursor: pointer;
 	}
 	.graph-toolbar button:hover {
@@ -41,16 +41,16 @@
 	.graph-hint {
 		margin-left: auto;
 		font-size: 0.8rem;
-		color: rgb(var(--gray));
+		color: var(--dim);
 	}
 	#graph-canvas {
 		display: block;
 		width: 100%;
 		height: clamp(280px, 55vw, 480px);
-		border: 1px solid rgb(var(--gray-light));
+		border: 1px solid var(--gridline);
 		border-radius: 10px;
-		background: white;
-		box-shadow: var(--box-shadow);
+		background: var(--bg);
+		
 		touch-action: none;
 		cursor: crosshair;
 	}
@@ -76,10 +76,10 @@
 		font-family: ui-monospace, 'SFMono-Regular', Consolas, Menlo, monospace;
 		font-size: 0.95rem;
 		padding: 0.45em 0.7em;
-		border: 1px solid rgb(var(--gray-light));
+		border: 1px solid var(--gridline);
 		border-radius: 8px;
-		background: white;
-		color: rgb(var(--black));
+		background: var(--bg);
+		color: var(--fg);
 	}
 	.graph-row input[type='text']:focus {
 		outline: 2px solid var(--accent);
@@ -94,7 +94,7 @@
 	.graph-row .row-error {
 		flex: none;
 		font-size: 0.78rem;
-		color: var(--accent-dark);
+		color: var(--accent);
 		max-width: 40%;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -107,21 +107,21 @@
 		font-size: 1.1rem;
 		line-height: 1;
 		padding: 0.2em 0.4em;
-		color: rgb(var(--gray));
+		color: var(--dim);
 		cursor: pointer;
 	}
 	.graph-row .row-remove:hover {
-		color: var(--accent-dark);
+		color: var(--accent);
 	}
 	.graph-add {
 		margin-top: 0.6em;
 		font: inherit;
 		font-size: 0.9rem;
 		padding: 0.4em 1em;
-		border: 1px dashed rgb(var(--gray));
+		border: 1px dashed var(--dim);
 		border-radius: 8px;
 		background: none;
-		color: rgb(var(--gray-dark));
+		color: var(--fg);
 		cursor: pointer;
 	}
 	.graph-add:hover:not(:disabled) {

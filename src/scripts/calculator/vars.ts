@@ -1,13 +1,9 @@
+// Shared scope construction for the calculator pages (standard + graph).
 import type { Scope } from './engine';
-import { initBasic } from './basic';
-import { initGraph } from './graph';
-import { initStats } from './stats';
-import { initTabs } from './tabs';
-import { initUnits } from './units';
 
 const VARS_KEY = 'calc:vars';
 
-function loadVars(): Record<string, number> {
+export function loadVars(): Record<string, number> {
 	try {
 		const raw = localStorage.getItem(VARS_KEY);
 		const parsed = raw ? JSON.parse(raw) : {};
@@ -24,7 +20,7 @@ function loadVars(): Record<string, number> {
 	return {};
 }
 
-function saveVars(vars: Record<string, number>): void {
+export function saveVars(vars: Record<string, number>): void {
 	const copy: Record<string, number> = {};
 	for (const [k, v] of Object.entries(vars)) {
 		if (k !== 'ans') copy[k] = v;
@@ -36,15 +32,6 @@ function saveVars(vars: Record<string, number>): void {
 	}
 }
 
-const scope: Scope = { vars: loadVars(), deg: false };
-
-initTabs();
-const graph = initGraph(scope);
-initBasic(scope, {
-	onVarsChange: () => {
-		saveVars(scope.vars);
-		graph.refresh();
-	},
-});
-initUnits();
-initStats();
+export function createScope(): Scope {
+	return { vars: loadVars(), deg: false };
+}

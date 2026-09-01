@@ -11,12 +11,43 @@ export interface GraphController {
 	refresh(): void;
 }
 
-/** Slot colors, fixed order — CVD-safe on white, max 4 curves by design. */
+/** Slot colors, fixed order — CVD-safe on both themes, max 4 curves by design. */
 const COLORS = ['#2337ff', '#eb6834', '#1baf7a', '#eda100'];
 const MAX_FNS = 4;
 const DEFAULT_VIEW = { xMin: -10, xMax: 10, yMin: -6, yMax: 6 };
 const MIN_SPAN = 1e-9;
 const MAX_SPAN = 1e9;
+
+/** Canvas colors read from the page theme (ToolShell CSS variables). */
+interface Palette {
+	dim: string;
+	grid: string;
+	fg: string;
+	dimFaint: string;
+	boxFill: string;
+}
+
+function hexToRgba(hex: string, alpha: number): string {
+	const h = hex.replace('#', '').slice(0, 6);
+	const full = h.length === 3 ? [...h].map((c) => c + c).join('') : h.padEnd(6, '0');
+	const n = Number.parseInt(full, 16);
+	if (!Number.isFinite(n)) return `rgba(128, 128, 128, ${alpha})`;
+	return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+}
+
+function readPalette(): Palette {
+	const cs = getComputedStyle(document.documentElement);
+	const v = (name: string, fallback: string): string => cs.getPropertyValue(name).trim() || fallback;
+	const dim = v('--dim', '#6b7280');
+	const bg = v('--bg', '#ffffff');
+	return {
+		dim,
+		grid: v('--gridline', '#e5e9f0'),
+		fg: v('--fg', '#1a1f28'),
+		dimFaint: hexToRgba(dim, 0.5),
+		boxFill: hexToRgba(bg, 0.85),
+	};
+}
 
 export function initGraph(scope: Scope): GraphController {
 	const canvas = document.querySelector<HTMLCanvasElement>('#graph-canvas');
@@ -32,6 +63,13 @@ export function initGraph(scope: Scope): GraphController {
 	let cssH = 0;
 	let dpr = 1;
 	let hoverPx: number | null = null;
+	let palette = readPalette();
+
+	// redraw with fresh colors when the theme (data-theme attribute) changes
+	new MutationObserver(() => {
+		palette = readPalette();
+		render();
+	}).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
 	// --- coordinate transforms ---------------------------------------------
 	const sx = (x: number): number => ((x - view.xMin) / (view.xMax - view.xMin)) * cssW;
@@ -83,8 +121,8 @@ export function initGraph(scope: Scope): GraphController {
 		const stepX = niceStep(view.xMax - view.xMin);
 		const stepY = niceStep(view.yMax - view.yMin);
 		ctx!.font = '11px ui-monospace, Consolas, monospace';
-		ctx!.fillStyle = 'rgb(96, 115, 159)';
-		ctx!.strokeStyle = 'rgb(229, 233, 240)';
+		ctx!.fillStyle = palette.dim;
+		ctx!.strokeStyle = palette.grid;
 		ctx!.lineWidth = 1;
 
 		// vertical grid + x tick labels
@@ -102,7 +140,7 @@ export function initGraph(scope: Scope): GraphController {
 			label(formatTick(y, stepY), xLabelX, py - 4);
 		}
 		// axes on top of the grid
-		ctx!.strokeStyle = 'rgb(96, 115, 159)';
+		ctx!.strokeStyle = palette.dim;
 		ctx!.lineWidth = 1.5;
 		if (view.xMin <= 0 && view.xMax >= 0) line(sx(0), 0, sx(0), cssH);
 		if (view.yMin <= 0 && view.yMax >= 0) line(0, sy(0), cssW, sy(0));
@@ -175,23 +213,23 @@ export function initGraph(scope: Scope): GraphController {
 		const widest = Math.max(...texts.map((t) => ctx!.measureText(t).width));
 		const boxW = widest + 34;
 		const boxH = items.length * 18 + 10;
-		ctx!.fillStyle = 'rgba(255, 255, 255, 0.85)';
+		ctx!.fillStyle = palette.boxFill;
 		ctx!.fillRect(8, 8, boxW, boxH);
-		ctx!.strokeStyle = 'rgb(229, 233, 240)';
+		ctx!.strokeStyle = palette.grid;
 		ctx!.lineWidth = 1;
 		ctx!.strokeRect(8, 8, boxW, boxH);
 		items.forEach(({ row, color }, i) => {
 			const y = 22 + i * 18;
 			ctx!.fillStyle = color;
 			ctx!.fillRect(14, y - 7, 16, 3);
-			ctx!.fillStyle = 'rgb(34, 41, 57)';
+			ctx!.fillStyle = palette.fg;
 			ctx!.fillText(texts[i] as string, 36, y);
 		});
 	}
 
 	function drawCrosshair(px: number): void {
 		const x = mx(px);
-		ctx!.strokeStyle = 'rgba(96, 115, 159, 0.5)';
+		ctx!.strokeStyle = palette.dimFaint;
 		ctx!.setLineDash([4, 4]);
 		line(px, 0, px, cssH);
 		ctx!.setLineDash([]);
@@ -211,12 +249,12 @@ export function initGraph(scope: Scope): GraphController {
 		const boxW = widest + 24;
 		const boxH = readings.length * 16 + 8;
 		const boxX = px + 12 + boxW > cssW ? px - boxW - 12 : px + 12;
-		ctx!.fillStyle = 'rgba(255, 255, 255, 0.9)';
+		ctx!.fillStyle = palette.boxFill;
 		ctx!.fillRect(boxX, 12, boxW, boxH);
 		readings.forEach((r, i) => {
 			ctx!.fillStyle = r.color;
 			ctx!.fillRect(boxX + 8, 20 + i * 16, 6, 6);
-			ctx!.fillStyle = 'rgb(34, 41, 57)';
+			ctx!.fillStyle = palette.fg;
 			ctx!.fillText(r.text, boxX + 18, 26 + i * 16);
 		});
 	}

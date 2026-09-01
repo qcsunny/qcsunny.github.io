@@ -1,0 +1,19 @@
+---
+import ToolShell from '../../components/tools/ToolShell.astro';
+import GraphTab from '../../components/calculator/GraphTab.astro';
+---
+
+<ToolShell
+	title="Function Grapher"
+	description="Plot up to 4 functions with zoom, pan and a live value crosshair."
+	category="calculators"
+>
+	<GraphTab />
+	<p class="t-related">
+		Also available: <a href="/calculators/standard/">Scientific Calculator</a> ·
+		<a href="/calculators/average/">Average &amp; Statistics</a>
+	</p>
+	<script>
+		import '../../scripts/calculator/graph-page';
+	</script>
+</ToolShell>

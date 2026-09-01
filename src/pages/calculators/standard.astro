@@ -1,0 +1,20 @@
+---
+import ToolShell from '../../components/tools/ToolShell.astro';
+import BasicTab from '../../components/calculator/BasicTab.astro';
+---
+
+<ToolShell
+	title="Scientific Calculator"
+	description="Standard and scientific calculator with variables, history and DEG/RAD modes."
+	category="calculators"
+>
+	<BasicTab />
+	<p class="t-related">
+		Also available: <a href="/calculators/graph/">Function Grapher</a> ·
+		<a href="/converters/length/">Unit Converters</a> ·
+		<a href="/calculators/average/">Average &amp; Statistics</a>
+	</p>
+	<script>
+		import '../../scripts/calculator/standard';
+	</script>
+</ToolShell>

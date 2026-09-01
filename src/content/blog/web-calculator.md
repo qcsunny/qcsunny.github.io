@@ -1,19 +1,19 @@
 ---
 title: '网页科学计算器：功能与实现'
-description: '博客自带的网页计算器：标准/科学键盘、函数绘图、单位换算与统计，以及背后零依赖的手写表达式引擎。'
+description: '博客的科学计算器与函数绘图器：标准/科学键盘、变量、历史记录，以及背后零依赖的手写表达式引擎。'
 pubDate: 'Sep 01 2026'
 ---
 
-博客导航栏里的 **Calculator**（[/calculator/](https://qcsunny.github.io/calculator/)）是一个纯浏览器端运行的进阶计算器，本文介绍它的功能用法与实现原理。
+博客导航栏里的 **Calculator**（[/calculators/standard/](https://qcsunny.github.io/calculators/standard/)）是一个纯浏览器端运行的进阶计算器。它最初是四个选项卡挤在一个页面里，后来随着工具页体系（见 [Tools](https://qcsunny.github.io/tools/)）的建立被拆成了独立子页面——每个工具一个网址，更好分享、更好搜索：
+
+- **Calculator** → [/calculators/standard/](https://qcsunny.github.io/calculators/standard/)（科学计算器）
+- **Graph** → [/calculators/graph/](https://qcsunny.github.io/calculators/graph/)（函数绘图）
+- **Units** → 独立成 8 个换算页 [/converters/length/](https://qcsunny.github.io/converters/length/) 等（长度、重量、温度、面积、体积、速度、时间、数据大小）
+- **Stats** → 并入 [/calculators/average/](https://qcsunny.github.io/calculators/average/)（平均数与统计）
+
+旧地址 `/calculator/` 会自动跳转到新页面。
 
 ## 功能总览
-
-页面分四个选项卡：
-
-- **Calculator** —— 表达式计算
-- **Graph** —— 函数绘图
-- **Units** —— 单位换算
-- **Stats** —— 统计计算
 
 ### 计算器
 
@@ -29,25 +29,18 @@ ans * 2          → 上一轮结果
 
 - **标准 / 科学键盘**：右上角可切换。标准键盘是 4 列的日常布局；科学键盘多出 `sin cos tan √ ln log π e x^y n!` 等按键
 - **DEG / RAD**：科学键盘上可切换角度制与弧度制。注意与实体计算器一致的语义——角度制下 `sin(pi/2)` 会把 π/2 ≈ 1.57 当作 1.57° 来算
-- **变量**：`名字 = 表达式` 赋值（常量名和函数名不可占用），变量以 chips 形式列在输入框下方，点一下插入、点 × 删除
+- **变量**：`名字 = 表达式` 赋值（常量名和函数名不可占用），变量以 chips 形式列在输入框下方，点一下插入、点 × 删除。变量存进 localStorage，在绘图页里可以直接引用（如 `a*x`）
 - **历史记录**：每次按 = 的算式都进历史，点击任意一条可回填
 
 ### 函数绘图
 
-最多同时画 4 条曲线（固定四色，色盲友好），支持 `sin(x)`、`x^2 - 3`、`a*x`（引用变量）等：
+最多同时画 4 条曲线（固定四色，色盲友好），支持 `sin(x)`、`x^2 - 3`、`a*x`（引用计算器变量）等：
 
 - **滚轮缩放**（以鼠标位置为中心）、**拖拽平移**、触屏双指 pinch
 - 悬停显示十字线与各函数在该 x 处的取值
 - 自动网格与坐标轴刻度，`1/x` 这类渐近线会自动断笔
-- 修改计算器标签页里的变量，图形实时联动重绘
-
-### 单位换算
-
-七大类：长度、质量、温度、面积、体积、速度、数据大小（含 KiB/MiB 与 KB/MB 的区分），支持双向互换（⇄ 按钮）。
-
-### 统计
-
-粘贴或输入一列数字，同时给出**样本**（n-1）与**总体**（n）两套标准差/方差，以及均值、中位数、总和、极值。
+- 修改科学计算器页里的变量，图形实时联动重绘
+- 暗色主题下画布配色自动跟随重绘（颜色从 CSS 变量读取，MutationObserver 监听主题切换）
 
 ## 实现原理
 
@@ -82,6 +75,10 @@ tokenizer → parser（递归下降） → AST → compile 为闭包
 - `ResizeObserver` 监听容器尺寸变化自动重绘
 - 每像素列采样一个点；相邻两点屏幕跳跃超过两倍画布高且函数值变号时断笔（渐近线检测）
 - Pointer Events 统一处理鼠标/触摸的拖拽与 pinch
+
+### 拆分后的工程组织
+
+工具页共用一套**注册表驱动**的架构：`src/tools/registry.ts` 里每个工具是一条数据（路径、名称、字段定义、compute 纯函数），四个动态路由 `src/pages/{calculators,converters,finance,tools}/[slug].astro` 据此静态生成全部子页面，客户端按 `data-tool-kind` 分发到对应的渲染器（表单、换算器、文本工具……）。新增一个计算器只需在注册表里加一条配置，路由、目录页、sitemap 全部自动跟上。
 
 ### 性能哲学
 

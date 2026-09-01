@@ -1,0 +1,32 @@
+---
+import ToolShell from '../../components/tools/ToolShell.astro';
+import { REGISTRY, type ToolEntry } from '../../tools/registry';
+
+export function getStaticPaths() {
+	return REGISTRY
+		.filter((e) => e.category === 'tools')
+		.map((e) => ({ params: { slug: e.slug }, props: { entry: e } }));
+}
+
+const { entry } = Astro.props as { entry: ToolEntry };
+const redirect = entry.kind === 'redirect' ? entry.config.target : undefined;
+---
+
+<ToolShell
+	title={entry.name}
+	description={entry.description}
+	entry={redirect ? undefined : entry}
+	category="tools"
+	redirectTo={redirect}
+>
+	{
+		!redirect && (
+			<>
+				<div id="t-root"></div>
+				<script>
+					import '../../scripts/tools/main';
+				</script>
+			</>
+		)
+	}
+</ToolShell>

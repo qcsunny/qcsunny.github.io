@@ -1,0 +1,20 @@
+---
+import ToolShell from '../../components/tools/ToolShell.astro';
+import { REGISTRY, CALCULATOR_FEATURED } from '../../tools/registry';
+
+const entries = [
+	...CALCULATOR_FEATURED, ...REGISTRY.filter((e) => e.category === 'calculators')
+].filter((e) => e.kind !== 'redirect');
+---
+<ToolShell title="Calculators" description="Every calculator: scientific calculator, grapher, percentages, fractions, ratios, averages and statistics.">
+	<div class="t-cards">
+		{
+			entries.map((e) => (
+				<a class="t-card" href={`/${e.category}/${e.slug}/`}>
+					<h2>{e.name}</h2>
+					<p>{e.description}</p>
+				</a>
+			))
+		}
+	</div>
+</ToolShell>
