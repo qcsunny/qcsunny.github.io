@@ -202,6 +202,35 @@ export function initBasic(scope: Scope, hooks: BasicHooks = {}): void {
 	});
 	display.addEventListener('input', schedulePreview);
 
+	// Standard / Scientific keypad mode (persisted)
+	const stdKeypad = document.querySelector<HTMLElement>('.calc-keypad-standard');
+	const sciKeypad = document.querySelector<HTMLElement>('.calc-keypad-sci');
+	const modeButtons = document.querySelectorAll<HTMLButtonElement>('[data-calc-mode]');
+	if (stdKeypad && sciKeypad && modeButtons.length > 0) {
+		function setMode(mode: 'standard' | 'scientific'): void {
+			stdKeypad!.hidden = mode !== 'standard';
+			sciKeypad!.hidden = mode !== 'scientific';
+			modeButtons.forEach((btn) => {
+				btn.setAttribute('aria-pressed', String(btn.dataset.calcMode === mode));
+			});
+			try {
+				localStorage.setItem('calc:keypad-mode', mode);
+			} catch {
+				// ignore
+			}
+		}
+		modeButtons.forEach((btn) => {
+			btn.addEventListener('click', () => setMode(btn.dataset.calcMode as 'standard' | 'scientific'));
+		});
+		let saved: string | null = null;
+		try {
+			saved = localStorage.getItem('calc:keypad-mode');
+		} catch {
+			// ignore
+		}
+		setMode(saved === 'scientific' ? 'scientific' : 'standard');
+	}
+
 	historyClear.addEventListener('click', () => {
 		clearHistory();
 		renderHistory();

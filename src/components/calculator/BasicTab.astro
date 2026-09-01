@@ -1,10 +1,38 @@
 ---
-// Keypad layout: left 2 columns are scientific keys, right 4 columns the
-// standard calculator block. `ins` inserts text at the cursor; `action`
-// triggers a behaviour in basic.ts.
+// Two keypad modes sharing one display/engine/history:
+//  - standard: plain 4-column calculator
+//  - scientific: 6-column grid, left 2 columns of scientific keys
+// `ins` inserts text at the cursor; `action` triggers a behaviour in basic.ts.
 type Key = { label: string; ins?: string; action?: string; cls?: string };
 
-const keys: Key[] = [
+const standardKeys: Key[] = [
+	{ label: 'C', action: 'clear', cls: 'k-fn' },
+	{ label: '⌫', action: 'back', cls: 'k-fn' },
+	{ label: '%', ins: '%' },
+	{ label: '÷', ins: '/', cls: 'k-op' },
+
+	{ label: '7', ins: '7' },
+	{ label: '8', ins: '8' },
+	{ label: '9', ins: '9' },
+	{ label: '×', ins: '*', cls: 'k-op' },
+
+	{ label: '4', ins: '4' },
+	{ label: '5', ins: '5' },
+	{ label: '6', ins: '6' },
+	{ label: '−', ins: '-', cls: 'k-op' },
+
+	{ label: '1', ins: '1' },
+	{ label: '2', ins: '2' },
+	{ label: '3', ins: '3' },
+	{ label: '+', ins: '+', cls: 'k-op' },
+
+	{ label: '±', action: 'sign' },
+	{ label: '0', ins: '0' },
+	{ label: '.', ins: '.' },
+	{ label: '=', action: 'equals', cls: 'k-eq' },
+];
+
+const scientificKeys: Key[] = [
 	{ label: 'sin', ins: 'sin(', cls: 'k-sci' },
 	{ label: 'cos', ins: 'cos(', cls: 'k-sci' },
 	{ label: 'C', action: 'clear', cls: 'k-fn' },
@@ -63,9 +91,28 @@ const keys: Key[] = [
 
 	<div id="calc-vars" class="calc-vars"></div>
 
-	<div class="calc-keypad" role="group" aria-label="Calculator keys">
+	<div class="calc-mode-toggle" role="group" aria-label="Keypad mode">
+		<button type="button" id="calc-mode-standard" data-calc-mode="standard" aria-pressed="true">
+			Standard
+		</button>
+		<button type="button" id="calc-mode-scientific" data-calc-mode="scientific" aria-pressed="false">
+			Scientific
+		</button>
+	</div>
+
+	<div class="calc-keypad calc-keypad-standard" role="group" aria-label="Calculator keys">
 		{
-			keys.map((k) =>
+			standardKeys.map((k) => (
+				<button type="button" class={k.cls ?? 'k-num'} data-ins={k.ins} data-action={k.action}>
+					{k.label}
+				</button>
+			))
+		}
+	</div>
+
+	<div class="calc-keypad calc-keypad-sci" role="group" aria-label="Scientific calculator keys" hidden>
+		{
+			scientificKeys.map((k) =>
 				k.cls === 'k-blank' ? (
 					<span class="k-blank" aria-hidden="true"></span>
 				) : (
@@ -160,10 +207,45 @@ const keys: Key[] = [
 	.chip-del:hover {
 		color: var(--accent-dark);
 	}
+	.calc-mode-toggle {
+		display: inline-flex;
+		border: 1px solid rgb(var(--gray-light));
+		border-radius: 8px;
+		overflow: hidden;
+		margin-bottom: 0.75em;
+	}
+	.calc-mode-toggle button {
+		font: inherit;
+		font-size: 0.85rem;
+		padding: 0.4em 1em;
+		border: none;
+		background: white;
+		color: rgb(var(--gray));
+		cursor: pointer;
+	}
+	.calc-mode-toggle button[aria-pressed='true'] {
+		background: var(--accent);
+		color: white;
+		font-weight: 600;
+	}
+	.calc-mode-toggle button:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: -2px;
+	}
+	.calc-keypad[hidden] {
+		display: none;
+	}
 	.calc-keypad {
 		display: grid;
 		grid-template-columns: repeat(6, 1fr);
 		gap: clamp(4px, 1vw, 8px);
+	}
+	.calc-keypad-standard {
+		grid-template-columns: repeat(4, 1fr);
+	}
+	.calc-keypad-standard button {
+		font-size: clamp(1rem, 3.2vw, 1.2rem);
+		padding: clamp(0.7em, 2.2vw, 0.95em) 0.1em;
 	}
 	.calc-keypad button {
 		font: inherit;
