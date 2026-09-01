@@ -12,7 +12,7 @@ export const CF_ANALYTICS_TOKEN = '6dc1c25712424a5495eafb07d9e2ed82';
  *  the <meta name="google-site-verification"> tag). Get it at
  *  search.google.com/search-console → Add property → URL prefix → HTML tag.
  *  Empty = the meta tag is not rendered. */
-export const SEARCH_CONSOLE_VERIFICATION = '';
+export const SEARCH_CONSOLE_VERIFICATION = '5nFbYmHtHutBfgGNWpFnIwAyFKrHJM9eRtugU3113EI';
 
 /** Google AdSense publisher id (ca-pub-XXXX). Fill in after AdSense approval;
  *  empty = no ad slots are rendered anywhere on the site. */
