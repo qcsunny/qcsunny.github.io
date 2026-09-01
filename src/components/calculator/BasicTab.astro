@@ -1,0 +1,268 @@
+---
+// Keypad layout: left 2 columns are scientific keys, right 4 columns the
+// standard calculator block. `ins` inserts text at the cursor; `action`
+// triggers a behaviour in basic.ts.
+type Key = { label: string; ins?: string; action?: string; cls?: string };
+
+const keys: Key[] = [
+	{ label: 'sin', ins: 'sin(', cls: 'k-sci' },
+	{ label: 'cos', ins: 'cos(', cls: 'k-sci' },
+	{ label: 'C', action: 'clear', cls: 'k-fn' },
+	{ label: '⌫', action: 'back', cls: 'k-fn' },
+	{ label: '%', ins: '%' },
+	{ label: '÷', ins: '/', cls: 'k-op' },
+
+	{ label: 'tan', ins: 'tan(', cls: 'k-sci' },
+	{ label: '√', ins: 'sqrt(', cls: 'k-sci' },
+	{ label: '7', ins: '7' },
+	{ label: '8', ins: '8' },
+	{ label: '9', ins: '9' },
+	{ label: '×', ins: '*', cls: 'k-op' },
+
+	{ label: 'ln', ins: 'ln(', cls: 'k-sci' },
+	{ label: 'log', ins: 'log(', cls: 'k-sci' },
+	{ label: '4', ins: '4' },
+	{ label: '5', ins: '5' },
+	{ label: '6', ins: '6' },
+	{ label: '−', ins: '-', cls: 'k-op' },
+
+	{ label: 'π', ins: 'pi', cls: 'k-sci' },
+	{ label: 'e', ins: 'e', cls: 'k-sci' },
+	{ label: '1', ins: '1' },
+	{ label: '2', ins: '2' },
+	{ label: '3', ins: '3' },
+	{ label: '+', ins: '+', cls: 'k-op' },
+
+	{ label: 'x^y', ins: '^', cls: 'k-sci' },
+	{ label: 'n!', ins: '!', cls: 'k-sci' },
+	{ label: '±', action: 'sign' },
+	{ label: '0', ins: '0' },
+	{ label: '.', ins: '.' },
+	{ label: '=', action: 'equals', cls: 'k-eq' },
+
+	{ label: '(', ins: '(', cls: 'k-sci' },
+	{ label: ')', ins: ')', cls: 'k-sci' },
+	{ label: 'ans', action: 'ans' },
+	{ label: 'DEG', action: 'deg', cls: 'k-mode' },
+	{ label: ' ', cls: 'k-blank' },
+	{ label: ' ', cls: 'k-blank' },
+];
+---
+
+<div class="calc-basic">
+	<label class="sr-only" for="calc-display">Expression</label>
+	<input
+		id="calc-display"
+		class="calc-display"
+		type="text"
+		autocomplete="off"
+		spellcheck="false"
+		placeholder="Type an expression, e.g. 2+3*4 or a=2"
+	/>
+	<div id="calc-preview" class="calc-preview" aria-live="polite"></div>
+
+	<div id="calc-vars" class="calc-vars"></div>
+
+	<div class="calc-keypad" role="group" aria-label="Calculator keys">
+		{
+			keys.map((k) =>
+				k.cls === 'k-blank' ? (
+					<span class="k-blank" aria-hidden="true"></span>
+				) : (
+					<button
+						type="button"
+						class={k.cls ?? 'k-num'}
+						data-ins={k.ins}
+						data-action={k.action}
+					>
+						{k.label}
+					</button>
+				),
+			)
+		}
+	</div>
+
+	<section class="calc-history">
+		<h2>History</h2>
+		<ul id="calc-history-list"></ul>
+		<p id="calc-history-empty" class="calc-history-empty">No calculations yet.</p>
+		<button id="calc-history-clear" type="button" class="k-fn">Clear history</button>
+	</section>
+</div>
+
+<style>
+	.calc-display {
+		width: 100%;
+		box-sizing: border-box;
+		font-family: ui-monospace, 'SFMono-Regular', Consolas, Menlo, monospace;
+		font-size: clamp(1.15rem, 3.5vw, 1.5rem);
+		text-align: right;
+		padding: 0.65em 0.75em;
+		border: 1px solid rgb(var(--gray-light));
+		border-radius: 10px;
+		background: white;
+		color: rgb(var(--black));
+	}
+	.calc-display:focus {
+		outline: 2px solid var(--accent);
+		outline-offset: -1px;
+	}
+	.calc-preview {
+		min-height: 1.6em;
+		margin: 0.35em 0.5em 0.75em;
+		text-align: right;
+		font-family: ui-monospace, 'SFMono-Regular', Consolas, Menlo, monospace;
+		font-size: 0.95rem;
+		color: rgb(var(--gray));
+	}
+	.calc-preview.err {
+		color: var(--accent-dark);
+	}
+	.calc-vars {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4em;
+		margin-bottom: 0.9em;
+		min-height: 0;
+	}
+	.chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.15em;
+		background: white;
+		border: 1px solid rgb(var(--gray-light));
+		border-radius: 999px;
+		box-shadow: 0 1px 3px rgba(var(--gray), 20%);
+		overflow: hidden;
+	}
+	.chip > button:first-child {
+		border: none;
+		background: none;
+		font: inherit;
+		font-size: 0.85rem;
+		font-family: ui-monospace, 'SFMono-Regular', Consolas, Menlo, monospace;
+		padding: 0.25em 0.3em 0.25em 0.75em;
+		cursor: pointer;
+		color: rgb(var(--black));
+	}
+	.chip > button:first-child:hover {
+		color: var(--accent);
+	}
+	.chip-del {
+		border: none;
+		background: none;
+		font-size: 0.9rem;
+		line-height: 1;
+		padding: 0.25em 0.6em 0.25em 0.3em;
+		cursor: pointer;
+		color: rgb(var(--gray));
+	}
+	.chip-del:hover {
+		color: var(--accent-dark);
+	}
+	.calc-keypad {
+		display: grid;
+		grid-template-columns: repeat(6, 1fr);
+		gap: clamp(4px, 1vw, 8px);
+	}
+	.calc-keypad button {
+		font: inherit;
+		font-size: clamp(0.85rem, 2.6vw, 1.05rem);
+		padding: clamp(0.55em, 1.8vw, 0.75em) 0.1em;
+		border: none;
+		border-radius: 8px;
+		background: rgb(var(--gray-light));
+		color: rgb(var(--gray-dark));
+		cursor: pointer;
+		transition: background 0.1s ease;
+	}
+	.calc-keypad button:hover {
+		filter: brightness(0.95);
+	}
+	.calc-keypad button:active {
+		transform: scale(0.96);
+	}
+	.calc-keypad button:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 1px;
+	}
+	.k-op {
+		color: var(--accent);
+		font-weight: 600;
+	}
+	.k-sci {
+		background: white;
+		border: 1px solid rgb(var(--gray-light));
+	}
+	.k-fn {
+		background: white;
+		border: 1px solid rgb(var(--gray-light));
+		font-weight: 600;
+	}
+	.k-mode {
+		background: white;
+		border: 1px solid var(--accent);
+		color: var(--accent);
+		font-weight: 600;
+		font-size: clamp(0.75rem, 2.2vw, 0.9rem);
+	}
+	.k-eq {
+		background: var(--accent);
+		color: white;
+		font-weight: 700;
+	}
+	.k-blank {
+		visibility: hidden;
+	}
+	.calc-history {
+		margin-top: 2em;
+	}
+	.calc-history h2 {
+		font-size: 1.25em;
+		margin-bottom: 0.5em;
+	}
+	.calc-history ul {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+	.calc-history li + li {
+		border-top: 1px solid rgb(var(--gray-light));
+	}
+	.calc-history li button {
+		display: flex;
+		justify-content: space-between;
+		gap: 1em;
+		width: 100%;
+		border: none;
+		background: none;
+		font: inherit;
+		font-size: 0.9rem;
+		padding: 0.45em 0.3em;
+		cursor: pointer;
+		text-align: left;
+	}
+	.calc-history li button:hover {
+		background: rgb(var(--gray-light));
+		border-radius: 6px;
+	}
+	.calc-history .h-expr {
+		font-family: ui-monospace, 'SFMono-Regular', Consolas, Menlo, monospace;
+		color: rgb(var(--black));
+		overflow-wrap: anywhere;
+	}
+	.calc-history .h-res {
+		font-family: ui-monospace, 'SFMono-Regular', Consolas, Menlo, monospace;
+		color: rgb(var(--gray));
+		white-space: nowrap;
+	}
+	.calc-history-empty {
+		color: rgb(var(--gray));
+		font-size: 0.9rem;
+	}
+	.calc-history .k-fn {
+		font-size: 0.85rem;
+		padding: 0.4em 0.9em;
+		border-radius: 6px;
+	}
+</style>

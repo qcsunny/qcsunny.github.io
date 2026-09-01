@@ -1,0 +1,133 @@
+<div class="graph-tab">
+	<div class="graph-toolbar">
+		<button type="button" data-graph-zoom="in" title="Zoom in">+</button>
+		<button type="button" data-graph-zoom="out" title="Zoom out">−</button>
+		<button type="button" data-graph-zoom="reset" title="Reset view">Reset</button>
+		<span class="graph-hint">scroll to zoom · drag to pan · pinch on touch</span>
+	</div>
+	<canvas id="graph-canvas" aria-label="Function graph plot"></canvas>
+	<div id="graph-rows" class="graph-rows"></div>
+	<button id="graph-add" type="button" class="graph-add">+ Add function</button>
+</div>
+
+<style>
+	.graph-toolbar {
+		display: flex;
+		align-items: center;
+		gap: 0.4em;
+		margin-bottom: 0.75em;
+		flex-wrap: wrap;
+	}
+	.graph-toolbar button {
+		font: inherit;
+		font-size: 0.9rem;
+		min-width: 2.2em;
+		padding: 0.35em 0.7em;
+		border: 1px solid rgb(var(--gray-light));
+		border-radius: 6px;
+		background: white;
+		color: rgb(var(--gray-dark));
+		cursor: pointer;
+	}
+	.graph-toolbar button:hover {
+		border-color: var(--accent);
+		color: var(--accent);
+	}
+	.graph-toolbar button:focus-visible {
+		outline: 2px solid var(--accent);
+	}
+	.graph-hint {
+		margin-left: auto;
+		font-size: 0.8rem;
+		color: rgb(var(--gray));
+	}
+	#graph-canvas {
+		display: block;
+		width: 100%;
+		height: clamp(280px, 55vw, 480px);
+		border: 1px solid rgb(var(--gray-light));
+		border-radius: 10px;
+		background: white;
+		box-shadow: var(--box-shadow);
+		touch-action: none;
+		cursor: crosshair;
+	}
+	.graph-rows {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5em;
+		margin-top: 1em;
+	}
+	.graph-row {
+		display: flex;
+		align-items: center;
+		gap: 0.6em;
+	}
+	.graph-swatch {
+		flex: none;
+		width: 14px;
+		height: 14px;
+		border-radius: 50%;
+	}
+	.graph-row input[type='text'] {
+		flex: 1;
+		font-family: ui-monospace, 'SFMono-Regular', Consolas, Menlo, monospace;
+		font-size: 0.95rem;
+		padding: 0.45em 0.7em;
+		border: 1px solid rgb(var(--gray-light));
+		border-radius: 8px;
+		background: white;
+		color: rgb(var(--black));
+	}
+	.graph-row input[type='text']:focus {
+		outline: 2px solid var(--accent);
+		outline-offset: -1px;
+	}
+	.graph-row input[type='checkbox'] {
+		flex: none;
+		width: 1.1em;
+		height: 1.1em;
+		accent-color: var(--accent);
+	}
+	.graph-row .row-error {
+		flex: none;
+		font-size: 0.78rem;
+		color: var(--accent-dark);
+		max-width: 40%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.graph-row .row-remove {
+		flex: none;
+		border: none;
+		background: none;
+		font-size: 1.1rem;
+		line-height: 1;
+		padding: 0.2em 0.4em;
+		color: rgb(var(--gray));
+		cursor: pointer;
+	}
+	.graph-row .row-remove:hover {
+		color: var(--accent-dark);
+	}
+	.graph-add {
+		margin-top: 0.6em;
+		font: inherit;
+		font-size: 0.9rem;
+		padding: 0.4em 1em;
+		border: 1px dashed rgb(var(--gray));
+		border-radius: 8px;
+		background: none;
+		color: rgb(var(--gray-dark));
+		cursor: pointer;
+	}
+	.graph-add:hover:not(:disabled) {
+		border-color: var(--accent);
+		color: var(--accent);
+	}
+	.graph-add:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+</style>

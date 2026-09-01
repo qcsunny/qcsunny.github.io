@@ -1,0 +1,100 @@
+<div class="units-tab">
+	<label class="units-label" for="unit-category">Category</label>
+	<select id="unit-category"></select>
+	<div class="units-row">
+		<div class="unit-col">
+			<select id="unit-from" aria-label="From unit"></select>
+			<input
+				id="unit-from-value"
+				type="number"
+				inputmode="decimal"
+				step="any"
+				aria-label="Value to convert"
+			/>
+		</div>
+		<button id="unit-swap" type="button" title="Swap units">⇄</button>
+		<div class="unit-col">
+			<select id="unit-to" aria-label="To unit"></select>
+			<input
+				id="unit-to-value"
+				type="number"
+				inputmode="decimal"
+				step="any"
+				readonly
+				aria-label="Converted value"
+			/>
+		</div>
+	</div>
+</div>
+
+<style>
+	.units-label {
+		display: block;
+		font-size: 0.9rem;
+		color: rgb(var(--gray));
+		margin-bottom: 0.35em;
+	}
+	.units-tab select {
+		font: inherit;
+		font-size: 0.95rem;
+		padding: 0.45em 0.6em;
+		border: 1px solid rgb(var(--gray-light));
+		border-radius: 8px;
+		background: white;
+		color: rgb(var(--black));
+		max-width: 100%;
+	}
+	.units-tab select:focus {
+		outline: 2px solid var(--accent);
+		outline-offset: -1px;
+	}
+	#unit-category {
+		margin-bottom: 1em;
+	}
+	.units-row {
+		display: flex;
+		align-items: center;
+		gap: 0.8em;
+		flex-wrap: wrap;
+	}
+	.unit-col {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4em;
+		flex: 1;
+		min-width: 200px;
+	}
+	.unit-col input {
+		font-family: ui-monospace, 'SFMono-Regular', Consolas, Menlo, monospace;
+		font-size: 1.1rem;
+		padding: 0.5em 0.7em;
+		border: 1px solid rgb(var(--gray-light));
+		border-radius: 8px;
+		background: white;
+		color: rgb(var(--black));
+	}
+	.unit-col input:focus {
+		outline: 2px solid var(--accent);
+		outline-offset: -1px;
+	}
+	#unit-to-value {
+		background: rgb(var(--gray-light));
+	}
+	#unit-swap {
+		flex: none;
+		font-size: 1.1rem;
+		width: 2.4em;
+		height: 2.4em;
+		border: 1px solid rgb(var(--gray-light));
+		border-radius: 50%;
+		background: white;
+		color: var(--accent);
+		cursor: pointer;
+	}
+	#unit-swap:hover {
+		border-color: var(--accent);
+	}
+	#unit-swap:focus-visible {
+		outline: 2px solid var(--accent);
+	}
+</style>

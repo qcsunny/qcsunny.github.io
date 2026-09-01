@@ -1,0 +1,120 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import BasicTab from '../components/calculator/BasicTab.astro';
+import GraphTab from '../components/calculator/GraphTab.astro';
+import StatsTab from '../components/calculator/StatsTab.astro';
+import UnitsTab from '../components/calculator/UnitsTab.astro';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead
+			title="Calculator"
+			description="Web scientific calculator: expression evaluation with variables, function graphing, unit conversion and statistics."
+		/>
+		<style>
+			main {
+				width: 880px;
+			}
+			h1 {
+				margin-bottom: 0.75em;
+			}
+			.calc-tablist {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.25em;
+				border-bottom: 1px solid rgb(var(--gray-light));
+				margin-bottom: 1.5em;
+			}
+			.calc-tablist button {
+				padding: 0.6em 1em;
+				background: none;
+				border: none;
+				border-bottom: 4px solid transparent;
+				border-radius: 4px 4px 0 0;
+				font: inherit;
+				font-size: 0.95rem;
+				color: rgb(var(--gray));
+				cursor: pointer;
+			}
+			.calc-tablist button:hover {
+				color: rgb(var(--black));
+			}
+			.calc-tablist button:focus-visible {
+				outline: 2px solid var(--accent);
+				outline-offset: -2px;
+			}
+			.calc-tablist button[aria-selected='true'] {
+				color: rgb(var(--black));
+				font-weight: 600;
+				border-bottom-color: var(--accent);
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<h1>Scientific Calculator</h1>
+			<div class="calc-tablist" role="tablist" aria-label="Calculator tools">
+				<button
+					role="tab"
+					id="calc-tab-basic"
+					aria-controls="calc-panel-basic"
+					aria-selected="true"
+					data-calc-tab="basic"
+				>
+					Calculator
+				</button>
+				<button
+					role="tab"
+					id="calc-tab-graph"
+					aria-controls="calc-panel-graph"
+					aria-selected="false"
+					tabindex="-1"
+					data-calc-tab="graph"
+				>
+					Graph
+				</button>
+				<button
+					role="tab"
+					id="calc-tab-units"
+					aria-controls="calc-panel-units"
+					aria-selected="false"
+					tabindex="-1"
+					data-calc-tab="units"
+				>
+					Units
+				</button>
+				<button
+					role="tab"
+					id="calc-tab-stats"
+					aria-controls="calc-panel-stats"
+					aria-selected="false"
+					tabindex="-1"
+					data-calc-tab="stats"
+				>
+					Stats
+				</button>
+			</div>
+			<div id="calc-panel-basic" role="tabpanel" aria-labelledby="calc-tab-basic" tabindex="0">
+				<BasicTab />
+			</div>
+			<div id="calc-panel-graph" role="tabpanel" aria-labelledby="calc-tab-graph" tabindex="0" hidden>
+				<GraphTab />
+			</div>
+			<div id="calc-panel-units" role="tabpanel" aria-labelledby="calc-tab-units" tabindex="0" hidden>
+				<UnitsTab />
+			</div>
+			<div id="calc-panel-stats" role="tabpanel" aria-labelledby="calc-tab-stats" tabindex="0" hidden>
+				<StatsTab />
+			</div>
+		</main>
+		<Footer />
+		<script>
+			import '../scripts/calculator/main';
+		</script>
+	</body>
+</html>
