@@ -14,6 +14,11 @@ export const CF_ANALYTICS_TOKEN = '6dc1c25712424a5495eafb07d9e2ed82';
  *  Empty = the meta tag is not rendered. */
 export const SEARCH_CONSOLE_VERIFICATION = '5nFbYmHtHutBfgGNWpFnIwAyFKrHJM9eRtugU3113EI';
 
+/** Bing Webmaster Tools ownership-verification code (the content value of
+ *  the <meta name="msvalidate.01"> tag). Get it at bing.com/webmasters →
+ *  Add site → Meta tag. Empty = the meta tag is not rendered. */
+export const BING_VERIFICATION = '8CC3DB3923EC9481C31FA85EA02C4E67';
+
 /** Google AdSense publisher id (ca-pub-XXXX). Fill in after AdSense approval;
  *  empty = no ad slots are rendered anywhere on the site. */
 export const ADSENSE_CLIENT = '';
