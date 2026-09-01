@@ -6,6 +6,7 @@ import { formatNumber } from '../scripts/calculator/engine';
 import { computeStats, parseNumbers } from './stats';
 
 const pct = (v: number): string => `${formatNumber(v)}%`;
+const money = (v: number): string => formatNumber(Math.round(v * 100) / 100);
 
 // --- percentage -----------------------------------------------------------------
 
@@ -181,6 +182,31 @@ const proportion: FormConfig = {
 	},
 };
 
+// --- simple interest ------------------------------------------------------------------
+
+const simpleInterest: FormConfig = {
+	intro: 'Interest computed on the principal only: I = P × r × t.',
+	fields: [
+		{ id: 'p', label: 'Principal', suffix: '($)', type: 'number', def: '10000', step: 'any' },
+		{ id: 'r', label: 'Annual rate', suffix: '(%)', type: 'number', def: '5', step: 'any' },
+		{ id: 't', label: 'Time', suffix: '(years)', type: 'number', def: '3', step: 'any' },
+	],
+	compute: (v) => {
+		const p = v.num('p');
+		const r = v.num('r');
+		const t = v.num('t');
+		const interest = p * (r / 100) * t;
+		return {
+			rows: [
+				{ label: 'Simple interest', value: money(interest), emphasis: true },
+				{ label: 'Final amount (P + I)', value: money(p + interest) },
+				{ label: 'Interest per year', value: money(interest / (t || 1)) },
+			],
+			note: 'Unlike compound interest, the principal never grows — each period earns the same amount.',
+		};
+	},
+};
+
 // --- entries --------------------------------------------------------------------------
 
 export const CALCULATOR_TOOLS: ToolEntry[] = [
@@ -262,6 +288,14 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 		description: 'Solve a : b = c : x for the missing value.',
 		kind: 'form',
 		config: proportion,
+	},
+	{
+		slug: 'simple-interest',
+		category: 'calculators',
+		name: 'Simple Interest Calculator',
+		description: 'Compute simple interest I = P × r × t with total amount and per-period interest.',
+		kind: 'form',
+		config: simpleInterest,
 	},
 	// the three finance overlaps live on /finance/* — these paths redirect
 	{

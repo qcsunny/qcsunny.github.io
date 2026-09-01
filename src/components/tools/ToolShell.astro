@@ -432,7 +432,163 @@ const crumbName = entry ? entry.name : title;
 				}
 			}
 
-			/* --- index cards --- */
+			/* --- generators (password / uuid / random) --- */
+.t-lenrow {
+	display: flex;
+	align-items: center;
+	gap: 0.8em;
+	margin-bottom: 0.9em;
+}
+.t-lenrow input[type='range'] {
+	flex: 1;
+	accent-color: var(--accent);
+}
+.t-lenrow output {
+	min-width: 2.4em;
+	text-align: right;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+.t-checkrow-group {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.4em 1.2em;
+	margin-bottom: 0.9em;
+}
+.t-passout {
+	width: 100%;
+	box-sizing: border-box;
+	font-family: ui-monospace, 'SFMono-Regular', Consolas, Menlo, monospace;
+	font-size: 1.05rem;
+	padding: 0.55em 0.7em;
+	border: 1px solid var(--gridline);
+	border-radius: 8px;
+	background: var(--bg);
+	color: var(--fg);
+	letter-spacing: 0.03em;
+	margin-bottom: 0.9em;
+}
+.t-passout:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: -1px;
+}
+.t-btnwrap {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.55em;
+}
+.t-copy-hint {
+	font-size: 0.82rem;
+	color: var(--dim);
+}
+.t-countlabel {
+	font-size: 0.82rem;
+	color: var(--dim);
+	align-self: center;
+}
+.t-countlabel + input {
+	width: 6em;
+}
+
+/* --- color converter --- */
+.t-colorgroups {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	gap: 0.9em 1.1em;
+	margin-bottom: 1.25em;
+}
+.t-colorfield {
+	display: flex;
+	flex-direction: column;
+	gap: 0.3em;
+}
+.t-colorgrouplabel {
+	font-size: 0.82rem;
+	color: var(--dim);
+}
+.t-colorrow {
+	display: flex;
+	gap: 0.5em;
+}
+.t-colorcell {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 0.15em;
+	font-size: 0.75rem;
+	color: var(--dim);
+	text-align: center;
+}
+.t-colorcell input {
+	width: 100%;
+	box-sizing: border-box;
+	font: inherit;
+	font-size: 0.95rem;
+	padding: 0.45em 0.3em;
+	border: 1px solid var(--gridline);
+	border-radius: 8px;
+	background: var(--bg);
+	color: var(--fg);
+	text-align: center;
+	font-variant-numeric: tabular-nums;
+}
+.t-colorcell input:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: -1px;
+}
+.t-swatchrow {
+	display: flex;
+	gap: 1em;
+	margin-bottom: 1.25em;
+}
+.t-swatchwrap {
+	display: flex;
+	flex-direction: column;
+	gap: 0.3em;
+	font-size: 0.82rem;
+	color: var(--dim);
+}
+.t-swatch {
+	width: 100px;
+	height: 68px;
+	border: 1px solid var(--gridline);
+	border-radius: 10px;
+}
+
+/* --- QR generator --- */
+.t-qrsettings {
+	display: grid;
+	grid-template-columns: 2fr 1fr;
+	gap: 0.9em 1.1em;
+	margin-bottom: 0.6em;
+}
+.t-eccfield select {
+	font: inherit;
+	font-size: 0.95rem;
+	padding: 0.45em 0.5em;
+	border: 1px solid var(--gridline);
+	border-radius: 8px;
+	background: var(--bg);
+	color: var(--fg);
+	width: 100%;
+	box-sizing: border-box;
+}
+.t-qr-canvas {
+	max-width: 100%;
+	height: auto;
+	display: block;
+	margin: 0.6em 0;
+	border: 1px solid var(--gridline);
+	border-radius: 8px;
+	image-rendering: pixelated;
+}
+@media (max-width: 560px) {
+	.t-qrsettings {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* --- index cards --- */
 			.t-cards {
 				display: grid;
 				grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

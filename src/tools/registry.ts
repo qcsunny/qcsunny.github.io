@@ -10,9 +10,11 @@
 import { CALCULATOR_TOOLS } from './calculators';
 import { CONVERTER_TOOLS } from './converters';
 import { FINANCE_TOOLS } from './finance';
+import { GENERATOR_TOOLS } from './generators';
+import { TEXT_TOOLS } from './textTools';
 
 export type ToolCategory = 'calculators' | 'converters' | 'finance' | 'tools';
-export type ToolKind = 'form' | 'converter' | 'text' | 'qr' | 'color' | 'redirect';
+export type ToolKind = 'form' | 'converter' | 'text' | 'qr' | 'color' | 'generator' | 'redirect';
 
 export interface ToolMeta {
 	slug: string;
@@ -101,6 +103,30 @@ export interface TextConfig {
 	mono?: boolean;
 }
 
+// --- generator tools (password / uuid / random) ------------------------------------
+
+export interface PasswordGenConfig {
+	generator: 'password';
+	minLen: number;
+	maxLen: number;
+	defLen: number;
+}
+
+export interface UuidGenConfig {
+	generator: 'uuid';
+	defCount: number;
+	maxCount: number;
+}
+
+export interface RandomGenConfig {
+	generator: 'random';
+	defMin: number;
+	defMax: number;
+	defCount: number;
+}
+
+export type GeneratorConfig = PasswordGenConfig | UuidGenConfig | RandomGenConfig;
+
 export interface RedirectConfig {
 	target: string;
 }
@@ -112,6 +138,7 @@ export type ToolEntry = ToolMeta &
 		| { kind: 'text'; config: TextConfig }
 		| { kind: 'qr' }
 		| { kind: 'color' }
+		| { kind: 'generator'; config: GeneratorConfig }
 		| { kind: 'redirect'; config: RedirectConfig }
 	);
 
@@ -160,8 +187,35 @@ export function categoryLabel(id: ToolCategory): string {
 	return CATEGORIES.find((c) => c.id === id)?.label ?? id;
 }
 
+/** Registry entries for /tools/qr-code-generator and /tools/color-converter.
+ *  Their widgets live in src/scripts/tools/{qr,color}.ts and are loaded via
+ *  dynamic import from the dispatcher. */
+export const TOOL_WIDGETS: ToolEntry[] = [
+	{
+		slug: 'qr-code-generator',
+		category: 'tools',
+		name: 'QR Code Generator',
+		description: 'Turn text or URLs into downloadable QR codes, generated entirely in your browser.',
+		kind: 'qr',
+	},
+	{
+		slug: 'color-converter',
+		category: 'tools',
+		name: 'Color Converter',
+		description: 'Convert colors between HEX, RGB and HSL with a live swatch and complement.',
+		kind: 'color',
+	},
+];
+
 /** Every registry-driven tool page, all four categories. */
-export const REGISTRY: ToolEntry[] = [...CALCULATOR_TOOLS, ...CONVERTER_TOOLS, ...FINANCE_TOOLS];
+export const REGISTRY: ToolEntry[] = [
+	...CALCULATOR_TOOLS,
+	...CONVERTER_TOOLS,
+	...FINANCE_TOOLS,
+	...TEXT_TOOLS,
+	...GENERATOR_TOOLS,
+	...TOOL_WIDGETS,
+];
 
 export function findEntry(category: string, slug: string): ToolEntry | undefined {
 	return REGISTRY.find((e) => e.category === category && e.slug === slug);

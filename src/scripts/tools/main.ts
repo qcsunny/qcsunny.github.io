@@ -28,5 +28,14 @@ if (kind && kind !== 'redirect') {
 		case 'text':
 			void import('./text').then((m) => m.initText(host, entry.config));
 			break;
+		case 'generator':
+			void import('./generators').then((m) => m.initGenerator(host, entry.config));
+			break;
+		case 'qr':
+			void import('./qr').then((m) => m.initQr(host));
+			break;
+		case 'color':
+			void import('./color').then((m) => m.initColor(host));
+			break;
 	}
 }
