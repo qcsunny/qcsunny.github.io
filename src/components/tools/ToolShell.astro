@@ -35,9 +35,11 @@ const crumbName = entry ? entry.name : title;
 const content = Astro.props.content ?? entry?.content;
 
 // --- related tools: same category, real pages only, never self ---
-const relatedPool = entry
+// entry-less pages (standard/graph) fall back to the category prop.
+const relatedCategory = entry?.category ?? category;
+const relatedPool = relatedCategory
 	? [...CALCULATOR_FEATURED, ...REGISTRY].filter(
-			(e) => e.category === entry.category && e.kind !== 'redirect' && e.slug !== entry.slug,
+			(e) => e.category === relatedCategory && e.kind !== 'redirect' && e.slug !== entry?.slug,
 		)
 	: [];
 const related = relatedPool.slice(0, 4);
@@ -155,6 +157,9 @@ const year = new Date().getFullYear();
 					Roboto,
 					'Helvetica Neue',
 					Arial,
+					'PingFang SC',
+					'Microsoft YaHei',
+					'Noto Sans CJK SC',
 					sans-serif;
 				-webkit-font-smoothing: antialiased;
 				font-size: 16px;
@@ -420,7 +425,14 @@ const year = new Date().getFullYear();
 			}
 			.t-textarea.t-mono,
 			.t-out {
-				font-family: ui-monospace, 'SFMono-Regular', Consolas, Menlo, monospace;
+				font-family:
+					ui-monospace,
+					'SFMono-Regular',
+					Consolas,
+					Menlo,
+					'PingFang SC',
+					'Microsoft YaHei',
+					monospace;
 				font-size: 0.88rem;
 			}
 			.t-out {
@@ -532,7 +544,14 @@ const year = new Date().getFullYear();
 .t-passout {
 	width: 100%;
 	box-sizing: border-box;
-	font-family: ui-monospace, 'SFMono-Regular', Consolas, Menlo, monospace;
+	font-family:
+					ui-monospace,
+					'SFMono-Regular',
+					Consolas,
+					Menlo,
+					'PingFang SC',
+					'Microsoft YaHei',
+					monospace;
 	font-size: 1.05rem;
 	padding: 0.55em 0.7em;
 	border: 1px solid var(--gridline);
@@ -736,6 +755,134 @@ const year = new Date().getFullYear();
 				color: var(--accent);
 			}
 
+			/* --- editorial content (SEO, bilingual) --- */
+			.t-content {
+				margin-top: 2.5em;
+				font-size: 0.95rem;
+				line-height: 1.65;
+			}
+			.t-content > p {
+				margin-bottom: 0.9em;
+			}
+			.t-content h2,
+			.t-faq h2,
+			.t-faq h3,
+			.t-content-zh h2,
+			.t-related-page h2 {
+				color: var(--fg);
+				font-size: 1.15rem;
+				font-weight: 700;
+				margin: 1.4em 0 0.5em;
+			}
+			.t-faq details {
+				border: 1px solid var(--gridline);
+				border-radius: 8px;
+				margin-bottom: 0.5em;
+				padding: 0.55em 0.9em;
+			}
+			.t-faq summary {
+				cursor: pointer;
+				font-weight: 600;
+				color: var(--fg);
+			}
+			.t-faq summary:hover {
+				color: var(--accent);
+			}
+			.t-faq details p {
+				margin-top: 0.5em;
+				color: var(--dim);
+				font-size: 0.9rem;
+				line-height: 1.8;
+			}
+
+			/* --- Chinese section: taller rhythm, justified, CJK-aware --- */
+			.t-content-zh {
+				margin-top: 1.8em;
+				padding-top: 0.4em;
+				border-top: 1px dashed var(--gridline);
+				line-height: 1.9;
+				text-align: justify;
+				hanging-punctuation: first;
+			}
+			.t-content-zh h2,
+			.t-content-zh h3 {
+				font-size: 1.1rem;
+				letter-spacing: 0.04em;
+			}
+			.t-content-zh summary {
+				letter-spacing: 0.02em;
+			}
+			.t-content-zh details p {
+				text-align: left;
+			}
+
+			/* --- page-level related tools (SEO internal links) --- */
+			.t-related-page {
+				margin-top: 2.5em;
+				padding-top: 1.2em;
+				border-top: 1px solid var(--gridline);
+			}
+			.t-related-page h2 {
+				color: var(--fg);
+				font-size: 1.15rem;
+				font-weight: 700;
+				margin: 0 0 0.6em;
+			}
+			.t-related-page ul {
+				list-style: none;
+				margin: 0;
+				padding: 0;
+				display: grid;
+				grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+				gap: 0.45em 1.2em;
+			}
+			.t-related-page a {
+				color: var(--accent);
+				text-decoration: none;
+				font-size: 0.92rem;
+			}
+			.t-related-page a:hover {
+				text-decoration: underline;
+			}
+
+			/* --- ad slots: fixed min-height reserves space, so a late-loading
+			     ad never shifts the layout (CLS). Keep in sync with real units. --- */
+			.t-ad {
+				margin: 2em auto;
+				min-height: 100px;
+				display: flex;
+				justify-content: center;
+			}
+			.t-ad-bottom {
+				min-height: 120px;
+			}
+			.t-ad .adsbygoogle {
+				width: 100%;
+			}
+
+			/* --- footer --- */
+			.t-foot {
+				display: flex;
+				flex-wrap: wrap;
+				justify-content: center;
+				gap: 0.5em 1.5em;
+				padding: 1.2em 1em 2em;
+				border-top: 1px solid var(--gridline);
+				font-size: 0.82rem;
+				color: var(--dim);
+			}
+			.t-foot nav {
+				display: flex;
+				gap: 1.2em;
+			}
+			.t-foot a {
+				color: var(--dim);
+				text-decoration: none;
+			}
+			.t-foot a:hover {
+				color: var(--accent);
+			}
+
 			@media (max-width: 560px) {
 				.t-crumbs {
 					order: 3;
@@ -830,7 +977,7 @@ const year = new Date().getFullYear();
 							</article>
 						)}
 						{related.length ? (
-							<nav class="t-related" aria-label="Related tools">
+							<nav class="t-related-page" aria-label="Related tools">
 								<h2>Related tools</h2>
 								<ul>
 									{related.map((e) => (
