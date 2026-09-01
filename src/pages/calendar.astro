@@ -1,0 +1,452 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title="Calendar" description="A minimal calendar: month and year views, week numbers and date jump." />
+		<script is:inline>
+			// Apply theme before first paint to avoid a flash
+			// Modes: light / dark / auto (auto follows the browser theme)
+			const saved = localStorage.getItem('calendar:theme');
+			const mode = saved === 'light' || saved === 'dark' || saved === 'auto' ? saved : 'auto';
+			document.documentElement.dataset.themeMode = mode;
+			document.documentElement.dataset.theme =
+				mode === 'auto'
+					? matchMedia('(prefers-color-scheme: dark)').matches
+						? 'dark'
+						: 'light'
+					: mode;
+		</script>
+		<style is:global>
+			/* is:global: the month/year grids are built at runtime and their
+			   elements would not receive the scoped data-astro-cid attribute.
+			   All classes are cal-/corner-prefixed and only bundled with this page. */
+			:root {
+				--bg: #ffffff;
+				--fg: #000000;
+				--dim: #6b7280;
+				--gridline: #e5e9f0;
+				--accent: #2337ff;
+				--on-accent: #ffffff;
+				color-scheme: light;
+			}
+			html[data-theme='dark'] {
+				--bg: #000000;
+				--fg: #ffffff;
+				--dim: #8a919c;
+				--gridline: #2a2f38;
+				--accent: #7d90ff;
+				--on-accent: #000000;
+				color-scheme: dark;
+			}
+			* {
+				margin: 0;
+				padding: 0;
+			}
+			body {
+				background: var(--bg);
+				color: var(--fg);
+				min-height: 100dvh;
+				font-family:
+					system-ui,
+					-apple-system,
+					'Segoe UI',
+					Roboto,
+					'Helvetica Neue',
+					Arial,
+					sans-serif;
+				-webkit-font-smoothing: antialiased;
+			}
+			.cal {
+				width: min(960px, 100% - 2em);
+				margin: 0 auto;
+				padding: 1.25em 0 3em;
+			}
+
+			/* --- corner buttons (theme) --- */
+			.corner-group {
+				position: fixed;
+				top: 1em;
+				right: 1em;
+				display: flex;
+				gap: 0.15em;
+			}
+			.corner {
+				font-size: 0.95rem;
+				opacity: 0.45;
+				color: var(--fg);
+				background: none;
+				border: none;
+				font-family: inherit;
+				cursor: pointer;
+				padding: 0.4em 0.6em;
+			}
+			.corner:hover {
+				opacity: 1;
+			}
+			.corner:focus-visible {
+				outline: 2px solid currentColor;
+				opacity: 1;
+			}
+
+			/* --- top bar --- */
+			.cal-topbar {
+				display: flex;
+				flex-wrap: wrap;
+				align-items: center;
+				gap: 0.75em 1.25em;
+				margin-bottom: 1.25em;
+				padding-right: 2.5em; /* keep clear of the corner buttons */
+			}
+			.seg {
+				display: inline-flex;
+				border: 1px solid var(--gridline);
+				border-radius: 8px;
+				overflow: hidden;
+			}
+			.seg button {
+				font: inherit;
+				font-size: 0.85rem;
+				padding: 0.35em 0.9em;
+				border: none;
+				background: var(--bg);
+				color: var(--dim);
+				cursor: pointer;
+			}
+			.seg button[aria-pressed='true'] {
+				background: var(--accent);
+				color: var(--on-accent);
+				font-weight: 600;
+			}
+			.seg button:focus-visible {
+				outline: 2px solid var(--accent);
+				outline-offset: -2px;
+			}
+			.cal-nav {
+				display: flex;
+				align-items: center;
+				gap: 0.4em;
+			}
+			.cal-nav h1 {
+				font-size: clamp(1.1rem, 3vw, 1.4rem);
+				font-weight: 600;
+				min-width: 11ch;
+				text-align: center;
+				font-variant-numeric: tabular-nums;
+			}
+			.cal-nav button,
+			.cal-jump button,
+			.cal-today {
+				font: inherit;
+				font-size: 0.95rem;
+				min-width: 2.2em;
+				padding: 0.3em 0.6em;
+				border: 1px solid var(--gridline);
+				border-radius: 8px;
+				background: var(--bg);
+				color: var(--fg);
+				cursor: pointer;
+			}
+			.cal-nav button:hover,
+			.cal-jump button:hover,
+			.cal-today:hover {
+				border-color: var(--accent);
+				color: var(--accent);
+			}
+			.cal-nav button:focus-visible,
+			.cal-jump button:focus-visible,
+			.cal-today:focus-visible {
+				outline: 2px solid var(--accent);
+			}
+			.cal-jump {
+				display: flex;
+				align-items: center;
+				gap: 0.4em;
+				margin-left: auto;
+			}
+			.cal-jump input {
+				font: inherit;
+				font-size: 0.9rem;
+				padding: 0.3em 0.5em;
+				border: 1px solid var(--gridline);
+				border-radius: 8px;
+				background: var(--bg);
+				color: var(--fg);
+			}
+			.cal-jump input:focus-visible {
+				outline: 2px solid var(--accent);
+			}
+
+			/* --- month grid --- */
+			.cal-month {
+				display: grid;
+				grid-template-columns: 2.2em repeat(7, 1fr);
+				gap: 4px;
+			}
+			.cal-month .dow {
+				align-self: end;
+				text-align: center;
+				font-size: 0.78rem;
+				text-transform: uppercase;
+				letter-spacing: 0.08em;
+				color: var(--dim);
+				padding-bottom: 0.3em;
+			}
+			.cal-month .wnum {
+				align-self: center;
+				text-align: right;
+				padding-right: 0.4em;
+				font-size: 0.75rem;
+				color: var(--dim);
+				font-variant-numeric: tabular-nums;
+				opacity: 0.8;
+			}
+			.day {
+				font: inherit;
+				font-size: clamp(0.95rem, 2.6vw, 1.2rem);
+				font-variant-numeric: tabular-nums;
+				aspect-ratio: 1;
+				max-height: 76px;
+				border: none;
+				border-radius: 50%;
+				background: none;
+				color: var(--fg);
+				cursor: pointer;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+			}
+			.day:hover {
+				background: var(--gridline);
+			}
+			.day:focus-visible {
+				outline: 2px solid var(--accent);
+			}
+			.day.out {
+				color: var(--dim);
+				opacity: 0.55;
+			}
+			.day.today {
+				outline: 2px solid var(--accent);
+				outline-offset: -2px;
+			}
+			.day.sel {
+				background: var(--accent);
+				color: var(--on-accent);
+				font-weight: 600;
+			}
+
+			/* --- year grid --- */
+			.cal-year {
+				display: grid;
+				grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+				gap: 1em;
+			}
+			.mini {
+				border: 1px solid var(--gridline);
+				border-radius: 10px;
+				padding: 0.6em;
+			}
+			.mini-title {
+				display: block;
+				width: 100%;
+				font: inherit;
+				font-size: 0.9rem;
+				font-weight: 600;
+				text-align: center;
+				padding: 0.2em 0 0.5em;
+				border: none;
+				background: none;
+				color: var(--fg);
+				cursor: pointer;
+			}
+			.mini-title:hover {
+				color: var(--accent);
+			}
+			.mini-title:focus-visible {
+				outline: 2px solid var(--accent);
+			}
+			.mini-grid {
+				display: grid;
+				grid-template-columns: repeat(7, 1fr);
+				gap: 2px;
+			}
+			.mini-grid .dow {
+				text-align: center;
+				font-size: 0.62rem;
+				color: var(--dim);
+				text-transform: uppercase;
+			}
+			.mini-day {
+				font: inherit;
+				font-size: 0.72rem;
+				font-variant-numeric: tabular-nums;
+				aspect-ratio: 1;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				border: none;
+				border-radius: 50%;
+				background: none;
+				color: var(--fg);
+				cursor: pointer;
+				padding: 0;
+			}
+			.mini-day:hover {
+				background: var(--gridline);
+			}
+			.mini-day:focus-visible {
+				outline: 2px solid var(--accent);
+			}
+			.mini-day.out {
+				color: var(--dim);
+				opacity: 0.5;
+			}
+			.mini-day.today {
+				outline: 1.5px solid var(--accent);
+				outline-offset: -1.5px;
+			}
+			.mini-day.sel {
+				background: var(--accent);
+				color: var(--on-accent);
+				font-weight: 600;
+			}
+
+			/* --- info line + settings --- */
+			.cal-info {
+				margin-top: 1em;
+				text-align: center;
+				color: var(--dim);
+				font-size: 0.95rem;
+				font-variant-numeric: tabular-nums;
+				min-height: 1.4em;
+			}
+			.cal-settings {
+				display: flex;
+				flex-wrap: wrap;
+				justify-content: center;
+				gap: 0.75em 2em;
+				margin-top: 1.25em;
+				font-size: 0.8rem;
+				color: var(--dim);
+			}
+			.cal-setting {
+				display: flex;
+				align-items: center;
+				gap: 0.5em;
+			}
+			.cal-setting .seg button {
+				font-size: 0.78rem;
+				padding: 0.25em 0.7em;
+			}
+			@media (max-width: 520px) {
+				.cal-topbar {
+					padding-right: 0;
+				}
+				.cal-jump {
+					margin-left: 0;
+				}
+				.cal-month {
+					grid-template-columns: 1.7em repeat(7, 1fr);
+					gap: 2px;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<div class="corner-group">
+			<button class="corner theme-toggle" type="button" aria-label="Toggle light / dark theme">☾</button>
+		</div>
+		<main class="cal">
+			<div class="cal-topbar">
+				<div class="seg" role="group" aria-label="Calendar view">
+					<button type="button" id="cal-view-month" data-view="month" aria-pressed="true">Month</button>
+					<button type="button" id="cal-view-year" data-view="year" aria-pressed="false">Year</button>
+				</div>
+				<div class="cal-nav">
+					<button type="button" id="cal-prev" aria-label="Previous month">‹</button>
+					<h1 id="cal-label">Loading…</h1>
+					<button type="button" id="cal-next" aria-label="Next month">›</button>
+				</div>
+				<div class="cal-jump">
+					<label class="sr-only" for="cal-date-input">Jump to date</label>
+					<input type="date" id="cal-date-input" />
+					<button type="button" id="cal-go">Go</button>
+				</div>
+				<button type="button" id="cal-today" class="cal-today">Today</button>
+			</div>
+
+			<div id="cal-month" class="cal-month" aria-label="Month calendar"></div>
+			<div id="cal-year" class="cal-year" aria-label="Year calendar" hidden></div>
+
+			<p id="cal-info" class="cal-info" aria-live="polite"></p>
+
+			<div class="cal-settings">
+				<div class="cal-setting" role="group" aria-label="Week starts on">
+					<span>Week starts on</span>
+					<div class="seg">
+						<button type="button" data-week-start="0" aria-pressed="true">Sun</button>
+						<button type="button" data-week-start="1" aria-pressed="false">Mon</button>
+					</div>
+				</div>
+				<div class="cal-setting" role="group" aria-label="Week number rule">
+					<span>Week numbers</span>
+					<div class="seg">
+						<button type="button" data-week-rule="full" aria-pressed="true">Full week</button>
+						<button type="button" data-week-rule="iso" aria-pressed="false">ISO 8601</button>
+					</div>
+				</div>
+			</div>
+		</main>
+		<script>
+			import '../scripts/calendar';
+		</script>
+		<script is:inline>
+			// Theme: three-state cycle light → dark → auto (auto = follow browser)
+			const root = document.documentElement;
+			const toggle = document.querySelector('.theme-toggle');
+			const mql = matchMedia('(prefers-color-scheme: dark)');
+			const ICONS = { light: '☀', dark: '☾', auto: '◐' };
+			const LABELS = {
+				light: 'Light theme',
+				dark: 'Dark theme',
+				auto: 'Auto theme (follows browser setting)',
+			};
+			const ORDER = ['light', 'dark', 'auto'];
+
+			function syncIcon() {
+				const mode = root.dataset.themeMode;
+				toggle.textContent = ICONS[mode];
+				toggle.title = LABELS[mode];
+				toggle.setAttribute('aria-label', LABELS[mode]);
+			}
+
+			function applyMode(mode) {
+				root.dataset.themeMode = mode;
+				root.dataset.theme = mode === 'auto' ? (mql.matches ? 'dark' : 'light') : mode;
+				try {
+					localStorage.setItem('calendar:theme', mode);
+				} catch {
+					/* storage unavailable — mode just won't persist */
+				}
+				syncIcon();
+			}
+
+			toggle.addEventListener('click', () => {
+				const current = root.dataset.themeMode;
+				applyMode(ORDER[(ORDER.indexOf(current) + 1) % ORDER.length]);
+			});
+
+			// In auto mode, react live when the browser theme changes
+			mql.addEventListener('change', () => {
+				if (root.dataset.themeMode === 'auto') {
+					root.dataset.theme = mql.matches ? 'dark' : 'light';
+				}
+			});
+
+			syncIcon();
+		</script>
+	</body>
+</html>
