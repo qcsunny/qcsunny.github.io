@@ -130,6 +130,9 @@ import BaseHead from '../components/BaseHead.astro';
 				gap: 0.4em;
 			}
 			.cal-nav h1 {
+				/* global.css colors every h1 near-black; without this the label
+				   is invisible in dark mode */
+				color: var(--fg);
 				font-size: clamp(1.1rem, 3vw, 1.4rem);
 				font-weight: 600;
 				min-width: 11ch;
