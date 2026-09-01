@@ -231,6 +231,9 @@ export function initBasic(scope: Scope, hooks: BasicHooks = {}): void {
 		setMode(saved === 'scientific' ? 'scientific' : 'standard');
 	}
 
+	// keep the keypad's DEG/RAD label in sync with the engine's initial mode
+	if (degButton) degButton.textContent = scope.deg ? 'DEG' : 'RAD';
+
 	historyClear.addEventListener('click', () => {
 		clearHistory();
 		renderHistory();

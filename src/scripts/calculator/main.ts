@@ -36,7 +36,7 @@ function saveVars(vars: Record<string, number>): void {
 	}
 }
 
-const scope: Scope = { vars: loadVars(), deg: true };
+const scope: Scope = { vars: loadVars(), deg: false };
 
 initTabs();
 const graph = initGraph(scope);
