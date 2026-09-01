@@ -6,7 +6,7 @@ export const SITE_DESCRIPTION =
 
 /** Cloudflare Web Analytics beacon token — create a free account at
  *  dash.cloudflare.com, add the site, then paste the token here. Empty = off. */
-export const CF_ANALYTICS_TOKEN = '';
+export const CF_ANALYTICS_TOKEN = '6dc1c25712424a5495eafb07d9e2ed82';
 
 /** Google AdSense publisher id (ca-pub-XXXX). Fill in after AdSense approval;
  *  empty = no ad slots are rendered anywhere on the site. */
