@@ -1,0 +1,10 @@
+// Cloudflare Workers Builds 配置（新版统一构建流程）
+// 构建产物 dist 作为静态资源发布；404 走 dist/404.html，尾斜杠按 Astro 默认
+{
+	"name": "qcsunny",
+	"compatibility_date": "2026-09-01",
+	"assets": {
+		"directory": "./dist",
+		"not_found_handling": "404-page"
+	}
+}
