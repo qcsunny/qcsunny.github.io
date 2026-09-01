@@ -8,6 +8,12 @@ export const SITE_DESCRIPTION =
  *  dash.cloudflare.com, add the site, then paste the token here. Empty = off. */
 export const CF_ANALYTICS_TOKEN = '6dc1c25712424a5495eafb07d9e2ed82';
 
+/** Google Search Console ownership-verification code (the content value of
+ *  the <meta name="google-site-verification"> tag). Get it at
+ *  search.google.com/search-console → Add property → URL prefix → HTML tag.
+ *  Empty = the meta tag is not rendered. */
+export const SEARCH_CONSOLE_VERIFICATION = '';
+
 /** Google AdSense publisher id (ca-pub-XXXX). Fill in after AdSense approval;
  *  empty = no ad slots are rendered anywhere on the site. */
 export const ADSENSE_CLIENT = '';
