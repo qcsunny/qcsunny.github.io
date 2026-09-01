@@ -1,0 +1,159 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title="Clock" description="A minimal fullscreen local clock: weekday, date and 24-hour time." />
+		<script is:inline>
+			// Apply theme before first paint to avoid a flash
+			const saved = localStorage.getItem('clock:theme');
+			const theme =
+				saved === 'light' || saved === 'dark'
+					? saved
+					: matchMedia('(prefers-color-scheme: dark)').matches
+						? 'dark'
+						: 'light';
+			document.documentElement.dataset.theme = theme;
+		</script>
+		<style>
+			:root {
+				--bg: #ffffff;
+				--fg: #000000;
+				color-scheme: light;
+			}
+			html[data-theme='dark'] {
+				--bg: #000000;
+				--fg: #ffffff;
+				color-scheme: dark;
+			}
+			* {
+				margin: 0;
+				padding: 0;
+			}
+			body {
+				background: var(--bg);
+				color: var(--fg);
+				height: 100dvh;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				overflow: hidden;
+				font-family:
+					system-ui,
+					-apple-system,
+					'Segoe UI',
+					Roboto,
+					'Helvetica Neue',
+					Arial,
+					sans-serif;
+				-webkit-font-smoothing: antialiased;
+			}
+			.clock {
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				gap: 0.2em;
+				padding: 0 0.25em;
+			}
+			.weekday {
+				font-size: clamp(1.25rem, 5vw, 3rem);
+				font-weight: 600;
+				letter-spacing: 0.12em;
+				text-transform: uppercase;
+			}
+			.date {
+				font-size: clamp(1rem, 4vw, 2.25rem);
+				font-weight: 400;
+				letter-spacing: 0.08em;
+				color: var(--fg);
+				opacity: 0.75;
+			}
+			.time {
+				font-size: min(17vw, 26dvh);
+				line-height: 1.1;
+				font-weight: 700;
+				font-variant-numeric: tabular-nums;
+				letter-spacing: 0.02em;
+				white-space: nowrap;
+			}
+			.corner {
+				position: fixed;
+				top: 1em;
+				font-size: 0.95rem;
+				opacity: 0.45;
+				text-decoration: none;
+				color: var(--fg);
+				background: none;
+				border: none;
+				font-family: inherit;
+				cursor: pointer;
+				padding: 0.4em 0.6em;
+			}
+			.corner:hover {
+				opacity: 1;
+			}
+			.corner:focus-visible {
+				outline: 2px solid currentColor;
+				opacity: 1;
+			}
+			.back {
+				left: 1em;
+			}
+			.theme-toggle {
+				right: 1em;
+			}
+		</style>
+	</head>
+	<body>
+		<a class="corner back" href="/">← Blog</a>
+		<button class="corner theme-toggle" type="button" aria-label="Toggle light / dark theme">☾</button>
+		<main class="clock" aria-live="off">
+			<div class="weekday" id="clock-weekday"></div>
+			<div class="date" id="clock-date"></div>
+			<div class="time" id="clock-time"></div>
+		</main>
+		<script is:inline>
+			const weekdayEl = document.getElementById('clock-weekday');
+			const dateEl = document.getElementById('clock-date');
+			const timeEl = document.getElementById('clock-time');
+
+			function render() {
+				const now = new Date();
+				weekdayEl.textContent = now.toLocaleDateString('en-US', { weekday: 'long' });
+				dateEl.textContent = now.toLocaleDateString('en-US', {
+					year: 'numeric',
+					month: 'long',
+					day: 'numeric',
+				});
+				const p = (n) => String(n).padStart(2, '0');
+				timeEl.textContent = `${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`;
+			}
+
+			render();
+			// sync to the next whole second, then tick every second
+			setTimeout(() => {
+				render();
+				setInterval(render, 1000);
+			}, 1000 - (Date.now() % 1000));
+
+			const toggle = document.querySelector('.theme-toggle');
+			toggle.addEventListener('click', () => {
+				const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+				document.documentElement.dataset.theme = next;
+				try {
+					localStorage.setItem('clock:theme', next);
+				} catch {
+					/* storage unavailable — theme just won't persist */
+				}
+			});
+			// keep the icon in sync with the active theme
+			const syncIcon = () => {
+				toggle.textContent = document.documentElement.dataset.theme === 'dark' ? '☀' : '☾';
+			};
+			syncIcon();
+			toggle.addEventListener('click', syncIcon);
+		</script>
+	</body>
+</html>
