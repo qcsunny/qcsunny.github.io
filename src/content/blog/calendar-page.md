@@ -4,7 +4,7 @@ description: '博客的 /calendar/ 全屏日历：月历/年历双视图、周�
 pubDate: 'Sep 01 2026'
 ---
 
-博客导航栏里的 **Calendar**（[/calendar/](https://qcsunny.github.io/calendar/)）是一个全屏日历页面，支持月历/年历双视图、周数显示和日期跳转。有意思的部分是周数规则，展开讲讲。
+博客导航栏里的 **Calendar**（[/calendar/](/calendar/)）是一个全屏日历页面，支持月历/年历双视图、周数显示和日期跳转。有意思的部分是周数规则，展开讲讲。
 
 ## 功能
 

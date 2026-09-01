@@ -4,12 +4,12 @@ description: '博客自建的 34 个纯浏览器端工具页：科学计算器�
 pubDate: 'Sep 01 2026'
 ---
 
-博客导航栏里的 **Calculator**（[/calculators/standard/](https://qcsunny.github.io/calculators/standard/)）是一个纯浏览器端运行的进阶计算器。它最初是四个选项卡挤在一个页面里，后来随着工具页体系（见 [Tools](https://qcsunny.github.io/tools/)）的建立被拆成了独立子页面——每个工具一个网址，更好分享、更好搜索：
+博客导航栏里的 **Calculator**（[/calculators/standard/](/calculators/standard/)）是一个纯浏览器端运行的进阶计算器。它最初是四个选项卡挤在一个页面里，后来随着工具页体系（见 [Tools](/tools/)）的建立被拆成了独立子页面——每个工具一个网址，更好分享、更好搜索：
 
-- **Calculator** → [/calculators/standard/](https://qcsunny.github.io/calculators/standard/)（科学计算器）
-- **Graph** → [/calculators/graph/](https://qcsunny.github.io/calculators/graph/)（函数绘图）
-- **Units** → 独立成 8 个换算页 [/converters/length/](https://qcsunny.github.io/converters/length/) 等（长度、重量、温度、面积、体积、速度、时间、数据大小）
-- **Stats** → 并入 [/calculators/average/](https://qcsunny.github.io/calculators/average/)（平均数与统计）
+- **Calculator** → [/calculators/standard/](/calculators/standard/)（科学计算器）
+- **Graph** → [/calculators/graph/](/calculators/graph/)（函数绘图）
+- **Units** → 独立成 8 个换算页 [/converters/length/](/converters/length/) 等（长度、重量、温度、面积、体积、速度、时间、数据大小）
+- **Stats** → 并入 [/calculators/average/](/calculators/average/)（平均数与统计）
 
 旧地址 `/calculator/` 会自动跳转到新页面。
 
@@ -19,10 +19,10 @@ pubDate: 'Sep 01 2026'
 
 | 分类 | 内容 |
 | --- | --- |
-| [Calculators](https://qcsunny.github.io/calculators/) | 科学计算器、函数绘图、百分比、百分比变化、分数、比例、平均数与统计、单利 |
-| [Converters](https://qcsunny.github.io/converters/) | 长度、重量、温度、面积、体积、速度、时间、数据大小——双向换算、一键交换 |
-| [Finance](https://qcsunny.github.io/finance/) | 复利（含月定投、逐年明细）、等额本息月供与摊销表、房贷（含税险 HOA）、投资回报、ROI、折扣、年薪换算、个税 |
-| [Tools](https://qcsunny.github.io/tools/) | 密码/UUID/随机数生成器、二维码生成器、字数统计、字符统计、JSON 格式化、Base64、颜色转换 |
+| [Calculators](/calculators/) | 科学计算器、函数绘图、百分比、百分比变化、分数、比例、平均数与统计、单利 |
+| [Converters](/converters/) | 长度、重量、温度、面积、体积、速度、时间、数据大小——双向换算、一键交换 |
+| [Finance](/finance/) | 复利（含月定投、逐年明细）、等额本息月供与摊销表、房贷（含税险 HOA）、投资回报、ROI、折扣、年薪换算、个税 |
+| [Tools](/tools/) | 密码/UUID/随机数生成器、二维码生成器、字数统计、字符统计、JSON 格式化、Base64、颜色转换 |
 
 几个值得一提的细节：
 
@@ -96,7 +96,7 @@ tokenizer → parser（递归下降） → AST → compile 为闭包
 
 ### 手写二维码编码器
 
-[二维码生成器](https://qcsunny.github.io/tools/qr-code-generator/)是工具集里最硬核的一个——整条编码管线都是手写的，不到 400 行：
+[二维码生成器](/tools/qr-code-generator/)是工具集里最硬核的一个——整条编码管线都是手写的，不到 400 行：
 
 ```
 UTF-8 字节 → 位流（模式+长度+数据+填充）

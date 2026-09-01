@@ -15,6 +15,12 @@ Features:
 - ✅ RSS Feed support
 - ✅ Markdown & MDX support
 
+## 🌐 Domain & Deployment
+
+Live at **https://qcsunny.org** (Cloudflare Registrar). The repo stays in sync on
+GitHub Pages at `qcsunny.github.io` (kept as a legacy mirror; canonical URLs and the
+sitemap always point at `qcsunny.org`).
+
 ## 🚀 Project Structure
 
 Inside of your Astro project, you'll see the following folders and files:
@@ -68,7 +74,7 @@ Both are controlled by constants in `src/consts.ts` and stay completely off unti
 
 ### Cloudflare Web Analytics (no cookies)
 
-1. Create a free account at [dash.cloudflare.com](https://dash.cloudflare.com) and add the site `qcsunny.github.io`.
+1. Create a free account at [dash.cloudflare.com](https://dash.cloudflare.com) and add the site `qcsunny.org`.
 2. Copy the beacon **token** from the site's Web Analytics settings.
 3. Paste it into `CF_ANALYTICS_TOKEN` in `src/consts.ts` and redeploy.
    While the token is empty, the beacon script is not rendered at all.

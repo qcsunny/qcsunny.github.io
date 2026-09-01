@@ -20,7 +20,7 @@ export function initQr(host: HTMLElement): void {
 	input.className = 't-textarea';
 	input.rows = 3;
 	input.spellcheck = false;
-	input.value = 'https://qcsunny.github.io/';
+	input.value = 'https://qcsunny.org/';
 	field.append(label, input);
 
 	const eccField = document.createElement('div');

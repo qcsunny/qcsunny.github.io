@@ -6,7 +6,7 @@ import { defineConfig, fontProviders } from 'astro/config';
 
 // https://astro.build/config
 export default defineConfig({
-	site: 'https://qcsunny.github.io',
+	site: 'https://qcsunny.org',
 	integrations: [mdx(), sitemap()],
 	fonts: [
 		{

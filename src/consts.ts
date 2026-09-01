@@ -1,6 +1,6 @@
 // Place any global data in this file. You can import this data from anywhere in your site with the `import` keyword.
 
-export const SITE_TITLE = 'QCSunny';
+export const SITE_TITLE = 'QCSunny Lab';
 export const SITE_DESCRIPTION =
 	'个人博客与免费在线工具集：科学计算器、单位换算、复利与房贷计算、二维码生成器等 34 个纯浏览器端工具。Free browser-based tools: calculators, converters, finance helpers and more.';
 
