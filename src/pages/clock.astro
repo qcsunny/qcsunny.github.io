@@ -18,6 +18,9 @@ import BaseHead from '../components/BaseHead.astro';
 						? 'dark'
 						: 'light'
 					: mode;
+			// Restore the seconds toggle (affects the time font size)
+			document.documentElement.dataset.seconds =
+				localStorage.getItem('clock:seconds') === 'off' ? 'off' : 'on';
 		</script>
 		<style>
 			:root {
@@ -80,9 +83,18 @@ import BaseHead from '../components/BaseHead.astro';
 				letter-spacing: 0.02em;
 				white-space: nowrap;
 			}
-			.corner {
+			/* seconds hidden: HH:MM is 5 chars instead of 8, let it fill more width */
+			html[data-seconds='off'] .time {
+				font-size: min(27vw, 30dvh);
+			}
+			.corner-group {
 				position: fixed;
 				top: 1em;
+				right: 1em;
+				display: flex;
+				gap: 0.15em;
+			}
+			.corner {
 				font-size: 0.95rem;
 				opacity: 0.45;
 				text-decoration: none;
@@ -96,17 +108,26 @@ import BaseHead from '../components/BaseHead.astro';
 			.corner:hover {
 				opacity: 1;
 			}
+			/* seconds visible = button in its active state */
+			.seconds-toggle[aria-pressed='true'] {
+				opacity: 0.9;
+			}
+			.seconds-toggle[aria-pressed='true']:hover {
+				opacity: 1;
+			}
 			.corner:focus-visible {
 				outline: 2px solid currentColor;
 				opacity: 1;
 			}
-			.theme-toggle {
-				right: 1em;
-			}
 		</style>
 	</head>
 	<body>
-		<button class="corner theme-toggle" type="button" aria-label="Toggle light / dark theme">☾</button>
+		<div class="corner-group">
+			<button class="corner seconds-toggle" type="button" aria-label="Hide seconds" aria-pressed="true">
+				:ss
+			</button>
+			<button class="corner theme-toggle" type="button" aria-label="Toggle light / dark theme">☾</button>
+		</div>
 		<main class="clock" aria-live="off">
 			<div class="weekday" id="clock-weekday"></div>
 			<div class="date" id="clock-date"></div>
@@ -116,6 +137,7 @@ import BaseHead from '../components/BaseHead.astro';
 			const weekdayEl = document.getElementById('clock-weekday');
 			const dateEl = document.getElementById('clock-date');
 			const timeEl = document.getElementById('clock-time');
+			const root = document.documentElement;
 
 			function render() {
 				const now = new Date();
@@ -126,7 +148,10 @@ import BaseHead from '../components/BaseHead.astro';
 					day: 'numeric',
 				});
 				const p = (n) => String(n).padStart(2, '0');
-				timeEl.textContent = `${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`;
+				const showSeconds = () => document.documentElement.dataset.seconds !== 'off';
+				timeEl.textContent = showSeconds()
+					? `${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`
+					: `${p(now.getHours())}:${p(now.getMinutes())}`;
 			}
 
 			render();
@@ -136,8 +161,29 @@ import BaseHead from '../components/BaseHead.astro';
 				setInterval(render, 1000);
 			}, 1000 - (Date.now() % 1000));
 
+			// Seconds toggle: show / hide the seconds part of the time
+			const secondsToggle = document.querySelector('.seconds-toggle');
+
+			function syncSecondsButton() {
+				const off = root.dataset.seconds === 'off';
+				secondsToggle.setAttribute('aria-pressed', String(!off));
+				secondsToggle.setAttribute('aria-label', off ? 'Show seconds' : 'Hide seconds');
+			}
+
+			secondsToggle.addEventListener('click', () => {
+				root.dataset.seconds = root.dataset.seconds === 'off' ? 'on' : 'off';
+				try {
+					localStorage.setItem('clock:seconds', root.dataset.seconds);
+				} catch {
+					/* storage unavailable — choice just won't persist */
+				}
+				syncSecondsButton();
+				render();
+			});
+
+			syncSecondsButton();
+
 			// Theme: three-state cycle light → dark → auto (auto = follow browser)
-			const root = document.documentElement;
 			const toggle = document.querySelector('.theme-toggle');
 			const mql = matchMedia('(prefers-color-scheme: dark)');
 			const ICONS = { light: '☀', dark: '☾', auto: '◐' };
