@@ -71,7 +71,7 @@ import BaseHead from '../components/BaseHead.astro';
 				opacity: 0.75;
 			}
 			.time {
-				font-size: min(17vw, 26dvh);
+				font-size: min(17vw, 30dvh);
 				line-height: 1.1;
 				font-weight: 700;
 				font-variant-numeric: tabular-nums;
@@ -98,16 +98,12 @@ import BaseHead from '../components/BaseHead.astro';
 				outline: 2px solid currentColor;
 				opacity: 1;
 			}
-			.back {
-				left: 1em;
-			}
 			.theme-toggle {
 				right: 1em;
 			}
 		</style>
 	</head>
 	<body>
-		<a class="corner back" href="/">← Blog</a>
 		<button class="corner theme-toggle" type="button" aria-label="Toggle light / dark theme">☾</button>
 		<main class="clock" aria-live="off">
 			<div class="weekday" id="clock-weekday"></div>
