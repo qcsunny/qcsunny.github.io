@@ -4,8 +4,6 @@ description: '智谱 GLM-5.3 与腾讯混元 Hy4 preview 的逐项对比：confi
 pubDate: 'Sep 01 2026'
 ---
 
-先说清对象：本文里的 "hy-preview" 指腾讯混元 **Hy4 preview**（`tencent/hy4-preview`，2026 年 8 月 28 日发布并开源）。混元的 preview 系列还有一个 Hy3 preview（2026 年 4 月），如果你要对比的是那一个，结论会完全不同——Hy3 在 Artificial Analysis 上的智能指数是 42.2，GLM-5.3 是 59.5，不在一个量级。
-
 两个模型的发布只隔了 14 天：GLM-5.3 是 8 月 14 日，Hy4 preview 是 8 月 28 日。都开源权重，都是 1M 上下文，都主打"长程 Agent + 真实软件工程"。
 
 ## 结论先行
