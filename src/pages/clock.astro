@@ -8,14 +8,16 @@ import BaseHead from '../components/BaseHead.astro';
 		<BaseHead title="Clock" description="A minimal fullscreen local clock: weekday, date and 24-hour time." />
 		<script is:inline>
 			// Apply theme before first paint to avoid a flash
+			// Modes: light / dark / auto (auto follows the browser theme)
 			const saved = localStorage.getItem('clock:theme');
-			const theme =
-				saved === 'light' || saved === 'dark'
-					? saved
-					: matchMedia('(prefers-color-scheme: dark)').matches
+			const mode = saved === 'light' || saved === 'dark' || saved === 'auto' ? saved : 'auto';
+			document.documentElement.dataset.themeMode = mode;
+			document.documentElement.dataset.theme =
+				mode === 'auto'
+					? matchMedia('(prefers-color-scheme: dark)').matches
 						? 'dark'
-						: 'light';
-			document.documentElement.dataset.theme = theme;
+						: 'light'
+					: mode;
 		</script>
 		<style>
 			:root {
@@ -134,22 +136,49 @@ import BaseHead from '../components/BaseHead.astro';
 				setInterval(render, 1000);
 			}, 1000 - (Date.now() % 1000));
 
+			// Theme: three-state cycle light → dark → auto (auto = follow browser)
+			const root = document.documentElement;
 			const toggle = document.querySelector('.theme-toggle');
-			toggle.addEventListener('click', () => {
-				const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-				document.documentElement.dataset.theme = next;
+			const mql = matchMedia('(prefers-color-scheme: dark)');
+			const ICONS = { light: '☀', dark: '☾', auto: '◐' };
+			const LABELS = {
+				light: 'Light theme',
+				dark: 'Dark theme',
+				auto: 'Auto theme (follows browser setting)',
+			};
+			const ORDER = ['light', 'dark', 'auto'];
+
+			function syncIcon() {
+				const mode = root.dataset.themeMode;
+				toggle.textContent = ICONS[mode];
+				toggle.title = LABELS[mode];
+				toggle.setAttribute('aria-label', LABELS[mode]);
+			}
+
+			function applyMode(mode) {
+				root.dataset.themeMode = mode;
+				root.dataset.theme = mode === 'auto' ? (mql.matches ? 'dark' : 'light') : mode;
 				try {
-					localStorage.setItem('clock:theme', next);
+					localStorage.setItem('clock:theme', mode);
 				} catch {
-					/* storage unavailable — theme just won't persist */
+					/* storage unavailable — mode just won't persist */
+				}
+				syncIcon();
+			}
+
+			toggle.addEventListener('click', () => {
+				const current = root.dataset.themeMode;
+				applyMode(ORDER[(ORDER.indexOf(current) + 1) % ORDER.length]);
+			});
+
+			// In auto mode, react live when the browser theme changes
+			mql.addEventListener('change', () => {
+				if (root.dataset.themeMode === 'auto') {
+					root.dataset.theme = mql.matches ? 'dark' : 'light';
 				}
 			});
-			// keep the icon in sync with the active theme
-			const syncIcon = () => {
-				toggle.textContent = document.documentElement.dataset.theme === 'dark' ? '☀' : '☾';
-			};
+
 			syncIcon();
-			toggle.addEventListener('click', syncIcon);
 		</script>
 	</body>
 </html>
