@@ -3,21 +3,21 @@
 // all pages through the use of the <BaseHead /> component.
 import '../styles/global.css';
 import type { ImageMetadata } from 'astro';
-import FallbackImage from '../assets/blog-placeholder-1.jpg';
 import { CF_ANALYTICS_TOKEN, SITE_TITLE } from '../consts';
 import { Font } from 'astro:assets';
 
 interface Props {
 	title: string;
 	description: string;
-	image?: ImageMetadata;
+	/** path (e.g. /og.png) or imported image; defaults to the brand og.png */
+	image?: string | ImageMetadata;
 	/** override the canonical URL (used by redirect pages pointing at their target) */
 	canonical?: string;
 }
 
 const canonicalURL = new URL(Astro.props.canonical ?? Astro.url.pathname, Astro.site);
 
-const { title, description, image = FallbackImage } = Astro.props;
+const { title, description, image = '/og.png' } = Astro.props;
 ---
 
 <!-- Global Metadata -->
@@ -40,6 +40,14 @@ const { title, description, image = FallbackImage } = Astro.props;
 <link rel="canonical" href={canonicalURL} />
 
 <!-- Primary Meta Tags -->
+<script is:inline>
+	(() => {
+		const mode = localStorage.getItem('site:theme') || 'auto';
+		const dark =
+			mode === 'dark' || (mode === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+		if (dark) document.documentElement.dataset.theme = 'dark';
+	})();
+</script>
 <title>{title}</title>
 <meta name="description" content={description} />
 
@@ -48,7 +56,10 @@ const { title, description, image = FallbackImage } = Astro.props;
 <meta property="og:url" content={Astro.url} />
 <meta property="og:title" content={title} />
 <meta property="og:description" content={description} />
-<meta property="og:image" content={new URL(image.src, Astro.url)} />
+<meta
+			property="og:image"
+			content={new URL(typeof image === 'string' ? image : image.src, Astro.site)}
+		/>
 
 <!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image" />

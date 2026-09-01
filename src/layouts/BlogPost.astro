@@ -6,9 +6,9 @@ import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
 
-type Props = CollectionEntry<'blog'>['data'];
+type Props = CollectionEntry<'blog'>['data'] & { minutes?: number };
 
-const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
+const { title, description, pubDate, updatedDate, heroImage, minutes } = Astro.props;
 ---
 
 <html lang="en">
@@ -33,21 +33,40 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 				width: 720px;
 				max-width: calc(100% - 2em);
 				margin: auto;
-				padding: 1em;
-				color: rgb(var(--gray-dark));
+				padding: 2.5em 1em 3em;
+				color: var(--fg);
 			}
 			.title {
-				margin-bottom: 1em;
-				padding: 1em 0;
+				margin: 0 0 2.5em;
+				padding: 0 0 2em;
+				border-bottom: 1px solid var(--gridline);
 				text-align: center;
-				line-height: 1;
 			}
 			.title h1 {
-				margin: 0 0 0.5em 0;
+				font-size: clamp(1.8rem, 4.5vw, 2.5rem);
+				margin: 0.35em 0 0.4em;
 			}
-			.date {
-				margin-bottom: 0.5em;
-				color: rgb(var(--gray));
+			.meta {
+				display: flex;
+				justify-content: center;
+				flex-wrap: wrap;
+				gap: 0.6em;
+				align-items: center;
+				margin: 0;
+				color: var(--dim);
+				font-size: 0.85rem;
+				font-family:
+					ui-monospace,
+					'SFMono-Regular',
+					Consolas,
+					Menlo,
+					monospace;
+			}
+			.lede {
+				color: var(--dim);
+				font-size: 1.05rem;
+				margin: 0 auto;
+				max-width: 36em;
 			}
 			.last-updated-on {
 				font-style: italic;
@@ -63,20 +82,22 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 					{heroImage && <Image width={1020} height={510} src={heroImage} alt="" />}
 				</div>
 				<div class="prose">
-					<div class="title">
-						<div class="date">
+					<header class="title">
+						<p class="meta">
 							<FormattedDate date={pubDate} />
+							<span aria-hidden="true">·</span>
+							{minutes && <span>{minutes} min read</span>}
 							{
 								updatedDate && (
-									<div class="last-updated-on">
-										Last updated on <FormattedDate date={updatedDate} />
-									</div>
+									<span class="last-updated-on">
+										updated <FormattedDate date={updatedDate} />
+									</span>
 								)
 							}
-						</div>
+						</p>
 						<h1>{title}</h1>
-						<hr />
-					</div>
+						{description && <p class="lede">{description}</p>}
+					</header>
 					<slot />
 				</div>
 			</article>

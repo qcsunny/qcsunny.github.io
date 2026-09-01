@@ -1,24 +1,27 @@
 ---
-import { SITE_TITLE } from '../consts';
 import HeaderLink from './HeaderLink.astro';
+import { SITE_TITLE } from '../consts';
 ---
 
 <header>
 	<nav>
-		<h2><a href="/">{SITE_TITLE}</a></h2>
-		<div class="internal-links">
-			<HeaderLink href="/">Home</HeaderLink>
-			<HeaderLink href="/blog">Blog</HeaderLink>
-			<HeaderLink href="/calculators/standard">Calculator</HeaderLink>
-			<HeaderLink href="/clock">Clock</HeaderLink>
-			<HeaderLink href="/calendar">Calendar</HeaderLink>
-			<HeaderLink href="/tools">Tools</HeaderLink>
-			<HeaderLink href="/about">About</HeaderLink>
+		<div class="nav-left">
+			<h2><a href="/">{SITE_TITLE}</a></h2>
+			<div class="nav-links">
+				<HeaderLink href="/">Home</HeaderLink>
+				<HeaderLink href="/blog">Blog</HeaderLink>
+				<HeaderLink href="/calculators/standard">Calculator</HeaderLink>
+				<HeaderLink href="/clock">Clock</HeaderLink>
+				<HeaderLink href="/calendar">Calendar</HeaderLink>
+				<HeaderLink href="/tools">Tools</HeaderLink>
+				<HeaderLink href="/about">About</HeaderLink>
+			</div>
 		</div>
-		<div class="social-links">
+		<div class="nav-right">
+			<button class="theme-toggle" type="button" aria-label="Toggle light / dark theme">☾</button>
 			<a href="https://github.com/qcsunny/qcsunny.github.io" target="_blank" rel="noopener">
 				<span class="sr-only">Source code on GitHub</span>
-				<svg viewBox="0 0 16 16" aria-hidden="true" width="32" height="32"
+				<svg viewBox="0 0 16 16" aria-hidden="true" width="20" height="20"
 					><path
 						fill="currentColor"
 						d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"
@@ -28,44 +31,146 @@ import HeaderLink from './HeaderLink.astro';
 		</div>
 	</nav>
 </header>
+
+<script>
+	// three-state theme cycle shared with the tool pages (localStorage "site:theme")
+	const button = document.querySelector<HTMLButtonElement>('.theme-toggle');
+	const order = ['auto', 'light', 'dark'] as const;
+	const glyphs = { auto: '◐', light: '☀', dark: '☾' } as const;
+	const apply = (mode: string): void => {
+		// "auto" tracks the system preference, same as the anti-flash script in BaseHead
+		const dark =
+			mode === 'dark' || (mode === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+		if (dark) document.documentElement.dataset.theme = 'dark';
+		else document.documentElement.removeAttribute('data-theme');
+		button?.setAttribute('aria-label', `Theme: ${mode} (click to change)`);
+	};
+	matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+		if ((localStorage.getItem('site:theme') ?? 'auto') === 'auto') apply('auto');
+	});
+	const stored = localStorage.getItem('site:theme') ?? 'auto';
+	if (stored !== 'auto') apply(stored);
+	button?.addEventListener('click', () => {
+		const current = localStorage.getItem('site:theme') ?? 'auto';
+		const next = order[(order.indexOf(current as (typeof order)[number]) + 1) % order.length];
+		localStorage.setItem('site:theme', next);
+		apply(next);
+		button && (button.textContent = glyphs[next]);
+	});
+	const initial = localStorage.getItem('site:theme') ?? 'auto';
+	button && (button.textContent = glyphs[initial as keyof typeof glyphs]);
+</script>
+
 <style>
 	header {
-		margin: 0;
-		padding: 0 1em;
-		background: white;
-		box-shadow: 0 2px 8px rgba(var(--black), 5%);
-	}
-	h2 {
-		margin: 0;
-		font-size: 1em;
-	}
-
-	h2 a,
-	h2 a.active {
-		text-decoration: none;
+		position: sticky;
+		top: 0;
+		z-index: 50;
+		background: color-mix(in srgb, var(--bg) 82%, transparent);
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
+		border-bottom: 1px solid var(--gridline);
 	}
 	nav {
+		max-width: 960px;
+		margin: 0 auto;
+		padding: 0.7em 1.25em;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
+		gap: 1em;
 	}
-	nav a {
-		padding: 1em 0.5em;
-		color: var(--black);
-		border-bottom: 4px solid transparent;
-		text-decoration: none;
-	}
-	nav a.active {
-		text-decoration: none;
-		border-bottom-color: var(--accent);
-	}
-	.social-links,
-	.social-links a {
+	.nav-left {
 		display: flex;
+		align-items: baseline;
+		gap: 1.75em;
+		min-width: 0;
+	}
+	h2 {
+		margin: 0;
+		font-size: 1.05rem;
+		font-weight: 800;
+		letter-spacing: -0.02em;
+		white-space: nowrap;
+	}
+	h2 a,
+	h2 a.active {
+		color: var(--fg);
+		text-decoration: none;
+	}
+	h2 a:hover {
+		color: var(--accent);
+		text-decoration: none;
+	}
+	.nav-links {
+		display: flex;
+		align-items: baseline;
+		gap: 1.1em;
+		overflow-x: auto;
+		scrollbar-width: none;
+	}
+	.nav-links::-webkit-scrollbar {
+		display: none;
+	}
+	.nav-right {
+		display: flex;
+		align-items: center;
+		gap: 0.5em;
+	}
+	.theme-toggle {
+		border: 1px solid var(--gridline);
+		background: transparent;
+		color: var(--dim);
+		border-radius: 8px;
+		width: 34px;
+		height: 34px;
+		font-size: 15px;
+		line-height: 1;
+		cursor: pointer;
+		display: grid;
+		place-items: center;
+		transition:
+			color 0.15s ease,
+			border-color 0.15s ease;
+	}
+	.theme-toggle:hover {
+		color: var(--accent);
+		border-color: var(--accent);
+	}
+	.nav-right a {
+		color: var(--dim);
+		display: grid;
+		place-items: center;
+		width: 34px;
+		height: 34px;
+		border-radius: 8px;
+		border: 1px solid var(--gridline);
+		transition:
+			color 0.15s ease,
+			border-color 0.15s ease;
+	}
+	.nav-right a:hover {
+		color: var(--accent);
+		border-color: var(--accent);
+	}
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
 	}
 	@media (max-width: 720px) {
-		.social-links {
-			display: none;
+		.nav-left {
+			gap: 1em;
+		}
+		.nav-links {
+			gap: 0.9em;
+			font-size: 0.9rem;
 		}
 	}
 </style>

@@ -2,7 +2,7 @@
 // Shared lightweight shell for every tool page and tool index:
 //  - minimal top bar: site name → home, breadcrumb (Tools › Category › Page), theme toggle
 //  - three-state theme (light / dark / auto) with pre-paint inline script,
-//    persisted under the shared key "tools:theme"
+//    persisted under the shared key "site:theme"
 //  - t-prefixed global styles (runtime-built DOM never gets the scoped
 //    data-astro-cid attribute, so is:global is required)
 import BaseHead from '../BaseHead.astro';
@@ -113,7 +113,7 @@ const year = new Date().getFullYear();
 		<script is:inline>
 			// Apply theme before first paint to avoid a flash.
 			// Shared across all tool pages via one preference key.
-			const saved = localStorage.getItem('tools:theme');
+			const saved = localStorage.getItem('site:theme');
 			const mode = saved === 'light' || saved === 'dark' || saved === 'auto' ? saved : 'auto';
 			document.documentElement.dataset.themeMode = mode;
 			document.documentElement.dataset.theme =
@@ -124,24 +124,8 @@ const year = new Date().getFullYear();
 					: mode;
 		</script>
 		<style is:global>
-			:root {
-				--bg: #ffffff;
-				--fg: #1a1f28;
-				--dim: #6b7280;
-				--gridline: #e5e9f0;
-				--accent: #2337ff;
-				--on-accent: #ffffff;
-				color-scheme: light;
-			}
-			html[data-theme='dark'] {
-				--bg: #000000;
-				--fg: #f2f4f8;
-				--dim: #8a919c;
-				--gridline: #2a2f38;
-				--accent: #7d90ff;
-				--on-accent: #000000;
-				color-scheme: dark;
-			}
+			/* theme tokens (--bg/--fg/…) are defined globally in global.css,
+			   shared with the blog side; html[data-theme] drives dark mode */
 			* {
 				margin: 0;
 				padding: 0;
@@ -1042,7 +1026,7 @@ const year = new Date().getFullYear();
 						root.dataset.themeMode = mode;
 						root.dataset.theme = mode === 'auto' ? (mql.matches ? 'dark' : 'light') : mode;
 						try {
-							localStorage.setItem('tools:theme', mode);
+							localStorage.setItem('site:theme', mode);
 						} catch {
 							/* storage unavailable — mode just won't persist */
 						}

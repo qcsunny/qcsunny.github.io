@@ -88,7 +88,9 @@ import { SITE_TITLE } from '../consts';
 
 <style>
 	.privacy-main {
-		max-width: 42rem;
+		/* min() keeps the column inside small viewports (global main's
+		   max-width would otherwise be overridden by this rule) */
+		max-width: min(42rem, calc(100% - 2.5rem));
 		margin: 0 auto;
 		padding: 2.5rem 1.25rem;
 		font-size: 1rem;

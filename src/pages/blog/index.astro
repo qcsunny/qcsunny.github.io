@@ -1,114 +1,237 @@
 ---
-import { Image } from 'astro:assets';
 import { getCollection } from 'astro:content';
 import BaseHead from '../../components/BaseHead.astro';
 import Footer from '../../components/Footer.astro';
 import FormattedDate from '../../components/FormattedDate.astro';
 import Header from '../../components/Header.astro';
-import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
+import { SITE_TITLE } from '../../consts';
 
 const posts = (await getCollection('blog')).sort(
 	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
 );
+const [featured, ...rest] = posts;
+
+// rough reading-time estimate: ~220 latin words or ~400 CJK chars per minute
+const readMinutes = (body: string): number => {
+	const words = body.match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu)?.length ?? 0;
+	const cjk = body.match(/[\p{Script=Han}]/gu)?.length ?? 0;
+	const minutes = (words - cjk) / 220 + cjk / 400;
+	return Math.max(1, Math.round(minutes));
+};
 ---
 
 <!doctype html>
 <html lang="en">
 	<head>
-		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-		<style>
-			main {
-				width: 960px;
-			}
-			ul {
-				display: flex;
-				flex-wrap: wrap;
-				gap: 2rem;
-				list-style-type: none;
-				margin: 0;
-				padding: 0;
-			}
-			ul li {
-				width: calc(50% - 1rem);
-			}
-			ul li * {
-				text-decoration: none;
-				transition: 0.2s ease;
-			}
-			ul li:first-child {
-				width: 100%;
-				margin-bottom: 1rem;
-				text-align: center;
-			}
-			ul li:first-child img {
-				width: 100%;
-			}
-			ul li:first-child .title {
-				font-size: 2.369rem;
-			}
-			ul li img {
-				margin-bottom: 0.5rem;
-				border-radius: 12px;
-			}
-			ul li a {
-				display: block;
-			}
-			.title {
-				margin: 0;
-				color: rgb(var(--black));
-				line-height: 1;
-			}
-			.date {
-				margin: 0;
-				color: rgb(var(--gray));
-			}
-			ul li a:hover h4,
-			ul li a:hover .date {
-				color: rgb(var(--accent));
-			}
-			ul a:hover img {
-				box-shadow: var(--box-shadow);
-			}
-			@media (max-width: 720px) {
-				ul {
-					gap: 0.5em;
-				}
-				ul li {
-					width: 100%;
-					text-align: center;
-				}
-				ul li:first-child {
-					margin-bottom: 0;
-				}
-				ul li:first-child .title {
-					font-size: 1.563em;
-				}
-			}
-		</style>
+		<BaseHead
+			title={`Blog — ${SITE_TITLE}`}
+			description="Technical write-ups: zero-dependency browser tools, QR encoding, theme systems and the math behind the calculators."
+		/>
 	</head>
 	<body>
 		<Header />
 		<main>
-			<section>
-				<ul>
-					{
-						posts.map((post) => (
-							<li>
-								<a href={`/blog/${post.id}/`}>
-									{post.data.heroImage && (
-										<Image width={720} height={360} src={post.data.heroImage} alt="" />
-									)}
-									<h4 class="title">{post.data.title}</h4>
-									<p class="date">
-										<FormattedDate date={post.data.pubDate} />
-									</p>
-								</a>
-							</li>
-						))
-					}
-				</ul>
-			</section>
+			<p class="eyebrow">Blog</p>
+			<h1>Writing about the craft</h1>
+			<p class="intro">
+				Hand-rolled QR encoding, a zero-dependency expression engine, theme systems, and the
+				math behind the calculators — notes from building this site.
+			</p>
+			<p class="intro" lang="zh-CN">
+				记录本站的构建过程：手写二维码编码器、零依赖表达式引擎、主题系统，以及计算器与换算器背后的数学。
+			</p>
+
+			{
+				featured && (
+					<a class="featured" href={`/blog/${featured.id}/`}>
+						<p class="featured-label">Latest</p>
+						<h2 class="featured-title">{featured.data.title}</h2>
+						<p class="featured-desc">{featured.data.description}</p>
+						<p class="meta">
+							<FormattedDate date={featured.data.pubDate} />
+							<span aria-hidden="true">·</span>
+							<span>{readMinutes(featured.body ?? '')} min read</span>
+						</p>
+					</a>
+				)
+			}
+
+			<ul class="post-list">
+				{
+					rest.map((post) => (
+						<li>
+							<a href={`/blog/${post.id}/`}>
+								<span class="date">
+									<FormattedDate date={post.data.pubDate} />
+								</span>
+								<span class="post-body">
+									<span class="post-title">{post.data.title}</span>
+									<span class="post-desc">{post.data.description}</span>
+								</span>
+								<span class="arrow" aria-hidden="true">→</span>
+							</a>
+						</li>
+					))
+				}
+			</ul>
 		</main>
 		<Footer />
 	</body>
 </html>
+
+<style>
+	.eyebrow {
+		font-family:
+			ui-monospace,
+			'SFMono-Regular',
+			Consolas,
+			Menlo,
+			monospace;
+		font-size: 0.8rem;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--accent);
+		margin-bottom: 0.4em;
+	}
+	h1 {
+		font-size: clamp(1.9rem, 4.5vw, 2.6rem);
+		margin-bottom: 0.5em;
+	}
+	.intro {
+		color: var(--dim);
+		max-width: 40em;
+	}
+	.intro + .intro {
+		margin-top: 0.5em;
+	}
+	[lang='zh-CN'] {
+		line-height: 1.9;
+	}
+
+	/* --- featured post --- */
+	.featured {
+		display: block;
+		margin-top: 3rem;
+		padding: 1.6em 1.7em 1.4em;
+		border: 1px solid var(--gridline);
+		border-radius: 14px;
+		background: var(--card);
+		text-decoration: none;
+		transition:
+			border-color 0.15s ease,
+			box-shadow 0.15s ease;
+	}
+	.featured:hover {
+		border-color: var(--accent);
+		box-shadow: var(--box-shadow);
+		text-decoration: none;
+	}
+	.featured-label {
+		font-family:
+			ui-monospace,
+			'SFMono-Regular',
+			Consolas,
+			Menlo,
+			monospace;
+		font-size: 0.75rem;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--accent);
+		margin: 0 0 0.7em;
+	}
+	.featured-title {
+		font-size: clamp(1.35rem, 3vw, 1.75rem);
+		margin-bottom: 0.45em;
+		transition: color 0.15s ease;
+	}
+	.featured:hover .featured-title {
+		color: var(--accent);
+	}
+	.featured-desc {
+		color: var(--dim);
+		margin-bottom: 1em;
+	}
+	.meta {
+		display: flex;
+		gap: 0.6em;
+		align-items: center;
+		color: var(--dim);
+		font-size: 0.85rem;
+		margin: 0;
+	}
+
+	/* --- row list (Linear/Vercel style) --- */
+	.post-list {
+		list-style: none;
+		margin: 1.5rem 0 0;
+		padding: 0;
+	}
+	.post-list a {
+		display: flex;
+		align-items: baseline;
+		gap: 1.5em;
+		padding: 1.15em 0.4em;
+		border-bottom: 1px solid var(--gridline);
+		text-decoration: none;
+	}
+	.post-list li:first-child a {
+		border-top: 1px solid var(--gridline);
+	}
+	.date {
+		font-family:
+			ui-monospace,
+			'SFMono-Regular',
+			Consolas,
+			Menlo,
+			monospace;
+		font-size: 0.8rem;
+		color: var(--dim);
+		white-space: nowrap;
+		min-width: 5.5em;
+	}
+	.post-body {
+		display: flex;
+		flex-direction: column;
+		gap: 0.2em;
+		min-width: 0;
+		flex: 1;
+	}
+	.post-title {
+		color: var(--fg);
+		font-weight: 700;
+		font-size: 1.05rem;
+		letter-spacing: -0.01em;
+		transition: color 0.15s ease;
+	}
+	.post-list a:hover .post-title {
+		color: var(--accent);
+	}
+	.post-desc {
+		color: var(--dim);
+		font-size: 0.9rem;
+		line-height: 1.6;
+	}
+	.arrow {
+		color: var(--accent);
+		opacity: 0;
+		transform: translateX(-6px);
+		transition:
+			opacity 0.15s ease,
+			transform 0.15s ease;
+		font-size: 1.1rem;
+		align-self: center;
+	}
+	.post-list a:hover .arrow {
+		opacity: 1;
+		transform: translateX(0);
+	}
+
+	@media (max-width: 720px) {
+		.post-list a {
+			gap: 1em;
+		}
+		.date {
+			display: none;
+		}
+	}
+</style>

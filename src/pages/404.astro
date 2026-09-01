@@ -1,0 +1,75 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { SITE_TITLE } from '../consts';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={`404 — ${SITE_TITLE}`} description="Page not found." />
+	</head>
+	<body>
+		<Header />
+		<main class="nf">
+			<p class="code" aria-hidden="true">404</p>
+			<h1>Page not found</h1>
+			<p class="hint">
+				The page you're looking for doesn't exist or has moved.
+				<span lang="zh-CN">页面不存在或已迁移。</span>
+			</p>
+			<ul>
+				<li><a href="/">Home</a></li>
+				<li><a href="/tools/">All tools</a></li>
+				<li><a href="/calculators/standard/">Scientific calculator</a></li>
+				<li><a href="/converters/length/">Unit converters</a></li>
+				<li><a href="/blog/">Blog</a></li>
+			</ul>
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<style>
+	.nf {
+		text-align: center;
+		padding: 4rem 1rem;
+	}
+	.code {
+		font-size: 5rem;
+		font-weight: 800;
+		color: var(--accent);
+		margin: 0;
+		line-height: 1;
+	}
+	h1 {
+		color: var(--fg);
+		margin: 0.3em 0 0.4em;
+	}
+	.hint {
+		color: var(--dim);
+	}
+	[lang='zh-CN'] {
+		display: block;
+		line-height: 1.9;
+	}
+	ul {
+		list-style: none;
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 0.5em 1.5em;
+		padding: 0;
+		margin-top: 2rem;
+	}
+	a {
+		color: var(--accent);
+		font-weight: 600;
+		text-decoration: none;
+		border-bottom: 1px dashed var(--accent);
+	}
+	a:hover {
+		border-bottom-style: solid;
+	}
+</style>
