@@ -7,6 +7,26 @@ import BasicTab from '../../components/calculator/BasicTab.astro';
 	title="Scientific Calculator"
 	description="Standard and scientific calculator with variables, history and DEG/RAD modes."
 	category="calculators"
+	content={{
+		about: [
+			'A full scientific calculator that runs entirely in the page: arithmetic with correct operator precedence, powers, roots, logarithms, trigonometry with DEG/RAD modes, constants like π and e, named variables, and a calculation history you can reuse.',
+			'Everything is local — no round-trip to a server for each keystroke — so it works offline and keeps even a long session private. The expression engine is a real parser, so you can type 2 + 3 × 4² and get 50, exactly as written.',
+		],
+		aboutZh: [
+			'一个完全在页面内运行的完整科学计算器：按正确运算优先级做四则运算，支持乘方、开方、对数、三角函数（DEG/RAD 两种模式）、π 和 e 等常量、自定义变量，以及可复用的计算历史。',
+			'所有计算都在本地完成——每一步都不经过服务器——因此离线可用，长会话也完全私密。表达式引擎是真正的解析器，直接输入 2 + 3 × 4² 会得到 50，与书写顺序的数学含义一致。',
+		],
+		faq: [
+			{ q: 'Does it follow operator precedence?', a: 'Yes: parentheses, then powers, then × ÷, then + −, matching standard math notation.' },
+			{ q: 'Can I store values?', a: 'Yes — assign to named variables (e.g. x = 5) and reuse them in later expressions.' },
+			{ q: 'What is the difference between DEG and RAD?', a: 'They set how trig functions interpret angles: DEG treats sin(90) as 1, RAD treats sin(π/2) as 1.' },
+		],
+		faqZh: [
+			{ q: '遵循运算优先级吗？', a: '遵循：括号 > 乘方 > 乘除 > 加减，与标准数学记法一致。' },
+			{ q: '可以保存数值吗？', a: '可以，给命名变量赋值（如 x = 5），之后的表达式可直接引用。' },
+			{ q: 'DEG 和 RAD 有什么区别？', a: '决定三角函数的角度单位：DEG 下 sin(90) = 1，RAD 下 sin(π/2) = 1。' },
+		],
+	}}
 >
 	<BasicTab />
 	<p class="t-related">

@@ -217,6 +217,27 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 		description: 'What is P% of V, N as a percent of V, and value increased or decreased by a percent.',
 		kind: 'form',
 		config: percentage,
+
+		content: {
+			about: [
+				'Answer the three everyday percentage questions in one place: what is P% of a value, N is what percent of a value, and what a value becomes after adding or subtracting a percent. Results update as you type.',
+				'Percent means "per hundred", so P% of V is simply P × V / 100. The calculator is handy for tips, discounts, taxes and exam scores — anything expressed as a part of a whole.',
+			],
+			aboutZh: [
+				'一站式解决三种最常见的百分比问题：某数的 P% 是多少、N 占某数的百分比是多少、以及某数增加或减少一个百分比后是多少。输入即实时更新。',
+				'百分比即"每一百份中的份数"，因此 P% × V 就是 P × V ÷ 100。适用于小费、折扣、税费、考试成绩——一切"部分占整体"的计算。',
+			],
+			faq: [
+				{ q: 'How do I calculate a tip?', a: 'For a 15% tip on $80: 15% of 80 = $12, so pay $92 in total — both numbers come straight out of this page.' },
+				{ q: 'What is the difference between "of" and "off"?', a: '"20% of $50" is $10; "$50 with 20% off" is $40. The first is a part, the second is a discount.' },
+				{ q: 'Can percentages exceed 100?', a: 'Yes — 150% of a value means 1.5× it, common when comparing growth against a baseline.' },
+			],
+			faqZh: [
+				{ q: '怎么算小费？', a: '80 美元的 15% 小费 = 12 美元，共付 92 美元——两个数字都能在本页直接算出。' },
+				{ q: '"百分之多少"和"打几折"有什么区别？', a: '"50 的 20%"是 10；"50 打 8 折（减 20%）"是 40。前者是部分，后者是折扣。' },
+				{ q: '百分比可以超过 100 吗？', a: '可以——某数的 150% 就是它的 1.5 倍，在增长对比中很常见。' },
+			],
+		},
 	},
 	{
 		slug: 'percentage-increase',
@@ -225,6 +246,27 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 		description: 'Percentage change between two values, with absolute change and multiplier.',
 		kind: 'form',
 		config: percentageIncrease,
+
+		content: {
+			about: [
+				'Measure relative change between two numbers: the percentage increase or decrease, the absolute difference, and the multiplier (e.g. 1.25× for a 25% rise). A drop shows as a negative percentage.',
+				'Percentage change is (new − old) / old × 100. Always divide by the old value — the starting point — which is also why a 50% loss needs a 100% gain to recover.',
+			],
+			aboutZh: [
+				'衡量两个数之间的相对变化：增长或减少的百分比、绝对差值，以及倍数（如增长 25% 即 1.25 倍）。下降会显示为负百分比。',
+				'百分比变化 = (新值 − 旧值) ÷ 旧值 × 100。务必除以旧值（起点）——这也解释了为什么亏损 50% 需要上涨 100% 才能回本。',
+			],
+			faq: [
+				{ q: 'From 80 to 100 is what percent increase?', a: '25% — the change (20) divided by the original (80).' },
+				{ q: 'Why isn\'t a 50% drop undone by a 50% rise?', a: 'After a 50% drop you need a 100% rise to get back: 100 → 50 → 100.' },
+				{ q: 'Can the old value be zero?', a: 'Percentage change from zero is undefined — any change from 0 is infinitely many percent.' },
+			],
+			faqZh: [
+				{ q: '从 80 涨到 100 是增长百分之几？', a: '25%——变化量 20 除以原值 80。' },
+				{ q: '为什么跌 50% 后涨 50% 回不了本？', a: '跌 50% 后需要上涨 100% 才能复原：100 → 50 → 100。' },
+				{ q: '旧值可以是 0 吗？', a: '从 0 出发的百分比变化无定义——从 0 到任何数都是无穷大的百分比。' },
+			],
+		},
 	},
 	{
 		slug: 'fraction',
@@ -233,6 +275,27 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 		description: 'Simplify fractions, convert to decimal and percent, and decimals back to exact fractions.',
 		kind: 'form',
 		config: fraction,
+
+		content: {
+			about: [
+				'Simplify a fraction to lowest terms, see it as a decimal and a percentage, and convert a decimal back into the nearest exact fraction (up to a denominator of 10,000) using continued fractions.',
+				'Simplifying works by dividing both numerator and denominator by their greatest common divisor (GCD). The decimal-to-fraction direction is exact for terminating decimals like 0.375 = 3/8, and gives the best rational approximation otherwise — 0.333… becomes 1/3.',
+			],
+			aboutZh: [
+				'把分数约分到最简形式，查看对应的小数与百分比；也可以把小数转回最接近的精确分数（分母上限 10000），采用连分数逼近算法。',
+				'约分的原理是分子分母同除以最大公约数（GCD）。小数转分数对有限小数是精确的（如 0.375 = 3/8）；对无限小数则给出最优有理逼近——0.333… 会得到 1/3。',
+			],
+			faq: [
+				{ q: 'What is 18/24 in lowest terms?', a: '3/4 — both parts divided by their GCD, 6.' },
+				{ q: 'How do I turn 0.125 into a fraction?', a: '0.125 = 125/1000 = 1/8 exactly; the calculator does this reduction for you.' },
+				{ q: 'Why does 0.333… become 1/3?', a: 'The continued-fraction method finds 1/3 is the closest fraction with a small denominator to 0.333…' },
+			],
+			faqZh: [
+				{ q: '18/24 的最简形式是什么？', a: '3/4——分子分母同除以最大公约数 6。' },
+				{ q: '0.125 怎么化成分数？', a: '0.125 = 125/1000 = 1/8（精确值），本计算器会自动完成约分。' },
+				{ q: '为什么 0.333… 会得到 1/3？', a: '连分数算法会找出分母较小时最接近 0.333… 的分数，正是 1/3。' },
+			],
+		},
 	},
 	{
 		slug: 'average',
@@ -272,6 +335,27 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 				return rows;
 			},
 		},
+
+		content: {
+			about: [
+				'Paste a list of numbers — separated by spaces, commas, semicolons or new lines — and get the full statistics at once: mean, median, mode, sum, count, min, max, and both sample and population standard deviation.',
+				'The mean is the sum divided by the count; the median is the middle value (robust to outliers); the mode is the most frequent value. Invalid entries are ignored and listed so you can fix them.',
+			],
+			aboutZh: [
+				'粘贴一组数字（支持空格、逗号、分号或换行分隔），一次性得到完整统计：均值、中位数、众数、总和、个数、最值，以及样本与总体两种标准差。',
+				'均值 = 总和 ÷ 个数；中位数是排序后的中间值（对异常值稳健）；众数是出现最频繁的值。无法解析的条目会被忽略并列出，便于修正。',
+			],
+			faq: [
+				{ q: 'Mean or median — which should I use?', a: 'The median when the data has outliers or is skewed (like incomes); the mean is fine for symmetric data.' },
+				{ q: 'What is the difference between the two standard deviations?', a: 'Sample (s) divides by n−1 for estimating from a sample; population (σ) divides by n when you have every value.' },
+				{ q: 'What if no number repeats?', a: 'Then there is no mode, and the calculator shows "—".' },
+			],
+			faqZh: [
+				{ q: '均值和中位数用哪个？', a: '数据有异常值或偏态（如收入）时用中位数；对称分布的数据用均值即可。' },
+				{ q: '两种标准差有什么区别？', a: '样本标准差（s）除以 n−1，用于从样本估计；总体标准差（σ）除以 n，适用于拥有全部数据的情形。' },
+				{ q: '如果没有数字重复怎么办？', a: '那就没有众数，计算器会显示"—"。' },
+			],
+		},
 	},
 	{
 		slug: 'ratio',
@@ -280,6 +364,27 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 		description: 'Simplify ratios, convert to decimal and percent, and solve A:B = C:x.',
 		kind: 'form',
 		config: ratio,
+
+		content: {
+			about: [
+				'Simplify a ratio A:B to its smallest whole numbers, see it as a decimal and a percentage, and solve the classic proportion A:B = C:x — find x when three of the four terms are known.',
+				'Simplifying a ratio divides both sides by their GCD, so 18:24 becomes 3:4. The solver uses cross-multiplication: A·x = B·C, so x = B·C / A.',
+			],
+			aboutZh: [
+				'把比 A:B 化为最简整数比，查看对应的小数与百分比，并解经典比例式 A:B = C:x——已知三项求第四项。',
+				'化简比是两边同除以最大公约数，例如 18:24 → 3:4。求解采用交叉相乘：A·x = B·C，故 x = B·C ÷ A。',
+			],
+			faq: [
+				{ q: 'How do I simplify the ratio 36:48?', a: 'Divide both by their GCD (12) to get 3:4.' },
+				{ q: 'How do I scale a recipe for 12 people?', a: 'If the recipe serves 4, solve 4:12 = 1:x portions — the ratio tells you to multiply every ingredient by 3.' },
+				{ q: 'Can ratios have decimals?', a: 'The input can, but the simplified form is always whole numbers — 2.5:1.5 simplifies to 5:3.' },
+			],
+			faqZh: [
+				{ q: '36:48 怎么化简？', a: '两边同除以最大公约数 12，得到 3:4。' },
+				{ q: '怎么把 4 人份食谱扩成 12 人份？', a: '解比例 4:12 = 1:x，即可知道所有食材都要乘以 3。' },
+				{ q: '比可以有是小数吗？', a: '输入可以，但化简结果一定是整数——2.5:1.5 会化简为 5:3。' },
+			],
+		},
 	},
 	{
 		slug: 'proportion',
@@ -288,6 +393,27 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 		description: 'Solve a : b = c : x for the missing value.',
 		kind: 'form',
 		config: proportion,
+
+		content: {
+			about: [
+				'Solve a proportion a : b = c : x for the missing value. Leave the unknown field empty and the calculator fills it in using cross-multiplication: x = b·c / a.',
+				'Proportions appear everywhere: converting recipe servings, scaling drawings, currency conversion at a known rate, and map distances. Any two equal ratios form one.',
+			],
+			aboutZh: [
+				'解比例式 a : b = c : x，求未知项。把未知项留空，计算器会用交叉相乘 x = b·c ÷ a 自动补全。',
+				'比例无处不在：换算食谱份数、缩放图纸、按已知汇率换货币、地图测距——任何两个相等的比都构成比例。',
+			],
+			faq: [
+				{ q: 'How do I solve 3:4 = 9:x?', a: 'Cross-multiply: 3x = 36, so x = 12.' },
+				{ q: 'Which field do I leave empty?', a: 'The one you want to find — usually x, the fourth term.' },
+				{ q: 'What if I leave two fields empty?', a: 'The proportion cannot be solved with two unknowns; fill in exactly three values.' },
+			],
+			faqZh: [
+				{ q: '3:4 = 9:x 怎么解？', a: '交叉相乘得 3x = 36，所以 x = 12。' },
+				{ q: '该把哪个字段留空？', a: '把要求的那一项留空——通常是第四项 x。' },
+				{ q: '留空两个字段会怎样？', a: '两个未知数无法求解，请恰好填入三个值。' },
+			],
+		},
 	},
 	{
 		slug: 'simple-interest',
@@ -296,6 +422,27 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 		description: 'Compute simple interest I = P × r × t with total amount and per-period interest.',
 		kind: 'form',
 		config: simpleInterest,
+
+		content: {
+			about: [
+				'Compute simple interest — interest that stays constant because it is always calculated on the original principal. Enter the principal, annual rate and time in years to get the interest, the total amount, and the per-year breakdown.',
+				'The formula is I = P × r × t. For example, $10,000 at 5% for 3 years earns $500 per year, $1,500 total. Compare with compound interest, where each period\'s interest joins the principal.',
+			],
+			aboutZh: [
+				'计算单利——因为永远按原始本金计息，每期利息保持不变。输入本金、年利率与年数，即可得到利息、本息总额与逐年明细。',
+				'公式为 I = P × r × t。例如本金 10000、年利率 5%、存 3 年，每年利息 500，共 1500。可与复利对比——复利中每期利息会并入本金。',
+			],
+			faq: [
+				{ q: 'Simple vs compound interest — which pays more?', a: 'Compound, for any term longer than one period. Simple interest stays flat; compound grows on itself.' },
+				{ q: 'Can time be a fraction of a year?', a: 'Yes — 0.5 means six months, and interest is prorated linearly.' },
+				{ q: 'What uses simple interest?', a: 'Short-term instruments and some loans and bonds; car loans are typically simple interest.' },
+			],
+			faqZh: [
+				{ q: '单利和复利哪个收益高？', a: '只要期限超过一期，复利必然更高。单利每期固定，复利利滚利。' },
+				{ q: '时间可以填小数吗？', a: '可以，0.5 表示半年，利息按时间线性折算。' },
+				{ q: '哪些场景用单利？', a: '短期工具、部分贷款和债券；车贷通常是单利。' },
+			],
+		},
 	},
 	// the three finance overlaps live on /finance/* — these paths redirect
 	{

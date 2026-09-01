@@ -1,63 +1,66 @@
 ---
-import AboutHeroImage from '../assets/blog-placeholder-about.jpg';
-import Layout from '../layouts/BlogPost.astro';
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { SITE_TITLE } from '../consts';
 ---
 
-<Layout
-	title="About Me"
-	description="Lorem ipsum dolor sit amet"
-	pubDate={new Date('August 08 2021')}
-	heroImage={AboutHeroImage}
->
-	<p>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut
-		labore et dolore magna aliqua. Vitae ultricies leo integer malesuada nunc vel risus commodo
-		viverra. Adipiscing enim eu turpis egestas pretium. Euismod elementum nisi quis eleifend quam
-		adipiscing. In hac habitasse platea dictumst vestibulum. Sagittis purus sit amet volutpat. Netus
-		et malesuada fames ac turpis egestas. Eget magna fermentum iaculis eu non diam phasellus
-		vestibulum lorem. Varius sit amet mattis vulputate enim. Habitasse platea dictumst quisque
-		sagittis. Integer quis auctor elit sed vulputate mi. Dictumst quisque sagittis purus sit amet.
-	</p>
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={`About — ${SITE_TITLE}`} description="About QCSunny: a personal blog and a collection of 34 free browser-based tools." />
+	</head>
+	<body>
+		<Header />
+		<main class="about-main">
+			<h1>About</h1>
+			<p>
+				I'm QCSunny — a developer who writes about web development, tooling and the small
+				utilities that make everyday computing easier. This site has two halves: a
+				<a href="/">blog</a> and a growing set of <a href="/tools/">free online tools</a>.
+			</p>
+			<p>
+				The tools — scientific calculator, unit converters, finance calculators, QR code
+				generator, password/UUID generators and more — are all hand-written with zero tracking
+				script weight. Every calculation runs entirely in your browser: nothing you type is
+				uploaded, stored or logged, and the pages keep working offline once loaded.
+			</p>
+			<section lang="zh-CN">
+				<h2>关于本站</h2>
+				<p>
+					我是 QCSunny，一名开发者，关注 Web 开发、工具链以及让日常计算更省事的小工具。本站分为两部分：
+					<a href="/">博客</a>与一套持续扩充的<a href="/tools/">免费在线工具</a>。
+				</p>
+				<p>
+					工具部分——科学计算器、单位换算、金融计算器、二维码生成器、密码/UUID 生成器等——全部手写实现，
+					不加载任何追踪脚本。所有计算均在浏览器本地完成：你输入的内容不会被上传、存储或记录，页面加载后离线也能继续使用。
+				</p>
+			</section>
+			<p>
+				Source code and issue reports live on
+				<a href="https://github.com/qcsunny" target="_blank" rel="noopener">GitHub</a>.
+			</p>
+		</main>
+		<Footer />
+	</body>
+</html>
 
-	<p>
-		Morbi tristique senectus et netus. Id semper risus in hendrerit gravida rutrum quisque non
-		tellus. Habitasse platea dictumst quisque sagittis purus sit amet. Tellus molestie nunc non
-		blandit massa. Cursus vitae congue mauris rhoncus. Accumsan tortor posuere ac ut. Fringilla urna
-		porttitor rhoncus dolor. Elit ullamcorper dignissim cras tincidunt lobortis. In cursus turpis
-		massa tincidunt dui ut ornare lectus. Integer feugiat scelerisque varius morbi enim nunc.
-		Bibendum neque egestas congue quisque egestas diam. Cras ornare arcu dui vivamus arcu felis
-		bibendum. Dignissim suspendisse in est ante in nibh mauris. Sed tempus urna et pharetra pharetra
-		massa massa ultricies mi.
-	</p>
-
-	<p>
-		Mollis nunc sed id semper risus in. Convallis a cras semper auctor neque. Diam sit amet nisl
-		suscipit. Lacus viverra vitae congue eu consequat ac felis donec. Egestas integer eget aliquet
-		nibh praesent tristique magna sit amet. Eget magna fermentum iaculis eu non diam. In vitae
-		turpis massa sed elementum. Tristique et egestas quis ipsum suspendisse ultrices. Eget lorem
-		dolor sed viverra ipsum. Vel turpis nunc eget lorem dolor sed viverra. Posuere ac ut consequat
-		semper viverra nam. Laoreet suspendisse interdum consectetur libero id faucibus. Diam phasellus
-		vestibulum lorem sed risus ultricies tristique. Rhoncus dolor purus non enim praesent elementum
-		facilisis. Ultrices tincidunt arcu non sodales neque. Tempus egestas sed sed risus pretium quam
-		vulputate. Viverra suspendisse potenti nullam ac tortor vitae purus faucibus ornare. Fringilla
-		urna porttitor rhoncus dolor purus non. Amet dictum sit amet justo donec enim.
-	</p>
-
-	<p>
-		Mattis ullamcorper velit sed ullamcorper morbi tincidunt. Tortor posuere ac ut consequat semper
-		viverra. Tellus mauris a diam maecenas sed enim ut sem viverra. Venenatis urna cursus eget nunc
-		scelerisque viverra mauris in. Arcu ac tortor dignissim convallis aenean et tortor at. Curabitur
-		gravida arcu ac tortor dignissim convallis aenean et tortor. Egestas tellus rutrum tellus
-		pellentesque eu. Fusce ut placerat orci nulla pellentesque dignissim enim sit amet. Ut enim
-		blandit volutpat maecenas volutpat blandit aliquam etiam. Id donec ultrices tincidunt arcu. Id
-		cursus metus aliquam eleifend mi.
-	</p>
-
-	<p>
-		Tempus quam pellentesque nec nam aliquam sem. Risus at ultrices mi tempus imperdiet. Id porta
-		nibh venenatis cras sed felis eget velit. Ipsum a arcu cursus vitae. Facilisis magna etiam
-		tempor orci eu lobortis elementum. Tincidunt dui ut ornare lectus sit. Quisque non tellus orci
-		ac. Blandit libero volutpat sed cras. Nec tincidunt praesent semper feugiat nibh sed pulvinar
-		proin gravida. Egestas integer eget aliquet nibh praesent tristique magna.
-	</p>
-</Layout>
+<style>
+	.about-main {
+		max-width: 42rem;
+		margin: 0 auto;
+		padding: 2.5rem 1.25rem;
+		font-size: 1.05rem;
+		line-height: 1.75;
+	}
+	h1 {
+		color: var(--fg);
+		font-size: 1.8rem;
+	}
+	h2 {
+		color: var(--fg);
+	}
+	a {
+		color: var(--accent);
+	}
+</style>

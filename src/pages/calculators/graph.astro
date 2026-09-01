@@ -7,6 +7,26 @@ import GraphTab from '../../components/calculator/GraphTab.astro';
 	title="Function Grapher"
 	description="Plot up to 4 functions with zoom, pan and a live value crosshair."
 	category="calculators"
+	content={{
+		about: [
+			'Plot up to four functions of x at once and explore them interactively: scroll or pinch to zoom, drag to pan, and hover to read exact values along the curves. Expressions use the same syntax as the scientific calculator — sin(x), x^2, ln(x), e^x and friends.',
+			'Each function gets its own color so intersections and relative behavior are easy to see, and the grid, axes and labels adapt to the zoom level. The plot re-renders instantly as you edit a formula.',
+		],
+		aboutZh: [
+			'同时绘制最多四条关于 x 的函数曲线并进行交互式探索：滚轮缩放、拖拽平移、悬停读取曲线上的精确数值。表达式语法与科学计算器一致——sin(x)、x^2、ln(x)、e^x 等都可以直接输入。',
+			'每条函数使用独立的颜色，交点与相对走势一目了然；网格、坐标轴与刻度会随缩放级别自适应。修改公式时图像即时重绘。',
+		],
+		faq: [
+			{ q: 'How many functions can I plot at once?', a: 'Up to four — each in its own color, all sharing one coordinate system.' },
+			{ q: 'How do I zoom in?', a: 'Scroll (or pinch on a touchscreen) over the point you care about; drag with the mouse or finger to pan.' },
+			{ q: 'What functions are supported?', a: 'The same set as the scientific calculator: powers, roots, exp, log, ln, trigonometry (DEG/RAD) and constants π and e.' },
+		],
+		faqZh: [
+			{ q: '最多能同时画几条曲线？', a: '最多四条，各有专属颜色，共用同一坐标系。' },
+			{ q: '怎么放大图像？', a: '在关心的位置滚动鼠标滚轮（触屏则双指捏合），拖拽即可平移。' },
+			{ q: '支持哪些函数？', a: '与科学计算器相同的函数集：乘方、开方、exp、log、ln、三角函数（DEG/RAD）以及常量 π 和 e。' },
+		],
+	}}
 >
 	<GraphTab />
 	<p class="t-related">

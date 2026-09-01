@@ -1,0 +1,113 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { SITE_TITLE } from '../consts';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={`Privacy Policy — ${SITE_TITLE}`} description="Privacy policy: no cookies, no tracking of your tool inputs, anonymous aggregate statistics only." />
+	</head>
+	<body>
+		<Header />
+		<main class="privacy-main">
+			<h1>Privacy Policy</h1>
+			<p class="updated">Last updated: September 1, 2026</p>
+
+			<h2>Your tool inputs stay local</h2>
+			<p>
+				Every tool on this site — calculators, converters, generators, the QR code maker —
+				runs entirely in your browser. The values you type are processed by JavaScript on
+				your device and are <strong>never transmitted, stored or logged</strong> by this
+				site. You can verify this yourself: open your browser's network inspector while
+				using any tool.
+			</p>
+
+			<h2>Analytics</h2>
+			<p>
+				This site uses <strong>Cloudflare Web Analytics</strong>, which runs without cookies
+				and without collecting personal information. It reports only aggregate, anonymous
+				page-visit counts — no fingerprints, no cross-site tracking, no individual visitor
+				profiles.
+			</p>
+
+			<h2>Advertising (future)</h2>
+			<p>
+				The site plans to display ads served by Google AdSense. If and when ads appear,
+				Google and its partners may use cookies to serve ads based on your prior visits to
+				this or other websites. You can opt out of personalized advertising via
+				<a href="https://www.google.com/settings/ads" target="_blank" rel="noopener">Google Ads Settings</a>,
+				and more options are described in
+				<a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener">Google's advertising policies</a>.
+			</p>
+
+			<h2>Your rights (GDPR / CCPA)</h2>
+			<p>
+				Because the analytics used here is cookie-free and anonymous, this site does not
+				hold personal data about you, so there is nothing to access, export or delete. If
+				personalized advertising cookies are introduced with ads, residents of the EEA, UK
+				and Switzerland will see a consent choice before any such cookie is set, and
+				California residents may opt out of the "sale" of personal information via the
+				same mechanism.
+			</p>
+
+			<h2>Hosting</h2>
+			<p>
+				The site is statically hosted on GitHub Pages. The hosting provider records
+				standard request logs (IP address, user agent, timestamp) for security and abuse
+				protection, as described in
+				<a href="https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement" target="_blank" rel="noopener">GitHub's privacy statement</a>.
+			</p>
+
+			<h2>Contact</h2>
+			<p>
+				Questions about this policy can be raised on
+				<a href="https://github.com/qcsunny" target="_blank" rel="noopener">GitHub</a>.
+			</p>
+
+			<section lang="zh-CN">
+				<h2>隐私政策（中文）</h2>
+				<p>
+					本站所有工具（计算器、换算器、生成器、二维码）均在浏览器本地运行。你输入的内容只在本机由
+					JavaScript 处理，<strong>绝不会上传、存储或记录</strong>。你可以在使用任意工具时打开浏览器的网络面板自行验证。
+				</p>
+				<p>
+					本站统计使用 Cloudflare Web Analytics：无 cookie、不收集个人信息，只提供匿名的汇总访问计数。
+				</p>
+				<p>
+					本站计划展示 Google AdSense 广告。广告上线后，Google 及其合作伙伴可能使用 cookie 依据你此前访问本站或其他网站的情况投放广告，
+					你可以在 Google 广告设置中选择停用个性化广告。站点静态托管于 GitHub Pages，托管方会按其隐私声明记录标准请求日志用于安全防护。
+				</p>
+			</section>
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<style>
+	.privacy-main {
+		max-width: 42rem;
+		margin: 0 auto;
+		padding: 2.5rem 1.25rem;
+		font-size: 1rem;
+		line-height: 1.75;
+	}
+	h1 {
+		color: var(--fg);
+		font-size: 1.8rem;
+	}
+	h2 {
+		color: var(--fg);
+		font-size: 1.2rem;
+		margin-top: 2em;
+	}
+	a {
+		color: var(--accent);
+	}
+	.updated {
+		color: var(--dim);
+		font-size: 0.9rem;
+	}
+</style>

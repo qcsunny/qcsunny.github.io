@@ -1,5 +1,23 @@
-// Place any global data in this file.
-// You can import this data from anywhere in your site by using the `import` keyword.
+// Place any global data in this file. You can import this data from anywhere in your site with the `import` keyword.
 
-export const SITE_TITLE = 'Astro Blog';
-export const SITE_DESCRIPTION = 'Welcome to my website!';
+export const SITE_TITLE = 'QCSunny';
+export const SITE_DESCRIPTION =
+	'个人博客与免费在线工具集：科学计算器、单位换算、复利与房贷计算、二维码生成器等 34 个纯浏览器端工具。Free browser-based tools: calculators, converters, finance helpers and more.';
+
+/** Cloudflare Web Analytics beacon token — create a free account at
+ *  dash.cloudflare.com, add the site, then paste the token here. Empty = off. */
+export const CF_ANALYTICS_TOKEN = '';
+
+/** Google AdSense publisher id (ca-pub-XXXX). Fill in after AdSense approval;
+ *  empty = no ad slots are rendered anywhere on the site. */
+export const ADSENSE_CLIENT = '';
+
+/** AdSense ad-unit ids created in the AdSense dashboard. A slot stays hidden
+ *  until its id is filled in. Fixed heights are reserved in CSS so loading an
+ *  ad never shifts the layout (CLS). */
+export const AD_SLOTS = {
+	/** below the tool, above the editorial content */
+	mid: '',
+	/** end of page, above the footer */
+	bottom: '',
+};
