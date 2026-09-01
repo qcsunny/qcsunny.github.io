@@ -1,6 +1,6 @@
 ---
-title: '网页科学计算器：功能与实现'
-description: '博客的科学计算器与函数绘图器：标准/科学键盘、变量、历史记录，以及背后零依赖的手写表达式引擎。'
+title: '网页工具集：科学计算器、二维码与 34 个免费小工具'
+description: '博客自建的 34 个纯浏览器端工具页：科学计算器、函数绘图、复利/房贷计算、二维码生成器（手写编码器）等，全部零第三方依赖。'
 pubDate: 'Sep 01 2026'
 ---
 
@@ -12,6 +12,24 @@ pubDate: 'Sep 01 2026'
 - **Stats** → 并入 [/calculators/average/](https://qcsunny.github.io/calculators/average/)（平均数与统计）
 
 旧地址 `/calculator/` 会自动跳转到新页面。
+
+## 一个注册表，34 个工具
+
+这次拆分顺带建起了整套工具页体系（入口在导航栏的 **Tools**，共 34 个工具、四大分类）：
+
+| 分类 | 内容 |
+| --- | --- |
+| [Calculators](https://qcsunny.github.io/calculators/) | 科学计算器、函数绘图、百分比、百分比变化、分数、比例、平均数与统计、单利 |
+| [Converters](https://qcsunny.github.io/converters/) | 长度、重量、温度、面积、体积、速度、时间、数据大小——双向换算、一键交换 |
+| [Finance](https://qcsunny.github.io/finance/) | 复利（含月定投、逐年明细）、等额本息月供与摊销表、房贷（含税险 HOA）、投资回报、ROI、折扣、年薪换算、个税 |
+| [Tools](https://qcsunny.github.io/tools/) | 密码/UUID/随机数生成器、二维码生成器、字数统计、字符统计、JSON 格式化、Base64、颜色转换 |
+
+几个值得一提的细节：
+
+- **JSON 格式化**报错不只说"Invalid JSON"，还给出**精确的行列号**——浏览器的 V8 错误消息里只有上下文片段没有位置，所以格式化前先跑一遍自己写的结构扫描器定位第一个错误
+- **三个生成器**（密码/UUID/随机数）全部用 `crypto.getRandomValues` 并做**拒绝采样**，保证每个字符均匀分布——`Math.random` 做密码是不合格的
+- **二维码生成器**的编码器是手写的（下文展开），支持版本 1–10、四档纠错、PNG 下载
+- 所有计算在浏览器本地完成，**没有任何数据离开你的设备**
 
 ## 功能总览
 
@@ -76,6 +94,23 @@ tokenizer → parser（递归下降） → AST → compile 为闭包
 - 每像素列采样一个点；相邻两点屏幕跳跃超过两倍画布高且函数值变号时断笔（渐近线检测）
 - Pointer Events 统一处理鼠标/触摸的拖拽与 pinch
 
+### 手写二维码编码器
+
+[二维码生成器](https://qcsunny.github.io/tools/qr-code-generator/)是工具集里最硬核的一个——整条编码管线都是手写的，不到 400 行：
+
+```
+UTF-8 字节 → 位流（模式+长度+数据+填充）
+          → Reed–Solomon 纠错码（GF(256)，生成多项式 0x11D）
+          → 分块交织 → 矩阵摆放（之字形扫描）
+          → 8 种掩码按 ISO 罚分规则选最优 → 写入格式信息
+```
+
+几个关键点：
+
+- **Reed–Solomon**：在 GF(256) 上用对数/反对数表做乘法，移位寄存器式求余算出纠错码字，块结构按版本 × 纠错等级查表
+- **掩码**：数据模块要 XOR 一个掩码图案避免出现大面积同色或类似定位图案的结构；8 种候选逐一评估四条罚分规则（连续同色、2×2 同色块、类定位图案、明暗比例），取罚分最低者
+- **验证方式**：与 python qrcode 库强制相同掩码后**逐模块 diff**（128 例全部一致），再把输出交给 opencv 的解码器做**解码往返**（16/16 还原出原文）——证明生成的码是真实可扫的，不只是"看起来像"
+
 ### 拆分后的工程组织
 
 工具页共用一套**注册表驱动**的架构：`src/tools/registry.ts` 里每个工具是一条数据（路径、名称、字段定义、compute 纯函数），四个动态路由 `src/pages/{calculators,converters,finance,tools}/[slug].astro` 据此静态生成全部子页面，客户端按 `data-tool-kind` 分发到对应的渲染器（表单、换算器、文本工具……）。新增一个计算器只需在注册表里加一条配置，路由、目录页、sitemap 全部自动跟上。
@@ -90,5 +125,8 @@ tokenizer → parser（递归下降） → AST → compile 为闭包
 | --- | --- |
 | 表达式求值 | 手写 tokenizer + 递归下降 parser + 闭包编译 |
 | 绘图 | 原生 Canvas 2D + Pointer Events |
-| 状态持久化 | localStorage（历史、变量、键盘模式） |
+| 二维码 | 手写编码器：RS 纠错 + 8 掩码 ISO 罚分选择 |
+| 金融计算 | 等额本息/复利闭式解，摊销表按年分组 |
+| 随机性 | crypto.getRandomValues + 拒绝采样 |
+| 状态持久化 | localStorage（历史、变量、主题） |
 | 框架依赖 | 0 |
