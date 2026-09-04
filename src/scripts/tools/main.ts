@@ -58,5 +58,8 @@ if (kind && kind !== 'redirect') {
 		case 'html':
 			void import('./html').then((m) => m.initHtml(host));
 			break;
+		case 'markdown':
+			void import('./markdown').then((m) => m.initMarkdown(host));
+			break;
 	}
 }
