@@ -20,7 +20,16 @@ const readMinutes = (body: string): number => {
 };
 
 function getCategory(slug: string): { labelZh: string; labelEn: string; color: string } {
-	if (slug.includes('compound') || slug.includes('mortgage')) {
+	if (
+		slug.includes('compound') ||
+		slug.includes('mortgage') ||
+		slug.includes('tax') ||
+		slug.includes('bonus') ||
+		slug.includes('irr') ||
+		slug.includes('installment') ||
+		slug.includes('fire') ||
+		slug.includes('finance')
+	) {
 		return { labelZh: '金融与数学', labelEn: 'Finance & Math', color: '#10b981' };
 	}
 	if (slug.includes('uuid') || slug.includes('database')) {
