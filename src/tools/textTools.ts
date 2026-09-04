@@ -249,6 +249,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		name: 'Word Counter',
 		nameZh: '在线字数统计',
 		description: 'Live word, character, sentence and paragraph counts plus reading time.',
+		descriptionZh: '实时统计词数、字符数、句子数、段落数与预估阅读时长。',
 		kind: 'text',
 		config: {
 			placeholder: 'Type or paste text…',
@@ -282,6 +283,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		name: 'Character Counter',
 		nameZh: '字符计数器',
 		description: 'Count characters, letters, digits, spaces, symbols and UTF-8 bytes.',
+		descriptionZh: '实时细分统计字符、字母、数字、空格、符号与 UTF-8 字节数。',
 		kind: 'text',
 		config: {
 			placeholder: 'Type or paste text…',
@@ -315,6 +317,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		name: 'JSON Formatter & Validator',
 		nameZh: 'JSON 格式化与校验工具',
 		description: 'Format, validate, minify, escape, and inspect JSON with exact error positions, one-click copy, and file download.',
+		descriptionZh: '格式化、校验、压缩与转义 JSON，精准定位语法错误行号与列号。',
 		kind: 'json',
 
 		content: {
@@ -344,6 +347,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		name: 'Base64 Encoder / Decoder',
 		nameZh: 'Base64 编码解码',
 		description: 'Encode text to Base64 or decode it back, with Unicode and URL-safe support.',
+		descriptionZh: '文本与 Base64 互相编解码，完整支持 Unicode 中文与 URL 安全模式。',
 		kind: 'text',
 		config: {
 			placeholder: 'Text to encode, or Base64 to decode…',
@@ -404,6 +408,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		name: 'SQL Formatter & Beautifier',
 		nameZh: 'SQL 格式化与美化工具',
 		description: 'Format, beautify, indent, and minify SQL queries with keyword auto-capitalization and 100% browser-side privacy.',
+		descriptionZh: 'SQL 查询格式化美化与压缩工具，支持关键字自动大写与本地隐私安全。',
 		kind: 'sql',
 		content: {
 			about: [
@@ -432,6 +437,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		name: 'JWT Decoder & Formatter',
 		nameZh: 'JWT 令牌解码与格式化',
 		description: 'Decode JSON Web Tokens (JWT) into Header and Payload, inspect expiration timestamps, and verify claims safely with zero data upload.',
+		descriptionZh: '解析 JWT 令牌 Header 与 Payload，快速检验过期时间与 Claims 字段。',
 		kind: 'jwt',
 		content: {
 			about: [
@@ -458,6 +464,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		name: 'URL Parser & Query Formatter',
 		nameZh: 'URL 网址与参数格式化',
 		description: 'Parse URLs into protocol, hostname, path, and query strings. Decode, sort params, remove tracking tags, and export to JSON.',
+		descriptionZh: '解析 URL 协议、域名、路径与参数，支持参数排序与去除营销追踪参数。',
 		kind: 'url',
 		content: {
 			about: [
@@ -484,6 +491,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		name: 'XML / SVG Formatter & Validator',
 		nameZh: 'XML / SVG 格式化与校验工具',
 		description: 'Validate XML syntax, format with customizable 2/4-space indentation, and minify XML/SVG documents in your browser.',
+		descriptionZh: 'XML 与 SVG 矢量代码格式化、层级缩进与语法校验工具。',
 		kind: 'xml',
 		content: {
 			about: [
@@ -510,6 +518,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		name: 'CSS Formatter & Minifier',
 		nameZh: 'CSS 格式化与压缩工具',
 		description: 'Beautify CSS stylesheets with clean rules and property indentation, or minify CSS to a single line for production performance.',
+		descriptionZh: 'CSS 样式表格式化排版与单行 Minify 压缩工具。',
 		kind: 'css',
 		content: {
 			about: [
@@ -536,6 +545,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		name: 'HTML Formatter & Minifier',
 		nameZh: 'HTML 格式化与压缩工具',
 		description: 'Format messy HTML with proper indentation and self-closing element awareness, or minify HTML to optimize web page delivery.',
+		descriptionZh: 'HTML 网页代码规范缩进排版与单行 Minify 压缩工具。',
 		kind: 'html',
 		content: {
 			about: [
@@ -562,6 +572,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		name: 'Markdown Live Editor & Previewer',
 		nameZh: 'Markdown 实时渲染与预览编辑器',
 		description: 'Live split-screen Markdown rendering with GitHub Flavored Markdown (GFM), tables, task lists, code syntax, math formulas, and HTML export.',
+		descriptionZh: '纯本地双栏实时 Markdown 渲染编辑器，全面支持 GFM 语法与 HTML 导出。',
 		kind: 'markdown',
 		content: {
 			about: [

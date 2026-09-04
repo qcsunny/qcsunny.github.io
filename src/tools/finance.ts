@@ -2133,6 +2133,7 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		name: 'Mortgage Prepayment Calculator',
 		nameZh: '房贷提前还款计算器',
 		description: 'Compare shortening your mortgage term vs reducing monthly payment, and calculate total interest saved.',
+		descriptionZh: '对比缩短还贷年限与减少月供两种提前还贷策略，精准计算节省利息总额。',
 		kind: 'form',
 		config: mortgagePrepayment,
 
@@ -2163,6 +2164,7 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		name: 'Compound Interest & Investment Return Calculator',
 		nameZh: '复利投资与定投收益计算器',
 		description: 'Compound growth with configurable compounding frequency, regular monthly contributions, and year-by-year schedule.',
+		descriptionZh: '支持自定义复利计息频率与每月定期定投，按年推演资产长期复利增值轨迹。',
 		kind: 'form',
 		config: compoundInterest,
 
@@ -2193,6 +2195,7 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		name: 'Investment Return Calculator',
 		nameZh: '投资回报与复利计算器',
 		description: 'Redirects to the unified Compound Interest & Investment Return Calculator.',
+		descriptionZh: '跳转至复利投资与定投收益计算器。',
 		kind: 'redirect',
 		config: { target: '/finance/compound-interest/' },
 	},
@@ -2202,6 +2205,7 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		name: 'Loan Payment Calculator',
 		nameZh: '贷款月供与还款计划计算器',
 		description: 'Monthly payment, total interest and a yearly amortization schedule for any fixed-rate loan.',
+		descriptionZh: '等额本息贷款月供测算、全周期总利息统计与逐年还款摊还明细计划表。',
 		kind: 'form',
 		config: loanPayment,
 
@@ -2230,6 +2234,7 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		name: 'Mortgage Loan Calculator (Equal P&I vs Equal Principal)',
 		nameZh: '房贷计算器 (等额本息 vs 等额本金对比)',
 		description: 'Compare Equal Principal & Interest (等额本息) vs Equal Principal (等额本金), calculate monthly payments, interest savings, and support Commercial, Provident Fund, or Combined mortgages.',
+		descriptionZh: '等额本息与等额本金同屏对比，支持商业贷款、公积金贷款及组合贷款测算。',
 		kind: 'form',
 		config: mortgage,
 
@@ -2260,6 +2265,7 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		name: 'True APR & Installment IRR Calculator',
 		nameZh: '分期真实年化利率 / 实际利率 IRR 计算器',
 		description: 'Convert advertised monthly installment fees or credit card flat rates to real APR and IRR.',
+		descriptionZh: '基于牛顿迭代法求解真实年化利率 IRR 与 APR，揭秘信用卡分期等名义手续费陷阱。',
 		kind: 'form',
 		config: irrCalculator,
 
@@ -2290,6 +2296,7 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		name: 'Inflation & Purchasing Power Calculator',
 		nameZh: '通货膨胀与购买力缩水计算器',
 		description: 'Calculate future purchasing power erosion and future equivalent cost based on annual inflation.',
+		descriptionZh: '测算通货膨胀对资金购买力的长期侵蚀影响，展示未来等价物价与贬值幅度。',
 		kind: 'form',
 		config: inflation,
 
@@ -2318,6 +2325,7 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		name: 'Savings Goal Calculator',
 		nameZh: '目标储蓄规划计算器',
 		description: 'Find the required monthly savings to achieve your financial goal by a target date.',
+		descriptionZh: '设定财务储蓄目标金额与到期年限，逆向测算每月所需定投金额与复合收益贡献。',
 		kind: 'form',
 		config: savingsGoal,
 
@@ -2346,6 +2354,7 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		name: 'Auto Loan & Out-of-Pocket Calculator',
 		nameZh: '汽车贷款与购车落地成本计算器',
 		description: 'Monthly car loan payments, interest, down payment, purchase tax, insurance, and total out-of-pocket落地 cost.',
+		descriptionZh: '测算汽车贷款月供利息，综合购置税、车险、上牌费等全套提车落地总成本。',
 		kind: 'form',
 		config: autoLoan,
 
@@ -2374,6 +2383,7 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		name: 'FIRE Calculator (Financial Independence)',
 		nameZh: 'FIRE 财务自由与提前退休计算器',
 		description: 'Determine your target nest egg, projected retirement age, and safe withdrawal strategy using the 4% rule.',
+		descriptionZh: '基于 4% 安全提款法则测算财务自由目标资产、提前退休年龄与提款策略。',
 		kind: 'form',
 		config: fireCalculator,
 
@@ -2402,6 +2412,7 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		name: 'Income Tax & Take-Home Salary Calculator',
 		nameZh: '个人所得税计算器 (五险一金/专项扣除/年终奖)',
 		description: 'Calculate net income, tax brackets, Five Insurances & Housing Fund, 7 Special Deductions, and Year-End Bonus tax optimization (Separate vs Combined).',
+		descriptionZh: '精准测算个税、五险一金、7项专项附加扣除与年终奖单独计税/合并计税智能优选。',
 		kind: 'form',
 		config: tax,
 
@@ -2436,6 +2447,7 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		name: 'Salary & Hourly Wage Converter',
 		nameZh: '薪资与时薪日薪换算器',
 		description: 'Convert annual salary into hourly, weekly, biweekly, monthly and daily compensation.',
+		descriptionZh: '年薪、月薪、周薪、日薪与时薪之间快速多维互转换算。',
 		kind: 'form',
 		config: salary,
 
@@ -2462,6 +2474,7 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		name: 'ROI Calculator',
 		nameZh: '投资回报率 (ROI) 计算器',
 		description: 'Return on investment from cost and revenue, with net profit and return multiple.',
+		descriptionZh: '根据投入成本与回收金额测算投资回报率 (ROI)、净利润与回报倍数。',
 		kind: 'form',
 		config: roi,
 
@@ -2486,6 +2499,7 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		name: 'Discount & Sale Calculator',
 		nameZh: '折扣降价与购物优惠计算器',
 		description: 'Final price and total savings from a percentage discount, for single or bulk quantities.',
+		descriptionZh: '根据打折折扣百分比计算优惠后价格与节省金额，支持单件或批量核算。',
 		kind: 'form',
 		config: discount,
 

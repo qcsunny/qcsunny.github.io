@@ -147,7 +147,10 @@ const siteJsonLd = {
 									<span class="tool-tag">{e.category}</span>
 								</div>
 								{e.nameZh && <span class="tool-zh-sub">{e.nameZh}</span>}
-								<p class="tool-desc">{e.description}</p>
+								<p class="tool-desc">
+									<span class="i18n-en">{e.description}</span>
+									{e.descriptionZh && <span class="i18n-zh">{e.descriptionZh}</span>}
+								</p>
 								<div class="tool-card-foot">
 									<span class="tool-action">
 										<span class="i18n-zh">打开工具</span>

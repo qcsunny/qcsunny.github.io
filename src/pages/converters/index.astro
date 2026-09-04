@@ -14,7 +14,10 @@ const entries = [
 			entries.map((e) => (
 				<a class="t-card" href={`/${e.category}/${e.slug}/`} data-slug={e.slug} data-cat={e.category}>
 					<h2>{e.name}{e.nameZh && <span class="t-sub-zh"> · {e.nameZh}</span>}</h2>
-					<p>{e.description}</p>
+					<p>
+						<span class="i18n-en">{e.description}</span>
+						{e.descriptionZh && <span class="i18n-zh">{e.descriptionZh}</span>}
+					</p>
 				</a>
 			))
 		}

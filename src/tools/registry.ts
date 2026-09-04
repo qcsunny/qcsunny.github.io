@@ -37,6 +37,7 @@ export interface ToolMeta {
 	name: string;
 	nameZh?: string;
 	description: string;
+	descriptionZh?: string;
 }
 
 // --- editorial content (SEO) -----------------------------------------------------------
@@ -119,6 +120,7 @@ export interface FormValues {
 
 export interface FormConfig {
 	intro?: string;
+	introZh?: string;
 	fields: FormField[];
 	compute: (v: FormValues) => FormResult;
 }
@@ -246,6 +248,7 @@ export const CALCULATOR_FEATURED: (ToolMeta & { content?: ToolContent })[] = [
 		name: 'Scientific Calculator',
 		nameZh: '科学计算器',
 		description: 'Standard and scientific calculator with variables, history and DEG/RAD modes.',
+		descriptionZh: '标准与科学计算器，支持变量存储、历史记录与角度/弧度切换。',
 	},
 	{
 		slug: 'graph',
@@ -253,11 +256,16 @@ export const CALCULATOR_FEATURED: (ToolMeta & { content?: ToolContent })[] = [
 		name: 'Function Grapher',
 		nameZh: '函数图像绘制器',
 		description: 'Plot up to 4 functions with zoom, pan and a live value crosshair.',
+		descriptionZh: '同时绘制多达 4 条函数图像，支持平移缩放与十字准星实时取值。',
 	},
 ];
 
 export function categoryLabel(id: ToolCategory): string {
 	return CATEGORIES.find((c) => c.id === id)?.label ?? id;
+}
+
+export function categoryLabelZh(id: ToolCategory): string {
+	return CATEGORIES.find((c) => c.id === id)?.labelZh ?? id;
 }
 
 /** Registry entries for /tools/qr-code-generator and /tools/color-converter.
@@ -270,6 +278,7 @@ export const TOOL_WIDGETS: ToolEntry[] = [
 		name: 'QR Code Generator',
 		nameZh: '二维码生成器',
 		description: 'Turn text or URLs into downloadable QR codes, generated entirely in your browser.',
+		descriptionZh: '将文本或网址转换为可下载的二维码，完全在浏览器本地生成。',
 		kind: 'qr',
 
 		content: {
@@ -299,6 +308,7 @@ export const TOOL_WIDGETS: ToolEntry[] = [
 		name: 'Color Converter',
 		nameZh: '颜色换算工具',
 		description: 'Convert colors between HEX, RGB and HSL with a live swatch and complement.',
+		descriptionZh: '在 HEX、RGB 和 HSL 之间转换颜色，支持实时色块预览与互补色计算。',
 		kind: 'color',
 
 		content: {

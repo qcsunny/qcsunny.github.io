@@ -13,6 +13,7 @@ import {
 	CALCULATOR_FEATURED,
 	REGISTRY,
 	categoryLabel,
+	categoryLabelZh,
 	type ToolCategory,
 	type ToolContent,
 	type ToolEntry,
@@ -1652,13 +1653,19 @@ html[data-tool-kind='html'] .t-main {
 							{category && (
 								<>
 									<span class="t-crumb-sep" aria-hidden="true">›</span>
-									<a href={`/${category}/`}>{categoryLabel(category)}</a>
+									<a href={`/${category}/`}>
+										<span class="i18n-en">{categoryLabel(category)}</span>
+										<span class="i18n-zh">{categoryLabelZh(category)}</span>
+									</a>
 								</>
 							)}
 							{crumbName !== 'Tools' && (
 								<>
 									<span class="t-crumb-sep" aria-hidden="true">›</span>
-									<span aria-current="page">{crumbName}</span>
+									<span aria-current="page">
+										<span class="i18n-en">{entry ? entry.name : crumbName}</span>
+										<span class="i18n-zh">{entry?.nameZh || crumbName}</span>
+									</span>
 								</>
 							)}
 						</nav>
@@ -1669,8 +1676,16 @@ html[data-tool-kind='html'] .t-main {
 						</div>
 					</header>
 					<main class="t-main">
-						<h1 class="t-title">{crumbName}{entry?.nameZh && <span class="t-title-zh">（{entry.nameZh}）</span>}</h1>
-						{entry?.kind === 'form' && entry.config.intro && <p class="t-intro">{entry.config.intro}</p>}
+						<h1 class="t-title">
+							<span class="i18n-en">{entry ? entry.name : crumbName}</span>
+							<span class="i18n-zh">{entry?.nameZh || crumbName}</span>
+						</h1>
+						{entry?.kind === 'form' && entry.config.intro && (
+							<p class="t-intro">
+								<span class="i18n-en">{entry.config.intro}</span>
+								{entry.config.introZh && <span class="i18n-zh">{entry.config.introZh}</span>}
+							</p>
+						)}
 						<slot />
 						{ADSENSE_CLIENT && AD_SLOTS.mid && (
 							<div class="t-ad t-ad-mid">
@@ -1724,11 +1739,17 @@ html[data-tool-kind='html'] .t-main {
 						)}
 						{related.length ? (
 							<nav class="t-related-page" aria-label="Related tools">
-								<h2>Related tools</h2>
+								<h2>
+									<span class="i18n-en">Related tools</span>
+									<span class="i18n-zh">相关工具</span>
+								</h2>
 								<ul>
 									{related.map((e) => (
 										<li>
-											<a href={`/${e.category}/${e.slug}/`}>{e.name}</a>
+											<a href={`/${e.category}/${e.slug}/`}>
+												<span class="i18n-en">{e.name}</span>
+												<span class="i18n-zh">{e.nameZh || e.name}</span>
+											</a>
 										</li>
 									))}
 								</ul>

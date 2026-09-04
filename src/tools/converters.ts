@@ -8,6 +8,7 @@ const converter = (
 	name: string,
 	nameZh: string,
 	description: string,
+	descriptionZh: string,
 	content: ToolContent,
 ): ToolEntry => ({
 	slug,
@@ -15,6 +16,7 @@ const converter = (
 	name,
 	nameZh,
 	description,
+	descriptionZh,
 	kind: 'converter',
 	config: { categoryId },
 	content,
@@ -27,6 +29,7 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'Weight & Mass Converter',
 		'重量与质量单位换算器',
 		'Convert between kg, g, mg, tonnes, jin (市斤), liang (两), troy oz (金衡盎司), carats (克拉), pounds, ounces and stone.',
+		'支持千克、克、市斤、两、金衡盎司、克拉、磅、盎司等多维度重量单位换算。',
 		{
 			about: [
 				'Comprehensive mass and weight converter covering metric (kg, g, mg, tonne), traditional Chinese (市斤, 两, 钱, 担, 港斤, 台斤), precious gems & metals (carat, troy ounce, grain), and imperial / US units (pound, ounce, stone, short/long ton).',
@@ -56,6 +59,7 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'Length & Distance Converter',
 		'长度与距离单位换算器',
 		'Convert between millimeters, centimeters, meters, kilometers, Chinese chi/cun/li, nautical miles, inches, feet, yards and miles.',
+		'支持毫米、厘米、米、公里、中国市尺/市寸/华里、海里、英寸、英尺、英里换算。',
 		{
 			about: [
 				'Convert across metric units (nm, µm, mm, cm, m, km), traditional Chinese measures (市里, 丈, 尺, 寸, 分), nautical standards (nautical mile, fathom, cable), and imperial units (inch, foot, yard, mile).',
@@ -83,6 +87,7 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'Area & Land Measure Converter',
 		'面积与土地单位换算器',
 		'Convert between square meters, hectares, Chinese mu (亩), qing (顷), acres, square feet, yards and square miles.',
+		'支持平方米、公顷、中国市亩、顷、英亩、平方英尺、平方英里等多尺度土地面积换算。',
 		{
 			about: [
 				'Convert surface and real estate land areas across international metric units (m², km², hectare, are), traditional Chinese land measures (亩, 顷, 分地, 平方尺), and imperial units (acre, square foot, square yard, square mile).',
@@ -106,6 +111,7 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'Volume & Capacity Converter',
 		'体积与容量单位换算器',
 		'Convert between liters, mL, cubic meters, US gallons, UK gallons, barrels (bbl), cups, tablespoons and cubic feet.',
+		'支持升、毫升、立方米、美制/英制加仑、原油标准桶、美制量杯与立方英尺容量换算。',
 		{
 			about: [
 				'Convert volume and liquid capacity across metric units (mL, L, m³), culinary kitchen spoons (tsp, tbsp, cup), US & UK liquid standards (fl oz, pint, quart, gallon), oil barrels (bbl), and cubic feet/inches.',
@@ -129,6 +135,7 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'Pressure Converter',
 		'压力与压强单位换算器',
 		'Convert between pascals (Pa), kPa, MPa, bar, psi, standard atmospheres (atm), mmHg/Torr, and kgf/cm².',
+		'支持帕斯卡 (Pa)、千帕、巴 (bar)、磅力/平方英寸 (psi)、标准大气压、托及公斤力换算。',
 		{
 			about: [
 				'High-precision pressure and stress conversion for engineering, automotive tire pressures, diving, medical blood pressure, and atmospheric meteorology. Seamlessly convert between Pa, kPa, MPa, bar, psi, atm, mmHg/Torr, and kgf/cm².',
@@ -155,6 +162,7 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'Power & Horsepower Converter',
 		'功率与马力单位换算器',
 		'Convert between watts (W), kilowatts (kW), megawatts (MW), metric horsepower (ps/匹), mechanical horsepower (hp) and BTU/h.',
+		'支持瓦特 (W)、千瓦、兆瓦、米制公制马力 (ps/匹)、英制马力 (hp) 与 BTU/h 功率换算。',
 		{
 			about: [
 				'Convert power across international SI units (W, kW, MW, GW), automotive horsepower (metric ps vs mechanical imperial hp), air conditioner capacity (BTU/h), and mechanical work rates (ft·lb/s).',
@@ -178,6 +186,7 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'Energy & Heat Converter',
 		'能量热量与功换算器',
 		'Convert between joules (J), kilojoules (kJ), calories, kilocalories (kcal/大卡), watt-hours (Wh), kilowatt-hours (kWh / 度电) and BTU.',
+		'支持焦耳 (J)、千焦、卡路里、大卡 (kcal)、度电 (kWh) 与英热单位 (BTU) 能量热量换算。',
 		{
 			about: [
 				'Convert physical work, thermal calories, electrical storage, and fuel heating values across joules (J, kJ, MJ), dietary calories (cal, kcal / 大卡), electrical energy (Wh, kWh), British thermal units (BTU), and electronvolts (eV).',
@@ -201,6 +210,7 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'Temperature Converter',
 		'温度单位换算器',
 		'Convert between Celsius (°C), Fahrenheit (°F), Kelvin (K), Rankine (°R) and Réaumur (°Re).',
+		'支持摄氏度 (°C)、华氏度 (°F)、开尔文 (K)、兰氏度 (°R) 与列氏度 (°Re) 精确换算。',
 		{
 			about: [
 				'Convert between Celsius, Fahrenheit, absolute Kelvin, Rankine, and Réaumur temperature scales with exact mathematical formulas.',
@@ -224,6 +234,7 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'Speed & Velocity Converter',
 		'速度单位换算器 (米/秒 · 公里/小时 · mph · 节 · 马赫)',
 		'Convert between m/s (米/秒), km/h (公里/小时), mph (英里/小时), knots (节), Mach (马赫) and speed of light (光速).',
+		'支持米/秒、公里/小时 (km/h)、英里/小时 (mph)、航速节 (knots) 与马赫 (Mach) 换算。',
 		{
 			about: [
 				'Instant velocity conversion between standard scientific units (m/s), automotive traffic speeds (km/h, mph), marine and aviation navigation (knots), supersonic aeronautics (Mach), and cosmic physics (speed of light).',
@@ -250,6 +261,7 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'Time Duration Converter',
 		'时间单位换算器',
 		'Convert between picoseconds, nanoseconds, milliseconds, seconds, minutes, hours, days, weeks, months and years.',
+		'支持纳秒、毫秒、秒、分、小时、天、周、月、季度、年及世纪多尺度时间换算。',
 		{
 			about: [
 				'Convert time spans from microchip clock cycles (picoseconds, nanoseconds) to human scales (seconds, minutes, hours, days, weeks, months, years, and centuries).',
@@ -273,6 +285,7 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'Data Size & Bandwidth Converter',
 		'数据存储与带宽换算器',
 		'Convert between bits (b, Mb, Gb), bytes (B, KB, MB, GB, TB, PB) and binary kibibytes (KiB, MiB, GiB, TiB).',
+		'支持比特 (b)、字节 (B)、KB/MB/GB/TB 与二进制 KiB/MiB/GiB/TiB 存储与带宽换算。',
 		{
 			about: [
 				'Convert network bandwidth (bits: Mbps, Gbps), decimal manufacturer storage (KB, MB, GB, TB, PB — powers of 1000), and binary operating system memory/file sizes (KiB, MiB, GiB, TiB — powers of 1024).',
