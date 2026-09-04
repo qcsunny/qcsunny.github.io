@@ -337,7 +337,9 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 		// Feature 1: Enter / Esc key handling
 		c.addEventListener('keydown', (e: Event) => {
 			const ke = e as KeyboardEvent;
-			const isTextarea = c.tagName.toLowerCase() === 'textarea';
+			const tag = c.tagName.toLowerCase();
+			const isTextarea = tag === 'textarea';
+			const isSelect = tag === 'select';
 
 			if (ke.key === 'Enter') {
 				if (!isTextarea) {
@@ -346,9 +348,12 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 				}
 				// textarea: let Enter pass through for newline behavior
 			} else if (ke.key === 'Escape') {
-				ke.preventDefault();
-				(c as HTMLInputElement | HTMLTextAreaElement).value = '';
-				update();
+				// Only clear text/number/textarea inputs — never clear select
+				if (!isSelect) {
+					ke.preventDefault();
+					(c as HTMLInputElement | HTMLTextAreaElement).value = '';
+					update();
+				}
 			}
 		});
 	});
