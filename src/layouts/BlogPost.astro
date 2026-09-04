@@ -60,6 +60,42 @@ const jsonLd = {
 			></script>
 		)}
 		<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+		<!-- KaTeX math rendering (100% on-demand in browser, 0 npm dependencies, 0 impact on non-math pages) -->
+		<script is:inline>
+			document.addEventListener('DOMContentLoaded', () => {
+				const prose = document.querySelector('.prose');
+				// If the article has no mathematical notation ($), do not load KaTeX at all
+				if (!prose || !prose.textContent || !prose.textContent.includes('$')) return;
+
+				const link = document.createElement('link');
+				link.rel = 'stylesheet';
+				link.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css';
+				link.crossOrigin = 'anonymous';
+				document.head.appendChild(link);
+
+				const scriptKaTeX = document.createElement('script');
+				scriptKaTeX.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js';
+				scriptKaTeX.crossOrigin = 'anonymous';
+				scriptKaTeX.onload = () => {
+					const scriptAuto = document.createElement('script');
+					scriptAuto.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js';
+					scriptAuto.crossOrigin = 'anonymous';
+					scriptAuto.onload = () => {
+						if (window.renderMathInElement) {
+							window.renderMathInElement(prose, {
+								delimiters: [
+									{ left: '$$', right: '$$', display: true },
+									{ left: '$', right: '$', display: false },
+								],
+								throwOnError: false,
+							});
+						}
+					};
+					document.head.appendChild(scriptAuto);
+				};
+				document.head.appendChild(scriptKaTeX);
+			});
+		</script>
 		<style>
 			main {
 				width: 100%;
