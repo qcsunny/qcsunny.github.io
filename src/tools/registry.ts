@@ -80,6 +80,7 @@ export interface FormField {
 	hint?: string;
 	hintZh?: string;
 	wide?: boolean;
+	required?: boolean;
 }
 
 export interface FormResultRow {

@@ -321,6 +321,26 @@ const year = new Date().getFullYear();
 				outline: 2px solid var(--accent);
 				outline-offset: -1px;
 			}
+			.t-field input.t-invalid,
+			.t-field select.t-invalid,
+			.t-field textarea.t-invalid {
+				border-color: #ef4444;
+				background: rgba(239, 68, 68, 0.05);
+			}
+			.t-field input.t-invalid:focus-visible {
+				outline: 2px solid #ef4444;
+			}
+			.t-req {
+				color: #ef4444;
+				font-weight: bold;
+				margin-left: 0.2em;
+			}
+			.t-req-tip {
+				font-size: 0.75rem;
+				color: #ef4444;
+				margin-top: 0.15em;
+				font-weight: 500;
+			}
 			.t-field .t-hint {
 				font-size: 0.75rem;
 				color: var(--dim);

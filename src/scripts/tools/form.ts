@@ -63,6 +63,13 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 		const label = document.createElement('label');
 		label.htmlFor = `t-f-${field.id}`;
 		label.append(makeBilingualSpan(field.label, field.labelZh));
+		if (field.required) {
+			const req = document.createElement('span');
+			req.className = 't-req';
+			req.title = 'Required / 必填项';
+			req.textContent = ' *';
+			label.append(req);
+		}
 		if (field.suffix) {
 			const s = document.createElement('span');
 			s.className = 't-suffix';
@@ -88,7 +95,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			ta.className = 't-textarea';
 			ta.rows = 3;
 			ta.value = field.def ?? '';
-			ta.placeholder = field.placeholder ?? '';
+			ta.placeholder = field.placeholder ?? (field.required ? 'Required / 必填' : '');
 			getters.set(field.id, () => ta.value);
 			control = ta;
 		} else {
@@ -98,13 +105,35 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			if (field.min) input.min = field.min;
 			if (field.max) input.max = field.max;
 			input.value = field.def ?? '';
-			input.placeholder = field.placeholder ?? '';
+			input.placeholder = field.placeholder ?? (field.required ? 'Required / 必填数值' : '');
 			getters.set(field.id, () => input.value);
 			control = input;
 		}
 		control.id = `t-f-${field.id}`;
 		controls.push(control);
 		wrap.append(control);
+
+		if (field.required) {
+			const tip = document.createElement('span');
+			tip.className = 't-req-tip';
+			tip.style.display = 'none';
+			tip.append(makeBilingualSpan('This field is required', '此项为必填项，请输入数值'));
+			wrap.append(tip);
+
+			const checkValidity = () => {
+				const raw = String(control.value ?? '').trim();
+				const isBad = raw === '' || (field.type === 'number' && !Number.isFinite(Number(raw)));
+				if (isBad) {
+					control.classList.add('t-invalid');
+					tip.style.display = 'block';
+				} else {
+					control.classList.remove('t-invalid');
+					tip.style.display = 'none';
+				}
+			};
+			control.addEventListener('input', checkValidity);
+			control.addEventListener('blur', checkValidity);
+		}
 
 		if (field.hint) {
 			const hint = document.createElement('span');
@@ -161,6 +190,29 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 	function update(): void {
 		results.innerHTML = '';
 		host.querySelectorAll('.t-tablewrap, .t-note').forEach((el) => el.remove());
+
+		let missingRequired = false;
+		for (const f of config.fields) {
+			if (f.required) {
+				const raw = String(getters.get(f.id)?.() ?? '').trim();
+				if (raw === '' || (f.type === 'number' && !Number.isFinite(Number(raw)))) {
+					missingRequired = true;
+					break;
+				}
+			}
+		}
+
+		if (missingRequired) {
+			const promptRow = resultRow({
+				label: 'Input prompt',
+				labelZh: '输入提示',
+				value: 'Please fill in all required fields marked with * / 请完整填写带 * 的必填项',
+				emphasis: false,
+			});
+			results.append(promptRow);
+			return;
+		}
+
 		try {
 			const out = config.compute(values);
 			for (const row of out.rows) results.append(resultRow(row));

@@ -1,7 +1,7 @@
 // Registry entries for /finance/* — all form tools, several with result
 // tables (compound interest year by year, loan amortization, mortgage prepayment, etc.).
 
-import type { FormConfig, FormResultRow, ToolEntry } from './registry';
+import type { FormConfig, FormResultRow, FormTable, ToolEntry } from './registry';
 import { formatNumber } from '../scripts/calculator/engine';
 
 const money = (v: number): string => formatNumber(Math.round(v * 100) / 100);
@@ -45,9 +45,9 @@ function amortize(
 const compoundInterest: FormConfig = {
 	intro: 'Compounded growth with an optional monthly contribution and year-by-year schedule.',
 	fields: [
-		{ id: 'p', label: 'Principal / Starting balance', labelZh: '初始投资本金', suffix: '($ / ¥)', type: 'number', def: '10000', step: 'any', min: '0' },
-		{ id: 'r', label: 'Annual interest rate / return', labelZh: '预期年化收益率 / 利率', suffix: '(%)', type: 'number', def: '6', step: 'any' },
-		{ id: 't', label: 'Investment horizon', labelZh: '投资年限', suffix: '(years / 年)', type: 'number', def: '10', step: 'any', min: '0' },
+		{ id: 'p', label: 'Principal / Starting balance', labelZh: '初始投资本金', suffix: '($ / ¥)', type: 'number', def: '10000', step: 'any', min: '0', required: true },
+		{ id: 'r', label: 'Annual interest rate / return', labelZh: '预期年化收益率 / 利率', suffix: '(%)', type: 'number', def: '6', step: 'any', required: true },
+		{ id: 't', label: 'Investment horizon', labelZh: '投资年限', suffix: '(years / 年)', type: 'number', def: '10', step: 'any', min: '0', required: true },
 		{
 			id: 'n',
 			label: 'Compounding frequency',
@@ -128,11 +128,11 @@ const compoundInterest: FormConfig = {
 const mortgagePrepayment: FormConfig = {
 	intro: 'Calculate remaining loan balance, compare term reduction vs monthly savings, and total interest saved.',
 	fields: [
-		{ id: 'loan', label: 'Original loan amount', labelZh: '原贷款本金', suffix: '($ / ¥)', type: 'number', def: '1000000', step: 'any', min: '0' },
-		{ id: 'rate', label: 'Annual interest rate', labelZh: '贷款年化利率', suffix: '(%)', type: 'number', def: '3.8', step: 'any', min: '0' },
-		{ id: 'years', label: 'Original loan term', labelZh: '原贷款期限', suffix: '(years / 年)', type: 'number', def: '30', step: '1', min: '1' },
-		{ id: 'paidMonths', label: 'Months already paid', labelZh: '已正常还款月数', suffix: '(months / 个月)', type: 'number', def: '36', step: '1', min: '0' },
-		{ id: 'prepay', label: 'Lump-sum prepayment amount', labelZh: '本次提前还贷金额', suffix: '($ / ¥)', type: 'number', def: '200000', step: 'any', min: '0' },
+		{ id: 'loan', label: 'Original loan amount', labelZh: '原贷款本金', suffix: '($ / ¥)', type: 'number', def: '1000000', step: 'any', min: '0', required: true },
+		{ id: 'rate', label: 'Annual interest rate', labelZh: '贷款年化利率', suffix: '(%)', type: 'number', def: '3.8', step: 'any', min: '0', required: true },
+		{ id: 'years', label: 'Original loan term', labelZh: '原贷款期限', suffix: '(years / 年)', type: 'number', def: '30', step: '1', min: '1', required: true },
+		{ id: 'paidMonths', label: 'Months already paid', labelZh: '已正常还款月数', suffix: '(months / 个月)', type: 'number', def: '36', step: '1', min: '0', required: true },
+		{ id: 'prepay', label: 'Lump-sum prepayment amount', labelZh: '本次提前还贷金额', suffix: '($ / ¥)', type: 'number', def: '200000', step: 'any', min: '0', required: true },
 		{
 			id: 'strategy',
 			label: 'Prepayment strategy',
@@ -251,9 +251,9 @@ const mortgagePrepayment: FormConfig = {
 const inflation: FormConfig = {
 	intro: 'Calculate future purchasing power erosion and future equivalent cost based on annual inflation.',
 	fields: [
-		{ id: 'amount', label: 'Current amount / Present value', labelZh: '当前金额 / 资产现值', suffix: '($ / ¥)', type: 'number', def: '100000', step: 'any', min: '0' },
-		{ id: 'rate', label: 'Average annual inflation rate', labelZh: '年均通货膨胀率', suffix: '(%)', type: 'number', def: '3', step: 'any' },
-		{ id: 'years', label: 'Time horizon', labelZh: '时间跨度', suffix: '(years / 年)', type: 'number', def: '20', step: 'any', min: '0' },
+		{ id: 'amount', label: 'Current amount / Present value', labelZh: '当前金额 / 资产现值', suffix: '($ / ¥)', type: 'number', def: '100000', step: 'any', min: '0', required: true },
+		{ id: 'rate', label: 'Average annual inflation rate', labelZh: '年均通货膨胀率', suffix: '(%)', type: 'number', def: '3', step: 'any', required: true },
+		{ id: 'years', label: 'Time horizon', labelZh: '时间跨度', suffix: '(years / 年)', type: 'number', def: '20', step: 'any', min: '0', required: true },
 	],
 	compute: (v) => {
 		const amount = v.num('amount');
@@ -301,10 +301,10 @@ const inflation: FormConfig = {
 const savingsGoal: FormConfig = {
 	intro: 'Calculate the required monthly contribution to reach your financial target by a specific date.',
 	fields: [
-		{ id: 'target', label: 'Target savings goal', labelZh: '目标储蓄规划总额', suffix: '($ / ¥)', type: 'number', def: '500000', step: 'any', min: '0' },
-		{ id: 'current', label: 'Current initial savings', labelZh: '当前已有初始存款', suffix: '($ / ¥)', type: 'number', def: '50000', step: 'any', min: '0' },
-		{ id: 'years', label: 'Time to reach goal', labelZh: '计划储备年限', suffix: '(years / 年)', type: 'number', def: '5', step: 'any', min: '0.1' },
-		{ id: 'rate', label: 'Expected annual return rate', labelZh: '预期年化投资收益率', suffix: '(%)', type: 'number', def: '5', step: 'any' },
+		{ id: 'target', label: 'Target savings goal', labelZh: '目标储蓄规划总额', suffix: '($ / ¥)', type: 'number', def: '500000', step: 'any', min: '0', required: true },
+		{ id: 'current', label: 'Current initial savings', labelZh: '当前已有初始存款', suffix: '($ / ¥)', type: 'number', def: '50000', step: 'any', min: '0', required: true },
+		{ id: 'years', label: 'Time to reach goal', labelZh: '计划储备年限', suffix: '(years / 年)', type: 'number', def: '5', step: 'any', min: '0.1', required: true },
+		{ id: 'rate', label: 'Expected annual return rate', labelZh: '预期年化投资收益率', suffix: '(%)', type: 'number', def: '5', step: 'any', required: true },
 	],
 	compute: (v) => {
 		const target = v.num('target');
@@ -366,8 +366,8 @@ const savingsGoal: FormConfig = {
 const autoLoan: FormConfig = {
 	intro: 'Estimate monthly car payments, interest, taxes, insurance and total out-of-pocket落地 cost.',
 	fields: [
-		{ id: 'carPrice', label: 'Vehicle price', labelZh: '车辆裸车指导价', suffix: '($ / ¥)', type: 'number', def: '150000', step: 'any', min: '0' },
-		{ id: 'downPct', label: 'Down payment percentage', labelZh: '首付比例', suffix: '(%)', type: 'number', def: '20', step: 'any', min: '0', max: '100' },
+		{ id: 'carPrice', label: 'Vehicle price', labelZh: '车辆裸车指导价', suffix: '($ / ¥)', type: 'number', def: '150000', step: 'any', min: '0', required: true },
+		{ id: 'downPct', label: 'Down payment percentage', labelZh: '首付比例', suffix: '(%)', type: 'number', def: '20', step: 'any', min: '0', max: '100', required: true },
 		{
 			id: 'months',
 			label: 'Loan term',
@@ -382,7 +382,7 @@ const autoLoan: FormConfig = {
 				{ value: '60', label: '60 months (5 years)', labelZh: '60 期 (5 年)' },
 			],
 		},
-		{ id: 'rate', label: 'Annual interest rate', labelZh: '车贷年化利率', suffix: '(%)', type: 'number', def: '4.5', step: 'any', min: '0' },
+		{ id: 'rate', label: 'Annual interest rate', labelZh: '车贷年化利率', suffix: '(%)', type: 'number', def: '4.5', step: 'any', min: '0', required: true },
 		{ id: 'tax', label: 'Purchase tax / Sales tax', labelZh: '车辆购置税 / 消费税', suffix: '($ / ¥)', type: 'number', def: '13274', step: 'any', min: '0', hint: 'In China, roughly Price ÷ 1.13 × 10%', hintZh: '国内购置税约按 裸车价 ÷ 1.13 × 10% 计算' },
 		{ id: 'insurance', label: 'First-year insurance', labelZh: '首年车险保费 (交强险+商业险)', suffix: '($ / ¥)', type: 'number', def: '5000', step: 'any', min: '0' },
 		{ id: 'license', label: 'Registration & service fees', labelZh: '上牌与综合杂费', suffix: '($ / ¥)', type: 'number', def: '500', step: 'any', min: '0' },
@@ -428,8 +428,8 @@ const autoLoan: FormConfig = {
 const irrCalculator: FormConfig = {
 	intro: 'Convert advertised installment fees into true APR / IRR via Newton-Raphson approximation.',
 	fields: [
-		{ id: 'principal', label: 'Borrowed principal', labelZh: '分期 / 借款本金', suffix: '($ / ¥)', type: 'number', def: '12000', step: 'any', min: '0' },
-		{ id: 'periods', label: 'Installment periods', labelZh: '分期总期数', suffix: '(months / 期)', type: 'number', def: '12', step: '1', min: '1' },
+		{ id: 'principal', label: 'Borrowed principal', labelZh: '分期 / 借款本金', suffix: '($ / ¥)', type: 'number', def: '12000', step: 'any', min: '0', required: true },
+		{ id: 'periods', label: 'Installment periods', labelZh: '分期总期数', suffix: '(months / 期)', type: 'number', def: '12', step: '1', min: '1', required: true },
 		{
 			id: 'mode',
 			label: 'Fee input type',
@@ -516,12 +516,12 @@ const irrCalculator: FormConfig = {
 const fireCalculator: FormConfig = {
 	intro: 'Calculate your target FIRE nest egg and projected retirement age based on the 4% rule.',
 	fields: [
-		{ id: 'age', label: 'Current age', labelZh: '当前年龄', suffix: '(years / 岁)', type: 'number', def: '30', step: '1', min: '18', max: '80' },
-		{ id: 'annualExp', label: 'Expected annual living expenses in retirement', labelZh: '退休后预期年生活支出', suffix: '($ / ¥)', type: 'number', def: '100000', step: 'any', min: '0' },
-		{ id: 'currentAssets', label: 'Current net investment assets', labelZh: '当前已有可投资生息净资产', suffix: '($ / ¥)', type: 'number', def: '300000', step: 'any', min: '0' },
-		{ id: 'annualSave', label: 'Annual savings added to investments', labelZh: '每年新增投资结余 (年储蓄额)', suffix: '($ / ¥)', type: 'number', def: '80000', step: 'any', min: '0' },
-		{ id: 'returnRate', label: 'Expected annual net return rate', labelZh: '预期年化投资回报率 (扣除通胀后)', suffix: '(%)', type: 'number', def: '6', step: 'any' },
-		{ id: 'swr', label: 'Safe withdrawal rate (SWR)', labelZh: '安全提款率 (SWR)', suffix: '(%)', type: 'number', def: '4', step: 'any', hint: 'Standard 4% rule (Trinity Study)', hintZh: 'Trinity 经典 4% 法则 (即 25 倍年支出)' },
+		{ id: 'age', label: 'Current age', labelZh: '当前年龄', suffix: '(years / 岁)', type: 'number', def: '30', step: '1', min: '18', max: '80', required: true },
+		{ id: 'annualExp', label: 'Expected annual living expenses in retirement', labelZh: '退休后预期年生活支出', suffix: '($ / ¥)', type: 'number', def: '100000', step: 'any', min: '0', required: true },
+		{ id: 'currentAssets', label: 'Current net investment assets', labelZh: '当前已有可投资生息净资产', suffix: '($ / ¥)', type: 'number', def: '300000', step: 'any', min: '0', required: true },
+		{ id: 'annualSave', label: 'Annual savings added to investments', labelZh: '每年新增投资结余 (年储蓄额)', suffix: '($ / ¥)', type: 'number', def: '80000', step: 'any', min: '0', required: true },
+		{ id: 'returnRate', label: 'Expected annual net return rate', labelZh: '预期年化投资回报率 (扣除通胀后)', suffix: '(%)', type: 'number', def: '6', step: 'any', required: true },
+		{ id: 'swr', label: 'Safe withdrawal rate (SWR)', labelZh: '安全提款率 (SWR)', suffix: '(%)', type: 'number', def: '4', step: 'any', required: true, hint: 'Standard 4% rule (Trinity Study)', hintZh: 'Trinity 经典 4% 法则 (即 25 倍年支出)' },
 	],
 	compute: (v) => {
 		const age = Math.round(v.num('age'));
@@ -591,26 +591,88 @@ const fireCalculator: FormConfig = {
 // --- loan payment -----------------------------------------------------------------
 
 const loanPayment: FormConfig = {
+	intro: 'Calculate monthly loan payments, total interest and amortization schedule, or reverse-calculate maximum borrowing capacity from your monthly budget.',
 	fields: [
-		{ id: 'amount', label: 'Loan amount', labelZh: '贷款本金', suffix: '($ / ¥)', type: 'number', def: '30000', step: 'any', min: '0' },
-		{ id: 'rate', label: 'Annual interest rate', labelZh: '贷款年化利率', suffix: '(%)', type: 'number', def: '6', step: 'any' },
-		{ id: 'years', label: 'Term', labelZh: '还款期限', suffix: '(years / 年)', type: 'number', def: '5', step: 'any', min: '0' },
+		{
+			id: 'calcMode',
+			label: 'Calculation mode',
+			labelZh: '计算模式',
+			type: 'select',
+			def: 'to_payment',
+			options: [
+				{ value: 'to_payment', label: 'Forward: Loan Amount to Monthly Payment (正向：已知贷款本金，计算每月月供)', labelZh: '正向：已知贷款本金，计算每月月供' },
+				{ value: 'to_principal', label: 'Reverse: Monthly Budget to Max Loan (逆向：已知月供预算，反推最高借款额度)', labelZh: '逆向：已知月供预算，反推最高借款额度' },
+			],
+		},
+		{
+			id: 'amount',
+			label: 'Amount (Loan Principal or Monthly Budget)',
+			labelZh: '输入金额 (贷款本金 或 每月月供预算)',
+			suffix: '($ / ¥)',
+			type: 'number',
+			def: '300000',
+			step: 'any',
+			min: '0',
+			required: true,
+			hint: 'Forward mode: enter loan principal. Reverse mode: enter target monthly repayment budget.',
+			hintZh: '正向模式输入借款本金总额；逆向模式输入每月可承受的还款预算',
+		},
+		{ id: 'rate', label: 'Annual interest rate', labelZh: '贷款年化利率', suffix: '(%)', type: 'number', def: '3.8', step: 'any', min: '0', required: true },
+		{ id: 'years', label: 'Term', labelZh: '还款期限', suffix: '(years / 年)', type: 'number', def: '30', step: 'any', min: '0.1', required: true },
 	],
 	compute: (v) => {
-		const amount = v.num('amount');
+		const mode = v.str('calcMode') || 'to_payment';
+		const inputVal = v.num('amount');
 		const rate = v.num('rate');
 		const years = v.num('years');
 		const months = Math.round(years * 12);
-		if (!(amount > 0) || !(months > 0)) {
-			return { rows: [{ label: 'Monthly payment', labelZh: '每月月供', value: '— (amount and term must be > 0)' }] };
+		if (!(inputVal > 0) || !(months > 0)) {
+			return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (amount and term must be > 0)' }] };
 		}
-		const pay = monthlyPayment(amount, rate, months);
-		const { rows: tableRows, totalInterest } = amortize(amount, rate, months);
+		const i = rate / 100 / 12;
+		let principal = 0;
+		let pay = 0;
+
+		if (mode === 'to_principal') {
+			pay = inputVal;
+			if (i <= 0) {
+				principal = pay * months;
+			} else {
+				principal = (pay * (1 - (1 + i) ** -months)) / i;
+			}
+		} else {
+			principal = inputVal;
+			pay = monthlyPayment(principal, rate, months);
+		}
+
+		const { rows: tableRows, totalInterest } = amortize(principal, rate, months);
+		const totalRepay = pay * months;
+
+		if (mode === 'to_principal') {
+			return {
+				rows: [
+					{ label: 'Max borrowing loan amount', labelZh: '最高可贷本金额度 (借款上限)', value: money(principal), emphasis: true },
+					{ label: 'Monthly payment budget', labelZh: '每月月供预算 (供款上限)', value: money(pay) },
+					{ label: 'Number of payments', labelZh: '还款期数 (月数)', value: `${months} months / 期 (~${years} 年)` },
+					{ label: 'Total repayment (Principal + Interest)', labelZh: '还款本息总计', value: money(totalRepay) },
+					{ label: 'Total interest paid', labelZh: '支付利息总额', value: money(totalInterest) },
+				],
+				table: {
+					columns: ['Year', 'Principal Paid', 'Interest Paid', 'Remaining Balance'],
+					columnsZh: ['年份', '已还本金', '已付利息', '剩余本金余额'],
+					rows: tableRows,
+				},
+				note: `Based on your monthly budget of ${money(pay)} over ${years} years at ${rate}%, the maximum loan you can afford is ${money(principal)}. Total interest paid will be ${money(totalInterest)}.`,
+				noteZh: `在 ${years} 年期、年化利率 ${rate}% 条件下，按每月 ${money(pay)} 的月供预算，最高可申请贷款本金 ${money(principal)}，累计支付利息 ${money(totalInterest)}，还款本息总计 ${money(totalRepay)}。`,
+			};
+		}
+
 		return {
 			rows: [
 				{ label: 'Monthly payment', labelZh: '每月还款额 (月供)', value: money(pay), emphasis: true },
-				{ label: 'Number of payments', labelZh: '还款期数 (月数)', value: `${months} months / 期` },
-				{ label: 'Total repayment (Principal + Interest)', labelZh: '还款本息总额', value: money(pay * months) },
+				{ label: 'Loan principal', labelZh: '贷款本金', value: money(principal) },
+				{ label: 'Number of payments', labelZh: '还款期数 (月数)', value: `${months} months / 期 (~${years} 年)` },
+				{ label: 'Total repayment (Principal + Interest)', labelZh: '还款本息总额', value: money(totalRepay) },
 				{ label: 'Total interest paid', labelZh: '支付利息总计', value: money(totalInterest) },
 			],
 			table: {
@@ -618,6 +680,8 @@ const loanPayment: FormConfig = {
 				columnsZh: ['年份', '已还本金', '已付利息', '剩余本金余额'],
 				rows: tableRows,
 			},
+			note: `Financing ${money(principal)} at ${rate}% over ${years} years requires a monthly payment of ${money(pay)}. Total interest will be ${money(totalInterest)}.`,
+			noteZh: `贷款本金 ${money(principal)}，按年利率 ${rate}% 分 ${years} 年（${months}期）等额本息偿还，每月月供为 ${money(pay)}，累计总利息支出为 ${money(totalInterest)}。`,
 		};
 	},
 };
@@ -626,10 +690,10 @@ const loanPayment: FormConfig = {
 
 const mortgage: FormConfig = {
 	fields: [
-		{ id: 'price', label: 'Home price', labelZh: '房产总售价', suffix: '($ / ¥)', type: 'number', def: '350000', step: 'any', min: '0' },
-		{ id: 'down', label: 'Down payment', labelZh: '购房首付款', suffix: '($ / ¥)', type: 'number', def: '70000', step: 'any', min: '0' },
-		{ id: 'rate', label: 'Annual interest rate', labelZh: '房贷年化利率', suffix: '(%)', type: 'number', def: '4.5', step: 'any' },
-		{ id: 'years', label: 'Term', labelZh: '按揭年限', suffix: '(years / 年)', type: 'number', def: '30', step: 'any', min: '0' },
+		{ id: 'price', label: 'Home price', labelZh: '房产总售价', suffix: '($ / ¥)', type: 'number', def: '350000', step: 'any', min: '0', required: true },
+		{ id: 'down', label: 'Down payment', labelZh: '购房首付款', suffix: '($ / ¥)', type: 'number', def: '70000', step: 'any', min: '0', required: true },
+		{ id: 'rate', label: 'Annual interest rate', labelZh: '房贷年化利率', suffix: '(%)', type: 'number', def: '4.5', step: 'any', required: true },
+		{ id: 'years', label: 'Term', labelZh: '按揭年限', suffix: '(years / 年)', type: 'number', def: '30', step: 'any', min: '0', required: true },
 		{ id: 'tax', label: 'Property tax per year', labelZh: '年房产税', suffix: '($ / ¥)', type: 'number', def: '4200', step: 'any', min: '0' },
 		{ id: 'ins', label: 'Insurance per year', labelZh: '年房屋保险', suffix: '($ / ¥)', type: 'number', def: '1500', step: 'any', min: '0' },
 		{ id: 'hoa', label: 'HOA fees per month', labelZh: '每月物业管理费', suffix: '($ / ¥)', type: 'number', def: '0', step: 'any', min: '0' },
@@ -677,8 +741,8 @@ const mortgage: FormConfig = {
 const roi: FormConfig = {
 	intro: 'ROI = (revenue − cost) ÷ cost × 100.',
 	fields: [
-		{ id: 'cost', label: 'Cost of investment', labelZh: '投资成本', suffix: '($ / ¥)', type: 'number', def: '1000', step: 'any' },
-		{ id: 'revenue', label: 'Revenue / Final value', labelZh: '回收金额 / 终值', suffix: '($ / ¥)', type: 'number', def: '1500', step: 'any' },
+		{ id: 'cost', label: 'Cost of investment', labelZh: '投资成本', suffix: '($ / ¥)', type: 'number', def: '1000', step: 'any', required: true },
+		{ id: 'revenue', label: 'Revenue / Final value', labelZh: '回收金额 / 终值', suffix: '($ / ¥)', type: 'number', def: '1500', step: 'any', required: true },
 	],
 	compute: (v) => {
 		const cost = v.num('cost');
@@ -701,9 +765,9 @@ const roi: FormConfig = {
 
 const discount: FormConfig = {
 	fields: [
-		{ id: 'price', label: 'Original price', labelZh: '商品原价', suffix: '($ / ¥)', type: 'number', def: '100', step: 'any', min: '0' },
-		{ id: 'pct', label: 'Discount percentage off', labelZh: '折扣率 (%)', suffix: '(%)', type: 'number', def: '20', step: 'any' },
-		{ id: 'qty', label: 'Quantity', labelZh: '购买件数', type: 'number', def: '1', step: '1', min: '1' },
+		{ id: 'price', label: 'Original price', labelZh: '商品原价', suffix: '($ / ¥)', type: 'number', def: '100', step: 'any', min: '0', required: true },
+		{ id: 'pct', label: 'Discount percentage off', labelZh: '折扣率 (%)', suffix: '(%)', type: 'number', def: '20', step: 'any', required: true },
+		{ id: 'qty', label: 'Quantity', labelZh: '购买件数', type: 'number', def: '1', step: '1', min: '1', required: true },
 	],
 	compute: (v) => {
 		const price = v.num('price');
@@ -725,10 +789,10 @@ const discount: FormConfig = {
 
 const salary: FormConfig = {
 	fields: [
-		{ id: 'annual', label: 'Annual salary', labelZh: '年薪总额', suffix: '($ / ¥)', type: 'number', def: '60000', step: 'any', min: '0' },
-		{ id: 'hours', label: 'Hours per week', labelZh: '每周工作小时数', type: 'number', def: '40', step: 'any', min: '0' },
-		{ id: 'weeks', label: 'Working weeks per year', labelZh: '每年工作周数', type: 'number', def: '52', step: 'any', min: '0' },
-		{ id: 'days', label: 'Working days per week', labelZh: '每周工作天数', type: 'number', def: '5', step: 'any', min: '0' },
+		{ id: 'annual', label: 'Annual salary', labelZh: '年薪总额', suffix: '($ / ¥)', type: 'number', def: '60000', step: 'any', min: '0', required: true },
+		{ id: 'hours', label: 'Hours per week', labelZh: '每周工作小时数', type: 'number', def: '40', step: 'any', min: '0', required: true },
+		{ id: 'weeks', label: 'Working weeks per year', labelZh: '每年工作周数', type: 'number', def: '52', step: 'any', min: '0', required: true },
+		{ id: 'days', label: 'Working days per week', labelZh: '每周工作天数', type: 'number', def: '5', step: 'any', min: '0', required: true },
 	],
 	compute: (v) => {
 		const annual = v.num('annual');
@@ -826,18 +890,277 @@ function calcCnTax(taxableIncome: number): { tax: number; marginalRate: number; 
 	return { tax, marginalRate, rows };
 }
 
+interface TaxCoreInput {
+	annualGross: number;
+	regime: string;
+	annualInsurance: number;
+	annualSpecialDeduction: number;
+	effectiveBonus: number;
+	bonusMode: string;
+	flatRate: number;
+}
+
+interface TaxCoreOutput {
+	totalGross: number;
+	annualGross: number;
+	annualInsurance: number;
+	annualSpecialDeduction: number;
+	effectiveBonus: number;
+	totalSalaryDeductions: number;
+	salaryTaxable: number;
+	salaryTax: number;
+	separateBonusTax: number;
+	separateBonusRate: number;
+	separateBonusQuick: number;
+	bonusTaxableForSeparate: number;
+	separateTotalTax: number;
+	combinedTotalTax: number;
+	combinedBonusTax: number;
+	bestScheme: 'separate' | 'combined' | 'equal';
+	taxDiff: number;
+	isCombinedActive: boolean;
+	totalTax: number;
+	bonusTax: number;
+	bonusTakeHome: number;
+	annualSalaryNet: number;
+	monthlySalaryNet: number;
+	totalNetTakeHome: number;
+	effectiveRate: number;
+	marginalRate: number;
+	pitfallWarning: { threshold: number; min: number; max: number; safeTax: number; currTax: number; lost: number } | null;
+	salaryCalcRows: string[][];
+	usOrFlatRows: string[][];
+}
+
+function computeTaxCore(input: TaxCoreInput): TaxCoreOutput {
+	const { annualGross, regime, annualInsurance, annualSpecialDeduction, effectiveBonus, bonusMode, flatRate } = input;
+	const totalGross = annualGross + effectiveBonus;
+
+	if (regime === 'cn') {
+		const STANDARD_DEDUCTION = 60000;
+		const totalSalaryDeductions = STANDARD_DEDUCTION + annualInsurance + annualSpecialDeduction;
+		const salaryTaxable = Math.max(0, annualGross - totalSalaryDeductions);
+		const salaryShortfall = Math.max(0, totalSalaryDeductions - annualGross);
+		const salaryCalc = calcCnTax(salaryTaxable);
+		const salaryTax = salaryCalc.tax;
+
+		let separateBonusTax = 0;
+		let separateBonusRate = 0;
+		let separateBonusQuick = 0;
+		let bonusTaxableForSeparate = 0;
+
+		if (effectiveBonus > 0) {
+			bonusTaxableForSeparate = Math.max(0, effectiveBonus - salaryShortfall);
+			if (bonusTaxableForSeparate > 0) {
+				const monthlyQuotient = bonusTaxableForSeparate / 12;
+				for (const mb of CN_BONUS_MONTHLY_BRACKETS) {
+					if (monthlyQuotient <= mb.maxMonthly) {
+						separateBonusRate = mb.rate;
+						separateBonusQuick = mb.quick;
+						separateBonusTax = Math.max(0, bonusTaxableForSeparate * mb.rate - mb.quick);
+						break;
+					}
+				}
+			}
+		}
+
+		const separateTotalTax = salaryTax + separateBonusTax;
+		const combinedTaxable = Math.max(0, totalGross - totalSalaryDeductions);
+		const combinedCalc = calcCnTax(combinedTaxable);
+		const combinedTotalTax = combinedCalc.tax;
+		const combinedBonusTax = Math.max(0, combinedTotalTax - salaryTax);
+
+		let bestScheme: 'separate' | 'combined' | 'equal' = 'separate';
+		const taxDiff = Math.abs(separateTotalTax - combinedTotalTax);
+		if (effectiveBonus <= 0) {
+			bestScheme = 'separate';
+		} else if (separateTotalTax < combinedTotalTax) {
+			bestScheme = 'separate';
+		} else if (combinedTotalTax < separateTotalTax) {
+			bestScheme = 'combined';
+		} else {
+			bestScheme = 'equal';
+		}
+
+		let activeScheme = bonusMode;
+		if (bonusMode === 'auto') {
+			activeScheme = bestScheme === 'combined' ? 'combined' : 'separate';
+		}
+
+		const isCombinedActive = activeScheme === 'combined';
+		const totalTax = isCombinedActive ? combinedTotalTax : separateTotalTax;
+		const bonusTax = isCombinedActive ? combinedBonusTax : separateBonusTax;
+		const bonusTakeHome = Math.max(0, effectiveBonus - bonusTax);
+		const annualSalaryNet = Math.max(0, annualGross - annualInsurance - salaryTax);
+		const monthlySalaryNet = annualSalaryNet / 12;
+		const totalNetTakeHome = Math.max(0, totalGross - annualInsurance - totalTax);
+		const effectiveRate = totalGross > 0 ? (totalTax / totalGross) * 100 : 0;
+		const marginalRate = isCombinedActive ? combinedCalc.marginalRate : Math.max(salaryCalc.marginalRate, separateBonusRate * 100);
+
+		let pitfallWarning: { threshold: number; min: number; max: number; safeTax: number; currTax: number; lost: number } | null = null;
+		if (effectiveBonus > 0 && !isCombinedActive && bonusTaxableForSeparate > 0) {
+			for (const p of CN_BONUS_PITFALLS) {
+				if (bonusTaxableForSeparate > p.threshold && bonusTaxableForSeparate <= p.maxPitfall) {
+					const safeTax = p.threshold * p.prevRate;
+					const currTax = bonusTaxableForSeparate * p.rate - p.quick;
+					const lost = (p.threshold - safeTax) - (bonusTaxableForSeparate - currTax);
+					if (lost > 0) {
+						pitfallWarning = {
+							threshold: p.threshold,
+							min: p.minPitfall,
+							max: Math.round(p.maxPitfall),
+							safeTax,
+							currTax,
+							lost: Math.round(lost * 100) / 100,
+						};
+					}
+					break;
+				}
+			}
+		}
+
+		return {
+			totalGross,
+			annualGross,
+			annualInsurance,
+			annualSpecialDeduction,
+			effectiveBonus,
+			totalSalaryDeductions,
+			salaryTaxable,
+			salaryTax,
+			separateBonusTax,
+			separateBonusRate,
+			separateBonusQuick,
+			bonusTaxableForSeparate,
+			separateTotalTax,
+			combinedTotalTax,
+			combinedBonusTax,
+			bestScheme,
+			taxDiff,
+			isCombinedActive,
+			totalTax,
+			bonusTax,
+			bonusTakeHome,
+			annualSalaryNet,
+			monthlySalaryNet,
+			totalNetTakeHome,
+			effectiveRate,
+			marginalRate,
+			pitfallWarning,
+			salaryCalcRows: salaryCalc.rows,
+			usOrFlatRows: [],
+		};
+	}
+
+	// US Single & Flat Tax
+	const annualDeductions = annualInsurance + annualSpecialDeduction;
+	let taxableIncome = 0;
+	let annualTax = 0;
+	let marginalRate = 0;
+	const usOrFlatRows: string[][] = [];
+
+	if (regime === 'us_single') {
+		const standardDeduction = 14600;
+		taxableIncome = Math.max(0, totalGross - standardDeduction - annualDeductions);
+		const brackets = [
+			{ max: 11600, rate: 0.10 },
+			{ max: 47150, rate: 0.12 },
+			{ max: 100525, rate: 0.22 },
+			{ max: 191950, rate: 0.24 },
+			{ max: 243725, rate: 0.32 },
+			{ max: 609350, rate: 0.35 },
+			{ max: Infinity, rate: 0.37 },
+		];
+		let prev = 0;
+		for (const b of brackets) {
+			if (taxableIncome > prev) {
+				const inBracket = Math.min(taxableIncome, b.max) - prev;
+				const taxInBracket = inBracket * b.rate;
+				annualTax += taxInBracket;
+				marginalRate = b.rate * 100;
+				usOrFlatRows.push([
+					`${prev ? money(prev) : '0'} – ${b.max === Infinity ? 'Above / 以上' : money(b.max)}`,
+					`${(b.rate * 100).toFixed(0)}%`,
+					money(inBracket),
+					money(taxInBracket),
+				]);
+				prev = b.max;
+			} else {
+				break;
+			}
+		}
+	} else {
+		// Flat Rate
+		taxableIncome = Math.max(0, totalGross - annualDeductions);
+		annualTax = taxableIncome * flatRate;
+		marginalRate = flatRate * 100;
+		usOrFlatRows.push(['All taxable income', `${(flatRate * 100).toFixed(1)}%`, money(taxableIncome), money(annualTax)]);
+	}
+
+	const annualSalaryNet = Math.max(0, annualGross - annualInsurance - annualTax);
+	const monthlySalaryNet = annualSalaryNet / 12;
+	const totalNetTakeHome = Math.max(0, totalGross - annualDeductions - annualTax);
+	const effectiveRate = totalGross > 0 ? (annualTax / totalGross) * 100 : 0;
+
+	return {
+		totalGross,
+		annualGross,
+		annualInsurance,
+		annualSpecialDeduction,
+		effectiveBonus,
+		totalSalaryDeductions: annualDeductions,
+		salaryTaxable: taxableIncome,
+		salaryTax: annualTax,
+		separateBonusTax: 0,
+		separateBonusRate: 0,
+		separateBonusQuick: 0,
+		bonusTaxableForSeparate: 0,
+		separateTotalTax: annualTax,
+		combinedTotalTax: annualTax,
+		combinedBonusTax: 0,
+		bestScheme: 'separate',
+		taxDiff: 0,
+		isCombinedActive: false,
+		totalTax: annualTax,
+		bonusTax: 0,
+		bonusTakeHome: effectiveBonus,
+		annualSalaryNet,
+		monthlySalaryNet,
+		totalNetTakeHome,
+		effectiveRate,
+		marginalRate,
+		pitfallWarning: null,
+		salaryCalcRows: [],
+		usOrFlatRows,
+	};
+}
+
 const tax: FormConfig = {
-	intro: 'Calculate net take-home pay, Five Insurances & Housing Fund, 7 Special Additional Deductions, and Year-End Bonus tax options (Separate vs Combined).',
+	intro: 'Calculate net take-home pay, Five Insurances & Housing Fund, 7 Special Additional Deductions, Year-End Bonus tax, or reverse-calculate gross salary from target take-home pay.',
 	fields: [
 		{
+			id: 'direction',
+			label: 'Calculation direction',
+			labelZh: '计算方向',
+			type: 'select',
+			def: 'gross_to_net',
+			options: [
+				{ value: 'gross_to_net', label: 'Forward: Gross to Net Take-Home (正向：税前薪资算税后到手)', labelZh: '正向：税前薪资算税后到手' },
+				{ value: 'net_to_gross', label: 'Reverse: Net Take-Home to Required Gross (逆向：税后期望到手反推税前薪资)', labelZh: '逆向：税后到手反推税前薪资' },
+			],
+		},
+		{
 			id: 'gross',
-			label: 'Gross salary / income',
-			labelZh: '税前基本薪资 / 收入',
+			label: 'Salary / Income amount',
+			labelZh: '薪资收入金额 (税前基本薪资 或 目标税后到手)',
 			suffix: '($ / ¥)',
 			type: 'number',
 			def: '15000',
 			step: 'any',
 			min: '0',
+			required: true,
+			hint: 'Forward: enter gross base salary. Reverse: enter desired net take-home pay.',
+			hintZh: '正向模式输入税前基本薪资；逆向模式输入目标期望税后到手金额',
 		},
 		{
 			id: 'period',
@@ -925,7 +1248,8 @@ const tax: FormConfig = {
 		},
 	],
 	compute: (v) => {
-		const rawGross = Math.max(0, v.num('gross') || 0);
+		const direction = v.str('direction') || 'gross_to_net';
+		const inputIncome = Math.max(0, v.num('gross') || 0);
 		const period = v.str('period');
 		const regime = v.str('regime');
 		const monthlyInsurance = Math.max(0, v.num('insurance') || 0);
@@ -934,128 +1258,184 @@ const tax: FormConfig = {
 		const bonusMode = v.str('bonusMode');
 		const flatRate = Math.max(0, (v.num('flatRate') || 0) / 100);
 
-		const annualGross = period === 'monthly' ? rawGross * 12 : rawGross;
 		const annualInsurance = monthlyInsurance * 12;
 		const annualSpecialDeduction = monthlySpecialDeduction * 12;
 		const effectiveBonus = bonusMode === 'none' ? 0 : rawBonus;
-		const totalGross = annualGross + effectiveBonus;
 
-		if (regime === 'cn') {
-			const STANDARD_DEDUCTION = 60000; // 5000 / month * 12
-			const totalSalaryDeductions = STANDARD_DEDUCTION + annualInsurance + annualSpecialDeduction;
-			const salaryTaxable = Math.max(0, annualGross - totalSalaryDeductions);
-			const salaryShortfall = Math.max(0, totalSalaryDeductions - annualGross);
-
-			const salaryCalc = calcCnTax(salaryTaxable);
-			const salaryTax = salaryCalc.tax;
-
-			// --- Year-End Bonus Calculations ---
-			let separateBonusTax = 0;
-			let separateBonusRate = 0;
-			let separateBonusQuick = 0;
-			let bonusTaxableForSeparate = 0;
-
-			if (effectiveBonus > 0) {
-				// According to Caishui [2018] No. 164:
-				// If annual salary is below deductions, bonus first compensates the shortfall
-				bonusTaxableForSeparate = Math.max(0, effectiveBonus - salaryShortfall);
-				if (bonusTaxableForSeparate > 0) {
-					const monthlyQuotient = bonusTaxableForSeparate / 12;
-					for (const mb of CN_BONUS_MONTHLY_BRACKETS) {
-						if (monthlyQuotient <= mb.maxMonthly) {
-							separateBonusRate = mb.rate;
-							separateBonusQuick = mb.quick;
-							separateBonusTax = Math.max(0, bonusTaxableForSeparate * mb.rate - mb.quick);
-							break;
-						}
-					}
-				}
-			}
-
-			const separateTotalTax = salaryTax + separateBonusTax;
-
-			// Combined scheme
-			const combinedTaxable = Math.max(0, totalGross - totalSalaryDeductions);
-			const combinedCalc = calcCnTax(combinedTaxable);
-			const combinedTotalTax = combinedCalc.tax;
-			const combinedBonusTax = Math.max(0, combinedTotalTax - salaryTax);
-
-			// Comparison & best selection
-			let bestScheme: 'separate' | 'combined' | 'equal' = 'separate';
-			const taxDiff = Math.abs(separateTotalTax - combinedTotalTax);
-			if (effectiveBonus <= 0) {
-				bestScheme = 'separate';
-			} else if (separateTotalTax < combinedTotalTax) {
-				bestScheme = 'separate';
-			} else if (combinedTotalTax < separateTotalTax) {
-				bestScheme = 'combined';
+		let annualGross = 0;
+		if (direction === 'net_to_gross') {
+			const targetAnnualNet = period === 'monthly' ? inputIncome * 12 : inputIncome;
+			if (targetAnnualNet <= 0) {
+				annualGross = 0;
 			} else {
-				bestScheme = 'equal';
-			}
-
-			let activeScheme = bonusMode;
-			if (bonusMode === 'auto') {
-				activeScheme = bestScheme === 'combined' ? 'combined' : 'separate';
-			}
-
-			const isCombinedActive = activeScheme === 'combined';
-			const totalTax = isCombinedActive ? combinedTotalTax : separateTotalTax;
-			const bonusTax = isCombinedActive ? combinedBonusTax : separateBonusTax;
-			const bonusTakeHome = Math.max(0, effectiveBonus - bonusTax);
-			const annualSalaryNet = Math.max(0, annualGross - annualInsurance - salaryTax);
-			const monthlySalaryNet = annualSalaryNet / 12;
-			const totalNetTakeHome = Math.max(0, totalGross - annualInsurance - totalTax);
-			const effectiveRate = totalGross > 0 ? (totalTax / totalGross) * 100 : 0;
-			const marginalRate = isCombinedActive ? combinedCalc.marginalRate : Math.max(salaryCalc.marginalRate, separateBonusRate * 100);
-
-			// Check Pitfall (多发少得盲区)
-			let pitfallWarning: { threshold: number; min: number; max: number; safeTax: number; currTax: number; lost: number } | null = null;
-			if (effectiveBonus > 0 && !isCombinedActive && bonusTaxableForSeparate > 0) {
-				for (const p of CN_BONUS_PITFALLS) {
-					if (bonusTaxableForSeparate > p.threshold && bonusTaxableForSeparate <= p.maxPitfall) {
-						const safeTax = p.threshold * p.prevRate;
-						const currTax = bonusTaxableForSeparate * p.rate - p.quick;
-						const lost = (p.threshold - safeTax) - (bonusTaxableForSeparate - currTax);
-						if (lost > 0) {
-							pitfallWarning = {
-								threshold: p.threshold,
-								min: p.minPitfall,
-								max: Math.round(p.maxPitfall),
-								safeTax,
-								currTax,
-								lost: Math.round(lost * 100) / 100,
-							};
-						}
-						break;
+				let low = 0;
+				let high = Math.max(targetAnnualNet * 2.5 + annualInsurance + 100000, 100000);
+				while (
+					computeTaxCore({
+						annualGross: high,
+						regime,
+						annualInsurance,
+						annualSpecialDeduction,
+						effectiveBonus,
+						bonusMode,
+						flatRate,
+					}).totalNetTakeHome < targetAnnualNet
+				) {
+					high *= 2;
+				}
+				for (let iter = 0; iter < 50; iter++) {
+					const mid = (low + high) / 2;
+					const cur = computeTaxCore({
+						annualGross: mid,
+						regime,
+						annualInsurance,
+						annualSpecialDeduction,
+						effectiveBonus,
+						bonusMode,
+						flatRate,
+					});
+					if (cur.totalNetTakeHome >= targetAnnualNet) {
+						high = mid;
+					} else {
+						low = mid;
 					}
 				}
+				annualGross = (low + high) / 2;
 			}
+		} else {
+			annualGross = period === 'monthly' ? inputIncome * 12 : inputIncome;
+		}
 
+		const out = computeTaxCore({
+			annualGross,
+			regime,
+			annualInsurance,
+			annualSpecialDeduction,
+			effectiveBonus,
+			bonusMode,
+			flatRate,
+		});
+
+		if (direction === 'net_to_gross') {
+			const requiredPeriodGross = period === 'monthly' ? annualGross / 12 : annualGross;
 			const rows: FormResultRow[] = [
-				{ label: 'Net take-home income (Annual)', labelZh: '税后总收入 (全年度实发到手)', value: money(totalNetTakeHome), emphasis: true },
-				{ label: 'Base salary net pay (Monthly average)', labelZh: '基本工资税后到手 (月均)', value: money(monthlySalaryNet) },
+				{
+					label: period === 'monthly' ? 'Required pre-tax salary (Monthly)' : 'Required pre-tax salary (Annual)',
+					labelZh: period === 'monthly' ? '所需税前基本薪资 (月薪)' : '所需税前基本薪资 (年薪)',
+					value: money(requiredPeriodGross),
+					emphasis: true,
+				},
+				{
+					label: 'Target net take-home pay',
+					labelZh: '目标税后到手金额',
+					value: `${money(inputIncome)} (${period === 'monthly' ? 'Monthly / 月' : 'Annual / 年'})`,
+				},
+				{
+					label: 'Required pre-tax salary (Annual total)',
+					labelZh: '对应全年度税前基本年薪',
+					value: money(annualGross),
+				},
+				{
+					label: 'Total annual tax owed',
+					labelZh: '全年度预计需缴纳个税',
+					value: `${money(out.totalTax)} (月均 ¥${money(out.totalTax / 12)})`,
+				},
+				{
+					label: 'Base salary net pay (Monthly average)',
+					labelZh: '月均基本工资税后到手',
+					value: money(out.monthlySalaryNet),
+				},
 			];
 
 			if (effectiveBonus > 0) {
-				rows.push({ label: 'Year-end bonus net pay', labelZh: '年终奖税后到手 (实发)', value: money(bonusTakeHome) });
+				rows.push({
+					label: 'Year-end bonus net pay',
+					labelZh: '年终奖税后到手 (实发)',
+					value: money(out.bonusTakeHome),
+				});
+				rows.push({
+					label: 'Year-end bonus tax owed',
+					labelZh: '年终奖应纳个税',
+					value: `${money(out.bonusTax)}${out.isCombinedActive ? ' (并入综合)' : ` (${(out.separateBonusRate * 100).toFixed(0)}% 档, 速算扣除 ¥${out.separateBonusQuick})`}`,
+				});
 			}
 
 			rows.push(
-				{ label: 'Total annual tax owed', labelZh: '全年度个人所得税总额', value: money(totalTax) },
-				{ label: 'Base salary tax owed (Annual)', labelZh: '基本工资应纳个税 (全年度)', value: money(salaryTax) },
+				{
+					label: 'Five Insurances & Housing Fund (Annual)',
+					labelZh: '全年五险一金个人承担扣除',
+					value: `${money(annualInsurance)} (月均 ¥${money(monthlyInsurance)})`,
+				},
+				{
+					label: 'Special Additional Deductions (Annual)',
+					labelZh: '全年专项附加扣除总额',
+					value: `${money(annualSpecialDeduction)} (月均 ¥${money(monthlySpecialDeduction)})`,
+				},
+				{
+					label: 'Effective overall tax rate',
+					labelZh: '综合实际有效税率',
+					value: `${formatNumber(out.effectiveRate)}%`,
+				},
+				{
+					label: 'Highest marginal tax rate',
+					labelZh: '最高适用边际税率',
+					value: `${out.marginalRate.toFixed(0)}%`,
+				},
+			);
+
+			let table: FormTable | undefined;
+			if (out.salaryCalcRows.length) {
+				table = {
+					columns: ['Tax Bracket', 'Rate', 'Taxable in Bracket', 'Tax Owed'],
+					columnsZh: ['综合所得税率阶梯', '适用税率', '级内应纳税所得额', '本级应纳税额'],
+					rows: out.salaryCalcRows,
+				};
+			} else if (out.usOrFlatRows.length) {
+				table = {
+					columns: ['Tax Bracket', 'Rate', 'Taxable in Bracket', 'Tax Owed'],
+					columnsZh: ['税率阶梯', '适用税率', '级内应纳税所得额', '本级应纳税额'],
+					rows: out.usOrFlatRows,
+				};
+			}
+
+			const noteZh = `【税后倒推税前薪资结果】：若期望${period === 'monthly' ? '每月' : '全年'}税后实发到手 ${money(inputIncome)} 元，扣除每月五险一金 ${money(monthlyInsurance)} 元和专项附加扣除 ${money(monthlySpecialDeduction)} 元后，您需要达到税前月薪至少 ${money(annualGross / 12)} 元（折合税前年薪 ${money(annualGross)} 元${effectiveBonus > 0 ? `，年终奖 ${money(effectiveBonus)} 元` : ''}）。全年度需缴纳个税 ${money(out.totalTax)} 元，实际综合个税税率为 ${formatNumber(out.effectiveRate)}%。`;
+			const noteEn = `[Reverse Net-to-Gross Calculation]: To achieve a target net take-home pay of ${money(inputIncome)} (${period}), after insurance (${money(monthlyInsurance)}/mo) and deductions (${money(monthlySpecialDeduction)}/mo), you require a pre-tax salary of ${money(annualGross / 12)}/month (${money(annualGross)}/year${effectiveBonus > 0 ? ` + bonus ${money(effectiveBonus)}` : ''}). Total annual tax owed is ${money(out.totalTax)} (effective rate ${formatNumber(out.effectiveRate)}%).`;
+
+			return {
+				rows,
+				table,
+				note: noteEn,
+				noteZh,
+			};
+		}
+
+		// Forward calculation (gross_to_net)
+		if (regime === 'cn') {
+			const rows: FormResultRow[] = [
+				{ label: 'Net take-home income (Annual)', labelZh: '税后总收入 (全年度实发到手)', value: money(out.totalNetTakeHome), emphasis: true },
+				{ label: 'Base salary net pay (Monthly average)', labelZh: '基本工资税后到手 (月均)', value: money(out.monthlySalaryNet) },
+			];
+
+			if (effectiveBonus > 0) {
+				rows.push({ label: 'Year-end bonus net pay', labelZh: '年终奖税后到手 (实发)', value: money(out.bonusTakeHome) });
+			}
+
+			rows.push(
+				{ label: 'Total annual tax owed', labelZh: '全年度个人所得税总额', value: money(out.totalTax) },
+				{ label: 'Base salary tax owed (Annual)', labelZh: '基本工资应纳个税 (全年度)', value: money(out.salaryTax) },
 			);
 
 			if (effectiveBonus > 0) {
 				rows.push({
 					label: 'Year-end bonus tax owed',
 					labelZh: '年终奖应纳个税',
-					value: `${money(bonusTax)}${isCombinedActive ? ' (并入综合)' : ` (${(separateBonusRate * 100).toFixed(0)}% 档, 速算扣除 ¥${separateBonusQuick})`}`,
+					value: `${money(out.bonusTax)}${out.isCombinedActive ? ' (并入综合)' : ` (${(out.separateBonusRate * 100).toFixed(0)}% 档, 速算扣除 ¥${out.separateBonusQuick})`}`,
 				});
 				let planEvaluationZh = '';
-				if (bestScheme === 'separate') {
-					planEvaluationZh = `单独计税更优 (比合并计税省税 ¥${money(taxDiff)})`;
-				} else if (bestScheme === 'combined') {
-					planEvaluationZh = `并入综合所得更优 (比单独计税省税 ¥${money(taxDiff)})`;
+				if (out.bestScheme === 'separate') {
+					planEvaluationZh = `单独计税更优 (比合并计税省税 ¥${money(out.taxDiff)})`;
+				} else if (out.bestScheme === 'combined') {
+					planEvaluationZh = `并入综合所得更优 (比单独计税省税 ¥${money(out.taxDiff)})`;
 				} else {
 					planEvaluationZh = '两方案税额相同';
 				}
@@ -1069,9 +1449,9 @@ const tax: FormConfig = {
 			rows.push(
 				{ label: 'Five Insurances & Housing Fund (Annual)', labelZh: '全年五险一金个人承担扣除', value: money(annualInsurance) },
 				{ label: 'Special Additional Deductions (Annual)', labelZh: '全年专项附加扣除总额', value: money(annualSpecialDeduction) },
-				{ label: 'Taxable income (Annual comprehensive)', labelZh: '年度综合所得应纳税所得额', value: money(salaryTaxable) },
-				{ label: 'Effective overall tax rate', labelZh: '综合实际有效税率', value: `${formatNumber(effectiveRate)}%` },
-				{ label: 'Highest marginal tax rate', labelZh: '最高适用边际税率', value: `${marginalRate.toFixed(0)}%` },
+				{ label: 'Taxable income (Annual comprehensive)', labelZh: '年度综合所得应纳税所得额', value: money(out.salaryTaxable) },
+				{ label: 'Effective overall tax rate', labelZh: '综合实际有效税率', value: `${formatNumber(out.effectiveRate)}%` },
+				{ label: 'Highest marginal tax rate', labelZh: '最高适用边际税率', value: `${out.marginalRate.toFixed(0)}%` },
 			);
 
 			let table: FormTable | undefined;
@@ -1082,44 +1462,44 @@ const tax: FormConfig = {
 					rows: [
 						[
 							'单独计税 (全年一次性奖金优惠)',
-							money(salaryTax),
-							money(separateBonusTax),
-							money(separateTotalTax),
-							money(totalGross - annualInsurance - separateTotalTax),
-							bestScheme === 'separate' ? '★ 推荐方案 (省税最高)' : (bestScheme === 'equal' ? '税负相同' : '税负偏高'),
+							money(out.salaryTax),
+							money(out.separateBonusTax),
+							money(out.separateTotalTax),
+							money(out.totalGross - annualInsurance - out.separateTotalTax),
+							out.bestScheme === 'separate' ? '★ 推荐方案 (省税最高)' : (out.bestScheme === 'equal' ? '税负相同' : '税负偏高'),
 						],
 						[
 							'并入当年综合所得合并计税',
-							money(salaryTax),
-							money(combinedBonusTax),
-							money(combinedTotalTax),
-							money(totalGross - annualInsurance - combinedTotalTax),
-							bestScheme === 'combined' ? '★ 推荐方案 (省税最高)' : (bestScheme === 'equal' ? '税负相同' : '税负偏高'),
+							money(out.salaryTax),
+							money(out.combinedBonusTax),
+							money(out.combinedTotalTax),
+							money(out.totalGross - annualInsurance - out.combinedTotalTax),
+							out.bestScheme === 'combined' ? '★ 推荐方案 (省税最高)' : (out.bestScheme === 'equal' ? '税负相同' : '税负偏高'),
 						],
 					],
 				};
-			} else if (salaryCalc.rows.length) {
+			} else if (out.salaryCalcRows.length) {
 				table = {
 					columns: ['Tax Bracket', 'Rate', 'Taxable in Bracket', 'Tax Owed'],
 					columnsZh: ['综合所得税率阶梯', '适用税率', '级内应纳税所得额', '本级应纳税额'],
-					rows: salaryCalc.rows,
+					rows: out.salaryCalcRows,
 				};
 			}
 
-			let noteEn = `On gross income of ${money(totalGross)} (salary ${money(annualGross)}${effectiveBonus > 0 ? ` + bonus ${money(effectiveBonus)}` : ''}), deductions total ${money(totalSalaryDeductions)} (standard 60,000 + insurance ${money(annualInsurance)} + special ${money(annualSpecialDeduction)}). Total tax is ${money(totalTax)} (effective rate ${formatNumber(effectiveRate)}%), leaving ${money(totalNetTakeHome)} net take-home pay.`;
-			let noteZh = `总税前收入 ${money(totalGross)}（基本年薪 ${money(annualGross)}${effectiveBonus > 0 ? ` + 年终奖 ${money(effectiveBonus)}` : ''}），扣除项合计 ${money(totalSalaryDeductions)}（起征点6万 + 五险一金 ${money(annualInsurance)} + 专项附加扣除 ${money(annualSpecialDeduction)}）。全年个税为 ${money(totalTax)}（综合实际税率 ${formatNumber(effectiveRate)}%），税后综合到手 ${money(totalNetTakeHome)}（月均基本薪资 ${money(monthlySalaryNet)}${effectiveBonus > 0 ? ` + 年终奖实发 ${money(bonusTakeHome)}` : ''}）。`;
+			let noteEn = `On gross income of ${money(out.totalGross)} (salary ${money(annualGross)}${effectiveBonus > 0 ? ` + bonus ${money(effectiveBonus)}` : ''}), deductions total ${money(out.totalSalaryDeductions)} (standard 60,000 + insurance ${money(annualInsurance)} + special ${money(annualSpecialDeduction)}). Total tax is ${money(out.totalTax)} (effective rate ${formatNumber(out.effectiveRate)}%), leaving ${money(out.totalNetTakeHome)} net take-home pay.`;
+			let noteZh = `总税前收入 ${money(out.totalGross)}（基本年薪 ${money(annualGross)}${effectiveBonus > 0 ? ` + 年终奖 ${money(effectiveBonus)}` : ''}），扣除项合计 ${money(out.totalSalaryDeductions)}（起征点6万 + 五险一金 ${money(annualInsurance)} + 专项附加扣除 ${money(annualSpecialDeduction)}）。全年个税为 ${money(out.totalTax)}（综合实际税率 ${formatNumber(out.effectiveRate)}%），税后综合到手 ${money(out.totalNetTakeHome)}（月均基本薪资 ${money(out.monthlySalaryNet)}${effectiveBonus > 0 ? ` + 年终奖实发 ${money(out.bonusTakeHome)}` : ''}）。`;
 
 			if (effectiveBonus > 0) {
-				if (bestScheme === 'separate') {
-					noteZh += ` 【方案建议】：建议选择【单独计税】，相比并入综合所得可少缴个税 ¥${money(taxDiff)}。`;
-				} else if (bestScheme === 'combined') {
-					noteZh += ` 【方案建议】：由于基本工资未用尽免征额或专项扣除额度，建议选择【并入综合所得计税】，可少缴个税 ¥${money(taxDiff)}。`;
+				if (out.bestScheme === 'separate') {
+					noteZh += ` 【方案建议】：建议选择【单独计税】，相比并入综合所得可少缴个税 ¥${money(out.taxDiff)}。`;
+				} else if (out.bestScheme === 'combined') {
+					noteZh += ` 【方案建议】：由于基本工资未用尽免征额或专项扣除额度，建议选择【并入综合所得计税】，可少缴个税 ¥${money(out.taxDiff)}。`;
 				}
 			}
 
-			if (pitfallWarning) {
-				noteZh += ` ⚠️【年终奖税收盲区预警】：您的年终奖处于多发少得税收盲区（¥${pitfallWarning.min} ~ ¥${pitfallWarning.max}）。如果将年终奖设为临界点 ¥${money(pitfallWarning.threshold)}，税额将从 ¥${money(pitfallWarning.currTax)} 降至 ¥${money(pitfallWarning.safeTax)}，税后实际到手反而增加 ¥${money(pitfallWarning.lost)}！建议与公司沟通避开此区间。`;
-				noteEn += ` ⚠️ Note: Your year-end bonus falls into the known tax pitfall bracket (${money(pitfallWarning.min)} - ${money(pitfallWarning.max)}). Reducing the bonus to ${money(pitfallWarning.threshold)} would increase your actual take-home by ${money(pitfallWarning.lost)} due to the bracket jump!`;
+			if (out.pitfallWarning) {
+				noteZh += ` ⚠️【年终奖税收盲区预警】：您的年终奖处于多发少得税收盲区（¥${out.pitfallWarning.min} ~ ¥${out.pitfallWarning.max}）。如果将年终奖设为临界点 ¥${money(out.pitfallWarning.threshold)}，税额将从 ¥${money(out.pitfallWarning.currTax)} 降至 ¥${money(out.pitfallWarning.safeTax)}，税后实际到手反而增加 ¥${money(out.pitfallWarning.lost)}！建议与公司沟通避开此区间。`;
+				noteEn += ` ⚠️ Note: Your year-end bonus falls into the known tax pitfall bracket (${money(out.pitfallWarning.min)} - ${money(out.pitfallWarning.max)}). Reducing the bonus to ${money(out.pitfallWarning.threshold)} would increase your actual take-home by ${money(out.pitfallWarning.lost)} due to the bracket jump!`;
 			}
 
 			return {
@@ -1131,74 +1511,28 @@ const tax: FormConfig = {
 		}
 
 		// US Federal (Single) & Flat Tax
-		const annualDeductions = annualInsurance + annualSpecialDeduction;
-		let taxableIncome = 0;
-		let annualTax = 0;
-		let marginalRate = 0;
-		const tableRows: string[][] = [];
-
-		if (regime === 'us_single') {
-			const standardDeduction = 14600;
-			taxableIncome = Math.max(0, totalGross - standardDeduction - annualDeductions);
-			const brackets = [
-				{ max: 11600, rate: 0.10 },
-				{ max: 47150, rate: 0.12 },
-				{ max: 100525, rate: 0.22 },
-				{ max: 191950, rate: 0.24 },
-				{ max: 243725, rate: 0.32 },
-				{ max: 609350, rate: 0.35 },
-				{ max: Infinity, rate: 0.37 },
-			];
-			let prev = 0;
-			for (const b of brackets) {
-				if (taxableIncome > prev) {
-					const inBracket = Math.min(taxableIncome, b.max) - prev;
-					const taxInBracket = inBracket * b.rate;
-					annualTax += taxInBracket;
-					marginalRate = b.rate * 100;
-					tableRows.push([
-						`${prev ? money(prev) : '0'} – ${b.max === Infinity ? 'Above / 以上' : money(b.max)}`,
-						`${(b.rate * 100).toFixed(0)}%`,
-						money(inBracket),
-						money(taxInBracket),
-					]);
-					prev = b.max;
-				} else {
-					break;
-				}
-			}
-		} else {
-			// Flat Rate
-			taxableIncome = Math.max(0, totalGross - annualDeductions);
-			annualTax = taxableIncome * flatRate;
-			marginalRate = flatRate * 100;
-			tableRows.push(['All taxable income', `${(flatRate * 100).toFixed(1)}%`, money(taxableIncome), money(annualTax)]);
-		}
-
-		const annualNet = Math.max(0, totalGross - annualDeductions - annualTax);
-		const monthlyNet = annualNet / 12;
-		const monthlyTax = annualTax / 12;
-		const effectiveRate = totalGross > 0 ? (annualTax / totalGross) * 100 : 0;
+		const monthlyNet = out.totalNetTakeHome / 12;
+		const monthlyTax = out.totalTax / 12;
 
 		return {
 			rows: [
-				{ label: 'Net take-home income (Annual)', labelZh: '税后净收入 (年度到手)', value: money(annualNet), emphasis: true },
+				{ label: 'Net take-home income (Annual)', labelZh: '税后净收入 (年度到手)', value: money(out.totalNetTakeHome), emphasis: true },
 				{ label: 'Net take-home income (Monthly average)', labelZh: '税后净收入 (月均到手)', value: money(monthlyNet) },
-				{ label: 'Total tax owed (Annual)', labelZh: '应缴个人所得税 (年度总税额)', value: money(annualTax) },
+				{ label: 'Total tax owed (Annual)', labelZh: '应缴个人所得税 (年度总税额)', value: money(out.totalTax) },
 				{ label: 'Tax owed (Monthly average)', labelZh: '应缴个人所得税 (月均)', value: money(monthlyTax) },
-				{ label: 'Effective tax rate', labelZh: '实际综合有效税率', value: `${formatNumber(effectiveRate)}%` },
-				{ label: 'Marginal top tax bracket', labelZh: '最高适用边际税率', value: `${marginalRate.toFixed(0)}%` },
-				{ label: 'Taxable income', labelZh: '应纳税所得额', value: money(taxableIncome) },
+				{ label: 'Effective tax rate', labelZh: '实际综合有效税率', value: `${formatNumber(out.effectiveRate)}%` },
+				{ label: 'Marginal top tax bracket', labelZh: '最高适用边际税率', value: `${out.marginalRate.toFixed(0)}%` },
+				{ label: 'Taxable income', labelZh: '应纳税所得额', value: money(out.salaryTaxable) },
 			],
-			table: tableRows.length
+			table: out.usOrFlatRows.length
 				? {
 						columns: ['Tax Bracket', 'Rate', 'Taxable in Bracket', 'Tax Owed'],
 						columnsZh: ['税率阶梯', '适用税率', '级内应纳税所得额', '本级应纳税额'],
-						rows: tableRows,
+						rows: out.usOrFlatRows,
 					}
 				: undefined,
-			note: `On gross income of ${money(totalGross)}, total tax is ${money(annualTax)} (effective rate of ${formatNumber(effectiveRate)}%), leaving ${money(annualNet)} take-home.`,
-			noteZh: `在税前收入 ${money(totalGross)} 情况下，全年度个人所得税为 ${money(annualTax)}（综合实际税率 ${formatNumber(effectiveRate)}%），税后实际到手 ${money(annualNet)}（月均 ${money(monthlyNet)}）。`,
+			note: `On gross income of ${money(out.totalGross)}, total tax is ${money(out.totalTax)} (effective rate of ${formatNumber(out.effectiveRate)}%), leaving ${money(out.totalNetTakeHome)} take-home.`,
+			noteZh: `在税前收入 ${money(out.totalGross)} 情况下，全年度个人所得税为 ${money(out.totalTax)}（综合实际税率 ${formatNumber(out.effectiveRate)}%），税后实际到手 ${money(out.totalNetTakeHome)}（月均 ${money(monthlyNet)}）。`,
 		};
 	},
 };
