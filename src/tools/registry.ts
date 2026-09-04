@@ -100,6 +100,7 @@ export interface FormTable {
 export interface FormResult {
 	rows: FormResultRow[];
 	table?: FormTable;
+	chartSvg?: string;
 	note?: string;
 	noteZh?: string;
 }

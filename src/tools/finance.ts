@@ -720,6 +720,154 @@ function amortizeEqualPrincipal(
 	return { rows: out, totalInterest, month1, decrease, finalMonth };
 }
 
+function renderMortgageComparisonSvg(params: {
+	months: number;
+	years: number;
+	totalLoan: number;
+	pmtMonthly: number;
+	prcMonth1: number;
+	prcDecrease: number;
+	prcFinalMonth: number;
+	crossoverMonth: number;
+	interestSaved: number;
+	interestSavedPct: number;
+}): string {
+	const { months, years, pmtMonthly, prcMonth1, prcDecrease, prcFinalMonth, crossoverMonth, interestSaved, interestSavedPct } = params;
+
+	const width = 820;
+	const height = 390;
+	const padLeft = 85;
+	const padRight = 35;
+	const padTop = 60;
+	const padBottom = 55;
+
+	const plotW = width - padLeft - padRight;
+	const plotH = height - padTop - padBottom;
+	const x0 = padLeft;
+	const x1 = width - padRight;
+	const y0 = padTop;
+	const y1 = height - padBottom;
+
+	// Calculate Y scale
+	const vMinVal = Math.max(0, prcFinalMonth * 0.85);
+	const vMaxVal = Math.max(prcMonth1 * 1.08, pmtMonthly * 1.15);
+	const roughStep = (vMaxVal - vMinVal) / 5;
+	let yStep = 500;
+	if (roughStep > 1800) yStep = 2000;
+	else if (roughStep > 900) yStep = 1000;
+	else if (roughStep > 350) yStep = 500;
+	else if (roughStep > 150) yStep = 200;
+	else yStep = 100;
+
+	const yStart = Math.max(0, Math.floor(vMinVal / yStep) * yStep);
+	const yEnd = Math.ceil(vMaxVal / yStep) * yStep;
+	const yRange = yEnd - yStart || 1;
+
+	const getX = (m: number): number => x0 + ((Math.max(1, Math.min(months, m)) - 1) / (months - 1 || 1)) * plotW;
+	const getY = (v: number): number => y1 - ((v - yStart) / yRange) * plotH;
+
+	const yPmt = getY(pmtMonthly);
+	const yPrc1 = getY(prcMonth1);
+	const yPrcN = getY(prcFinalMonth);
+
+	const hasCrossover = crossoverMonth > 0 && crossoverMonth < months;
+	const xCross = hasCrossover ? getX(crossoverMonth) : x0 + plotW * 0.35;
+	const yCross = yPmt;
+
+	// Y-axis gridlines & labels
+	let yGridSvg = '';
+	for (let v = yStart; v <= yEnd; v += yStep) {
+		const y = getY(v);
+		yGridSvg += `<line x1="${x0}" y1="${y.toFixed(1)}" x2="${x1}" y2="${y.toFixed(1)}" stroke="rgba(148, 163, 184, 0.15)" stroke-dasharray="3 3"/>`;
+		yGridSvg += `<text x="${x0 - 10}" y="${(y + 4).toFixed(1)}" font-size="11" font-family="system-ui, sans-serif" fill="#94a3b8" text-anchor="end">¥${formatNumber(v)}</text>`;
+	}
+
+	// X-axis gridlines & labels
+	let xGridSvg = '';
+	const yearStep = years <= 10 ? (years <= 5 ? 1 : 2) : 5;
+	for (let y = 0; y <= years; y += yearStep) {
+		const m = Math.max(1, y * 12);
+		const x = getX(m);
+		xGridSvg += `<line x1="${x.toFixed(1)}" y1="${y0}" x2="${x.toFixed(1)}" y2="${y1}" stroke="rgba(148, 163, 184, 0.15)" stroke-dasharray="3 3"/>`;
+		xGridSvg += `<text x="${x.toFixed(1)}" y="${y1 + 18}" font-size="11" font-family="system-ui, sans-serif" fill="#94a3b8" text-anchor="middle">${y}年</text>`;
+		xGridSvg += `<text x="${x.toFixed(1)}" y="${y1 + 32}" font-size="9.5" font-family="system-ui, sans-serif" fill="#64748b" text-anchor="middle">(${y * 12}期)</text>`;
+	}
+
+	// Shaded areas
+	let areaSvg = '';
+	if (hasCrossover) {
+		// Phase 1: Equal Principal higher than Equal P&I
+		areaSvg += `<polygon points="${x0.toFixed(1)},${yPmt.toFixed(1)} ${x0.toFixed(1)},${yPrc1.toFixed(1)} ${xCross.toFixed(1)},${yCross.toFixed(1)}" fill="rgba(249, 115, 22, 0.12)"/>`;
+		// Phase 2: Equal Principal lower than Equal P&I (savings area)
+		areaSvg += `<polygon points="${xCross.toFixed(1)},${yCross.toFixed(1)} ${x1.toFixed(1)},${yPrcN.toFixed(1)} ${x1.toFixed(1)},${yPmt.toFixed(1)}" fill="rgba(16, 185, 129, 0.15)"/>`;
+
+		const text1X = (x0 + xCross) / 2;
+		const text1Y = Math.min(yPrc1, yPmt) + Math.abs(yPrc1 - yPmt) * 0.45;
+		areaSvg += `<text x="${text1X.toFixed(1)}" y="${text1Y.toFixed(1)}" font-size="11" font-weight="600" fill="#ea580c" text-anchor="middle">前期月供较高 (+¥${money(prcMonth1 - pmtMonthly)})</text>`;
+
+		const text2X = (xCross + x1) / 2;
+		const text2Y = yPmt + Math.abs(yPrcN - yPmt) * 0.45;
+		areaSvg += `<text x="${text2X.toFixed(1)}" y="${text2Y.toFixed(1)}" font-size="11" font-weight="600" fill="#059669" text-anchor="middle">后期持续省钱 (最多省 ¥${money(pmtMonthly - prcFinalMonth)}/月)</text>`;
+	}
+
+	// Crossover lines & badge
+	let crossoverSvg = '';
+	if (hasCrossover) {
+		crossoverSvg += `<line x1="${xCross.toFixed(1)}" y1="${y0}" x2="${xCross.toFixed(1)}" y2="${y1}" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4 4"/>`;
+		crossoverSvg += `<line x1="${x0}" y1="${yCross.toFixed(1)}" x2="${xCross.toFixed(1)}" y2="${yCross.toFixed(1)}" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4 4"/>`;
+		crossoverSvg += `<circle cx="${xCross.toFixed(1)}" cy="${yCross.toFixed(1)}" r="8" fill="rgba(239, 68, 68, 0.25)" stroke="#ef4444" stroke-width="2"/>`;
+		crossoverSvg += `<circle cx="${xCross.toFixed(1)}" cy="${yCross.toFixed(1)}" r="4" fill="#ef4444"/>`;
+
+		const badgeW = 230;
+		const badgeH = 38;
+		const badgeX = Math.min(Math.max(xCross - badgeW / 2, x0 + 10), x1 - badgeW - 10);
+		const badgeY = Math.max(y0 + 5, yCross - badgeH - 12);
+		crossoverSvg += `<g transform="translate(${badgeX.toFixed(1)}, ${badgeY.toFixed(1)})">
+			<rect width="${badgeW}" height="${badgeH}" rx="6" fill="rgba(15, 23, 42, 0.92)" stroke="#ef4444" stroke-width="1.5"/>
+			<text x="${badgeW / 2}" y="15" font-size="10.5" font-weight="bold" fill="#f87171" text-anchor="middle" font-family="system-ui, sans-serif">★ 成本平衡点: 第 ${crossoverMonth} 个月 (~${(crossoverMonth / 12).toFixed(1)}年)</text>
+			<text x="${badgeW / 2}" y="29" font-size="9.5" fill="#e2e8f0" text-anchor="middle" font-family="system-ui, sans-serif">平衡月供线: ¥${money(pmtMonthly)} / 月 (此后等额本金更省)</text>
+		</g>`;
+	}
+
+	return `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;user-select:none;">
+		<!-- Title -->
+		<text x="${x0}" y="26" font-size="13.5" font-weight="bold" fill="var(--fg, #e2e8f0)" font-family="system-ui, sans-serif">📊 房贷月供走势曲线与成本平衡点 (Payment Trajectory & Break-even Crossover)</text>
+
+		<!-- Legends -->
+		<g transform="translate(${x0}, 42)" font-size="11" font-family="system-ui, sans-serif">
+			<line x1="0" y1="-3" x2="18" y2="-3" stroke="#3b82f6" stroke-width="3"/>
+			<text x="24" y="0" fill="#94a3b8">等额本息 (每月固定 ¥${money(pmtMonthly)})</text>
+
+			<line x1="230" y1="-3" x2="248" y2="-3" stroke="#f97316" stroke-width="3"/>
+			<text x="254" y="0" fill="#94a3b8">等额本金 (首月 ¥${money(prcMonth1)} ➔ 末月 ¥${money(prcFinalMonth)})</text>
+
+			<circle cx="515" cy="-3" r="4.5" fill="#ef4444"/>
+			<text x="525" y="0" fill="#ef4444" font-weight="600">平衡点 (第${(crossoverMonth / 12).toFixed(1)}年反超)</text>
+
+			<rect x="650" y="-12" width="115" height="18" rx="4" fill="rgba(16, 185, 129, 0.15)"/>
+			<text x="707" y="1" fill="#10b981" font-weight="600" text-anchor="middle">★ 省息 ¥${money(interestSaved)}</text>
+		</g>
+
+		<!-- Gridlines -->
+		${yGridSvg}
+		${xGridSvg}
+
+		<!-- Shaded Cost Areas -->
+		${areaSvg}
+
+		<!-- Lines: Equal P&I (Horizontal) and Equal Principal (Sloping) -->
+		<line x1="${x0.toFixed(1)}" y1="${yPmt.toFixed(1)}" x2="${x1.toFixed(1)}" y2="${yPmt.toFixed(1)}" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/>
+		<line x1="${x0.toFixed(1)}" y1="${yPrc1.toFixed(1)}" x2="${x1.toFixed(1)}" y2="${yPrcN.toFixed(1)}" stroke="#f97316" stroke-width="3" stroke-linecap="round"/>
+
+		<!-- Crossover Marker and Tooltip -->
+		${crossoverSvg}
+
+		<!-- Axis Borders -->
+		<line x1="${x0}" y1="${y1}" x2="${x1}" y2="${y1}" stroke="rgba(148, 163, 184, 0.4)" stroke-width="1.5"/>
+		<line x1="${x0}" y1="${y0}" x2="${x0}" y2="${y1}" stroke="rgba(148, 163, 184, 0.4)" stroke-width="1.5"/>
+	</svg>`;
+}
+
 const mortgage: FormConfig = {
 	intro: 'Compare Equal Principal & Interest (等额本息) vs Equal Principal (等额本金), calculate monthly payments, interest savings, and support Commercial, Provident Fund, or Combined mortgages.',
 	fields: [
@@ -1038,9 +1186,23 @@ const mortgage: FormConfig = {
 				`• Equal P&I: Fixed monthly payment of ${money(totalMonthlyPmt + extras)}, total interest of ${money(totalIntPmt)}. Ideal for buyers wanting predictable monthly cash flows.\n\n` +
 				`• Equal Principal: Month 1 payment is ${money(prcMonth1 + extras)}, decreasing by ${money(prcDecrease)} each month. It crosses below Equal P&I at month ${crossoverMonth} (~${(crossoverMonth / 12).toFixed(1)} years), ending at ${money(prcFinalMonth + extras)}. Saves significant interest if you can afford higher initial payments.`;
 
+			const chartSvg = renderMortgageComparisonSvg({
+				months,
+				years,
+				totalLoan,
+				pmtMonthly: totalMonthlyPmt + extras,
+				prcMonth1: prcMonth1 + extras,
+				prcDecrease,
+				prcFinalMonth: prcFinalMonth + extras,
+				crossoverMonth,
+				interestSaved,
+				interestSavedPct,
+			});
+
 			return {
 				rows,
 				table: compareTable,
+				chartSvg,
 				note: noteEn,
 				noteZh,
 			};

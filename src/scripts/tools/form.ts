@@ -189,7 +189,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 
 	function update(): void {
 		results.innerHTML = '';
-		host.querySelectorAll('.t-tablewrap, .t-note').forEach((el) => el.remove());
+		host.querySelectorAll('.t-tablewrap, .t-note, .t-chartwrap').forEach((el) => el.remove());
 
 		let missingRequired = false;
 		for (const f of config.fields) {
@@ -216,6 +216,12 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 		try {
 			const out = config.compute(values);
 			for (const row of out.rows) results.append(resultRow(row));
+			if (out.chartSvg) {
+				const chartEl = document.createElement('div');
+				chartEl.className = 't-chartwrap';
+				chartEl.innerHTML = out.chartSvg;
+				host.append(chartEl);
+			}
 			if (out.table) host.append(tableEl(out.table));
 			if (out.note) {
 				const note = document.createElement('p');
