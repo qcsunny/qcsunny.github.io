@@ -4,10 +4,12 @@ import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 import { defineConfig, fontProviders } from 'astro/config';
 
+import llmsTxt from './llms-txt.mjs';
+
 // https://astro.build/config
 export default defineConfig({
 	site: 'https://qcsunny.org',
-	integrations: [mdx(), sitemap()],
+	integrations: [mdx(), sitemap(), llmsTxt()],
 	fonts: [
 		{
 			provider: fontProviders.local(),
