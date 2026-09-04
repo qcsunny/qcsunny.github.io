@@ -64,22 +64,26 @@ export interface ToolContent {
 export interface FormField {
 	id: string;
 	label: string;
+	labelZh?: string;
 	/** input type rendered; 'select' needs options, 'checkbox' is boolean */
 	type?: 'number' | 'text' | 'select' | 'checkbox' | 'textarea';
 	def?: string;
 	placeholder?: string;
 	/** unit hint shown after the label, e.g. "(%)" or "($)" */
 	suffix?: string;
-	options?: { value: string; label: string }[];
+	suffixZh?: string;
+	options?: { value: string; label: string; labelZh?: string }[];
 	step?: string;
 	min?: string;
 	max?: string;
 	/** long explanation shown under the field */
 	hint?: string;
+	hintZh?: string;
 }
 
 export interface FormResultRow {
 	label: string;
+	labelZh?: string;
 	value: string;
 	/** render as the large highlighted primary result */
 	emphasis?: boolean;
@@ -87,6 +91,7 @@ export interface FormResultRow {
 
 export interface FormTable {
 	columns: string[];
+	columnsZh?: string[];
 	rows: string[][];
 }
 
@@ -94,6 +99,7 @@ export interface FormResult {
 	rows: FormResultRow[];
 	table?: FormTable;
 	note?: string;
+	noteZh?: string;
 }
 
 /** Value accessor handed to compute(); keeps configs terse and typed. */
@@ -187,26 +193,40 @@ export type ToolEntry = ToolMeta &
 
 // --- categories ----------------------------------------------------------------
 
-export const CATEGORIES: { id: ToolCategory; label: string; blurb: string }[] = [
-	{
-		id: 'calculators',
-		label: 'Calculators',
-		blurb: 'Percentage, fractions, ratios, averages and more.',
-	},
-	{
-		id: 'converters',
-		label: 'Converters',
-		blurb: 'Length, weight, temperature, area, volume, speed, time and data units.',
-	},
+export const CATEGORIES: {
+	id: ToolCategory;
+	label: string;
+	labelZh: string;
+	blurb: string;
+	blurbZh: string;
+}[] = [
 	{
 		id: 'finance',
-		label: 'Finance',
-		blurb: 'Compound interest, loans, mortgages, investments, salary and tax.',
+		label: 'Finance & Investment',
+		labelZh: '金融理财与投资计算',
+		blurb: 'Mortgage prepayment, compound interest, true APR/IRR, inflation, savings goals, and FIRE freedom.',
+		blurbZh: '房贷提前还款、复利定投、真实年化利率 IRR、通货膨胀、目标储蓄与 FIRE 财务自由。',
+	},
+	{
+		id: 'calculators',
+		label: 'Math & Statistics',
+		labelZh: '数学与统计计算',
+		blurb: 'Scientific calculator, function graphing, percentage, ratios, fractions, and summary statistics.',
+		blurbZh: '科学计算器、函数图像绘制、百分比增减、比例方程、最简分数与统计分析。',
 	},
 	{
 		id: 'tools',
-		label: 'Tools',
-		blurb: 'Passwords, QR codes, UUIDs, text and JSON utilities, colors.',
+		label: 'Developer & Security Tools',
+		labelZh: '开发调试与安全工具',
+		blurb: 'JSON, SQL, JWT, URL, XML, CSS, HTML formatters, UUID v4/v7, QR code, and passwords.',
+		blurbZh: 'JSON/SQL 格式化、JWT 解码、UUID v4/v7、二维码生成、强密码生成与文本工具。',
+	},
+	{
+		id: 'converters',
+		label: 'Unit Converters',
+		labelZh: '多功能单位换算',
+		blurb: 'Length, weight, temperature, area, volume, speed, time, data storage, and color conversion.',
+		blurbZh: '长度、重量、温度、面积、体积、速度、时间、数据存储以及 HEX/RGB/HSL 颜色换算。',
 	},
 ];
 

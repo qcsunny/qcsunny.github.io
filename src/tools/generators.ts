@@ -11,26 +11,28 @@ export const GENERATOR_TOOLS: ToolEntry[] = [
 		category: 'tools',
 		name: 'Password Generator',
 		nameZh: '强密码生成器',
-		description: 'Generate strong random passwords with crypto-grade randomness.',
+		description: 'Generate strong random passwords with crypto randomness and ambiguous character filtering.',
 		kind: 'generator',
 		config: { generator: 'password', minLen: 8, maxLen: 64, defLen: 16 },
 
 		content: {
 			about: [
-				'Generate strong passwords with true cryptographic randomness — every character comes from the browser\'s crypto.getRandomValues, not Math.random. Choose the length (8–64) and toggle lowercase, uppercase, digits and symbols.',
+				'Generate strong passwords with true cryptographic randomness — every character comes from the browser\'s crypto.getRandomValues, not Math.random. Choose the length (8–64), toggle lowercase, uppercase, digits and symbols, and optionally exclude easily confused ambiguous characters (0, O, o, 1, l, I).',
 				'The strength label estimates entropy from the character pool and length: for example, 16 characters from a 62-symbol alphabet is about 95 bits, far beyond what brute-force attacks can reach.',
 			],
 			aboutZh: [
-				'用真正的密码学随机源生成高强度密码——每个字符都来自浏览器的 crypto.getRandomValues，而非 Math.random。长度可在 8–64 之间调整，并可勾选小写、大写、数字与符号。',
+				'用真正的密码学随机源生成高强度密码——每个字符都来自浏览器的 crypto.getRandomValues，而非 Math.random。长度可在 8–64 之间调整，可勾选小写、大写、数字与符号，并支持一键排除易混淆歧义字符（0、O、o、1、l、I）。',
 				'强度标签根据字符池大小和长度估算熵值：例如 62 个字符集取 16 位约 95 比特熵，远超暴力破解的可达范围。',
 			],
 			faq: [
 				{ q: 'Are the passwords sent anywhere?', a: 'No. They are generated locally and never leave your device; the copy button only touches your clipboard.' },
+				{ q: 'Why exclude ambiguous characters?', a: 'Characters like 0 (zero) vs O (capital o) or 1 (one) vs l (lowercase L) are easily mistyped when reading passwords on paper or mobile screens.' },
 				{ q: 'How long should a password be?', a: 'At least 12 characters with symbols, or 16+ alphanumeric-only, to stay well beyond current cracking speeds.' },
 				{ q: 'Why crypto and not Math.random?', a: 'Math.random is predictable and not designed for security; getRandomValues is a cryptographic source with uniform sampling.' },
 			],
 			faqZh: [
 				{ q: '生成的密码会被上传吗？', a: '不会。密码在本地生成，绝不离开你的设备；复制按钮也只操作本机剪贴板。' },
+				{ q: '为什么要排除易混淆字符？', a: '如数字 0 与大写字母 O、数字 1 与小写字母 l 在屏幕或纸质抄录时极易看错输入，过滤后更清晰。' },
 				{ q: '密码应该设多长？', a: '含符号时至少 12 位；纯字母数字建议 16 位以上，才能远超当前破解速度。' },
 				{ q: '为什么用 crypto 而不是 Math.random？', a: 'Math.random 是可预测的，并非为安全设计；getRandomValues 是均匀采样的密码学随机源。' },
 			],
@@ -39,30 +41,30 @@ export const GENERATOR_TOOLS: ToolEntry[] = [
 	{
 		slug: 'uuid-generator',
 		category: 'tools',
-		name: 'UUID Generator',
-		nameZh: 'UUID 生成器',
-		description: 'Generate random UUID v4 identifiers in bulk.',
+		name: 'UUID Generator (v4 & v7)',
+		nameZh: 'UUID 生成器 (v4 / v7)',
+		description: 'Generate random UUID v4 and time-ordered UUID v7 identifiers in bulk.',
 		kind: 'generator',
 		config: { generator: 'uuid', defCount: 5, maxCount: 100 },
 
 		content: {
 			about: [
-				'Generate random UUIDs (version 4) in bulk — up to 100 at a time — with one click to copy the whole list. UUID v4 takes 122 bits of randomness from the browser\'s cryptographic generator, making collisions practically impossible.',
-				'UUIDs are the standard way to give records, files, and API objects an identifier that is unique without any central coordination.',
+				'Generate UUID v4 (cryptographically random) and modern UUID v7 (timestamp-ordered, RFC 9562) identifiers in bulk — up to 100 at a time — with custom uppercase and hyphen formatting.',
+				'UUID v4 provides 122 bits of pure randomness, ideal for secure stateless tokens. UUID v7 combines a 48-bit millisecond Unix timestamp with 74 random bits, giving monotonic time ordering that drastically improves database B-tree index performance and cache locality.',
 			],
 			aboutZh: [
-				'批量生成随机 UUID（版本 4），一次最多 100 个，一键复制整列。UUID v4 的 122 位随机性来自浏览器的密码学随机源，碰撞概率实际上为零。',
-				'UUID 是给记录、文件和 API 对象赋予"无需中央协调即可保证唯一"的标识符的标准方案。',
+				'批量生成随机 UUID v4 以及现代时间有序的 UUID v7（RFC 9562 标准），支持自定义大小写与连字符格式，单次最高可生成 100 个。',
+				'UUID v4 提供 122 位纯密码学随机性，适合无状态安全令牌；UUID v7 将 48 位 Unix 毫秒时间戳与 74 位随机数结合，具有天然的时间单调递增性，可大幅提升 PostgreSQL、MySQL 等数据库的 B 树索引性能与写入局部性。',
 			],
 			faq: [
-				{ q: 'What does v4 mean?', a: 'Version 4 UUIDs are fully random (122 random bits), as opposed to v1 which is based on time and MAC address.' },
-				{ q: 'Can two generated UUIDs collide?', a: 'The chance is astronomically small — you would need to generate billions per year for eons to expect one.' },
-				{ q: 'Are UUIDs uppercase or lowercase?', a: 'The standard writes them lowercase; the hex digits are case-insensitive in practice.' },
+				{ q: 'What is the difference between UUID v4 and UUID v7?', a: 'UUID v4 is completely random. UUID v7 encodes a 48-bit millisecond timestamp in the prefix, so UUIDs sort chronologically by creation time.' },
+				{ q: 'Why use UUID v7 for database primary keys?', a: 'Pure random UUIDs cause page fragmentation in B-trees (random disk writes). UUID v7 is sequential, meaning new inserts append near the end of index leaves, boosting throughput.' },
+				{ q: 'Can two generated UUIDs collide?', a: 'The chance is astronomically small — you would need billions generated per millisecond to observe collisions.' },
 			],
 			faqZh: [
-				{ q: 'v4 是什么意思？', a: '版本 4 的 UUID 完全随机（122 个随机位），不同于基于时间和 MAC 地址的 v1。' },
-				{ q: '两个 UUID 可能重复吗？', a: '概率小到可以忽略——需要以每年数十亿个的速度连续生成无数年才可能遇到一次。' },
-				{ q: 'UUID 用大写还是小写？', a: '标准写法是小写；不过十六进制数字在实际中大小写不敏感。' },
+				{ q: 'UUID v4 和 UUID v7 有什么区别？', a: 'UUID v4 完全随机；UUID v7 前缀包含 48 位毫秒时间戳，生成的 ID 天然按创建时间排序。' },
+				{ q: '为什么数据库主键推荐 UUID v7？', a: '纯随机的 UUID v4 会导致 B+ 树索引严重碎片化；UUID v7 具有时间局部性，新记录追加在索引末尾，显著降低 I/O 压力。' },
+				{ q: '两个 UUID 可能发生碰撞重复吗？', a: '概率微乎其微——即使在同一毫秒内也拥有 74 位的随机熵，需要每毫秒生成数十亿个才可能碰撞。' },
 			],
 		},
 	},

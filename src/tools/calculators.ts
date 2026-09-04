@@ -364,30 +364,32 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 	{
 		slug: 'ratio',
 		category: 'calculators',
-		name: 'Ratio Calculator',
-		nameZh: '比例计算器',
-		description: 'Simplify ratios, convert to decimal and percent, and solve A:B = C:x.',
+		name: 'Ratio & Proportion Calculator',
+		nameZh: '比例与比例方程计算器',
+		description: 'Simplify ratios, solve proportions A:B = C:x, and convert to decimal and percent.',
 		kind: 'form',
 		config: ratio,
 
 		content: {
 			about: [
-				'Simplify a ratio A:B to its smallest whole numbers, see it as a decimal and a percentage, and solve the classic proportion A:B = C:x — find x when three of the four terms are known.',
-				'Simplifying a ratio divides both sides by their GCD, so 18:24 becomes 3:4. The solver uses cross-multiplication: A·x = B·C, so x = B·C / A.',
+				'Simplify any ratio A:B to its smallest whole numbers, convert it to a decimal and a percentage, and solve the classic proportion equation A:B = C:x — find x instantly when three of the four terms are known.',
+				'Simplifying a ratio divides both sides by their greatest common divisor (GCD), so 18:24 becomes 3:4. The proportion solver uses cross-multiplication: A·x = B·C, meaning x = (B·C) / A.',
 			],
 			aboutZh: [
-				'把比 A:B 化为最简整数比，查看对应的小数与百分比，并解经典比例式 A:B = C:x——已知三项求第四项。',
-				'化简比是两边同除以最大公约数，例如 18:24 → 3:4。求解采用交叉相乘：A·x = B·C，故 x = B·C ÷ A。',
+				'把任意比 A:B 化为最简整数比，查看对应的小数与百分比，并求解经典比例方程 A:B = C:x——已知其中三项即时求解第四项 x。',
+				'化简比即两边同除以最大公约数，例如 18:24 → 3:4。解比例采用交叉相乘法：A·x = B·C，故 x = (B·C) ÷ A。',
 			],
 			faq: [
 				{ q: 'How do I simplify the ratio 36:48?', a: 'Divide both by their GCD (12) to get 3:4.' },
+				{ q: 'How do I solve the proportion 3:4 = 9:x?', a: 'Cross-multiply: 3x = 36, so x = 12. Enter A=3, B=4, C=9 to get x=12.' },
 				{ q: 'How do I scale a recipe for 12 people?', a: 'If the recipe serves 4, solve 4:12 = 1:x portions — the ratio tells you to multiply every ingredient by 3.' },
 				{ q: 'Can ratios have decimals?', a: 'The input can, but the simplified form is always whole numbers — 2.5:1.5 simplifies to 5:3.' },
 			],
 			faqZh: [
 				{ q: '36:48 怎么化简？', a: '两边同除以最大公约数 12，得到 3:4。' },
+				{ q: '比例式 3:4 = 9:x 怎么解？', a: '交叉相乘得 3x = 36，故 x = 12。在计算器中输入 A=3、B=4、C=9 即可立即求出 x=12。' },
 				{ q: '怎么把 4 人份食谱扩成 12 人份？', a: '解比例 4:12 = 1:x，即可知道所有食材都要乘以 3。' },
-				{ q: '比可以有是小数吗？', a: '输入可以，但化简结果一定是整数——2.5:1.5 会化简为 5:3。' },
+				{ q: '比可以有小数吗？', a: '输入可以，但化简结果一定是整数——2.5:1.5 会化简为 5:3。' },
 			],
 		},
 	},
@@ -395,31 +397,10 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 		slug: 'proportion',
 		category: 'calculators',
 		name: 'Proportion Calculator',
-		nameZh: '正反比例计算器',
-		description: 'Solve a : b = c : x for the missing value.',
-		kind: 'form',
-		config: proportion,
-
-		content: {
-			about: [
-				'Solve a proportion a : b = c : x for the missing value. Leave the unknown field empty and the calculator fills it in using cross-multiplication: x = b·c / a.',
-				'Proportions appear everywhere: converting recipe servings, scaling drawings, currency conversion at a known rate, and map distances. Any two equal ratios form one.',
-			],
-			aboutZh: [
-				'解比例式 a : b = c : x，求未知项。把未知项留空，计算器会用交叉相乘 x = b·c ÷ a 自动补全。',
-				'比例无处不在：换算食谱份数、缩放图纸、按已知汇率换货币、地图测距——任何两个相等的比都构成比例。',
-			],
-			faq: [
-				{ q: 'How do I solve 3:4 = 9:x?', a: 'Cross-multiply: 3x = 36, so x = 12.' },
-				{ q: 'Which field do I leave empty?', a: 'The one you want to find — usually x, the fourth term.' },
-				{ q: 'What if I leave two fields empty?', a: 'The proportion cannot be solved with two unknowns; fill in exactly three values.' },
-			],
-			faqZh: [
-				{ q: '3:4 = 9:x 怎么解？', a: '交叉相乘得 3x = 36，所以 x = 12。' },
-				{ q: '该把哪个字段留空？', a: '把要求的那一项留空——通常是第四项 x。' },
-				{ q: '留空两个字段会怎样？', a: '两个未知数无法求解，请恰好填入三个值。' },
-			],
-		},
+		nameZh: '比例方程计算器',
+		description: 'Redirects to the unified Ratio & Proportion Calculator.',
+		kind: 'redirect',
+		config: { target: '/calculators/ratio/' },
 	},
 	{
 		slug: 'simple-interest',

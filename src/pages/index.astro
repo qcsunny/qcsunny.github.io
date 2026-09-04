@@ -13,15 +13,15 @@ const bySlug = (slug: string) => all.find((e) => e.slug === slug);
 
 // Hand-picked high-frequency tools across developer, finance and utility categories
 const featuredSlugs = [
+	'mortgage-prepayment',
 	'json-formatter',
+	'irr-calculator',
 	'sql-formatter',
-	'jwt-decoder',
-	'url-parser',
 	'compound-interest',
-	'mortgage',
+	'jwt-decoder',
 	'uuid-generator',
 	'password-generator',
-	'xml-formatter',
+	'fire-calculator',
 ];
 const featured = featuredSlugs.map(bySlug).filter((e) => e !== undefined);
 

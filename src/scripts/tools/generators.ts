@@ -106,11 +106,14 @@ function initPassword(host: HTMLElement, cfg: PasswordGenConfig): void {
 		{ id: 't-lower', label: 'a–z', on: true, chars: SETS.lower },
 		{ id: 't-upper', label: 'A–Z', on: true, chars: SETS.upper },
 		{ id: 't-digits', label: '0–9', on: true, chars: SETS.digits },
-		{ id: 't-symbols', label: '!@#…', on: false, chars: SETS.symbols },
+		{ id: 't-symbols', label: '!@#…', on: true, chars: SETS.symbols },
 	];
 	const checkRowEl = document.createElement('div');
 	checkRowEl.className = 't-checkrow-group';
 	for (const b of boxes) checkRowEl.append(checkRow(b.id, b.label, b.on));
+
+	const noAmbiguousBox = checkRow('t-no-ambig', 'Exclude ambiguous (0, O, o, 1, l, I)', false);
+	checkRowEl.append(noAmbiguousBox);
 
 	const out = document.createElement('input');
 	out.type = 'text';
@@ -139,7 +142,16 @@ function initPassword(host: HTMLElement, cfg: PasswordGenConfig): void {
 			strength.textContent = 'Select at least one character set.';
 			return;
 		}
-		const pool = active.map((b) => b.chars).join('');
+		let pool = active.map((b) => b.chars).join('');
+		const noAmbig = (document.getElementById('t-no-ambig') as HTMLInputElement | null)?.checked;
+		if (noAmbig) {
+			pool = pool.replace(/[0Oo1lI]/g, '');
+		}
+		if (!pool.length) {
+			out.value = '';
+			strength.textContent = 'Character pool is empty after exclusions.';
+			return;
+		}
 		out.value = passwordHtml(pool, Number(slider.value));
 		const bits = Number(slider.value) * Math.log2(pool.length);
 		const { label, note } = strengthLabel(bits);
@@ -156,53 +168,121 @@ function initPassword(host: HTMLElement, cfg: PasswordGenConfig): void {
 	for (const b of boxes) {
 		document.getElementById(b.id)?.addEventListener('change', update);
 	}
+	document.getElementById('t-no-ambig')?.addEventListener('change', update);
 	regen.addEventListener('click', update);
 	update();
 }
 
-// --- uuid -------------------------------------------------------------------------------
+// --- uuid (v4 + v7) ---------------------------------------------------------------------
+
+function generateUuidV7(): string {
+	const bytes = new Uint8Array(16);
+	crypto.getRandomValues(bytes);
+	const now = BigInt(Date.now());
+	bytes[0] = Number((now >> 40n) & 0xffn);
+	bytes[1] = Number((now >> 32n) & 0xffn);
+	bytes[2] = Number((now >> 24n) & 0xffn);
+	bytes[3] = Number((now >> 16n) & 0xffn);
+	bytes[4] = Number((now >> 8n) & 0xffn);
+	bytes[5] = Number(now & 0xffn);
+	bytes[6] = (bytes[6]! & 0x0f) | 0x70; // version 7
+	bytes[8] = (bytes[8]! & 0x3f) | 0x80; // variant 10xx
+	let hex = '';
+	for (let i = 0; i < 16; i++) {
+		const b = bytes[i]!.toString(16).padStart(2, '0');
+		if (i === 4 || i === 6 || i === 8 || i === 10) hex += '-';
+		hex += b;
+	}
+	return hex;
+}
 
 function initUuid(host: HTMLElement, cfg: UuidGenConfig): void {
 	host.innerHTML = '';
 
-	const row = document.createElement('div');
-	row.className = 't-btnrow';
+	const form = document.createElement('div');
+	form.className = 't-form';
+
+	const controlsRow = document.createElement('div');
+	controlsRow.className = 't-btnrow';
+
+	const verField = document.createElement('div');
+	verField.className = 't-field';
+	const verLabel = document.createElement('label');
+	verLabel.htmlFor = 't-uuid-ver';
+	verLabel.textContent = 'Version';
+	const verSelect = document.createElement('select');
+	verSelect.id = 't-uuid-ver';
+	const optV4 = document.createElement('option');
+	optV4.value = 'v4';
+	optV4.textContent = 'UUID v4 (Random / 随机)';
+	const optV7 = document.createElement('option');
+	optV7.value = 'v7';
+	optV7.textContent = 'UUID v7 (Time-ordered / 时间有序)';
+	verSelect.append(optV4, optV7);
+	verField.append(verLabel, verSelect);
+
+	const countField = document.createElement('div');
+	countField.className = 't-field';
 	const countLabel = document.createElement('label');
-	countLabel.className = 't-countlabel';
 	countLabel.htmlFor = 't-count';
-	countLabel.textContent = 'How many';
+	countLabel.textContent = 'Count';
 	const count = document.createElement('input');
 	count.type = 'number';
 	count.id = 't-count';
 	count.min = '1';
 	count.max = String(cfg.maxCount);
 	count.value = String(cfg.defCount);
+	countField.append(countLabel, count);
+
+	const hyphenBox = checkRow('t-uuid-hyphen', 'Hyphens (-)', true);
+	const upperBox = checkRow('t-uuid-upper', 'Uppercase', false);
+
 	const gen = document.createElement('button');
 	gen.type = 'button';
 	gen.className = 't-btn t-primary';
 	gen.textContent = 'Generate';
-	row.append(countLabel, count, gen);
+
+	controlsRow.append(verField, countField, hyphenBox, upperBox, gen);
 
 	const out = document.createElement('textarea');
 	out.className = 't-textarea t-mono t-out';
+	out.rows = 8;
 	out.readOnly = true;
 	out.setAttribute('aria-label', 'Generated UUIDs');
 	const copy = makeCopyButton(() => out.value);
 	const note = document.createElement('p');
 	note.className = 't-note';
-	note.textContent = 'Random (version 4) UUIDs from crypto.randomUUID — 122 random bits each.';
 
 	function update(): void {
 		const n = Math.min(Math.max(Math.floor(Number(count.value) || 1), 1), cfg.maxCount);
 		count.value = String(n);
+		const ver = verSelect.value;
+		const withHyphen = (document.getElementById('t-uuid-hyphen') as HTMLInputElement)?.checked ?? true;
+		const uppercase = (document.getElementById('t-uuid-upper') as HTMLInputElement)?.checked ?? false;
+
 		const lines: string[] = [];
-		for (let i = 0; i < n; i++) lines.push(crypto.randomUUID());
+		for (let i = 0; i < n; i++) {
+			let id = ver === 'v7' ? generateUuidV7() : crypto.randomUUID();
+			if (!withHyphen) id = id.replace(/-/g, '');
+			if (uppercase) id = id.toUpperCase();
+			lines.push(id);
+		}
 		out.value = lines.join('\n');
+		note.textContent = ver === 'v7'
+			? 'UUID v7: 48-bit millisecond timestamp + 74 bits randomness (RFC 9562). Naturally sortable and database index friendly.'
+			: 'UUID v4: 122 cryptographically secure random bits (RFC 4122). Uniform distribution with zero correlation.';
 	}
 
-	host.append(row, out, copy.wrap, note);
+	const copyRow = document.createElement('div');
+	copyRow.className = 't-btnrow';
+	copyRow.append(copy.wrap);
+
+	host.append(controlsRow, out, copyRow, note);
 	gen.addEventListener('click', update);
 	count.addEventListener('change', update);
+	verSelect.addEventListener('change', update);
+	hyphenBox.querySelector('input')?.addEventListener('change', update);
+	upperBox.querySelector('input')?.addEventListener('change', update);
 	update();
 }
 

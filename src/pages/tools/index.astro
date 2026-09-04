@@ -1,5 +1,5 @@
 ---
-// Tools hub: every tool across the four categories, grouped in sections.
+// Tools hub: every tool across the categories, grouped in sections.
 import ToolShell from '../../components/tools/ToolShell.astro';
 import {
 	CALCULATOR_FEATURED,
@@ -12,19 +12,45 @@ const byCategory = (id: string): ToolMeta[] => [
 	...(id === 'calculators' ? CALCULATOR_FEATURED : []),
 	...REGISTRY.filter((e) => e.category === id && e.kind !== 'redirect'),
 ];
+
+const totalTools = CATEGORIES.reduce((acc, cat) => acc + byCategory(cat.id).length, 0);
 ---
 
 <ToolShell
-	title="Tools"
-	description="Free browser-based tools: calculators, unit converters, finance helpers and text utilities."
+	title="Tools Hub"
+	description="Comprehensive collection of free, high-speed, 100% private browser-based utilities: finance calculators, developer formatters, math analyzers and unit converters."
 >
+	<div class="t-hub-header">
+		<div class="t-hub-badge">
+			<span class="i18n-en">{totalTools} Free Online Tools · 100% Client-Side Privacy</span>
+			<span class="i18n-zh">{totalTools} 款实用在线工具 · 100% 浏览器本地运算与隐私保护</span>
+		</div>
+		<div class="t-cat-pills">
+			{
+				CATEGORIES.map((cat) => (
+					<a class="t-cat-pill" href={`#cat-${cat.id}`}>
+						<span class="i18n-en">{cat.label}</span>
+						<span class="i18n-zh">{cat.labelZh}</span>
+						<span class="t-pill-count">({byCategory(cat.id).length})</span>
+					</a>
+				))
+			}
+		</div>
+	</div>
+
 	{
 		CATEGORIES.map((cat) => {
 			const entries = byCategory(cat.id);
 			return (
-				<section class="t-section">
-					<h2>{cat.label}</h2>
-					<p class="t-section-blurb">{cat.blurb}</p>
+				<section class="t-section" id={`cat-${cat.id}`}>
+					<h2>
+						<span class="i18n-en">{cat.label}</span>
+						<span class="i18n-zh">{cat.labelZh}</span>
+					</h2>
+					<p class="t-section-blurb">
+						<span class="i18n-en">{cat.blurb}</span>
+						<span class="i18n-zh">{cat.blurbZh}</span>
+					</p>
 					<div class="t-cards">
 						{entries.map((e) => (
 							<a class="t-card" href={`/${e.category}/${e.slug}/`}>
@@ -38,3 +64,52 @@ const byCategory = (id: string): ToolMeta[] => [
 		})
 	}
 </ToolShell>
+
+<style>
+	.t-hub-header {
+		margin-bottom: 2rem;
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+	.t-hub-badge {
+		display: inline-flex;
+		align-self: flex-start;
+		padding: 0.35rem 0.85rem;
+		border-radius: 999px;
+		font-size: 0.82rem;
+		font-weight: 600;
+		color: var(--accent);
+		background: rgba(var(--accent-rgb), 0.08);
+		border: 1px solid rgba(var(--accent-rgb), 0.2);
+	}
+	.t-cat-pills {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+	.t-cat-pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		padding: 0.4rem 0.85rem;
+		border-radius: 8px;
+		background: var(--bg-card);
+		border: 1px solid var(--border);
+		color: var(--text);
+		text-decoration: none;
+		font-size: 0.85rem;
+		font-weight: 500;
+		transition: all 0.2s ease;
+	}
+	.t-cat-pill:hover {
+		border-color: var(--accent);
+		color: var(--accent);
+		background: rgba(var(--accent-rgb), 0.04);
+		transform: translateY(-1px);
+	}
+	.t-pill-count {
+		opacity: 0.6;
+		font-size: 0.78rem;
+	}
+</style>

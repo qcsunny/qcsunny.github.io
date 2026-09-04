@@ -34,8 +34,8 @@ export function initConverter(host: HTMLElement, config: ConverterConfig): void 
 	const swap = document.createElement('button');
 	swap.type = 'button';
 	swap.className = 't-btn t-conv-swap';
-	swap.textContent = '⇅ Swap units';
-	swap.title = 'Swap the two units';
+	swap.innerHTML = '<span class="i18n-en">⇅ Swap units</span><span class="i18n-zh">⇅ 交换单位</span>';
+	swap.title = 'Swap the two units / 交换两个单位';
 
 	const note = document.createElement('p');
 	note.className = 't-conv-note';
@@ -95,7 +95,13 @@ export function initConverter(host: HTMLElement, config: ConverterConfig): void 
 		const el = document.createElement('div');
 		el.className = 't-conv-row';
 		const l = document.createElement('label');
-		l.textContent = label;
+		if (label === 'From') {
+			l.innerHTML = '<span class="i18n-en">From</span><span class="i18n-zh">原始单位</span>';
+		} else if (label === 'To') {
+			l.innerHTML = '<span class="i18n-en">To</span><span class="i18n-zh">转换为</span>';
+		} else {
+			l.textContent = label;
+		}
 		el.append(l, sel, input);
 		return el;
 	}

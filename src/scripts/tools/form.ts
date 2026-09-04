@@ -26,6 +26,19 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 		bool: (id) => getters.get(id)?.() === true,
 	};
 
+	function makeBilingualSpan(en: string, zh?: string): Node {
+		if (!zh) return document.createTextNode(en);
+		const frag = document.createDocumentFragment();
+		const enEl = document.createElement('span');
+		enEl.className = 'i18n-en';
+		enEl.textContent = en;
+		const zhEl = document.createElement('span');
+		zhEl.className = 'i18n-zh';
+		zhEl.textContent = zh;
+		frag.append(enEl, zhEl);
+		return frag;
+	}
+
 	function fieldEl(field: FormField): HTMLElement {
 		const wrap = document.createElement('div');
 		wrap.className = 't-field';
@@ -41,7 +54,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			getters.set(field.id, () => cb.checked);
 			controls.push(cb);
 			const text = document.createElement('span');
-			text.textContent = field.label;
+			text.append(makeBilingualSpan(field.label, field.labelZh));
 			row.append(cb, text);
 			wrap.append(row);
 			return wrap;
@@ -49,11 +62,11 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 
 		const label = document.createElement('label');
 		label.htmlFor = `t-f-${field.id}`;
-		label.textContent = field.label;
+		label.append(makeBilingualSpan(field.label, field.labelZh));
 		if (field.suffix) {
 			const s = document.createElement('span');
 			s.className = 't-suffix';
-			s.textContent = ` ${field.suffix}`;
+			s.append(makeBilingualSpan(` ${field.suffix}`, field.suffixZh ? ` ${field.suffixZh}` : undefined));
 			label.append(s);
 		}
 		wrap.append(label);
@@ -64,7 +77,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			for (const opt of field.options ?? []) {
 				const o = document.createElement('option');
 				o.value = opt.value;
-				o.textContent = opt.label;
+				o.textContent = opt.labelZh ? `${opt.label} (${opt.labelZh})` : opt.label;
 				sel.append(o);
 			}
 			if (field.def !== undefined) sel.value = field.def;
@@ -96,7 +109,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 		if (field.hint) {
 			const hint = document.createElement('span');
 			hint.className = 't-hint';
-			hint.textContent = field.hint;
+			hint.append(makeBilingualSpan(field.hint, field.hintZh));
 			wrap.append(hint);
 		}
 		return wrap;
@@ -107,7 +120,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 		el.className = row.emphasis ? 't-row t-emph' : 't-row';
 		const l = document.createElement('span');
 		l.className = 't-row-label';
-		l.textContent = row.label;
+		l.append(makeBilingualSpan(row.label, row.labelZh));
 		const v = document.createElement('span');
 		v.className = 't-row-value';
 		v.textContent = row.value;
@@ -122,12 +135,13 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 		t.className = 't-table';
 		const thead = document.createElement('thead');
 		const headRow = document.createElement('tr');
-		for (const col of table.columns) {
+		table.columns.forEach((col, idx) => {
 			const th = document.createElement('th');
 			th.scope = 'col';
-			th.textContent = col;
+			const zhCol = table.columnsZh ? table.columnsZh[idx] : undefined;
+			th.append(makeBilingualSpan(col, zhCol));
 			headRow.append(th);
-		}
+		});
 		thead.append(headRow);
 		const tbody = document.createElement('tbody');
 		for (const cells of table.rows) {
@@ -154,7 +168,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			if (out.note) {
 				const note = document.createElement('p');
 				note.className = 't-note';
-				note.textContent = out.note;
+				note.append(makeBilingualSpan(out.note, out.noteZh));
 				host.append(note);
 			}
 		} catch (err) {
