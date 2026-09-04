@@ -5,12 +5,13 @@ const today = new Date();
 ---
 
 <footer>
-	&copy; {today.getFullYear()} {SITE_TITLE}
+	<div class="footer-copy">&copy; {today.getFullYear()} {SITE_TITLE}</div>
 	<nav class="footer-links">
-		<a href="/">博客</a>
-		<a href="/tools/">工具</a>
-		<a href="/about/">关于</a>
-		<a href="/privacy/">隐私政策</a>
+		<a href="/"><span class="i18n-en">Blog</span><span class="i18n-zh">博客</span></a>
+		<a href="/tools/"><span class="i18n-en">Tools</span><span class="i18n-zh">工具箱</span></a>
+		<a href="/about/"><span class="i18n-en">About</span><span class="i18n-zh">关于</span></a>
+		<a href="/privacy/"><span class="i18n-en">Privacy</span><span class="i18n-zh">隐私政策</span></a>
+		<a href="mailto:admin@qcsunny.org" class="footer-email">admin@qcsunny.org</a>
 		<a href="https://github.com/qcsunny/qcsunny.github.io" target="_blank" rel="noopener">GitHub</a>
 	</nav>
 </footer>
@@ -21,13 +22,18 @@ const today = new Date();
 		color: var(--dim);
 		text-align: center;
 		border-top: 1px solid var(--gridline);
+		font-size: 0.95rem;
+	}
+	.footer-copy {
+		margin-bottom: 0.5em;
 	}
 	.footer-links {
 		display: flex;
 		flex-wrap: wrap;
 		justify-content: center;
+		align-items: center;
 		gap: 0.4em 1.2em;
-		margin-top: 1em;
+		margin-top: 0.8em;
 	}
 	.footer-links a {
 		text-decoration: none;
@@ -36,5 +42,10 @@ const today = new Date();
 	}
 	.footer-links a:hover {
 		color: var(--accent);
+	}
+	.footer-email {
+		font-family: var(--font-mono, monospace);
+		font-size: 0.9em;
+		opacity: 0.9;
 	}
 </style>

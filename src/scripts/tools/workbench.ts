@@ -3,10 +3,12 @@
 // - Real-time status indicator with valid / error / idle styling
 // - Responsive side-by-side split panels (or stacked on mobile)
 // - One-click clipboard copy, file upload (.ext), and formatted file download
+// - 100% responsive bilingual support (pure English in EN mode, pure Chinese in ZH mode)
 // - 100% in-browser, zero dependencies, zero network requests.
 
 export interface WorkbenchBtnConfig {
-	label: string;
+	label: string; // English / default label
+	labelZh?: string; // Chinese label
 	primary?: boolean;
 	onClick: () => void;
 }
@@ -14,23 +16,30 @@ export interface WorkbenchBtnConfig {
 export interface WorkbenchOptions {
 	host: HTMLElement;
 	inputTitle?: string;
+	inputTitleZh?: string;
 	outputTitle?: string;
+	outputTitleZh?: string;
 	inputPlaceholder?: string;
+	inputPlaceholderZh?: string;
 	outputPlaceholder?: string;
+	outputPlaceholderZh?: string;
 	fileAccept?: string;
 	fileDefaultName?: string;
+	downloadLabel?: string;
+	downloadLabelZh?: string;
 	buttons: WorkbenchBtnConfig[];
 	onInput?: (raw: string) => void;
 	onSample?: () => void;
 	onClear?: () => void;
 	initialStatus?: string;
+	initialStatusZh?: string;
 }
 
 export interface WorkbenchHandle {
 	inputArea: HTMLTextAreaElement;
 	outputArea: HTMLTextAreaElement;
 	statusEl: HTMLDivElement;
-	updateStatus: (type: 'idle' | 'valid' | 'error', msg: string) => void;
+	updateStatus: (type: 'idle' | 'valid' | 'error', msgEn: string, msgZh?: string) => void;
 	flashCopySuccess: (btn?: HTMLButtonElement) => void;
 }
 
@@ -40,20 +49,43 @@ export function formatBytes(bytes: number): string {
 	return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
+export function makeBilingualSpan(en: string, zh?: string): HTMLElement {
+	const span = document.createElement('span');
+	if (!zh || en === zh) {
+		span.textContent = en;
+		return span;
+	}
+	const enEl = document.createElement('span');
+	enEl.className = 'i18n-en';
+	enEl.textContent = en;
+	const zhEl = document.createElement('span');
+	zhEl.className = 'i18n-zh';
+	zhEl.textContent = zh;
+	span.append(enEl, zhEl);
+	return span;
+}
+
 export function createWorkbench(options: WorkbenchOptions): WorkbenchHandle {
 	const {
 		host,
-		inputTitle = '输入 (Input)',
-		outputTitle = '输出 (Output)',
-		inputPlaceholder = '在此输入或粘贴代码...',
-		outputPlaceholder = '格式化结果将显示在此处...',
+		inputTitle = 'Input',
+		inputTitleZh = '输入',
+		outputTitle = 'Output',
+		outputTitleZh = '输出',
+		inputPlaceholder = 'Type or paste code here...',
+		inputPlaceholderZh = '在此输入或粘贴代码...',
+		outputPlaceholder = 'Formatted output will appear here...',
+		outputPlaceholderZh = '格式化结果将显示在此处...',
 		fileAccept = '.txt',
 		fileDefaultName = 'output.txt',
+		downloadLabel = '💾 Download',
+		downloadLabelZh = '💾 下载文件',
 		buttons,
 		onInput,
 		onSample,
 		onClear,
-		initialStatus = '准备就绪：输入或粘贴代码后将自动校验并处理。'
+		initialStatus = 'Ready: Paste or enter content to process.',
+		initialStatusZh = '准备就绪：输入或粘贴代码后将自动校验并处理。'
 	} = options;
 
 	host.innerHTML = '';
@@ -65,17 +97,17 @@ export function createWorkbench(options: WorkbenchOptions): WorkbenchHandle {
 	const toolbar = document.createElement('div');
 	toolbar.className = 't-json-toolbar';
 
-	function createBtn(label: string, isPrimary = false, onClick: () => void): HTMLButtonElement {
+	function createBtn(labelEn: string, labelZh?: string, isPrimary = false, onClick?: () => void): HTMLButtonElement {
 		const btn = document.createElement('button');
 		btn.type = 'button';
 		btn.className = isPrimary ? 't-btn t-primary' : 't-btn';
-		btn.textContent = label;
-		btn.addEventListener('click', onClick);
+		btn.append(makeBilingualSpan(labelEn, labelZh));
+		if (onClick) btn.addEventListener('click', onClick);
 		return btn;
 	}
 
 	for (const b of buttons) {
-		toolbar.appendChild(createBtn(b.label, b.primary, b.onClick));
+		toolbar.appendChild(createBtn(b.label, b.labelZh, b.primary, b.onClick));
 	}
 
 	if (onSample || onClear) {
@@ -84,17 +116,17 @@ export function createWorkbench(options: WorkbenchOptions): WorkbenchHandle {
 		toolbar.appendChild(sep);
 
 		if (onSample) {
-			toolbar.appendChild(createBtn('示例数据', false, onSample));
+			toolbar.appendChild(createBtn('Sample Data', '示例数据', false, onSample));
 		}
 		if (onClear) {
-			toolbar.appendChild(createBtn('清空', false, onClear));
+			toolbar.appendChild(createBtn('Clear', '清空', false, onClear));
 		}
 	}
 
 	// 2. Status banner
 	const statusEl = document.createElement('div');
 	statusEl.className = 't-json-status';
-	statusEl.textContent = initialStatus;
+	statusEl.append(makeBilingualSpan(initialStatus, initialStatusZh));
 
 	// 3. Panels
 	const panels = document.createElement('div');
@@ -107,7 +139,7 @@ export function createWorkbench(options: WorkbenchOptions): WorkbenchHandle {
 	const leftHead = document.createElement('div');
 	leftHead.className = 't-json-panel-head';
 	const leftTitle = document.createElement('strong');
-	leftTitle.textContent = inputTitle;
+	leftTitle.append(makeBilingualSpan(inputTitle, inputTitleZh));
 
 	const fileInput = document.createElement('input');
 	fileInput.type = 'file';
@@ -124,14 +156,13 @@ export function createWorkbench(options: WorkbenchOptions): WorkbenchHandle {
 		reader.readAsText(file);
 	});
 
-	const uploadBtn = createBtn('📂 读取文件', false, () => fileInput.click());
+	const uploadBtn = createBtn('📂 Open File', '📂 读取文件', false, () => fileInput.click());
 	uploadBtn.style.padding = '0.25em 0.6em';
 	uploadBtn.style.fontSize = '0.8rem';
 	leftHead.append(leftTitle, uploadBtn, fileInput);
 
 	const inputArea = document.createElement('textarea');
 	inputArea.className = 't-json-editor';
-	inputArea.placeholder = inputPlaceholder;
 	inputArea.spellcheck = false;
 	inputArea.setAttribute('aria-label', 'Input Area');
 
@@ -144,13 +175,13 @@ export function createWorkbench(options: WorkbenchOptions): WorkbenchHandle {
 	const rightHead = document.createElement('div');
 	rightHead.className = 't-json-panel-head';
 	const rightTitle = document.createElement('strong');
-	rightTitle.textContent = outputTitle;
+	rightTitle.append(makeBilingualSpan(outputTitle, outputTitleZh));
 
 	const rightActions = document.createElement('div');
 	rightActions.style.display = 'flex';
 	rightActions.style.gap = '0.4em';
 
-	const copyBtn = createBtn('📋 复制', false, async () => {
+	const copyBtn = createBtn('📋 Copy', '📋 复制', false, async () => {
 		const text = outputArea.value || inputArea.value;
 		if (!text) return;
 		try {
@@ -165,7 +196,7 @@ export function createWorkbench(options: WorkbenchOptions): WorkbenchHandle {
 	copyBtn.style.padding = '0.25em 0.6em';
 	copyBtn.style.fontSize = '0.8rem';
 
-	const downloadBtn = createBtn('💾 下载文件', false, () => {
+	const downloadBtn = createBtn(downloadLabel, downloadLabelZh, false, () => {
 		const text = outputArea.value || inputArea.value;
 		if (!text) return;
 		const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
@@ -184,7 +215,6 @@ export function createWorkbench(options: WorkbenchOptions): WorkbenchHandle {
 
 	const outputArea = document.createElement('textarea');
 	outputArea.className = 't-json-editor';
-	outputArea.placeholder = outputPlaceholder;
 	outputArea.readOnly = true;
 	outputArea.spellcheck = false;
 	outputArea.setAttribute('aria-label', 'Output Area');
@@ -195,20 +225,28 @@ export function createWorkbench(options: WorkbenchOptions): WorkbenchHandle {
 	wrap.append(toolbar, statusEl, panels);
 	host.append(wrap);
 
-	function updateStatus(type: 'idle' | 'valid' | 'error', msg: string) {
+	function syncPlaceholders() {
+		const isZh = document.documentElement.dataset.lang === 'zh';
+		inputArea.placeholder = (isZh && inputPlaceholderZh) ? inputPlaceholderZh : inputPlaceholder;
+		outputArea.placeholder = (isZh && outputPlaceholderZh) ? outputPlaceholderZh : outputPlaceholder;
+	}
+	syncPlaceholders();
+	window.addEventListener('site:lang-change', syncPlaceholders);
+
+	function updateStatus(type: 'idle' | 'valid' | 'error', msgEn: string, msgZh?: string) {
 		statusEl.className = 't-json-status';
 		if (type === 'valid') statusEl.classList.add('is-valid');
 		if (type === 'error') statusEl.classList.add('is-error');
-		statusEl.textContent = msg;
+		statusEl.replaceChildren(makeBilingualSpan(msgEn, msgZh || msgEn));
 	}
 
 	function flashCopySuccess(btn?: HTMLButtonElement) {
 		const target = btn || copyBtn;
-		const original = target.textContent;
-		target.textContent = '✓ 已复制!';
+		const oldChildren = Array.from(target.childNodes);
+		target.replaceChildren(makeBilingualSpan('✓ Copied!', '✓ 已复制!'));
 		target.style.color = '#10b981';
 		setTimeout(() => {
-			target.textContent = original;
+			target.replaceChildren(...oldChildren);
 			target.style.color = '';
 		}, 1500);
 	}

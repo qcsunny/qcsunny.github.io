@@ -127,26 +127,33 @@ export function initXml(host: HTMLElement): void {
 			const saved = orig > 0 ? (((orig - mini) / orig) * 100).toFixed(1) : '0';
 			wb.updateStatus(
 				'valid',
+				`✓ Minified XML · Size reduced from ${formatBytes(orig)} to ${formatBytes(mini)} (${saved}% saved)`,
 				`✓ 已压缩 XML · 大小从 ${formatBytes(orig)} 缩小至 ${formatBytes(mini)} (减小 ${saved}%)`
 			);
 		} catch (err) {
-			const msg = err instanceof Error ? err.message : '压缩失败';
-			wb.updateStatus('error', `✗ 压缩出错: ${msg}`);
+			const msg = err instanceof Error ? err.message : 'Minification failed';
+			wb.updateStatus('error', `✗ Minify error: ${msg}`, `✗ 压缩出错: ${msg}`);
 		}
 	}
 
 	wb = createWorkbench({
 		host,
-		inputTitle: '输入 XML / SVG 报文',
-		outputTitle: '格式化 / 压缩结果',
-		inputPlaceholder: '在此粘贴 XML 或 SVG 代码...',
-		outputPlaceholder: '美化后的 XML 将显示在此处...',
+		inputTitle: 'Input XML / SVG Code',
+		inputTitleZh: '输入 XML / SVG 报文',
+		outputTitle: 'Formatted / Minified Output',
+		outputTitleZh: '格式化 / 压缩结果',
+		inputPlaceholder: 'Paste XML or SVG code here...',
+		inputPlaceholderZh: '在此粘贴 XML 或 SVG 代码...',
+		outputPlaceholder: 'Beautified XML will appear here...',
+		outputPlaceholderZh: '美化后的 XML 将显示在此处...',
 		fileAccept: '.xml,.svg,.rss,.txt,application/xml,text/xml',
 		fileDefaultName: `formatted-${Date.now()}.xml`,
+		downloadLabel: '💾 Download .xml',
+		downloadLabelZh: '💾 下载 .xml',
 		buttons: [
-			{ label: '格式化 (2 空格)', primary: true, onClick: () => doFormat(2) },
-			{ label: '格式化 (4 空格)', primary: false, onClick: () => doFormat(4) },
-			{ label: '压缩 (Minify)', primary: false, onClick: doMinify }
+			{ label: 'Format (2 spaces)', labelZh: '格式化 (2 空格)', primary: true, onClick: () => doFormat(2) },
+			{ label: 'Format (4 spaces)', labelZh: '格式化 (4 空格)', primary: false, onClick: () => doFormat(4) },
+			{ label: 'Minify', labelZh: '单行压缩', primary: false, onClick: doMinify }
 		],
 		onInput: () => doFormat(2),
 		onSample: () => {
@@ -156,8 +163,9 @@ export function initXml(host: HTMLElement): void {
 		onClear: () => {
 			wb.inputArea.value = '';
 			wb.outputArea.value = '';
-			wb.updateStatus('idle', '已清空');
+			wb.updateStatus('idle', 'Cleared', '已清空');
 		},
-		initialStatus: '准备就绪：输入或粘贴 XML / SVG 报文后将自动通过 DOMParser 校验并排版。'
+		initialStatus: 'Ready: Paste XML / SVG to validate with DOMParser and format automatically.',
+		initialStatusZh: '准备就绪：输入或粘贴 XML / SVG 报文后将自动通过 DOMParser 校验并排版。'
 	});
 }

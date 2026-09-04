@@ -34,7 +34,17 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 			const btn = document.createElement('button');
 			btn.type = 'button';
 			btn.className = 't-btn';
-			btn.textContent = t.label;
+			if (t.labelZh) {
+				const en = document.createElement('span');
+				en.className = 'i18n-en';
+				en.textContent = t.label;
+				const zh = document.createElement('span');
+				zh.className = 'i18n-zh';
+				zh.textContent = t.labelZh;
+				btn.append(en, zh);
+			} else {
+				btn.textContent = t.label;
+			}
 			btn.addEventListener('click', () => {
 				if (!out) return;
 				try {

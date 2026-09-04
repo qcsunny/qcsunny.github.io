@@ -271,11 +271,12 @@ export function initSql(host: HTMLElement): void {
 			const lines = formatted.split('\n').length;
 			wb.updateStatus(
 				'valid',
+				`✓ SQL formatted · ${lines} lines · Raw: ${formatBytes(originalBytes)} · Formatted: ${formatBytes(formattedBytes)}`,
 				`✓ SQL 格式化完成 · 共 ${lines} 行 · 原始大小: ${formatBytes(originalBytes)} · 格式化后: ${formatBytes(formattedBytes)}`
 			);
 		} catch (err) {
-			const msg = err instanceof Error ? err.message : 'SQL 解析失败';
-			wb.updateStatus('error', `✗ 格式化出错: ${msg}`);
+			const msg = err instanceof Error ? err.message : 'SQL parse failed';
+			wb.updateStatus('error', `✗ Formatting error: ${msg}`, `✗ 格式化出错: ${msg}`);
 		}
 	}
 
@@ -290,26 +291,33 @@ export function initSql(host: HTMLElement): void {
 			const saved = orig > 0 ? (((orig - mini) / orig) * 100).toFixed(1) : '0';
 			wb.updateStatus(
 				'valid',
+				`✓ Minified to single-line SQL · Compressed from ${formatBytes(orig)} to ${formatBytes(mini)} (${saved}% saved)`,
 				`✓ 已压缩为单行 SQL · 大小从 ${formatBytes(orig)} 压缩至 ${formatBytes(mini)} (减小 ${saved}%)`
 			);
 		} catch (err) {
-			const msg = err instanceof Error ? err.message : '压缩失败';
-			wb.updateStatus('error', `✗ 压缩出错: ${msg}`);
+			const msg = err instanceof Error ? err.message : 'Minify failed';
+			wb.updateStatus('error', `✗ Minify error: ${msg}`, `✗ 压缩出错: ${msg}`);
 		}
 	}
 
 	wb = createWorkbench({
 		host,
-		inputTitle: '输入 SQL 查询语句',
-		outputTitle: '格式化 / 压缩结果',
-		inputPlaceholder: '在此粘贴 SQL 语句 (如 SELECT * FROM users WHERE status = 1...)',
-		outputPlaceholder: '美化后的 SQL 将显示在此处...',
+		inputTitle: 'Input SQL Query',
+		inputTitleZh: '输入 SQL 查询语句',
+		outputTitle: 'Formatted / Minified Output',
+		outputTitleZh: '格式化 / 压缩结果',
+		inputPlaceholder: 'Paste SQL statement here (e.g. SELECT * FROM users WHERE status = 1)...',
+		inputPlaceholderZh: '在此粘贴 SQL 语句 (如 SELECT * FROM users WHERE status = 1...)',
+		outputPlaceholder: 'Beautified SQL will appear here...',
+		outputPlaceholderZh: '美化后的 SQL 将显示在此处...',
 		fileAccept: '.sql,.txt,text/plain',
 		fileDefaultName: `formatted-${Date.now()}.sql`,
+		downloadLabel: '💾 Download .sql',
+		downloadLabelZh: '💾 下载 .sql',
 		buttons: [
-			{ label: '格式化 (2 空格)', primary: true, onClick: () => doFormat(2) },
-			{ label: '格式化 (4 空格)', primary: false, onClick: () => doFormat(4) },
-			{ label: '单行压缩 (Minify)', primary: false, onClick: doMinify }
+			{ label: 'Format (2 spaces)', labelZh: '格式化 (2 空格)', primary: true, onClick: () => doFormat(2) },
+			{ label: 'Format (4 spaces)', labelZh: '格式化 (4 空格)', primary: false, onClick: () => doFormat(4) },
+			{ label: 'Minify', labelZh: '单行压缩', primary: false, onClick: doMinify }
 		],
 		onInput: () => doFormat(2),
 		onSample: () => {
@@ -319,8 +327,9 @@ export function initSql(host: HTMLElement): void {
 		onClear: () => {
 			wb.inputArea.value = '';
 			wb.outputArea.value = '';
-			wb.updateStatus('idle', '已清空');
+			wb.updateStatus('idle', 'Cleared', '已清空');
 		},
-		initialStatus: '准备就绪：输入或粘贴 SQL 语句后将自动进行语法分词与排版。'
+		initialStatus: 'Ready: Paste or type SQL to tokenize and format automatically.',
+		initialStatusZh: '准备就绪：输入或粘贴 SQL 语句后将自动进行语法分词与排版。'
 	});
 }

@@ -8,64 +8,240 @@ import { SITE_TITLE } from '../consts';
 <!doctype html>
 <html lang="en">
 	<head>
-		<BaseHead title={`About — ${SITE_TITLE}`} description="About QCSunny Lab: a personal blog and a collection of 34 free browser-based tools." />
+		<BaseHead
+			title={`About / 关于本站 — ${SITE_TITLE}`}
+			description="About QCSunny Lab: an engineering blog and a collection of 40+ free, client-side, zero-telemetry browser tools."
+		/>
 	</head>
 	<body>
 		<Header />
 		<main class="about-main">
-			<h1>About</h1>
-			<p>
-				I'm QCSunny — a developer who writes about web development, tooling and the small
-				utilities that make everyday computing easier. This site has two halves: a
-				<a href="/">blog</a> and a growing set of <a href="/tools/">free online tools</a>.
-			</p>
-			<p>
-				The tools — scientific calculator, unit converters, finance calculators, QR code
-				generator, password/UUID generators and more — are all hand-written with zero tracking
-				script weight. Every calculation runs entirely in your browser: nothing you type is
-				uploaded, stored or logged, and the pages keep working offline once loaded.
-			</p>
-			<section lang="zh-CN">
-				<h2>关于本站</h2>
+			<!-- ENGLISH VERSION -->
+			<div class="i18n-en">
+				<h1>About QCSunny Lab</h1>
+				<p class="about-lead">
+					I'm <strong>QCSunny</strong> — a software engineer focused on modern Web technologies, algorithm design,
+					and developer productivity tools. QCSunny Lab is a hybrid digital space comprising an
+					<strong>in-depth engineering blog</strong> and a comprehensive suite of
+					<strong>40+ free, browser-native developer and financial utilities</strong>.
+				</p>
+
+				<h2>Core Philosophy & Design Principles</h2>
+				<div class="about-features">
+					<div class="about-feature-card">
+						<div class="feature-icon">🔒</div>
+						<div class="feature-content">
+							<strong>100% Client-Side Privacy</strong>
+							<p>Every calculation, formatting, conversion, and decoding runs strictly inside your browser's JavaScript runtime. Zero tracking cookies, zero server-side telemetry, and zero uploaded source code or financial records. Once loaded, tools work seamlessly offline.</p>
+						</div>
+					</div>
+					<div class="about-feature-card">
+						<div class="feature-icon">⚡</div>
+						<div class="feature-content">
+							<strong>Zero Dependency Bloat</strong>
+							<p>Handcrafted using modern standard Web APIs and custom lightweight state machines instead of bulky third-party libraries. Sub-50ms instant loading with tiny payload sizes.</p>
+						</div>
+					</div>
+					<div class="about-feature-card">
+						<div class="feature-icon">🌐</div>
+						<div class="feature-content">
+							<strong>Free, Open & Accessible</strong>
+							<p>No paywalls, no mandatory logins, and no usage caps. Built for developers, students, researchers, and everyday users who appreciate clean, distraction-free tools.</p>
+						</div>
+					</div>
+				</div>
+
+				<h2>What You Will Find Here</h2>
+				<ul class="about-list">
+					<li>
+						<strong><a href="/tools/">Developer Utilities</a></strong>: High-speed JSON / SQL / HTML / CSS / XML formatters, JWT decoders, URL parser, Base64 converter, UUID v4/v7 and secure password generators, QR code maker, and Markdown live editor.
+					</li>
+					<li>
+						<strong><a href="/finance/">Financial & Tax Calculators</a></strong>: Comprehensive mortgage comparison with prepayment planning, IRR & loan installment truth analyzers, compound interest projections, and personal income tax calculators.
+					</li>
+					<li>
+						<strong><a href="/calculators/">Mathematical & Scientific Tools</a></strong>: Standard & scientific calculators, graphing utilities, fraction & percentage solvers, and precision unit converters.
+					</li>
+					<li>
+						<strong><a href="/blog/">Engineering Blog</a></strong>: Detailed articles exploring algorithm internals, financial mathematical models, Web architecture, and practical engineering reflections.
+					</li>
+				</ul>
+
+				<h2>Open Source & Contact</h2>
 				<p>
-					我是 QCSunny，一名开发者，关注 Web 开发、工具链以及让日常计算更省事的小工具。本站分为两部分：
-					<a href="/">博客</a>与一套持续扩充的<a href="/tools/">免费在线工具</a>。
+					The source code for this site is open and hosted on
+					<a href="https://github.com/qcsunny/qcsunny.github.io" target="_blank" rel="noopener">GitHub</a>.
+					Bug reports, feature requests, and suggestions are always welcome via
+					<a href="https://github.com/qcsunny/qcsunny.github.io/issues" target="_blank" rel="noopener">GitHub Issues</a>.
 				</p>
 				<p>
-					工具部分——科学计算器、单位换算、金融计算器、二维码生成器、密码/UUID 生成器等——全部手写实现，
-					不加载任何追踪脚本。所有计算均在浏览器本地完成：你输入的内容不会被上传、存储或记录，页面加载后离线也能继续使用。
+					For general inquiries, collaboration, or feedback, you can reach me directly by email at:
+					<a href="mailto:admin@qcsunny.org">admin@qcsunny.org</a>.
 				</p>
-			</section>
-			<p>
-				Source code and issue reports live on
-				<a href="https://github.com/qcsunny/qcsunny.github.io" target="_blank" rel="noopener">GitHub</a>.
-			</p>
+			</div>
+
+			<!-- CHINESE VERSION -->
+			<div class="i18n-zh">
+				<h1>关于本站 (QCSunny Lab)</h1>
+				<p class="about-lead">
+					我是 <strong>QCSunny</strong>，一名专注于现代 Web 开发、算法设计与效率工具的软件工程师。QCSunny Lab 是我的个人技术手记与在线工具实验室，由两部分组成：
+					<strong>深度技术工程手记</strong>与一套持续迭代演进的
+					<strong>40+ 款完全免费的纯前端离线开发者与金融计算工具箱</strong>。
+				</p>
+
+				<h2>核心理念与设计原则</h2>
+				<div class="about-features">
+					<div class="about-feature-card">
+						<div class="feature-icon">🔒</div>
+						<div class="feature-content">
+							<strong>100% 浏览器本地计算 · 零隐私上传</strong>
+							<p>所有计算、排版、格式化、编解码均在你的浏览器 JavaScript 引擎中本地完成。零追踪 Cookie、零服务器埋点、不留存任何代码与财务输入。页面载入后即便断网亦可顺畅使用。</p>
+						</div>
+					</div>
+					<div class="about-feature-card">
+						<div class="feature-icon">⚡</div>
+						<div class="feature-content">
+							<strong>极致轻量 · 拒绝臃肿框架</strong>
+							<p>完全基于现代标准 Web API 与手写原生状态机构建，拒绝引入体积庞大的冗余第三方依赖。整体打包体积以 KB 计量，带来 sub-50ms 极速毫秒级加载体验。</p>
+						</div>
+					</div>
+					<div class="about-feature-card">
+						<div class="feature-icon">🌐</div>
+						<div class="feature-content">
+							<strong>完全免费 · 开放免登</strong>
+							<p>无需注册账户、无付费门槛、无频次限制，为开发者、科研学生、职场人士提供纯净、无打扰的高效工具环境。</p>
+						</div>
+					</div>
+				</div>
+
+				<h2>站点内容概览</h2>
+				<ul class="about-list">
+					<li>
+						<strong><a href="/tools/">开发者实用工具</a></strong>：毫秒级 JSON / SQL / HTML / CSS / XML 格式化美化、JWT 智能解码分析、URL 参数解析、Base64 编解码、UUID (v4/v7) 与强密码生成器、二维码制作及 Markdown 实时预览编辑器。
+					</li>
+					<li>
+						<strong><a href="/finance/">金融与税务计算</a></strong>：等额本息/等额本金房贷对比与提前还贷测算、消费贷真实年化（IRR）揭秘、复利增长规划、个税与年终奖最优筹划。
+					</li>
+					<li>
+						<strong><a href="/calculators/">数学科学与单位换算</a></strong>：科学计算器、函数图像绘制、分数/百分比运算，以及涵盖长度、重量、速度、能量、压强等多维度的精准单位转换器。
+					</li>
+					<li>
+						<strong><a href="/blog/">技术博客与工程手记</a></strong>：深度拆解核心算法原理、金融复利与房贷推导数学模型、数据库架构优化（如 UUID 对比）以及现代 Web 开发技术沉淀。
+					</li>
+				</ul>
+
+				<h2>开源与联系方式</h2>
+				<p>
+					本站源码完全公开开源，托管于
+					<a href="https://github.com/qcsunny/qcsunny.github.io" target="_blank" rel="noopener">GitHub</a>。
+					若在使用过程中发现任何问题或有新工具需求，非常欢迎在
+					<a href="https://github.com/qcsunny/qcsunny.github.io/issues" target="_blank" rel="noopener">GitHub Issues</a> 中提交反馈。
+				</p>
+				<p>
+					商务合作、技术交流或建议咨询，可通过电子邮箱直接与我联系：
+					<a href="mailto:admin@qcsunny.org">admin@qcsunny.org</a>。
+				</p>
+			</div>
 		</main>
 		<Footer />
+
+		<script is:inline>
+			(() => {
+				const titles = {
+					en: 'About — QCSunny Lab',
+					zh: '关于本站 — QCSunny Lab'
+				};
+				function syncTitle(lang) {
+					document.title = titles[lang] || titles.zh;
+				}
+				const cur = document.documentElement.dataset.lang || localStorage.getItem('site:lang') || 'zh';
+				syncTitle(cur);
+				window.addEventListener('site:lang-change', (e) => {
+					syncTitle(e.detail);
+				});
+			})();
+		</script>
 	</body>
 </html>
 
 <style>
 	.about-main {
-		/* min() keeps the column inside small viewports (global main's
-		   max-width would otherwise be overridden by this rule) */
-		max-width: min(42rem, calc(100% - 2.5rem));
+		max-width: min(46rem, calc(100% - 2.5rem));
 		margin: 0 auto;
-		padding: 2.5rem 1.25rem;
-		font-size: 1.05rem;
-		line-height: 1.75;
+		padding: 2.5rem 1.25rem 4rem;
+		font-size: 1.02rem;
+		line-height: 1.8;
+		color: var(--fg);
 	}
 	h1 {
 		color: var(--fg);
-		font-size: 1.8rem;
+		font-size: clamp(1.8rem, 4vw, 2.3rem);
+		font-weight: 800;
+		margin-bottom: 0.8em;
 	}
 	h2 {
 		color: var(--fg);
+		font-size: 1.35rem;
+		font-weight: 700;
+		margin-top: 2em;
+		margin-bottom: 0.8em;
+		padding-bottom: 0.3em;
+		border-bottom: 1px solid var(--gridline);
+	}
+	.about-lead {
+		font-size: 1.12rem;
+		line-height: 1.85;
+		margin-bottom: 1.5em;
 	}
 	a {
 		color: var(--accent);
+		text-decoration: underline;
+		text-underline-offset: 3px;
 	}
-	section[lang="zh-CN"] {
-		line-height: 1.9;
+	a:hover {
+		opacity: 0.85;
+	}
+	.about-features {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 1rem;
+		margin: 1.2em 0 1.8em;
+	}
+	.about-feature-card {
+		display: flex;
+		gap: 1rem;
+		align-items: flex-start;
+		background: rgba(125, 144, 255, 0.05);
+		border: 1px solid var(--gridline);
+		border-radius: 10px;
+		padding: 1rem 1.25rem;
+	}
+	.feature-icon {
+		font-size: 1.6rem;
+		line-height: 1;
+		padding-top: 0.1em;
+	}
+	.feature-content strong {
+		display: block;
+		font-size: 1.05rem;
+		margin-bottom: 0.3em;
+		color: var(--fg);
+	}
+	.feature-content p {
+		margin: 0;
+		font-size: 0.95rem;
+		line-height: 1.65;
+		color: var(--dim);
+	}
+	.about-list {
+		padding-left: 1.4rem;
+		margin: 1.2em 0 1.8em;
+	}
+	.about-list li {
+		margin-bottom: 0.8em;
+		line-height: 1.7;
+	}
+	.about-list strong {
+		color: var(--fg);
 	}
 </style>

@@ -352,11 +352,13 @@ export const TEXT_TOOLS: ToolEntry[] = [
 				{
 					id: 'encode',
 					label: 'Encode → Base64',
+					labelZh: '编码为 Base64',
 					run: (t) => ({ output: t ? b64encode(t) : '', error: t ? undefined : 'Enter text first.' }),
 				},
 				{
 					id: 'decode',
 					label: 'Decode ← Base64',
+					labelZh: 'Base64 解码',
 					run: (t) => {
 						if (!t.trim()) return { output: '', error: 'Enter Base64 first.' };
 						try {
@@ -369,6 +371,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 				{
 					id: 'urlsafe',
 					label: 'Encode URL-safe',
+					labelZh: 'URL 安全编码',
 					run: (t) => ({ output: t ? b64url(t) : '', error: t ? undefined : 'Enter text first.' }),
 				},
 			],

@@ -139,6 +139,7 @@ export interface TextStat {
 export interface TextTransform {
 	id: string;
 	label: string;
+	labelZh?: string;
 	run: (text: string) => { output: string; error?: string };
 }
 

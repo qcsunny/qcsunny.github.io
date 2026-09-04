@@ -127,26 +127,33 @@ export function initHtml(host: HTMLElement): void {
 			const saved = orig > 0 ? (((orig - mini) / orig) * 100).toFixed(1) : '0';
 			wb.updateStatus(
 				'valid',
+				`✓ Minified to single-line HTML · Compressed from ${formatBytes(orig)} to ${formatBytes(mini)} (${saved}% saved)`,
 				`✓ 已压缩为单行 HTML · 大小从 ${formatBytes(orig)} 压缩至 ${formatBytes(mini)} (减小 ${saved}%)`
 			);
 		} catch (err) {
-			const msg = err instanceof Error ? err.message : 'HTML 压缩失败';
-			wb.updateStatus('error', `✗ 压缩出错: ${msg}`);
+			const msg = err instanceof Error ? err.message : 'HTML minification failed';
+			wb.updateStatus('error', `✗ Minify error: ${msg}`, `✗ 压缩出错: ${msg}`);
 		}
 	}
 
 	wb = createWorkbench({
 		host,
-		inputTitle: '输入 HTML 代码',
-		outputTitle: '格式化 / 压缩结果',
-		inputPlaceholder: '在此粘贴 HTML 代码...',
-		outputPlaceholder: '美化后的 HTML 代码将显示在此处...',
+		inputTitle: 'Input HTML Code',
+		inputTitleZh: '输入 HTML 代码',
+		outputTitle: 'Formatted / Minified Output',
+		outputTitleZh: '格式化 / 压缩结果',
+		inputPlaceholder: 'Paste HTML code here...',
+		inputPlaceholderZh: '在此粘贴 HTML 代码...',
+		outputPlaceholder: 'Beautified HTML code will appear here...',
+		outputPlaceholderZh: '美化后的 HTML 代码将显示在此处...',
 		fileAccept: '.html,.htm,.txt,text/html',
 		fileDefaultName: `index-${Date.now()}.html`,
+		downloadLabel: '💾 Download .html',
+		downloadLabelZh: '💾 下载 .html',
 		buttons: [
-			{ label: '格式化 (2 空格)', primary: true, onClick: () => doFormat(2) },
-			{ label: '格式化 (4 空格)', primary: false, onClick: () => doFormat(4) },
-			{ label: '压缩 (Minify)', primary: false, onClick: doMinify }
+			{ label: 'Format (2 spaces)', labelZh: '格式化 (2 空格)', primary: true, onClick: () => doFormat(2) },
+			{ label: 'Format (4 spaces)', labelZh: '格式化 (4 空格)', primary: false, onClick: () => doFormat(4) },
+			{ label: 'Minify', labelZh: '单行压缩', primary: false, onClick: doMinify }
 		],
 		onInput: () => doFormat(2),
 		onSample: () => {
@@ -156,8 +163,9 @@ export function initHtml(host: HTMLElement): void {
 		onClear: () => {
 			wb.inputArea.value = '';
 			wb.outputArea.value = '';
-			wb.updateStatus('idle', '已清空');
+			wb.updateStatus('idle', 'Cleared', '已清空');
 		},
-		initialStatus: '准备就绪：输入或粘贴 HTML 后将自动分层缩进并支持单行压缩。'
+		initialStatus: 'Ready: Paste HTML code to format tags and minify with one click.',
+		initialStatusZh: '准备就绪：输入或粘贴 HTML 后将自动分层缩进并支持单行压缩。'
 	});
 }

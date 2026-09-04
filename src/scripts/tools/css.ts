@@ -127,26 +127,33 @@ export function initCss(host: HTMLElement): void {
 			const saved = orig > 0 ? (((orig - mini) / orig) * 100).toFixed(1) : '0';
 			wb.updateStatus(
 				'valid',
+				`✓ Minified to single-line CSS · Compressed from ${formatBytes(orig)} to ${formatBytes(mini)} (${saved}% saved)`,
 				`✓ 已压缩为单行 CSS · 大小从 ${formatBytes(orig)} 压缩至 ${formatBytes(mini)} (减小 ${saved}%)`
 			);
 		} catch (err) {
-			const msg = err instanceof Error ? err.message : 'CSS 压缩失败';
-			wb.updateStatus('error', `✗ 压缩出错: ${msg}`);
+			const msg = err instanceof Error ? err.message : 'CSS minification failed';
+			wb.updateStatus('error', `✗ Minify error: ${msg}`, `✗ 压缩出错: ${msg}`);
 		}
 	}
 
 	wb = createWorkbench({
 		host,
-		inputTitle: '输入 CSS 样式代码',
-		outputTitle: '格式化 / 压缩结果',
-		inputPlaceholder: '在此粘贴 CSS 样式代码...',
-		outputPlaceholder: '美化后的 CSS 代码将显示在此处...',
+		inputTitle: 'Input CSS Code',
+		inputTitleZh: '输入 CSS 样式代码',
+		outputTitle: 'Formatted / Minified Output',
+		outputTitleZh: '格式化 / 压缩结果',
+		inputPlaceholder: 'Paste CSS stylesheet code here...',
+		inputPlaceholderZh: '在此粘贴 CSS 样式代码...',
+		outputPlaceholder: 'Beautified CSS code will appear here...',
+		outputPlaceholderZh: '美化后的 CSS 代码将显示在此处...',
 		fileAccept: '.css,.txt,text/css',
 		fileDefaultName: `style-${Date.now()}.css`,
+		downloadLabel: '💾 Download .css',
+		downloadLabelZh: '💾 下载 .css',
 		buttons: [
-			{ label: '格式化 (2 空格)', primary: true, onClick: () => doFormat(2) },
-			{ label: '格式化 (4 空格)', primary: false, onClick: () => doFormat(4) },
-			{ label: '单行压缩 (Minify)', primary: false, onClick: doMinify }
+			{ label: 'Format (2 spaces)', labelZh: '格式化 (2 空格)', primary: true, onClick: () => doFormat(2) },
+			{ label: 'Format (4 spaces)', labelZh: '格式化 (4 空格)', primary: false, onClick: () => doFormat(4) },
+			{ label: 'Minify', labelZh: '单行压缩', primary: false, onClick: doMinify }
 		],
 		onInput: () => doFormat(2),
 		onSample: () => {
@@ -156,8 +163,9 @@ export function initCss(host: HTMLElement): void {
 		onClear: () => {
 			wb.inputArea.value = '';
 			wb.outputArea.value = '';
-			wb.updateStatus('idle', '已清空');
+			wb.updateStatus('idle', 'Cleared', '已清空');
 		},
-		initialStatus: '准备就绪：输入或粘贴 CSS 样式后将自动美化对齐并支持一键压缩。'
+		initialStatus: 'Ready: Paste CSS stylesheet to format rules and minify with one click.',
+		initialStatusZh: '准备就绪：输入或粘贴 CSS 样式后将自动美化对齐并支持一键压缩。'
 	});
 }

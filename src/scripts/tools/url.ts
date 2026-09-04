@@ -92,6 +92,7 @@ export function initUrl(host: HTMLElement): void {
 		wb.outputArea.value = out;
 		wb.updateStatus(
 			'valid',
+			`✓ Parsed successfully · Hostname: ${parsed.hostname} · ${paramCount} query parameter(s)`,
 			`✓ 解析完成 · 域名: ${parsed.hostname} · 包含 ${paramCount} 个查询参数`
 		);
 	}
@@ -111,7 +112,7 @@ export function initUrl(host: HTMLElement): void {
 		});
 
 		wb.outputArea.value = JSON.stringify(paramsObj, null, 2);
-		wb.updateStatus('valid', '✓ 已成功将所有 Query 参数转换为 JSON 对象');
+		wb.updateStatus('valid', '✓ Converted all query parameters to JSON', '✓ 已成功将所有 Query 参数转换为 JSON 对象');
 	}
 
 	function doStripTracking() {
@@ -129,7 +130,11 @@ export function initUrl(host: HTMLElement): void {
 		}
 
 		wb.outputArea.value = cleaned.toString();
-		wb.updateStatus('valid', `✓ 已去除 ${removedCount} 个营销与埋点跟踪参数 (utm / spm / gclid 等)`);
+		wb.updateStatus(
+			'valid',
+			`✓ Removed ${removedCount} tracking parameter(s) (utm / spm / gclid etc.)`,
+			`✓ 已去除 ${removedCount} 个营销与埋点跟踪参数 (utm / spm / gclid 等)`
+		);
 	}
 
 	function doSortParams() {
@@ -139,16 +144,16 @@ export function initUrl(host: HTMLElement): void {
 
 		parsed.searchParams.sort();
 		wb.outputArea.value = parsed.toString();
-		wb.updateStatus('valid', '✓ 已按参数键名 (A-Z) 升序重排 Query 参数');
+		wb.updateStatus('valid', '✓ Sorted query parameters ascending (A-Z)', '✓ 已按参数键名 (A-Z) 升序重排 Query 参数');
 	}
 
 	function doDecodeUri() {
 		const raw = wb.inputArea.value.trim();
 		try {
 			wb.outputArea.value = decodeURIComponent(raw);
-			wb.updateStatus('valid', '✓ URL 解码 (DecodeURIComponent) 完成');
+			wb.updateStatus('valid', '✓ URL Decode (decodeURIComponent) complete', '✓ URL 解码 (DecodeURIComponent) 完成');
 		} catch (e) {
-			wb.updateStatus('error', '✗ 解码失败：包含不合法的转义序列');
+			wb.updateStatus('error', '✗ Decode failed: invalid escape sequence', '✗ 解码失败：包含不合法的转义序列');
 		}
 	}
 
@@ -156,27 +161,33 @@ export function initUrl(host: HTMLElement): void {
 		const raw = wb.inputArea.value.trim();
 		try {
 			wb.outputArea.value = encodeURIComponent(raw);
-			wb.updateStatus('valid', '✓ URL 编码 (EncodeURIComponent) 完成');
+			wb.updateStatus('valid', '✓ URL Encode (encodeURIComponent) complete', '✓ URL 编码 (EncodeURIComponent) 完成');
 		} catch (e) {
-			wb.updateStatus('error', '✗ 编码失败');
+			wb.updateStatus('error', '✗ Encode failed', '✗ 编码失败');
 		}
 	}
 
 	wb = createWorkbench({
 		host,
-		inputTitle: '输入 URL 网址 / Query 参数',
-		outputTitle: '解析排版 / 清洗导出结果',
-		inputPlaceholder: '在此粘贴完整 URL，例如 https://example.com/api?a=1&b=2...',
-		outputPlaceholder: 'URL 拆解及格式化参数将显示在此处...',
+		inputTitle: 'Input URL / Query String',
+		inputTitleZh: '输入 URL 网址 / Query 参数',
+		outputTitle: 'Parsed Result & Parameters',
+		outputTitleZh: '解析排版 / 清洗导出结果',
+		inputPlaceholder: 'Paste complete URL here (e.g. https://example.com/api?a=1&b=2)...',
+		inputPlaceholderZh: '在此粘贴完整 URL，例如 https://example.com/api?a=1&b=2...',
+		outputPlaceholder: 'Parsed URL components and parameters will appear here...',
+		outputPlaceholderZh: 'URL 拆解及格式化参数将显示在此处...',
 		fileAccept: '.txt,.url',
 		fileDefaultName: `url-params-${Date.now()}.json`,
+		downloadLabel: '💾 Download JSON',
+		downloadLabelZh: '💾 下载 JSON',
 		buttons: [
-			{ label: '结构化解析', primary: true, onClick: doParse },
-			{ label: '转为 JSON', primary: false, onClick: doExportJson },
-			{ label: '去除追踪参数', primary: false, onClick: doStripTracking },
-			{ label: '参数排序 (A-Z)', primary: false, onClick: doSortParams },
-			{ label: 'URL 解码', primary: false, onClick: doDecodeUri },
-			{ label: 'URL 编码', primary: false, onClick: doEncodeUri }
+			{ label: 'Parse URL', labelZh: '结构化解析', primary: true, onClick: doParse },
+			{ label: 'Export JSON', labelZh: '转为 JSON', primary: false, onClick: doExportJson },
+			{ label: 'Strip Tracking', labelZh: '去除追踪参数', primary: false, onClick: doStripTracking },
+			{ label: 'Sort Params (A-Z)', labelZh: '参数排序 (A-Z)', primary: false, onClick: doSortParams },
+			{ label: 'URL Decode', labelZh: 'URL 解码', primary: false, onClick: doDecodeUri },
+			{ label: 'URL Encode', labelZh: 'URL 编码', primary: false, onClick: doEncodeUri }
 		],
 		onInput: doParse,
 		onSample: () => {
@@ -186,8 +197,9 @@ export function initUrl(host: HTMLElement): void {
 		onClear: () => {
 			wb.inputArea.value = '';
 			wb.outputArea.value = '';
-			wb.updateStatus('idle', '已清空');
+			wb.updateStatus('idle', 'Cleared', '已清空');
 		},
-		initialStatus: '准备就绪：输入 URL 后将自动解析组件、拆解参数并提供清洗导出功能。'
+		initialStatus: 'Ready: Paste URL to inspect components, decode parameters, and clean tracking tokens.',
+		initialStatusZh: '准备就绪：输入 URL 后将自动解析组件、拆解参数并提供清洗导出功能。'
 	});
 }

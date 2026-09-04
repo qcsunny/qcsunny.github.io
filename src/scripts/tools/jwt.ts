@@ -123,31 +123,43 @@ export function initJwt(host: HTMLElement): void {
 
 			const isExpired = typeof payloadObj.exp === 'number' && payloadObj.exp < nowSec;
 			if (isExpired) {
-				wb.updateStatus('error', `Token 已过期 · 过期时间: ${formatTimestamp(payloadObj.exp)} · 算法: ${headerObj.alg || '未知'}`);
+				wb.updateStatus(
+					'error',
+					`Token expired · Expired at: ${formatTimestamp(payloadObj.exp)} · Algorithm: ${headerObj.alg || 'unknown'}`,
+					`Token 已过期 · 过期时间: ${formatTimestamp(payloadObj.exp)} · 算法: ${headerObj.alg || '未知'}`
+				);
 			} else {
 				wb.updateStatus(
 					'valid',
+					`✓ Valid Token · ${timeNotice || 'No expiration'} · Algorithm: ${headerObj.alg || 'unknown'}`,
 					`✓ Token 有效 · ${timeNotice || '无过期限制'} · 算法: ${headerObj.alg || '未知'}`
 				);
 			}
 		} catch (err) {
-			const msg = err instanceof Error ? err.message : 'JWT 解析失败';
-			wb.updateStatus('error', `✗ 解析失败: ${msg}`);
+			const msg = err instanceof Error ? err.message : 'JWT parse failed';
+			wb.updateStatus('error', `✗ Parse failed: ${msg}`, `✗ 解析失败: ${msg}`);
 		}
 	}
 
 	wb = createWorkbench({
 		host,
-		inputTitle: '输入 JWT 令牌 (Bearer Token)',
-		outputTitle: '解码结果 (Header & Payload)',
-		inputPlaceholder: '在此粘贴 JWT 字符串，例如: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-		outputPlaceholder: '解码后的 JSON 数据与时效校验结果将显示在此处...',
+		inputTitle: 'Input JWT (Bearer Token)',
+		inputTitleZh: '输入 JWT 令牌 (Bearer Token)',
+		outputTitle: 'Decoded Result (Header & Payload)',
+		outputTitleZh: '解码结果 (Header & Payload)',
+		inputPlaceholder: 'Paste JWT string here (e.g. eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...)',
+		inputPlaceholderZh: '在此粘贴 JWT 字符串，例如: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+		outputPlaceholder: 'Decoded JSON and expiration check will appear here...',
+		outputPlaceholderZh: '解码后的 JSON 数据与时效校验结果将显示在此处...',
 		fileAccept: '.txt,.jwt',
 		fileDefaultName: `jwt-decoded-${Date.now()}.json`,
+		downloadLabel: '💾 Download JSON',
+		downloadLabelZh: '💾 下载 JSON',
 		buttons: [
-			{ label: '解析 Token', primary: true, onClick: doDecode },
+			{ label: 'Decode Token', labelZh: '解析 Token', primary: true, onClick: doDecode },
 			{
-				label: '只复制 Payload JSON',
+				label: 'Copy Payload JSON',
+				labelZh: '只复制 Payload JSON',
 				primary: false,
 				onClick: async () => {
 					const raw = wb.inputArea.value.trim();
@@ -156,7 +168,7 @@ export function initJwt(host: HTMLElement): void {
 						try {
 							const payload = JSON.stringify(JSON.parse(base64UrlDecode(parts[1])), null, 2);
 							await navigator.clipboard.writeText(payload);
-							wb.updateStatus('valid', '✓ 已成功将 Payload JSON 复制到剪贴板！');
+							wb.updateStatus('valid', '✓ Payload JSON copied to clipboard!', '✓ 已成功将 Payload JSON 复制到剪贴板！');
 						} catch {}
 					}
 				}
@@ -170,8 +182,9 @@ export function initJwt(host: HTMLElement): void {
 		onClear: () => {
 			wb.inputArea.value = '';
 			wb.outputArea.value = '';
-			wb.updateStatus('idle', '已清空');
+			wb.updateStatus('idle', 'Cleared', '已清空');
 		},
-		initialStatus: '准备就绪：粘贴 JWT 后将自动解析 Header、Payload 及过期时效。'
+		initialStatus: 'Ready: Paste JWT to decode Header, Payload and check expiration automatically.',
+		initialStatusZh: '准备就绪：粘贴 JWT 后将自动解析 Header、Payload 及过期时效。'
 	});
 }
