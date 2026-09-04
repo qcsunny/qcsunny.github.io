@@ -1,6 +1,7 @@
 ---
 import HeaderLink from './HeaderLink.astro';
 import SiteLogo from './SiteLogo.astro';
+import ToolSearchModal from './tools/ToolSearchModal.astro';
 import { SITE_TITLE } from '../consts';
 ---
 
@@ -24,6 +25,11 @@ import { SITE_TITLE } from '../consts';
 			</div>
 		</div>
 		<div class="nav-right">
+			<button class="search-modal-btn" type="button" id="header-search-btn" aria-label="Search tools / 搜索工具 (快捷键 /)" title="搜索工具 (快捷键 / 或 Ctrl+K)">
+				<span class="search-btn-icon" aria-hidden="true">🔍</span>
+				<span class="search-btn-text"><span class="i18n-en">Search</span><span class="i18n-zh">搜索</span></span>
+				<kbd class="search-btn-kbd">/</kbd>
+			</button>
 			<button class="lang-toggle" type="button" aria-label="Toggle language / 切换语言">中 / EN</button>
 			<button class="theme-toggle" type="button" aria-label="Toggle light / dark theme">☾</button>
 			<a href="https://github.com/qcsunny/qcsunny.github.io" target="_blank" rel="noopener">
@@ -37,6 +43,7 @@ import { SITE_TITLE } from '../consts';
 			</a>
 		</div>
 	</nav>
+	<ToolSearchModal />
 </header>
 
 <script>
@@ -91,6 +98,12 @@ import { SITE_TITLE } from '../consts';
 	});
 	const initial = localStorage.getItem('site:theme') ?? 'auto';
 	button && (button.textContent = glyphs[initial as keyof typeof glyphs]);
+
+	// Search modal trigger
+	const searchBtn = document.getElementById('header-search-btn');
+	searchBtn?.addEventListener('click', () => {
+		(window as any).openSiteSearchModal?.();
+	});
 </script>
 
 <style>
@@ -153,6 +166,49 @@ import { SITE_TITLE } from '../consts';
 		display: flex;
 		align-items: center;
 		gap: 0.5em;
+	}
+	.search-modal-btn {
+		border: 1px solid var(--gridline);
+		background: transparent;
+		color: var(--dim);
+		border-radius: 8px;
+		height: 34px;
+		padding: 0 0.65em;
+		font-size: 13px;
+		font-weight: 600;
+		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		transition:
+			color 0.15s ease,
+			border-color 0.15s ease,
+			background 0.15s ease;
+	}
+	.search-modal-btn:hover {
+		color: var(--accent);
+		border-color: var(--accent);
+		background: rgba(var(--accent-rgb, 59, 130, 246), 0.08);
+	}
+	.search-btn-icon {
+		font-size: 13px;
+	}
+	.search-btn-text {
+		font-size: 12.5px;
+	}
+	.search-btn-kbd {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		font-family: var(--font-mono, monospace);
+		font-size: 11px;
+		font-weight: 700;
+		padding: 0.05rem 0.3rem;
+		border-radius: 4px;
+		background: var(--bg);
+		color: var(--dim);
+		border: 1px solid var(--gridline);
+		margin-left: 0.15rem;
 	}
 	.lang-toggle {
 		border: 1px solid var(--gridline);

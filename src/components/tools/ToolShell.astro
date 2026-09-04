@@ -7,6 +7,7 @@
 //    data-astro-cid attribute, so is:global is required)
 import BaseHead from '../BaseHead.astro';
 import SiteLogo from '../SiteLogo.astro';
+import ToolSearchModal from './ToolSearchModal.astro';
 import { ADSENSE_CLIENT, AD_SLOTS, SITE_TITLE } from '../../consts';
 import {
 	CALCULATOR_FEATURED,
@@ -1321,7 +1322,7 @@ html[data-tool-kind='html'] .t-main {
 							)}
 						</nav>
 						<div class="t-topbar-actions">
-							<a class="t-search-nav" href="/tools/?focus=1" title="Search tools / 搜索工具 (快捷键 /)" aria-label="Search tools">🔍</a>
+							<button class="t-search-nav" type="button" title="Search tools / 搜索工具 (快捷键 / 或 Ctrl+K)" aria-label="Search tools">🔍</button>
 							<button class="t-lang" type="button" aria-label="切换中英文 / Switch language">中 / EN</button>
 							<button class="t-theme" type="button" aria-label="Toggle light / dark theme">☾</button>
 						</div>
@@ -1445,11 +1446,15 @@ html[data-tool-kind='html'] .t-main {
 					});
 
 					document.querySelector('.t-search-nav')?.addEventListener('click', (e) => {
+						e.preventDefault();
 						const searchInput = document.getElementById('tool-search-input');
-						if (searchInput) {
-							e.preventDefault();
+						if (searchInput && document.contains(searchInput)) {
 							searchInput.focus();
 							searchInput.select();
+						} else if ((window as any).openSiteSearchModal) {
+							(window as any).openSiteSearchModal();
+						} else {
+							window.location.href = '/tools/?focus=1';
 						}
 					});
 
@@ -1496,6 +1501,7 @@ html[data-tool-kind='html'] .t-main {
 
 					syncIcon();
 				</script>
+				<ToolSearchModal />
 			)
 		}
 	</body>

@@ -1,5 +1,5 @@
 ---
-import { TOOL_KEYWORDS } from '../../tools/registry';
+import { getAllSearchItems } from '../../tools/registry';
 
 interface Props {
 	placeholder?: string;
@@ -13,6 +13,8 @@ const {
 	placeholderZh = '搜索工具 (输入中英文或关键词，如 房贷、公积金、json、uuid、汇率、个税)...',
 	category,
 } = Astro.props;
+
+const allTools = getAllSearchItems();
 ---
 
 <div class="t-search-wrapper" data-tool-search-wrapper data-category={category}>
@@ -35,13 +37,25 @@ const {
 
 	<div class="t-search-meta" id="tool-search-meta" style="display: none;">
 		<span class="t-search-count-text">
-			<span class="i18n-en">Found <strong class="t-search-count-num" id="tool-search-count-en">0</strong> tools</span>
+			<span class="i18n-en">Found <strong class="t-search-count-num" id="tool-search-count-en">0</strong> matching tools</span>
 			<span class="i18n-zh">找到 <strong class="t-search-count-num" id="tool-search-count-zh">0</strong> 款匹配工具</span>
 		</span>
 		<button type="button" class="t-search-quick-clear" id="tool-search-quick-clear">
 			<span class="i18n-en">Clear filter</span>
 			<span class="i18n-zh">清除筛选</span>
 		</button>
+	</div>
+
+	<!-- Cross-category smart suggestions (e.g. when searching '房贷' on /calculators/ or /converters/) -->
+	<div class="t-search-cross-cat" id="tool-search-cross-cat" style="display: none;">
+		<div class="t-cross-cat-header">
+			<span class="t-cross-cat-icon">💡</span>
+			<span class="t-cross-cat-title">
+				<span class="i18n-en">Found matching tools in other categories:</span>
+				<span class="i18n-zh">在其他分类中找到相关工具：</span>
+			</span>
+		</div>
+		<div class="t-cross-cat-list" id="tool-search-cross-list"></div>
 	</div>
 
 	<div class="t-search-empty" id="tool-search-empty" style="display: none;">
@@ -69,7 +83,7 @@ const {
 	</div>
 </div>
 
-<script is:inline define:vars={{ keywordsMap: TOOL_KEYWORDS }}>
+<script is:inline define:vars={{ allTools, currentCategory: category }}>
 	(() => {
 		const input = document.getElementById('tool-search-input');
 		const clearBtn = document.getElementById('tool-search-clear');
@@ -81,8 +95,49 @@ const {
 		const emptyQuerySpans = document.querySelectorAll('.t-empty-query');
 		const resetBtn = document.getElementById('tool-search-reset');
 		const allLink = document.getElementById('tool-search-all-link');
+		const crossCatEl = document.getElementById('tool-search-cross-cat');
+		const crossListEl = document.getElementById('tool-search-cross-list');
 
 		if (!input) return;
+
+		let cardData = [];
+		let allSections = [];
+		let isComposing = false;
+
+		const CAT_LABELS = {
+			finance: { en: 'Finance', zh: '金融工具', icon: '💰' },
+			calculators: { en: 'Calculator', zh: '计算器', icon: '📐' },
+			converters: { en: 'Converter', zh: '单位换算', icon: '🔄' },
+			tools: { en: 'Dev Tool', zh: '开发者工具', icon: '🛠️' },
+		};
+
+		// Safely collect all cards on the page (supports calling before or after DOMContentLoaded)
+		function ensureCards() {
+			if (cardData.length > 0) return;
+			const cards = Array.from(document.querySelectorAll('.t-card'));
+			if (cards.length === 0) return;
+
+			allSections = Array.from(document.querySelectorAll('.t-section'));
+			cardData = cards.map((card) => {
+				const slug = card.getAttribute('data-slug') || '';
+				const cat = card.getAttribute('data-cat') || '';
+				const titleEl = card.querySelector('h2, h3');
+				const name = (titleEl ? titleEl.textContent : '').toLowerCase();
+				const pEl = card.querySelector('p');
+				const desc = (pEl ? pEl.textContent : '').toLowerCase();
+				const href = (card.getAttribute('href') || '').toLowerCase();
+				const toolItem = allTools ? allTools.find((t) => t.slug === slug) : null;
+				const extra = toolItem ? `${toolItem.keywords || ''} ${toolItem.nameZh || ''} ${toolItem.name || ''}`.toLowerCase() : '';
+				const section = card.closest('.t-section');
+				return {
+					card,
+					section,
+					slug,
+					cat,
+					fullText: `${slug} ${cat} ${name} ${desc} ${href} ${extra}`,
+				};
+			});
+		}
 
 		// Update placeholder by site language
 		const updatePlaceholder = () => {
@@ -94,38 +149,23 @@ const {
 		const observer = new MutationObserver(updatePlaceholder);
 		observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-lang'] });
 
-		// Cache cards
-		const cards = Array.from(document.querySelectorAll('.t-card'));
-		const cardData = cards.map((card) => {
-			const slug = card.getAttribute('data-slug') || '';
-			const cat = card.getAttribute('data-cat') || '';
-			const name = (card.querySelector('h2, h3')?.textContent || '').toLowerCase();
-			const desc = (card.querySelector('p')?.textContent || '').toLowerCase();
-			const href = (card.getAttribute('href') || '').toLowerCase();
-			const extra = (keywordsMap && slug ? (keywordsMap[slug] || '') : '').toLowerCase();
-			const section = card.closest('.t-section');
-			return {
-				card,
-				section,
-				slug,
-				cat,
-				fullText: `${slug} ${cat} ${name} ${desc} ${href} ${extra}`,
-			};
-		});
-
-		const allSections = Array.from(document.querySelectorAll('.t-section'));
-
 		function filter(query) {
+			ensureCards();
+
 			const q = (query || '').trim().toLowerCase();
 
 			if (!q) {
 				if (clearBtn) clearBtn.style.display = 'none';
 				if (metaEl) metaEl.style.display = 'none';
 				if (emptyEl) emptyEl.style.display = 'none';
-				cardData.forEach((item) => { item.card.style.display = ''; });
-				allSections.forEach((sec) => { sec.style.display = ''; });
+				if (crossCatEl) crossCatEl.style.display = 'none';
 
-				// Clean URL without reload
+				cardData.forEach((item) => { item.card.style.display = ''; });
+				if (allSections.length > 0) {
+					allSections.forEach((sec) => { sec.style.display = ''; });
+				}
+
+				// Clean URL ?q= without page reload
 				const url = new URL(window.location.href);
 				if (url.searchParams.has('q')) {
 					url.searchParams.delete('q');
@@ -137,43 +177,88 @@ const {
 			if (clearBtn) clearBtn.style.display = 'inline-flex';
 
 			const tokens = q.split(/\s+/).filter(Boolean);
-			let matches = 0;
+			let inPageMatches = 0;
 			const visibleSections = new Set();
 
 			cardData.forEach((item) => {
 				const isMatch = tokens.every((token) => item.fullText.includes(token));
 				if (isMatch) {
 					item.card.style.display = '';
-					matches++;
+					inPageMatches++;
 					if (item.section) visibleSections.add(item.section);
 				} else {
 					item.card.style.display = 'none';
 				}
 			});
 
-			allSections.forEach((sec) => {
-				sec.style.display = visibleSections.has(sec) ? '' : 'none';
-			});
-
-			if (countEn) countEn.textContent = String(matches);
-			if (countZh) countZh.textContent = String(matches);
-			if (metaEl) metaEl.style.display = 'flex';
-
-			if (matches === 0) {
-				emptyQuerySpans.forEach((el) => { el.textContent = input.value.trim(); });
-				if (emptyEl) emptyEl.style.display = 'block';
-				if (allLink) allLink.href = `/tools/?q=${encodeURIComponent(input.value.trim())}`;
-			} else {
-				if (emptyEl) emptyEl.style.display = 'none';
+			if (allSections.length > 0) {
+				allSections.forEach((sec) => {
+					sec.style.display = visibleSections.has(sec) ? '' : 'none';
+				});
 			}
 
-			// Update URL ?q=
+			if (countEn) countEn.textContent = String(inPageMatches);
+			if (countZh) countZh.textContent = String(inPageMatches);
+			if (metaEl) metaEl.style.display = 'flex';
+
+			// Search across all tools to find matches outside current page/category
+			const isZh = document.documentElement.dataset.lang !== 'en';
+			const allMatches = (allTools || []).filter((item) => {
+				const full = `${item.slug} ${item.category} ${item.name} ${item.nameZh || ''} ${item.description} ${item.keywords || ''}`.toLowerCase();
+				return tokens.every((token) => full.includes(token));
+			});
+
+			// If current page matches are 0, check if other categories have matches
+			if (inPageMatches === 0) {
+				if (allMatches.length > 0) {
+					// We have matches in other categories!
+					if (emptyEl) emptyEl.style.display = 'none';
+					if (crossCatEl && crossListEl) {
+						crossCatEl.style.display = 'block';
+						crossListEl.innerHTML = allMatches
+							.map((tool) => {
+								const catInfo = CAT_LABELS[tool.category] || { en: tool.category, zh: tool.category, icon: '⚡' };
+								const catLabel = isZh ? catInfo.zh : catInfo.en;
+								const title = isZh && tool.nameZh ? `${tool.nameZh} · ${tool.name}` : tool.name;
+								return `
+								<a href="${tool.href}" class="t-cross-cat-item">
+									<span class="t-cross-cat-icon-sm">${catInfo.icon}</span>
+									<span class="t-cross-cat-name">${title}</span>
+									<span class="t-cross-cat-badge">${catLabel}</span>
+									<span class="t-cross-cat-arrow">➔</span>
+								</a>
+							`;
+							})
+							.join('');
+					}
+				} else {
+					// Truly 0 matches anywhere
+					if (crossCatEl) crossCatEl.style.display = 'none';
+					emptyQuerySpans.forEach((el) => { el.textContent = input.value.trim(); });
+					if (emptyEl) emptyEl.style.display = 'block';
+					if (allLink) allLink.href = `/tools/?q=${encodeURIComponent(input.value.trim())}`;
+				}
+			} else {
+				// We have matches on this page
+				if (emptyEl) emptyEl.style.display = 'none';
+				if (crossCatEl) crossCatEl.style.display = 'none';
+			}
+
+			// Sync URL ?q=
 			const url = new URL(window.location.href);
 			url.searchParams.set('q', q);
 			window.history.replaceState({}, '', url.pathname + '?' + url.searchParams.toString() + url.hash);
 		}
 
-		input.addEventListener('input', () => filter(input.value));
+		// Input events with Chinese IME support
+		input.addEventListener('compositionstart', () => { isComposing = true; });
+		input.addEventListener('compositionend', () => {
+			isComposing = false;
+			filter(input.value);
+		});
+		input.addEventListener('input', () => {
+			if (!isComposing) filter(input.value);
+		});
 
 		const clear = () => {
 			input.value = '';
@@ -203,16 +288,25 @@ const {
 			}
 		});
 
-		// Check URL params on load (?q= or ?focus=1)
-		const params = new URLSearchParams(window.location.search);
-		const initialQ = params.get('q') || params.get('search');
-		if (initialQ) {
-			input.value = initialQ;
-			filter(initialQ);
-		}
-		if (params.get('focus') === '1') {
-			input.focus();
-			input.select();
+		// Initialize cards and URL query once DOM is ready
+		const onReady = () => {
+			ensureCards();
+			const params = new URLSearchParams(window.location.search);
+			const initialQ = params.get('q') || params.get('search');
+			if (initialQ) {
+				input.value = initialQ;
+				filter(initialQ);
+			}
+			if (params.get('focus') === '1') {
+				input.focus();
+				input.select();
+			}
+		};
+
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', onReady);
+		} else {
+			onReady();
 		}
 	})();
 </script>
@@ -318,6 +412,69 @@ const {
 	.t-search-quick-clear:hover {
 		color: var(--accent);
 	}
+
+	/* Cross category suggestions */
+	.t-search-cross-cat {
+		background: var(--card);
+		border: 1px solid var(--gridline);
+		border-radius: 12px;
+		padding: 1rem 1.25rem;
+		margin: 0.5rem 0;
+	}
+	.t-cross-cat-header {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.92rem;
+		font-weight: 600;
+		color: var(--fg);
+		margin-bottom: 0.75rem;
+	}
+	.t-cross-cat-icon {
+		font-size: 1.1rem;
+	}
+	.t-cross-cat-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+	.t-cross-cat-item {
+		display: flex;
+		align-items: center;
+		gap: 0.65rem;
+		padding: 0.55rem 0.75rem;
+		background: var(--bg);
+		border-radius: 8px;
+		text-decoration: none;
+		color: var(--fg);
+		font-size: 0.88rem;
+		border: 1px solid transparent;
+		transition: all 0.12s ease;
+	}
+	.t-cross-cat-item:hover {
+		border-color: var(--accent);
+		background: rgba(var(--accent-rgb, 59, 130, 246), 0.08);
+	}
+	.t-cross-cat-icon-sm {
+		font-size: 1.1rem;
+	}
+	.t-cross-cat-name {
+		flex: 1;
+		font-weight: 500;
+	}
+	.t-cross-cat-badge {
+		font-size: 0.72rem;
+		font-weight: 600;
+		color: var(--accent);
+		background: rgba(var(--accent-rgb, 59, 130, 246), 0.12);
+		padding: 0.15rem 0.45rem;
+		border-radius: 4px;
+	}
+	.t-cross-cat-arrow {
+		font-size: 0.8rem;
+		color: var(--dim);
+	}
+
 	.t-search-empty {
 		text-align: center;
 		padding: 3rem 1.5rem;

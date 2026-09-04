@@ -1,0 +1,597 @@
+---
+import { getAllSearchItems } from '../../tools/registry';
+
+const allTools = getAllSearchItems();
+---
+
+<div id="site-search-modal" class="sm-overlay" style="display: none;" aria-hidden="true" role="dialog" aria-modal="true">
+	<div class="sm-backdrop" id="sm-backdrop"></div>
+	<div class="sm-container">
+		<div class="sm-panel">
+			<div class="sm-input-row">
+				<span class="sm-search-icon" aria-hidden="true">🔍</span>
+				<input
+					type="text"
+					id="sm-input"
+					class="sm-input"
+					placeholder="搜索工具 (支持中英文、拼音、关键词，如 房贷、IRR、个税、换算)..."
+					data-placeholder-en="Search 45+ tools (e.g. mortgage, irr, tax, uuid, speed)..."
+					data-placeholder-zh="搜索工具 (支持中英文、拼音、关键词，如 房贷、IRR、个税、换算)..."
+					autocomplete="off"
+					spellcheck="false"
+				/>
+				<button type="button" id="sm-clear" class="sm-clear" aria-label="Clear" style="display: none;">×</button>
+				<button type="button" id="sm-close" class="sm-close-btn" aria-label="Close modal">Esc</button>
+			</div>
+
+			<div class="sm-filter-row">
+				<button type="button" class="sm-filter-pill sm-filter-active" data-cat="all">
+					<span class="i18n-en">All</span>
+					<span class="i18n-zh">全部</span>
+					<span class="sm-pill-num">({allTools.length})</span>
+				</button>
+				<button type="button" class="sm-filter-pill" data-cat="finance">
+					<span class="i18n-en">Finance</span>
+					<span class="i18n-zh">金融</span>
+				</button>
+				<button type="button" class="sm-filter-pill" data-cat="calculators">
+					<span class="i18n-en">Calculators</span>
+					<span class="i18n-zh">计算</span>
+				</button>
+				<button type="button" class="sm-filter-pill" data-cat="converters">
+					<span class="i18n-en">Converters</span>
+					<span class="i18n-zh">换算</span>
+				</button>
+				<button type="button" class="sm-filter-pill" data-cat="tools">
+					<span class="i18n-en">Dev Tools</span>
+					<span class="i18n-zh">开发</span>
+				</button>
+			</div>
+
+			<div class="sm-results-area">
+				<div id="sm-results-list" class="sm-results-list"></div>
+
+				<div id="sm-empty" class="sm-empty" style="display: none;">
+					<div class="sm-empty-icon">🔍</div>
+					<p class="sm-empty-text">
+						<span class="i18n-en">No tools matching "<strong class="sm-empty-q"></strong>"</span>
+						<span class="i18n-zh">未找到与 “<strong class="sm-empty-q"></strong>” 相关的工具</span>
+					</p>
+					<p class="sm-empty-hint">
+						<span class="i18n-en">Try searching with "mortgage", "tax", "json", "speed", "loan"</span>
+						<span class="i18n-zh">可尝试搜索：“房贷”、“个税”、“json”、“速度”、“贷款”等</span>
+					</p>
+				</div>
+			</div>
+
+			<div class="sm-footer">
+				<div class="sm-footer-keys">
+					<span><kbd>↑</kbd><kbd>↓</kbd> <span class="i18n-en">Navigate</span><span class="i18n-zh">选择</span></span>
+					<span><kbd>Enter</kbd> <span class="i18n-en">Open</span><span class="i18n-zh">打开</span></span>
+					<span><kbd>Esc</kbd> <span class="i18n-en">Close</span><span class="i18n-zh">关闭</span></span>
+				</div>
+				<a href="/tools/" class="sm-footer-all-link">
+					<span class="i18n-en">Tools Hub ➔</span>
+					<span class="i18n-zh">前往全部工具库 ➔</span>
+				</a>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script is:inline define:vars={{ toolsData: allTools }}>
+	(() => {
+		const modal = document.getElementById('site-search-modal');
+		const backdrop = document.getElementById('sm-backdrop');
+		const input = document.getElementById('sm-input');
+		const clearBtn = document.getElementById('sm-clear');
+		const closeBtn = document.getElementById('sm-close');
+		const resultsList = document.getElementById('sm-results-list');
+		const emptyEl = document.getElementById('sm-empty');
+		const emptyQSpans = document.querySelectorAll('.sm-empty-q');
+		const filterPills = Array.from(document.querySelectorAll('.sm-filter-pill'));
+
+		if (!modal || !input) return;
+
+		let selectedCat = 'all';
+		let activeIndex = 0;
+		let currentItems = [];
+		let isComposing = false;
+
+		const CAT_LABELS = {
+			finance: { en: 'Finance', zh: '金融工具', icon: '💰' },
+			calculators: { en: 'Calculator', zh: '计算器', icon: '📐' },
+			converters: { en: 'Converter', zh: '单位换算', icon: '🔄' },
+			tools: { en: 'Dev Tool', zh: '开发者工具', icon: '🛠️' },
+		};
+
+		// Placeholder sync with site lang
+		const syncPlaceholder = () => {
+			const isZh = document.documentElement.dataset.lang !== 'en';
+			const ph = isZh ? input.dataset.placeholderZh : input.dataset.placeholderEn;
+			if (ph) input.placeholder = ph;
+		};
+		syncPlaceholder();
+		const obs = new MutationObserver(syncPlaceholder);
+		obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-lang'] });
+
+		function openModal(defaultQuery = '') {
+			modal.style.display = 'block';
+			modal.setAttribute('aria-hidden', 'false');
+			document.body.style.overflow = 'hidden';
+			if (defaultQuery) {
+				input.value = defaultQuery;
+			}
+			input.focus();
+			input.select();
+			renderResults(input.value);
+		}
+
+		function closeModal() {
+			modal.style.display = 'none';
+			modal.setAttribute('aria-hidden', 'true');
+			document.body.style.overflow = '';
+		}
+
+		// Expose global open helper for buttons across site
+		window.openSiteSearchModal = openModal;
+
+		if (backdrop) backdrop.addEventListener('click', closeModal);
+		if (closeBtn) closeBtn.addEventListener('click', closeModal);
+		if (clearBtn) clearBtn.addEventListener('click', () => {
+			input.value = '';
+			clearBtn.style.display = 'none';
+			renderResults('');
+			input.focus();
+		});
+
+		filterPills.forEach((pill) => {
+			pill.addEventListener('click', () => {
+				filterPills.forEach((p) => p.classList.remove('sm-filter-active'));
+				pill.classList.add('sm-filter-active');
+				selectedCat = pill.getAttribute('data-cat') || 'all';
+				renderResults(input.value);
+			});
+		});
+
+		function searchTools(query, cat) {
+			const q = (query || '').trim().toLowerCase();
+			let pool = toolsData;
+			if (cat && cat !== 'all') {
+				pool = pool.filter((t) => t.category === cat);
+			}
+
+			if (!q) {
+				// Return first 10 tools if query is empty
+				return pool.slice(0, 10);
+			}
+
+			const tokens = q.split(/\s+/).filter(Boolean);
+			return pool.filter((item) => {
+				const full = `${item.slug} ${item.category} ${item.name} ${item.nameZh || ''} ${item.description} ${item.keywords || ''}`.toLowerCase();
+				return tokens.every((token) => full.includes(token));
+			});
+		}
+
+		function renderResults(query) {
+			const q = (query || '').trim();
+			if (clearBtn) clearBtn.style.display = q ? 'inline-flex' : 'none';
+
+			currentItems = searchTools(q, selectedCat);
+			activeIndex = 0;
+
+			if (currentItems.length === 0) {
+				resultsList.innerHTML = '';
+				emptyQSpans.forEach((el) => { el.textContent = q; });
+				emptyEl.style.display = 'block';
+				return;
+			}
+
+			emptyEl.style.display = 'none';
+			const isZh = document.documentElement.dataset.lang !== 'en';
+
+			resultsList.innerHTML = currentItems
+				.map((item, idx) => {
+					const catInfo = CAT_LABELS[item.category] || { en: item.category, zh: item.category, icon: '⚡' };
+					const catLabel = isZh ? catInfo.zh : catInfo.en;
+					const title = isZh && item.nameZh ? `${item.nameZh} <span class="sm-sub-name">${item.name}</span>` : item.name;
+					return `
+					<a href="${item.href}" class="sm-item ${idx === 0 ? 'sm-item-active' : ''}" data-index="${idx}">
+						<div class="sm-item-icon">${catInfo.icon}</div>
+						<div class="sm-item-body">
+							<div class="sm-item-title-row">
+								<span class="sm-item-title">${title}</span>
+								<span class="sm-item-badge sm-badge-${item.category}">${catLabel}</span>
+							</div>
+							<div class="sm-item-desc">${item.description}</div>
+						</div>
+						<span class="sm-item-arrow" aria-hidden="true">➔</span>
+					</a>
+				`;
+				})
+				.join('');
+
+			// Bind hover to active item
+			const renderedItems = resultsList.querySelectorAll('.sm-item');
+			renderedItems.forEach((el) => {
+				el.addEventListener('mouseenter', () => {
+					renderedItems.forEach((item) => item.classList.remove('sm-item-active'));
+					el.classList.add('sm-item-active');
+					activeIndex = Number(el.getAttribute('data-index') || 0);
+				});
+			});
+		}
+
+		function highlightActive() {
+			const items = resultsList.querySelectorAll('.sm-item');
+			items.forEach((el, idx) => {
+				if (idx === activeIndex) {
+					el.classList.add('sm-item-active');
+					el.scrollIntoView({ block: 'nearest' });
+				} else {
+					el.classList.remove('sm-item-active');
+				}
+			});
+		}
+
+		input.addEventListener('compositionstart', () => { isComposing = true; });
+		input.addEventListener('compositionend', () => {
+			isComposing = false;
+			renderResults(input.value);
+		});
+		input.addEventListener('input', () => {
+			if (!isComposing) renderResults(input.value);
+		});
+
+		// Keyboard navigation inside modal
+		input.addEventListener('keydown', (e) => {
+			if (currentItems.length === 0) {
+				if (e.key === 'Escape') closeModal();
+				return;
+			}
+
+			if (e.key === 'ArrowDown') {
+				e.preventDefault();
+				activeIndex = (activeIndex + 1) % currentItems.length;
+				highlightActive();
+			} else if (e.key === 'ArrowUp') {
+				e.preventDefault();
+				activeIndex = (activeIndex - 1 + currentItems.length) % currentItems.length;
+				highlightActive();
+			} else if (e.key === 'Enter') {
+				e.preventDefault();
+				if (currentItems[activeIndex]) {
+					window.location.href = currentItems[activeIndex].href;
+				}
+			} else if (e.key === 'Escape') {
+				e.preventDefault();
+				closeModal();
+			}
+		});
+
+		// Global shortcut listener: '/' and 'Ctrl+K' / 'Cmd+K'
+		window.addEventListener('keydown', (e) => {
+			const tag = document.activeElement ? document.activeElement.tagName : '';
+			const isEditing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || (document.activeElement && document.activeElement.isContentEditable);
+
+			// If modal is open, let its own handlers work
+			if (modal.style.display !== 'none') {
+				if (e.key === 'Escape') {
+					closeModal();
+				}
+				return;
+			}
+
+			// If there is an on-page input (like on /tools/), prioritize it
+			const pageInput = document.getElementById('tool-search-input');
+
+			if (e.key === '/' && !isEditing) {
+				e.preventDefault();
+				if (pageInput && document.contains(pageInput)) {
+					pageInput.focus();
+					pageInput.select();
+				} else {
+					openModal();
+				}
+			} else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+				e.preventDefault();
+				if (pageInput && document.contains(pageInput)) {
+					pageInput.focus();
+					pageInput.select();
+				} else {
+					openModal();
+				}
+			}
+		});
+
+		// Check if URL has ?search= or ?modal=1
+		const urlParams = new URLSearchParams(window.location.search);
+		if (urlParams.get('modal') === '1') {
+			openModal(urlParams.get('q') || '');
+		}
+	})();
+</script>
+
+<style>
+	.sm-overlay {
+		position: fixed;
+		inset: 0;
+		z-index: 9999;
+		overflow-y: auto;
+		-webkit-overflow-scrolling: touch;
+	}
+	.sm-backdrop {
+		position: fixed;
+		inset: 0;
+		background: rgba(15, 23, 42, 0.65);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
+	}
+	.sm-container {
+		position: relative;
+		min-height: 100%;
+		display: flex;
+		align-items: flex-start;
+		justify-content: center;
+		padding: 3.5rem 1rem 2rem;
+	}
+	.sm-panel {
+		position: relative;
+		width: 100%;
+		max-width: 640px;
+		background: var(--card, #ffffff);
+		color: var(--fg, #1e293b);
+		border-radius: 16px;
+		box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--gridline, rgba(226, 232, 240, 0.8));
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+		animation: sm-pop 0.16s ease-out;
+	}
+	@keyframes sm-pop {
+		from {
+			opacity: 0;
+			transform: scale(0.97) translateY(-8px);
+		}
+		to {
+			opacity: 1;
+			transform: scale(1) translateY(0);
+		}
+	}
+	.sm-input-row {
+		display: flex;
+		align-items: center;
+		padding: 0.85rem 1.1rem;
+		border-bottom: 1px solid var(--gridline, #e2e8f0);
+		gap: 0.75rem;
+	}
+	.sm-search-icon {
+		font-size: 1.15rem;
+		color: var(--dim, #64748b);
+		user-select: none;
+	}
+	.sm-input {
+		flex: 1;
+		border: none;
+		background: transparent;
+		color: var(--fg, #0f172a);
+		font-size: 1.05rem;
+		outline: none;
+		font-family: inherit;
+		min-width: 0;
+	}
+	.sm-input::placeholder {
+		color: var(--dim, #94a3b8);
+	}
+	.sm-clear {
+		border: none;
+		background: var(--gridline, #e2e8f0);
+		color: var(--dim, #64748b);
+		width: 1.45rem;
+		height: 1.45rem;
+		border-radius: 50%;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 1.1rem;
+		cursor: pointer;
+	}
+	.sm-close-btn {
+		border: 1px solid var(--gridline, #e2e8f0);
+		background: var(--bg, #f8fafc);
+		color: var(--dim, #64748b);
+		padding: 0.2rem 0.5rem;
+		border-radius: 6px;
+		font-size: 0.75rem;
+		font-family: var(--font-mono, monospace);
+		font-weight: 600;
+		cursor: pointer;
+	}
+	.sm-filter-row {
+		display: flex;
+		gap: 0.4rem;
+		padding: 0.6rem 1.1rem;
+		border-bottom: 1px solid var(--gridline, #e2e8f0);
+		overflow-x: auto;
+		scrollbar-width: none;
+		background: var(--bg, #f8fafc);
+	}
+	.sm-filter-row::-webkit-scrollbar {
+		display: none;
+	}
+	.sm-filter-pill {
+		border: 1px solid transparent;
+		background: transparent;
+		color: var(--dim, #64748b);
+		padding: 0.25rem 0.65rem;
+		border-radius: 6px;
+		font-size: 0.82rem;
+		font-weight: 600;
+		cursor: pointer;
+		white-space: nowrap;
+		transition: all 0.12s ease;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+	}
+	.sm-filter-pill:hover {
+		color: var(--fg, #0f172a);
+		background: rgba(0, 0, 0, 0.05);
+	}
+	.sm-filter-active {
+		background: var(--card, #ffffff) !important;
+		color: var(--accent, #2563eb) !important;
+		border-color: var(--gridline, #cbd5e1) !important;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+	}
+	.sm-pill-num {
+		opacity: 0.7;
+		font-size: 0.75rem;
+	}
+	.sm-results-area {
+		max-height: 52vh;
+		min-height: 180px;
+		overflow-y: auto;
+		padding: 0.5rem;
+	}
+	.sm-results-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+	}
+	.sm-item {
+		display: flex;
+		align-items: center;
+		gap: 0.85rem;
+		padding: 0.7rem 0.85rem;
+		border-radius: 10px;
+		text-decoration: none;
+		color: var(--fg, #1e293b);
+		background: transparent;
+		transition: background 0.12s ease;
+	}
+	.sm-item-active,
+	.sm-item:hover {
+		background: rgba(var(--accent-rgb, 59, 130, 246), 0.1);
+	}
+	.sm-item-active .sm-item-arrow {
+		transform: translateX(3px);
+		color: var(--accent, #2563eb);
+	}
+	.sm-item-icon {
+		font-size: 1.35rem;
+		line-height: 1;
+		flex-shrink: 0;
+	}
+	.sm-item-body {
+		flex: 1;
+		min-width: 0;
+	}
+	.sm-item-title-row {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-bottom: 0.2rem;
+		flex-wrap: wrap;
+	}
+	.sm-item-title {
+		font-weight: 600;
+		font-size: 0.95rem;
+		color: var(--fg, #0f172a);
+	}
+	.sm-sub-name {
+		font-weight: 400;
+		font-size: 0.82rem;
+		color: var(--dim, #64748b);
+		margin-left: 0.25rem;
+	}
+	.sm-item-badge {
+		font-size: 0.7rem;
+		font-weight: 700;
+		padding: 0.12rem 0.45rem;
+		border-radius: 4px;
+		text-transform: uppercase;
+		letter-spacing: 0.02em;
+	}
+	.sm-badge-finance {
+		background: rgba(234, 179, 8, 0.15);
+		color: #b45309;
+	}
+	.sm-badge-calculators {
+		background: rgba(59, 130, 246, 0.15);
+		color: #1d4ed8;
+	}
+	.sm-badge-converters {
+		background: rgba(160, 185, 129, 0.15);
+		color: #047857;
+	}
+	.sm-badge-tools {
+		background: rgba(168, 85, 247, 0.15);
+		color: #7e22ce;
+	}
+	.sm-item-desc {
+		font-size: 0.8rem;
+		color: var(--dim, #64748b);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.sm-item-arrow {
+		font-size: 0.85rem;
+		color: var(--dim, #94a3b8);
+		transition: transform 0.12s ease, color 0.12s ease;
+		flex-shrink: 0;
+	}
+	.sm-empty {
+		text-align: center;
+		padding: 2.5rem 1rem;
+	}
+	.sm-empty-icon {
+		font-size: 2rem;
+		margin-bottom: 0.5rem;
+		opacity: 0.6;
+	}
+	.sm-empty-text {
+		font-size: 0.95rem;
+		font-weight: 600;
+		margin-bottom: 0.25rem;
+	}
+	.sm-empty-hint {
+		font-size: 0.82rem;
+		color: var(--dim, #64748b);
+	}
+	.sm-footer {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 0.65rem 1.1rem;
+		border-top: 1px solid var(--gridline, #e2e8f0);
+		background: var(--bg, #f8fafc);
+		font-size: 0.76rem;
+		color: var(--dim, #64748b);
+	}
+	.sm-footer-keys {
+		display: flex;
+		gap: 0.85rem;
+		align-items: center;
+	}
+	.sm-footer-keys kbd {
+		display: inline-block;
+		padding: 0.1rem 0.35rem;
+		font-size: 0.7rem;
+		font-family: var(--font-mono, monospace);
+		font-weight: 600;
+		background: var(--card, #ffffff);
+		border: 1px solid var(--gridline, #cbd5e1);
+		border-radius: 4px;
+		margin-right: 0.25rem;
+	}
+	.sm-footer-all-link {
+		color: var(--accent, #2563eb);
+		text-decoration: none;
+		font-weight: 600;
+	}
+	.sm-footer-all-link:hover {
+		text-decoration: underline;
+	}
+</style>

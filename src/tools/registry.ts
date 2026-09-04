@@ -388,3 +388,27 @@ export const TOOL_KEYWORDS: Record<string, string> = {
 	'standard': '科学计算器 计算器 算术函数 根号 三角函数 次方 scientific calculator standard math sqrt sin cos',
 	'graph': '函数图像 曲线绘制 坐标系 绘图 函数可视化 function grapher plotting curves calculus',
 };
+
+export interface SearchItem {
+	slug: string;
+	category: ToolCategory;
+	name: string;
+	nameZh?: string;
+	description: string;
+	href: string;
+	keywords: string;
+}
+
+export function getAllSearchItems(): SearchItem[] {
+	const all = [...CALCULATOR_FEATURED, ...REGISTRY.filter((e) => e.kind !== 'redirect')];
+	return all.map((e) => ({
+		slug: e.slug,
+		category: e.category,
+		name: e.name,
+		nameZh: e.nameZh || '',
+		description: e.description,
+		href: `/${e.category}/${e.slug}/`,
+		keywords: TOOL_KEYWORDS[e.slug] || '',
+	}));
+}
+
