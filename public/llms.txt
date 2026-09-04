@@ -1,0 +1,40 @@
+# QCSunny Lab
+
+> QCSunny Lab (https://qcsunny.org) is a personal developer technical blog and collection of 34+ free, browser-based online tools. All tools execute entirely client-side with zero tracking, offline capability, and zero data uploads.
+
+## Online Tools
+
+### Calculators
+- [Scientific Calculator](https://qcsunny.org/calculators/standard/): Complete scientific calculator with operator precedence, trigonometric functions, memory, DEG/RAD modes.
+- [Function Grapher](https://qcsunny.org/calculators/graph/): Interactive mathematical function plotting with multi-graph overlay, pan, and zoom.
+- [Percentage Calculator](https://qcsunny.org/calculators/percentage/): Percent of value, percentage difference, and part-of-whole calculations.
+- [Fraction Calculator](https://qcsunny.org/calculators/fraction/): Add, subtract, multiply, and divide fractions with step-by-step simplification.
+- [Average & Statistics](https://qcsunny.org/calculators/average/): Mean, median, mode, variance, and standard deviation for dataset analysis.
+- [Ratio & Proportion](https://qcsunny.org/calculators/ratio/): Ratio simplification, scale calculations, and direct/inverse proportions.
+
+### Finance Helpers
+- [Compound Interest Calculator](https://qcsunny.org/finance/compound-interest/): Investment growth simulator with monthly deposits, compounding frequencies, and year-by-year amortization table.
+- [Mortgage & Loan Calculator](https://qcsunny.org/finance/mortgage/): Home loan and personal loan monthly payment calculator with amortization schedule, interest breakdown, and property tax/insurance support.
+- [Investment Return & ROI](https://qcsunny.org/finance/roi/): Return on investment (ROI), annualized ROI, and profit margin analysis.
+- [Salary & Tax Calculator](https://qcsunny.org/finance/salary/): Gross-to-net salary converter with after-tax calculations.
+
+### Converters
+- [Length Converter](https://qcsunny.org/converters/length/): Meters, kilometers, feet, inches, miles, centimeters, and millimeters.
+- [Weight Converter](https://qcsunny.org/converters/weight/): Kilograms, grams, pounds, ounces, and metric tons.
+- [Temperature Converter](https://qcsunny.org/converters/temperature/): Celsius, Fahrenheit, and Kelvin.
+- [Data Storage Converter](https://qcsunny.org/converters/data/): Bits, Bytes, KB, MB, GB, TB (both decimal and binary / IEC mebibytes).
+- [Area, Volume, Speed, Time](https://qcsunny.org/converters/): Full suite of physical unit conversion utilities.
+
+### Developer Utilities
+- [QR Code Generator](https://qcsunny.org/tools/qr-code-generator/): Offline QR code generator with selectable ECC levels (L/M/Q/H) and instant PNG download.
+- [UUID Generator](https://qcsunny.org/tools/uuid-generator/): Cryptographically secure batch RFC4122 v4 UUID generator.
+- [JSON Formatter & Validator](https://qcsunny.org/tools/json-formatter/): Offline JSON beautifier, minifier, and error validator.
+- [Base64 Encoder / Decoder](https://qcsunny.org/tools/base64/): Text and binary base64 conversion.
+- [Word & Character Counter](https://qcsunny.org/tools/word-counter/): Live text statistics: word count, character count, reading time, and CJK token count.
+- [Color Converter](https://qcsunny.org/tools/color-converter/): Real-time HEX, RGB, HSL color conversion with complementary color swatch.
+
+## Engineering Blog
+- [Calendar Page & Date Algorithms](https://qcsunny.org/blog/calendar-page/): Pure date algorithms and ISO week number calculations in TypeScript.
+- [Fullscreen Clock & Pomodoro](https://qcsunny.org/blog/clock-page/): Zero-dependency responsive clock and timer design.
+- [GLM-5.3 vs Hy4 Preview MoE Comparison](https://qcsunny.org/blog/glm-5-3-vs-hy4-preview/): Detailed architectural and benchmark comparison of 78-layer MoE models.
+- [Web Calculator & Browser Utilities Architecture](https://qcsunny.org/blog/web-calculator/): Designing 34 zero-dependency client-side tools.

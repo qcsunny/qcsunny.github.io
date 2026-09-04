@@ -5,15 +5,61 @@ import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
+import { ADSENSE_CLIENT, AD_SLOTS, SITE_TITLE } from '../consts';
 
 type Props = CollectionEntry<'blog'>['data'] & { minutes?: number };
 
 const { title, description, pubDate, updatedDate, heroImage, minutes } = Astro.props;
+
+const isZh = /[\p{Script=Han}]/u.test(title);
+const pageLang = isZh ? 'zh-CN' : 'en';
+
+const pageUrl = new URL(Astro.url.pathname, Astro.site).href;
+const imageUrl = heroImage
+	? new URL(typeof heroImage === 'string' ? heroImage : heroImage.src, Astro.site).href
+	: new URL('/og.png', Astro.site).href;
+
+const jsonLd = {
+	'@context': 'https://schema.org',
+	'@type': 'BlogPosting',
+	headline: title,
+	description: description,
+	datePublished: pubDate.toISOString(),
+	dateModified: (updatedDate || pubDate).toISOString(),
+	url: pageUrl,
+	image: imageUrl,
+	inLanguage: pageLang,
+	author: {
+		'@type': 'Person',
+		name: 'QCSunny',
+		url: new URL('/about/', Astro.site).href,
+	},
+	publisher: {
+		'@type': 'Organization',
+		name: SITE_TITLE,
+		logo: {
+			'@type': 'ImageObject',
+			url: new URL('/og.png', Astro.site).href,
+		},
+	},
+	mainEntityOfPage: {
+		'@type': 'WebPage',
+		'@id': pageUrl,
+	},
+};
 ---
 
-<html lang="en">
+<html lang={pageLang}>
 	<head>
-		<BaseHead title={title} description={description} />
+		<BaseHead title={title} description={description} image={heroImage} />
+		{ADSENSE_CLIENT && (
+			<script
+				async
+				src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
+				crossorigin="anonymous"
+			></script>
+		)}
+		<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 		<style>
 			main {
 				width: calc(100% - 2em);
@@ -71,6 +117,64 @@ const { title, description, pubDate, updatedDate, heroImage, minutes } = Astro.p
 			.last-updated-on {
 				font-style: italic;
 			}
+			.blog-tools-card {
+				margin: 3em 0 1em;
+				padding: 1.25em 1.5em;
+				border: 1px solid var(--gridline);
+				border-radius: 12px;
+				background: var(--bg);
+			}
+			.blog-tools-card h3 {
+				font-size: 1.1rem;
+				margin-bottom: 0.4em;
+				color: var(--fg);
+			}
+			.blog-tools-card p {
+				font-size: 0.92rem;
+				color: var(--dim);
+				margin-bottom: 0.9em;
+				line-height: 1.6;
+			}
+			.blog-tools-card .tool-links {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5em 0.8em;
+				margin-bottom: 0.8em;
+			}
+			.blog-tools-card .tool-chip {
+				display: inline-block;
+				padding: 0.35em 0.75em;
+				font-size: 0.85rem;
+				border: 1px solid var(--gridline);
+				border-radius: 8px;
+				text-decoration: none;
+				color: var(--fg);
+				background: var(--bg);
+				transition: border-color 0.15s, color 0.15s;
+			}
+			.blog-tools-card .tool-chip:hover {
+				border-color: var(--accent);
+				color: var(--accent);
+			}
+			.blog-tools-card .all-tools-link {
+				display: inline-block;
+				font-size: 0.9rem;
+				color: var(--accent);
+				text-decoration: none;
+				font-weight: 600;
+			}
+			.blog-tools-card .all-tools-link:hover {
+				text-decoration: underline;
+			}
+			.blog-ad {
+				margin: 2em auto;
+				min-height: 120px;
+				display: flex;
+				justify-content: center;
+			}
+			.blog-ad .adsbygoogle {
+				width: 100%;
+			}
 		</style>
 	</head>
 
@@ -99,6 +203,38 @@ const { title, description, pubDate, updatedDate, heroImage, minutes } = Astro.p
 						{description && <p class="lede">{description}</p>}
 					</header>
 					<slot />
+
+					<aside class="blog-tools-card">
+						<h3>🛠️ 探索在线免注册小工具库</h3>
+						<p>
+							本站提供 34+ 纯浏览器端运行的免登录免费工具，数据只在本地计算，绝不上传服务器：
+						</p>
+						<div class="tool-links">
+							<a class="tool-chip" href="/calculators/standard/">科学计算器</a>
+							<a class="tool-chip" href="/finance/compound-interest/">复利计算器</a>
+							<a class="tool-chip" href="/finance/mortgage/">房贷还款计算器</a>
+							<a class="tool-chip" href="/tools/uuid-generator/">UUID 生成器</a>
+							<a class="tool-chip" href="/tools/qr-code-generator/">二维码生成器</a>
+							<a class="tool-chip" href="/tools/json-formatter/">JSON 格式化</a>
+						</div>
+						<a class="all-tools-link" href="/tools/">浏览全部 34 个工具库 →</a>
+					</aside>
+
+					{ADSENSE_CLIENT && AD_SLOTS.bottom && (
+						<div class="blog-ad">
+							<ins
+								class="adsbygoogle"
+								style="display:block"
+								data-ad-client={ADSENSE_CLIENT}
+								data-ad-slot={AD_SLOTS.bottom}
+								data-ad-format="auto"
+								data-full-width-responsive="true"
+							></ins>
+							<script is:inline>
+								(adsbygoogle = window.adsbygoogle || []).push({});
+							</script>
+						</div>
+					)}
 				</div>
 			</article>
 		</main>

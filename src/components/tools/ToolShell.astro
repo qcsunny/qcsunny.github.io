@@ -33,6 +33,9 @@ const { title, description, entry, category, redirectTo } = Astro.props;
 const kind = entry?.kind;
 const crumbName = entry ? entry.name : title;
 const content = Astro.props.content ?? entry?.content;
+const pageTitle = entry
+	? (entry.nameZh ? `${entry.name} (${entry.nameZh})` : entry.name)
+	: title;
 
 // --- related tools: same category, real pages only, never self ---
 // entry-less pages (standard/graph) fall back to the category prop.
@@ -51,7 +54,8 @@ const jsonLd: object[] = [];
 	jsonLd.push({
 		'@context': 'https://schema.org',
 		'@type': 'WebApplication',
-		name: crumbName,
+		name: pageTitle,
+		alternateName: entry?.nameZh,
 		description: entry ? entry.description : description,
 		url: pageUrl,
 		applicationCategory: 'UtilitiesApplication',
@@ -97,7 +101,7 @@ const year = new Date().getFullYear();
 <html lang="en" data-tool-kind={kind} data-tool-category={category} data-tool-slug={entry?.slug}>
 	<head>
 		<BaseHead
-			title={title}
+			title={pageTitle}
 			description={description}
 			canonical={redirectTo ?? undefined}
 		/>
@@ -225,6 +229,12 @@ const year = new Date().getFullYear();
 				font-size: clamp(1.4rem, 4vw, 1.9rem);
 				font-weight: 700;
 				margin-bottom: 0.4em;
+			}
+			.t-title-zh {
+				font-size: 0.8em;
+				font-weight: 500;
+				opacity: 0.85;
+				margin-left: 0.25em;
 			}
 			.t-intro {
 				color: var(--dim);
@@ -909,7 +919,7 @@ const year = new Date().getFullYear();
 						<button class="t-theme" type="button" aria-label="Toggle light / dark theme">☾</button>
 					</header>
 					<main class="t-main">
-						<h1 class="t-title">{crumbName}</h1>
+						<h1 class="t-title">{crumbName}{entry?.nameZh && <span class="t-title-zh">（{entry.nameZh}）</span>}</h1>
 						{entry?.kind === 'form' && entry.config.intro && <p class="t-intro">{entry.config.intro}</p>}
 						<slot />
 						{ADSENSE_CLIENT && AD_SLOTS.mid && (

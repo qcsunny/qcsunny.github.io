@@ -242,6 +242,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		slug: 'word-counter',
 		category: 'tools',
 		name: 'Word Counter',
+		nameZh: '在线字数统计',
 		description: 'Live word, character, sentence and paragraph counts plus reading time.',
 		kind: 'text',
 		config: {
@@ -274,6 +275,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		slug: 'character-counter',
 		category: 'tools',
 		name: 'Character Counter',
+		nameZh: '字符计数器',
 		description: 'Count characters, letters, digits, spaces, symbols and UTF-8 bytes.',
 		kind: 'text',
 		config: {
@@ -306,6 +308,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		slug: 'json-formatter',
 		category: 'tools',
 		name: 'JSON Formatter',
+		nameZh: 'JSON 格式化工具',
 		description: 'Format and minify JSON with exact error positions, fully in your browser.',
 		kind: 'text',
 		config: {
@@ -342,6 +345,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		slug: 'base64',
 		category: 'tools',
 		name: 'Base64 Encoder / Decoder',
+		nameZh: 'Base64 编码解码',
 		description: 'Encode text to Base64 or decode it back, with Unicode and URL-safe support.',
 		kind: 'text',
 		config: {

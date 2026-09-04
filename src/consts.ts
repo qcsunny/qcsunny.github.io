@@ -19,6 +19,13 @@ export const SEARCH_CONSOLE_VERIFICATION = '5nFbYmHtHutBfgGNWpFnIwAyFKrHJM9eRtug
  *  Add site → Meta tag. Empty = the meta tag is not rendered. */
 export const BING_VERIFICATION = '8CC3DB3923EC9481C31FA85EA02C4E67';
 
+/** Baidu Webmaster Tools verification code (the content value of
+ *  the <meta name="baidu-site-verification"> tag). Empty = not rendered. */
+export const BAIDU_VERIFICATION = '';
+
+/** IndexNow key for instant Bing / Yandex / Naver indexing API */
+export const INDEXNOW_KEY = '5a68d90471c64eb3be0953ef82bc5951';
+
 /** Google AdSense publisher id (ca-pub-XXXX). Fill in after AdSense approval;
  *  empty = no ad slots are rendered anywhere on the site. */
 export const ADSENSE_CLIENT = '';

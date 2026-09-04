@@ -28,7 +28,7 @@ const byCategory = (id: string): ToolMeta[] => [
 					<div class="t-cards">
 						{entries.map((e) => (
 							<a class="t-card" href={`/${e.category}/${e.slug}/`}>
-								<h3>{e.name}</h3>
+								<h3>{e.name}{e.nameZh && <span class="t-sub-zh"> · {e.nameZh}</span>}</h3>
 								<p>{e.description}</p>
 							</a>
 						))}

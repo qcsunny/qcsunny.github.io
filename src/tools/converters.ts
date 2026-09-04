@@ -6,12 +6,14 @@ const converter = (
 	slug: string,
 	categoryId: string,
 	name: string,
+	nameZh: string,
 	description: string,
 	content: ToolContent,
 ): ToolEntry => ({
 	slug,
 	category: 'converters',
 	name,
+	nameZh,
 	description,
 	kind: 'converter',
 	config: { categoryId },
@@ -23,6 +25,7 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'length',
 		'length',
 		'Length Converter',
+		'长度单位换算器',
 		'Convert between millimeters, centimeters, meters, kilometers, inches, feet, yards and miles.',
 		{
 			about: [
@@ -39,9 +42,9 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 				{ q: 'Do my inputs leave my computer?', a: 'No. The converter is plain JavaScript running in your browser — it works offline once the page has loaded.' },
 			],
 			faqZh: [
-				{ q: '一英里等于多少英尺？', a: '精确值是 5280 英尺，即 1609.344 米——国际英里的定义就是 1609.344 毫米 × 1000。' },
-				{ q: '1 英寸正好是 2.54 厘米吗？', a: '是的。自 1959 年起英寸被定义为精确的 25.4 毫米，因此 1 英寸 = 2.54 厘米没有任何舍入误差。' },
-				{ q: '我输入的数据会被上传吗？', a: '不会。换算由浏览器中的 JavaScript 本地完成，页面加载后即使断网也能继续使用。' },
+				{ q: '一英里等于多少英尺？', a: '精确等于 5,280 英尺（约 1,609.344 米）。' },
+				{ q: '1 英寸精确等于 2.54 厘米吗？', a: '是的。国际协议将 1 英寸严格定义为 25.4 毫米，换算不存在四舍五入误差。' },
+				{ q: '输入的内容会上传吗？', a: '不会。所有计算完全在本地执行，断网后依然可用。' },
 			],
 		},
 	),
@@ -49,52 +52,54 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'weight',
 		'weight',
 		'Weight Converter',
+		'重量单位换算器',
 		'Convert between milligrams, grams, kilograms, tonnes, ounces, pounds and stone.',
 		{
 			about: [
-				'Convert mass and weight between metric units (milligrams, grams, kilograms, tonnes) and imperial units (ounces, pounds, stone). All fields update live as you type, so you can read off several conversions at once.',
-				'Conversions use the exact international definitions: 1 pound = 453.59237 grams and 1 ounce = 1/16 of a pound. The stone, still used for body weight in the UK, is 14 pounds.',
+				'Convert between metric units — milligrams, grams, kilograms and metric tonnes — and the avoirdupois units used in the US and UK: ounces, pounds and stone (14 pounds). Pick any pair of units; the conversion is instantaneous and runs entirely in your browser.',
+				'One international avoirdupois pound is legally defined as exactly 0.45359237 kg. Every other factor on this page derives directly from that ratio.',
 			],
 			aboutZh: [
-				'在公制（毫克、克、千克、吨）与英制（盎司、磅、英石）质量单位之间换算。输入时所有单位实时联动，一次输入即可读出多种换算结果。',
-				'换算采用国际标准精确定义：1 磅 = 453.59237 克，1 盎司 = 1/16 磅；英国仍用于体重表示的"英石"为 14 磅。',
+				'在毫克、克、千克、公吨等公制单位与美英常用的盎司、磅、英石（14 磅）之间快速换算。任意输入数值，全部单位实时换算。',
+				'国际常衡磅严格定义为 0.45359237 千克，换算过程无舍入损失，纯前端运行。',
 			],
 			faq: [
-				{ q: 'How many grams are in a pound?', a: 'Exactly 453.59237 grams, per the international agreement that defines the pound.' },
-				{ q: 'What is a stone?', a: 'A British unit equal to 14 pounds (about 6.35 kg), still commonly used in the UK for body weight.' },
-				{ q: 'Does this work for cooking recipes?', a: 'Yes — grams to ounces is a quick way to translate US recipes into metric measurements.' },
+				{ q: 'How many pounds are in a kilogram?', a: 'Roughly 2.20462 pounds. The exact definition is 1 lb = 0.45359237 kg.' },
+				{ q: 'What is a stone?', a: 'A traditional British unit of weight equal to 14 pounds (approx. 6.35 kg), still widely used in the UK and Ireland for body weight.' },
+				{ q: 'Are troy ounces the same as regular ounces?', a: 'No. Troy ounces (used for precious metals) are ~31.1 g; the everyday avoirdupois ounce used here is ~28.35 g.' },
 			],
 			faqZh: [
-				{ q: '一磅等于多少克？', a: '精确值是 453.59237 克，这是国际协议对磅的官方定义。' },
-				{ q: '"英石"是什么单位？', a: '英制质量单位，等于 14 磅（约 6.35 千克），英国至今常用它表示体重。' },
-				{ q: '能用于食谱换算吗？', a: '可以，克与盎司的互转正好用于把美式食谱换算成公制用量。' },
+				{ q: '一公斤等于多少磅？', a: '约 2.20462 磅，严格定义为 1 磅 = 0.45359237 千克。' },
+				{ q: '英石（stone）是什么？', a: '英国传统体重单位，1 英石等于 14 磅（约 6.35 公斤）。' },
+				{ q: '金衡盎司与常衡盎司相同吗？', a: '不同。贵金属使用的金衡盎司约为 31.1 克，本页使用的是日常生活的常衡盎司（约 28.35 克）。' },
 			],
 		},
 	),
-	converter('temperature', 'temperature', 'Temperature Converter', 'Convert between Celsius, Fahrenheit and Kelvin.', {
+	converter('temperature', 'temperature', 'Temperature Converter', '温度单位换算器', 'Convert between Celsius, Fahrenheit and Kelvin.', {
 		about: [
 			'Convert between Celsius, Fahrenheit and Kelvin — the three temperature scales you meet in weather reports, recipes, and science. Enter a value in any field and the other two update instantly.',
 			'Kelvin is the SI base unit of temperature and uses the same degree size as Celsius, just offset by 273.15. Fahrenheit conversions use the exact formulas: °F = °C × 9/5 + 32 and K = °C + 273.15.',
 		],
 		aboutZh: [
-			'在摄氏度、华氏度、开尔文这三个温度标度之间换算——分别对应天气预报、美式食谱和科学研究中的常见场景。在任意一栏输入，其余两栏即时更新。',
-			'开尔文是国际单位制的基本温度单位，刻度间隔与摄氏度相同，仅偏移 273.15。华氏度换算采用精确公式：°F = °C × 9/5 + 32。',
+			'在摄氏度（°C）、华氏度（°F）与开尔文（K）之间互相换算。输入任一温度，其余数值立刻更新。',
+			'开尔文为国际单位制基础单位，刻度大小与摄氏度相同，基准点相差 273.15。换算公式精确：°F = °C × 9/5 + 32，K = °C + 273.15。',
 		],
 		faq: [
-			{ q: 'What is 37 °C in Fahrenheit?', a: '98.6 °F — normal human body temperature.' },
-			{ q: 'At what temperature do Celsius and Fahrenheit agree?', a: 'At −40 degrees: −40 °C and −40 °F are the same temperature.' },
-			{ q: 'Can temperatures go below 0 Kelvin?', a: 'No. Absolute zero (0 K) is the theoretical lower limit of temperature.' },
+			{ q: 'At what temperature are Celsius and Fahrenheit equal?', a: '-40 degrees. -40 °C equals -40 °F.' },
+			{ q: 'What is absolute zero?', a: '0 Kelvin, which is -273.15 °C or -459.67 °F — the lowest theoretically possible temperature.' },
+			{ q: 'Why does the US still use Fahrenheit?', a: 'Habit and fine resolution: a 1 °F change is smaller than 1 °C, which feels intuitive for human-scale weather without decimals.' },
 		],
 		faqZh: [
-			{ q: '37 摄氏度是华氏多少度？', a: '98.6 °F，即正常人体体温。' },
-			{ q: '摄氏和华氏在什么温度数值相等？', a: '在 −40 度：−40 °C 与 −40 °F 是同一个温度。' },
-			{ q: '温度可以低于 0 开尔文吗？', a: '不可以，绝对零度（0 K）是温度的理论下限。' },
+			{ q: '摄氏度与华氏度在哪一点数值相同？', a: '-40 度。即 -40 °C = -40 °F。' },
+			{ q: '绝对零度是多少？', a: '0 开尔文（0 K），即 -273.15 °C 或 -459.67 °F，理论上的最低温度。' },
+			{ q: '为什么还有国家使用华氏度？', a: '历史习惯以及人体感温精度更细腻：华氏 1 度的步长比摄氏度小，常人体感温不需要小数即可表达。' },
 		],
 	}),
 	converter(
 		'area',
 		'area',
 		'Area Converter',
+		'面积单位换算器',
 		'Convert between square millimeters, square centimeters, square meters, hectares, square kilometers and imperial area units.',
 		{
 			about: [
@@ -121,6 +126,7 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'volume',
 		'volume',
 		'Volume Converter',
+		'体积单位换算器',
 		'Convert between milliliters, liters, cubic meters and US gallons, quarts, pints, cups and fluid ounces.',
 		{
 			about: [
@@ -147,6 +153,7 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'speed',
 		'speed',
 		'Speed Converter',
+		'速度单位换算器',
 		'Convert between m/s, km/h, mph, knots and ft/s.',
 		{
 			about: [
@@ -173,6 +180,7 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'time',
 		'time',
 		'Time Converter',
+		'时间单位换算器',
 		'Convert between nanoseconds, microseconds, milliseconds, seconds, minutes, hours, days and weeks.',
 		{
 			about: [
@@ -199,6 +207,7 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'data',
 		'data',
 		'Data Size Converter',
+		'数据存储单位换算器',
 		'Convert between bytes, KB/MB/GB/TB (1000-based) and KiB/MiB/GiB/TiB (1024-based).',
 		{
 			about: [

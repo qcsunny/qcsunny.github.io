@@ -20,6 +20,8 @@ jobs:
         uses: withastro/action@v3
         with:
           node-version: 22
+      - name: Submit URLs to IndexNow
+        run: node scripts/indexnow.mjs || true
 
   deploy:
     needs: build

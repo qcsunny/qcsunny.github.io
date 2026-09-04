@@ -20,6 +20,7 @@ export interface ToolMeta {
 	slug: string;
 	category: ToolCategory;
 	name: string;
+	nameZh?: string;
 	description: string;
 }
 
@@ -194,12 +195,14 @@ export const CALCULATOR_FEATURED: (ToolMeta & { content?: ToolContent })[] = [
 		slug: 'standard',
 		category: 'calculators',
 		name: 'Scientific Calculator',
+		nameZh: '科学计算器',
 		description: 'Standard and scientific calculator with variables, history and DEG/RAD modes.',
 	},
 	{
 		slug: 'graph',
 		category: 'calculators',
 		name: 'Function Grapher',
+		nameZh: '函数图像绘制器',
 		description: 'Plot up to 4 functions with zoom, pan and a live value crosshair.',
 	},
 ];
@@ -216,6 +219,7 @@ export const TOOL_WIDGETS: ToolEntry[] = [
 		slug: 'qr-code-generator',
 		category: 'tools',
 		name: 'QR Code Generator',
+		nameZh: '二维码生成器',
 		description: 'Turn text or URLs into downloadable QR codes, generated entirely in your browser.',
 		kind: 'qr',
 
@@ -244,6 +248,7 @@ export const TOOL_WIDGETS: ToolEntry[] = [
 		slug: 'color-converter',
 		category: 'tools',
 		name: 'Color Converter',
+		nameZh: '颜色换算工具',
 		description: 'Convert colors between HEX, RGB and HSL with a live swatch and complement.',
 		kind: 'color',
 
