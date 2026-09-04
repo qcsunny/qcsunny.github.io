@@ -142,12 +142,12 @@ export function initBasic(scope: Scope, hooks: BasicHooks = {}): void {
 		}
 	}
 
-	// Keypad
-	document.querySelectorAll<HTMLButtonElement>('#calc-panel-basic [data-ins]').forEach((btn) => {
+	// Keypad (`.calc-basic` is the root of BasicTab.astro's markup)
+	document.querySelectorAll<HTMLButtonElement>('.calc-basic [data-ins]').forEach((btn) => {
 		btn.addEventListener('click', () => insertAtCursor(btn.dataset.ins as string));
 	});
 
-	document.querySelectorAll<HTMLButtonElement>('#calc-panel-basic [data-action]').forEach((btn) => {
+	document.querySelectorAll<HTMLButtonElement>('.calc-basic [data-action]').forEach((btn) => {
 		btn.addEventListener('click', () => {
 			switch (btn.dataset.action) {
 				case 'clear':

@@ -21,5 +21,8 @@
   },
   "allowScripts": {
     "esbuild": true
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1"
   }
 }
