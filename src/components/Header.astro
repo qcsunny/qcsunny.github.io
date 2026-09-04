@@ -8,16 +8,17 @@ import { SITE_TITLE } from '../consts';
 		<div class="nav-left">
 			<h2><a href="/">{SITE_TITLE}</a></h2>
 			<div class="nav-links">
-				<HeaderLink href="/">Home</HeaderLink>
-				<HeaderLink href="/blog">Blog</HeaderLink>
-				<HeaderLink href="/calculators/standard">Calculator</HeaderLink>
-				<HeaderLink href="/clock">Clock</HeaderLink>
-				<HeaderLink href="/calendar">Calendar</HeaderLink>
-				<HeaderLink href="/tools">Tools</HeaderLink>
-				<HeaderLink href="/about">About</HeaderLink>
+				<HeaderLink href="/"><span class="i18n-en">Home</span><span class="i18n-zh">首页</span></HeaderLink>
+				<HeaderLink href="/blog"><span class="i18n-en">Blog</span><span class="i18n-zh">博客</span></HeaderLink>
+				<HeaderLink href="/calculators/standard"><span class="i18n-en">Calculator</span><span class="i18n-zh">计算器</span></HeaderLink>
+				<HeaderLink href="/clock"><span class="i18n-en">Clock</span><span class="i18n-zh">时钟</span></HeaderLink>
+				<HeaderLink href="/calendar"><span class="i18n-en">Calendar</span><span class="i18n-zh">日历</span></HeaderLink>
+				<HeaderLink href="/tools"><span class="i18n-en">Tools</span><span class="i18n-zh">工具箱</span></HeaderLink>
+				<HeaderLink href="/about"><span class="i18n-en">About</span><span class="i18n-zh">关于</span></HeaderLink>
 			</div>
 		</div>
 		<div class="nav-right">
+			<button class="lang-toggle" type="button" aria-label="Toggle language / 切换语言">中 / EN</button>
 			<button class="theme-toggle" type="button" aria-label="Toggle light / dark theme">☾</button>
 			<a href="https://github.com/qcsunny/qcsunny.github.io" target="_blank" rel="noopener">
 				<span class="sr-only">Source code on GitHub</span>
@@ -33,6 +34,31 @@ import { SITE_TITLE } from '../consts';
 </header>
 
 <script>
+	// Language toggle (localStorage "site:lang")
+	const langBtn = document.querySelector<HTMLButtonElement>('.lang-toggle');
+	const updateLangUI = (lang: string) => {
+		langBtn?.setAttribute(
+			'aria-label',
+			lang === 'zh' ? '当前语言: 中文 (点击切换至 English)' : 'Current language: English (click for Chinese)'
+		);
+		if (langBtn) {
+			langBtn.textContent = lang === 'zh' ? '中' : 'EN';
+			langBtn.title = lang === 'zh' ? '切换为 English' : '切换为 中文';
+		}
+	};
+	const curLang = localStorage.getItem('site:lang') || (navigator.language.startsWith('zh') ? 'zh' : 'en');
+	updateLangUI(curLang);
+
+	langBtn?.addEventListener('click', () => {
+		const current = localStorage.getItem('site:lang') || (navigator.language.startsWith('zh') ? 'zh' : 'en');
+		const next = current === 'zh' ? 'en' : 'zh';
+		localStorage.setItem('site:lang', next);
+		document.documentElement.dataset.lang = next;
+		document.documentElement.lang = next === 'zh' ? 'zh-CN' : 'en';
+		updateLangUI(next);
+		window.dispatchEvent(new CustomEvent('site:lang-change', { detail: next }));
+	});
+
 	// three-state theme cycle shared with the tool pages (localStorage "site:theme")
 	const button = document.querySelector<HTMLButtonElement>('.theme-toggle');
 	const order = ['auto', 'light', 'dark'] as const;
@@ -116,6 +142,27 @@ import { SITE_TITLE } from '../consts';
 		display: flex;
 		align-items: center;
 		gap: 0.5em;
+	}
+	.lang-toggle {
+		border: 1px solid var(--gridline);
+		background: transparent;
+		color: var(--dim);
+		border-radius: 8px;
+		height: 34px;
+		padding: 0 0.6em;
+		font-size: 12.5px;
+		font-weight: 700;
+		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		transition:
+			color 0.15s ease,
+			border-color 0.15s ease;
+	}
+	.lang-toggle:hover {
+		color: var(--accent);
+		border-color: var(--accent);
 	}
 	.theme-toggle {
 		border: 1px solid var(--gridline);

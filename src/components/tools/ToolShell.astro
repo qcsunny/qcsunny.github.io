@@ -126,6 +126,11 @@ const year = new Date().getFullYear();
 						? 'dark'
 						: 'light'
 					: mode;
+
+			// Language pre-paint initialization
+			const savedLang = localStorage.getItem('site:lang') || (navigator.language.startsWith('zh') ? 'zh' : 'en');
+			document.documentElement.dataset.lang = savedLang;
+			document.documentElement.lang = savedLang === 'zh' ? 'zh-CN' : 'en';
 		</script>
 		<style is:global>
 			/* theme tokens (--bg/--fg/…) are defined globally in global.css,
@@ -198,8 +203,36 @@ const year = new Date().getFullYear();
 				overflow: hidden;
 				text-overflow: ellipsis;
 			}
-			.t-theme {
+			.t-topbar-actions {
 				margin-left: auto;
+				display: flex;
+				align-items: center;
+				gap: 0.5em;
+			}
+			.t-lang {
+				font-size: 0.8rem;
+				font-weight: 700;
+				color: var(--dim);
+				background: transparent;
+				border: 1px solid var(--gridline);
+				border-radius: 6px;
+				font-family: inherit;
+				cursor: pointer;
+				padding: 0.25em 0.55em;
+				line-height: 1.2;
+				transition:
+					opacity 0.15s ease,
+					border-color 0.15s ease,
+					color 0.15s ease;
+			}
+			.t-lang:hover {
+				color: var(--accent);
+				border-color: var(--accent);
+			}
+			.t-lang:focus-visible {
+				outline: 2px solid currentColor;
+			}
+			.t-theme {
 				font-size: 0.95rem;
 				opacity: 0.5;
 				color: var(--fg);
@@ -215,6 +248,17 @@ const year = new Date().getFullYear();
 			.t-theme:focus-visible {
 				outline: 2px solid currentColor;
 				opacity: 1;
+			}
+
+			/* --- bilingual content display --- */
+			html[data-lang='zh'] .t-content-en {
+				display: none;
+			}
+			html[data-lang='en'] .t-content-zh {
+				display: none;
+			}
+			html[data-lang='zh'] .t-content:not(:has(.t-content-zh)) .t-content-en {
+				display: block !important;
 			}
 
 			/* --- content --- */
@@ -675,8 +719,14 @@ const year = new Date().getFullYear();
 	}
 }
 
-/* --- JSON workbench --- */
-html[data-tool-kind='json'] .t-main {
+/* --- Workbench layout (JSON, SQL, JWT, URL, XML, CSS, HTML) --- */
+html[data-tool-kind='json'] .t-main,
+html[data-tool-kind='sql'] .t-main,
+html[data-tool-kind='jwt'] .t-main,
+html[data-tool-kind='url'] .t-main,
+html[data-tool-kind='xml'] .t-main,
+html[data-tool-kind='css'] .t-main,
+html[data-tool-kind='html'] .t-main {
 	width: min(1040px, 100% - 2em);
 }
 .t-json-wrap {
@@ -993,7 +1043,7 @@ html[data-tool-kind='json'] .t-main {
 					<header class="t-topbar">
 						<a class="t-site" href="/">{SITE_TITLE}</a>
 						<nav class="t-crumbs" aria-label="Breadcrumb">
-							<a href="/tools/">Tools</a>
+							<a href="/tools/"><span class="i18n-en">Tools</span><span class="i18n-zh">工具库</span></a>
 							{category && (
 								<>
 									<span class="t-crumb-sep" aria-hidden="true">›</span>
@@ -1007,7 +1057,10 @@ html[data-tool-kind='json'] .t-main {
 								</>
 							)}
 						</nav>
-						<button class="t-theme" type="button" aria-label="Toggle light / dark theme">☾</button>
+						<div class="t-topbar-actions">
+							<button class="t-lang" type="button" aria-label="切换中英文 / Switch language">中 / EN</button>
+							<button class="t-theme" type="button" aria-label="Toggle light / dark theme">☾</button>
+						</div>
 					</header>
 					<main class="t-main">
 						<h1 class="t-title">{crumbName}{entry?.nameZh && <span class="t-title-zh">（{entry.nameZh}）</span>}</h1>
@@ -1030,18 +1083,20 @@ html[data-tool-kind='json'] .t-main {
 						)}
 						{content && (content.about?.length || content.faq?.length || content.aboutZh?.length) && (
 							<article class="t-content">
-								{content.about?.map((para) => <p>{para}</p>)}
-								{content.faq?.length ? (
-									<section class="t-faq">
-										<h2>Frequently asked questions</h2>
-										{content.faq.map((f) => (
-											<details>
-												<summary>{f.q}</summary>
-												<p>{f.a}</p>
-											</details>
-										))}
-									</section>
-								) : null}
+								<div class="t-content-en">
+									{content.about?.map((para) => <p>{para}</p>)}
+									{content.faq?.length ? (
+										<section class="t-faq">
+											<h2>Frequently asked questions</h2>
+											{content.faq.map((f) => (
+												<details>
+													<summary>{f.q}</summary>
+													<p>{f.a}</p>
+												</details>
+											))}
+										</section>
+									) : null}
+								</div>
 								{content.aboutZh?.length || content.faqZh?.length ? (
 									<section class="t-content-zh" lang="zh-CN">
 										<h2>中文说明</h2>
@@ -1104,6 +1159,27 @@ html[data-tool-kind='json'] .t-main {
 		{
 			!redirectTo && (
 				<script is:inline>
+					// Language toggle
+					const langToggle = document.querySelector('.t-lang');
+					function syncLangUI(l) {
+						if (!langToggle) return;
+						langToggle.textContent = l === 'zh' ? '中' : 'EN';
+						langToggle.title = l === 'zh' ? '当前：中文 (点击切换为 English)' : 'Current: English (click for Chinese)';
+						langToggle.setAttribute('aria-label', l === 'zh' ? '切换为 English' : '切换为 中文');
+					}
+					const currentLang = root.dataset.lang || 'en';
+					syncLangUI(currentLang);
+					langToggle?.addEventListener('click', () => {
+						const next = root.dataset.lang === 'zh' ? 'en' : 'zh';
+						root.dataset.lang = next;
+						root.lang = next === 'zh' ? 'zh-CN' : 'en';
+						try {
+							localStorage.setItem('site:lang', next);
+						} catch {}
+						syncLangUI(next);
+						window.dispatchEvent(new CustomEvent('site:lang-change', { detail: next }));
+					});
+
 					// Theme: three-state cycle light → dark → auto (auto = follow browser)
 					const root = document.documentElement;
 					const toggle = document.querySelector('.t-theme');

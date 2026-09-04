@@ -55,6 +55,10 @@ const ogImageURL = new URL(typeof image === 'string' ? image : image.src, Astro.
 		const dark =
 			mode === 'dark' || (mode === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
 		if (dark) document.documentElement.dataset.theme = 'dark';
+
+		const lang = localStorage.getItem('site:lang') || (navigator.language.startsWith('zh') ? 'zh' : 'en');
+		document.documentElement.dataset.lang = lang;
+		document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
 	})();
 </script>
 {SEARCH_CONSOLE_VERIFICATION && (

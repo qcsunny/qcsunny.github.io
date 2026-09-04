@@ -22,7 +22,13 @@ export type ToolKind =
 	| 'color'
 	| 'generator'
 	| 'redirect'
-	| 'json';
+	| 'json'
+	| 'sql'
+	| 'jwt'
+	| 'url'
+	| 'xml'
+	| 'css'
+	| 'html';
 
 export interface ToolMeta {
 	slug: string;
@@ -171,6 +177,12 @@ export type ToolEntry = ToolMeta &
 		| { kind: 'generator'; config: GeneratorConfig }
 		| { kind: 'redirect'; config: RedirectConfig }
 		| { kind: 'json' }
+		| { kind: 'sql' }
+		| { kind: 'jwt' }
+		| { kind: 'url' }
+		| { kind: 'xml' }
+		| { kind: 'css' }
+		| { kind: 'html' }
 	) & { content?: ToolContent };
 
 // --- categories ----------------------------------------------------------------

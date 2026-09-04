@@ -40,5 +40,23 @@ if (kind && kind !== 'redirect') {
 		case 'json':
 			void import('./json').then((m) => m.initJson(host));
 			break;
+		case 'sql':
+			void import('./sql').then((m) => m.initSql(host));
+			break;
+		case 'jwt':
+			void import('./jwt').then((m) => m.initJwt(host));
+			break;
+		case 'url':
+			void import('./url').then((m) => m.initUrl(host));
+			break;
+		case 'xml':
+			void import('./xml').then((m) => m.initXml(host));
+			break;
+		case 'css':
+			void import('./css').then((m) => m.initCss(host));
+			break;
+		case 'html':
+			void import('./html').then((m) => m.initHtml(host));
+			break;
 	}
 }

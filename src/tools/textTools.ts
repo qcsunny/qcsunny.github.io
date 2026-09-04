@@ -390,4 +390,162 @@ export const TEXT_TOOLS: ToolEntry[] = [
 			],
 		},
 	},
+	{
+		slug: 'sql-formatter',
+		category: 'tools',
+		name: 'SQL Formatter & Beautifier',
+		nameZh: 'SQL 格式化与美化工具',
+		description: 'Format, beautify, indent, and minify SQL queries with keyword auto-capitalization and 100% browser-side privacy.',
+		kind: 'sql',
+		content: {
+			about: [
+				'Beautify messy SQL queries with clean multi-level indentation and automated keyword capitalization (SELECT, FROM, WHERE, JOIN, GROUP BY, etc.).',
+				'Runs 100% client-side in your browser — your private database queries, table structures, and sensitive filters are never uploaded to any remote server.',
+			],
+			aboutZh: [
+				'将凌乱冗长的 SQL 查询语句格式化为清晰分层的优美代码，自动将 SELECT、FROM、WHERE、JOIN、GROUP BY 等几十个主流关键字转为大写规范。',
+				'100% 运行于本地浏览器内存中——绝不向任何外部服务器上传数据，彻底杜绝企业内部数据库结构、表名与敏感查询条件泄露。',
+			],
+			faq: [
+				{ q: 'Does this tool upload my SQL?', a: 'Never. All parsing, indentation, and minification happen entirely within your local browser JavaScript engine.' },
+				{ q: 'Which SQL dialects are supported?', a: 'Standard ANSI SQL, MySQL, PostgreSQL, SQLite, MariaDB, and SQL Server.' },
+				{ q: 'Can I minify SQL to a single line?', a: 'Yes, click "单行压缩 (Minify)" to strip comments and redundant whitespace for embedding into application configs or code literals.' },
+			],
+			faqZh: [
+				{ q: '该工具会上传我的 SQL 吗？', a: '绝不上传。所有分词、缩进排版与压缩均在浏览器本地完成，断网也能正常运行。' },
+				{ q: '支持哪些数据库语法？', a: '支持标准 ANSI SQL，以及 MySQL、PostgreSQL、SQLite、MariaDB、SQL Server 等主流关系型数据库。' },
+				{ q: '可以压缩为单行吗？', a: '可以，点击"单行压缩 (Minify)"即可去除所有注释与冗余空白，生成适合嵌入代码字面量的紧凑语句。' },
+			],
+		},
+	},
+	{
+		slug: 'jwt-decoder',
+		category: 'tools',
+		name: 'JWT Decoder & Formatter',
+		nameZh: 'JWT 令牌解码与格式化',
+		description: 'Decode JSON Web Tokens (JWT) into Header and Payload, inspect expiration timestamps, and verify claims safely with zero data upload.',
+		kind: 'jwt',
+		content: {
+			about: [
+				'Inspect and format JSON Web Tokens (JWT) instantly in your browser. Splits the token into Header, Payload, and Signature, and decodes Base64URL data with UTF-8 character support.',
+				'Automatically parses expiration (exp), issued-at (iat), and not-before (nbf) timestamps into human-readable local time, displaying live validity countdowns and status indicators.',
+			],
+			aboutZh: [
+				'在浏览器中极速解析 JSON Web Token (JWT) 令牌。自动将 Token 拆分为 Header 头部、Payload 载荷数据与 Signature 签名串，并完整支持 UTF-8 中文字符解码。',
+				'自动识别 exp（过期时间）、iat（签发时间）与 nbf（生效时间）时间戳，转换为本地时区的人类可读时间，并直观提示当前 Token 是有效还是已过期。',
+			],
+			faq: [
+				{ q: 'Is it safe to paste production tokens?', a: 'Yes. Unlike typical online JWT decoders that may log your Bearer tokens, this tool runs 100% locally with zero network requests.' },
+				{ q: 'Can this tool verify the signature?', a: 'Client-side browsers cannot safely hold your secret key. This tool is designed for inspecting claims, debugging auth issues, and checking token expiration.' },
+			],
+			faqZh: [
+				{ q: '在这里粘贴生产 Token 安全吗？', a: '绝对安全。绝大多数在线 JWT 网站存在泄露甚至截获 Token 的风险，而本工具 100% 纯前端解码，无任何后台网络请求。' },
+				{ q: '本工具可以验签吗？', a: '出于安全考量，前端不应持有或输入服务端的私钥/密钥。本工具主要用于查看 Payload 数据、排查鉴权 Bug 及校验过期时间。' },
+			],
+		},
+	},
+	{
+		slug: 'url-parser',
+		category: 'tools',
+		name: 'URL Parser & Query Formatter',
+		nameZh: 'URL 网址与参数格式化',
+		description: 'Parse URLs into protocol, hostname, path, and query strings. Decode, sort params, remove tracking tags, and export to JSON.',
+		kind: 'url',
+		content: {
+			about: [
+				'Break down complex URLs into protocol, hostname, port, pathname, hash, and structured query parameters.',
+				'Provides one-click URL Decode/Encode, parameter alphabetical sorting (essential for API HMAC signatures), and removal of marketing tracking tags (utm_*, spm, gclid, fbclid).',
+			],
+			aboutZh: [
+				'将超长、多层编码的复杂 URL 网址一键拆解为协议、域名、端口、路径、哈希锚点及结构化查询参数列表。',
+				'支持一键 URL 解码/编码、按字母升序排列 Query 参数（对接 API 验签必备）、去除营销埋点追踪参数（utm、spm、gclid 等），以及一键导出为标准 JSON 键值对。'
+			],
+			faq: [
+				{ q: 'Why sort query parameters?', a: 'Many payment and cloud APIs (such as AWS, WeChat Pay, Alipay) require parameters to be sorted alphabetically before generating HMAC/MD5 signatures.' },
+				{ q: 'What does tracking tag removal do?', a: 'It strips analytics tags like utm_source, utm_campaign, and fbclid to produce a clean, shareable URL.' },
+			],
+			faqZh: [
+				{ q: '为什么要对 Query 参数排序？', a: '在对接微信支付、支付宝、AWS 等 API 接口时，生成签名通常要求参数按字母顺序排列拼接，排序功能可直接输出标准顺序。' },
+				{ q: '去除追踪参数有什么用？', a: '去除复制链接时附带的各类营销埋点（如 utm_source、spm 等），生成干净纯粹、便于分享的原始链接。' },
+			],
+		},
+	},
+	{
+		slug: 'xml-formatter',
+		category: 'tools',
+		name: 'XML / SVG Formatter & Validator',
+		nameZh: 'XML / SVG 格式化与校验工具',
+		description: 'Validate XML syntax, format with customizable 2/4-space indentation, and minify XML/SVG documents in your browser.',
+		kind: 'xml',
+		content: {
+			about: [
+				'Format and validate XML and SVG documents in your browser. Uses native DOMParser to pinpoint exact syntax error locations.',
+				'Offers customizable 2-space and 4-space hierarchical indentation, as well as single-line minification to reduce payload size.'
+			],
+			aboutZh: [
+				'在浏览器中实时校验与美化 XML、SVG 矢量图形与 RSS 数据。利用浏览器原生 DOMParser 快速定位语法错误位置。',
+				'支持 2 空格与 4 空格层级缩进，并支持一键去除多余空白和注释进行单行 Minify 压缩，大幅精简报文体积。'
+			],
+			faq: [
+				{ q: 'How does it detect XML errors?', a: 'It leverages the browser engine’s native XML parser, catching unclosed tags and invalid characters with high precision.' },
+				{ q: 'Can I format SVG files?', a: 'Yes, SVG is XML-compliant. You can format, clean, or compress SVG vector code here.' },
+			],
+			faqZh: [
+				{ q: '它是如何发现 XML 语法错误的？', a: '直接调用浏览器底层原生的 XML 解析引擎，能够精准捕获未闭合标签、非法字符等语法错误。' },
+				{ q: '可以用来格式化 SVG 吗？', a: '完全可以，SVG 本质上就是合法的 XML 格式，你可以随时用来美化或压缩 SVG 矢量图标代码。' },
+			],
+		},
+	},
+	{
+		slug: 'css-formatter',
+		category: 'tools',
+		name: 'CSS Formatter & Minifier',
+		nameZh: 'CSS 格式化与压缩工具',
+		description: 'Beautify CSS stylesheets with clean rules and property indentation, or minify CSS to a single line for production performance.',
+		kind: 'css',
+		content: {
+			about: [
+				'Format messy or compressed CSS into clean, readable code with consistent rules, braces, and property spacing.',
+				'Supports 2-space or 4-space indentation, and one-click minification to eliminate whitespace and comments for optimal web loading speeds.'
+			],
+			aboutZh: [
+				'将压缩混淆或排版杂乱的 CSS 样式表格式化为清晰易读的规范代码，规范选择器、大括号和属性分号对齐。',
+				'支持 2 空格/4 空格缩进排版，并支持一键生产态 Minify 单行压缩，剔除注释与多余字符，显著减小样式文件体积。'
+			],
+			faq: [
+				{ q: 'Does it support media queries?', a: 'Yes, nested blocks like @media and @keyframes are formatted with clean indentation.' },
+				{ q: 'How much does minification save?', a: 'Typically between 20% and 50% depending on the amount of comments and whitespace in the original code.' },
+			],
+			faqZh: [
+				{ q: '支持媒体查询吗？', a: '支持，对于 @media、@keyframes 等包含多层嵌套大括号的规则块均能进行整齐的层级缩进。' },
+				{ q: '压缩后能节省多少体积？', a: '通常能够减少 20% 到 50% 的文件大小，大幅加快网页首屏样式的加载速度。' },
+			],
+		},
+	},
+	{
+		slug: 'html-formatter',
+		category: 'tools',
+		name: 'HTML Formatter & Minifier',
+		nameZh: 'HTML 格式化与压缩工具',
+		description: 'Format messy HTML with proper indentation and self-closing element awareness, or minify HTML to optimize web page delivery.',
+		kind: 'html',
+		content: {
+			about: [
+				'Indent and organize unformatted HTML markup with awareness of self-closing void elements (meta, img, input, link, br, etc.).',
+				'Minify HTML by stripping comments and inter-tag whitespace, reducing download weight for end users.'
+			],
+			aboutZh: [
+				'对杂乱无章的 HTML 网页结构进行层级分明的缩进排版，智能识别 meta、img、input、link、br 等自闭合/单标签元素。',
+				'提供一键单行 Minify 压缩功能，剔除 HTML 注释与标签间的冗余空白，有效提升页面传输效率。'
+			],
+			faq: [
+				{ q: 'Does formatting break void tags like <img> and <input>?', a: 'No, the formatter recognizes HTML5 void elements and will not add unexpected closing tags.' },
+				{ q: 'Is it completely client-side?', a: 'Yes, runs 100% in your browser with zero latency and zero data transfer.' },
+			],
+			faqZh: [
+				{ q: '格式化会破坏 <img> 或 <input> 这类单标签吗？', a: '不会，格式化引擎内置完整的 HTML5 Void 元素识别表，不会错误添加闭合标签。' },
+				{ q: '完全是在本地运行吗？', a: '是的，全部在你的浏览器本地 JavaScript 中执行，速度极快且零网络传输。' },
+			],
+		},
+	},
 ];
