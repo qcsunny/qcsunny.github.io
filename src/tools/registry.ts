@@ -80,7 +80,9 @@ export interface FormField {
 	hint?: string;
 	hintZh?: string;
 	wide?: boolean;
-	required?: boolean;
+	required?: boolean | ((values: FormValues) => boolean);
+	/** condition to display and activate this field based on other form values */
+	showIf?: (values: FormValues) => boolean;
 }
 
 export interface FormResultRow {
@@ -333,3 +335,56 @@ export const REGISTRY: ToolEntry[] = [
 export function findEntry(category: string, slug: string): ToolEntry | undefined {
 	return REGISTRY.find((e) => e.category === category && e.slug === slug);
 }
+
+/** Comprehensive searchable aliases and keywords for tools across EN & ZH */
+export const TOOL_KEYWORDS: Record<string, string> = {
+	'mortgage': '房贷 房贷计算器 等额本息 等额本金 商业贷款 公积金贷款 组合贷款 成本平衡点 首付 月供 利率 LPR 买房 home loan mortgage payment crossover',
+	'mortgage-prepayment': '提前还贷 提前还款 缩短年限 减少月供 结清 房贷省息 利息计算 mortgage prepayment balance payoff',
+	'loan-payment': '贷款月供 贷款本金 个人贷款 等额本息 借款额度 每月预算 还款计划 loan payment installment amortization',
+	'irr-calculator': 'irr apr 真实年化利率 真实利率 信用卡分期 综合费率 手续费 名义费率 internal rate return true apr installment',
+	'compound-interest': '复利 复利计算器 定投 72法则 滚雪球 利滚利 理财收益 投资 compound interest returns investment',
+	'investment-return': '投资回报 投资收益 年化收益率 理财 基金 股票 investment return roi growth',
+	'tax': '个税 个人所得税 五险一金 专项附加扣除 年终奖 单独计税 综合所得 薪资到手 逆向反推 income tax take home salary payroll',
+	'salary': '薪资 时薪 日薪 月薪 年薪 工资换算 工作日 工时 hourly wage salary conversion paycheck',
+	'auto-loan': '车贷 汽车贷款 落地首付 购置税 车险 购车计算器 分期购车 auto loan car financing vehicle price',
+	'fire-calculator': 'fire 财务自由 提前退休 4%法则 被动收入 养老规划 financial independence retire early',
+	'inflation': '通货膨胀 通胀 购买力贬值 物价上涨 资产缩水 现值终值 inflation purchasing power future value',
+	'savings-goal': '目标储蓄 存钱规划 每月定投 倒推储蓄 备用金 养老金 savings goal monthly target plan',
+	'roi': 'roi 投资回报率 投资收益率 利润率 盈亏平衡 商业分析 return on investment profit margin',
+	'discount': '打折 折扣 满减 优惠 打折计算器 促销 折后价 discount sales percent off savings',
+	'json-formatter': 'json 格式化 校验 压缩 美化 解析 语法高亮 json format validator parser prettify minify',
+	'sql-formatter': 'sql 格式化 sql美化 数据库查询 ddl dml 大小写转换 sql prettifier database query format',
+	'jwt-decoder': 'jwt 解码 token bearer json web token header payload signature auth',
+	'base64': 'base64 编码 解码 文本编解码 base64 encode decode binary string',
+	'url-parser': 'url 解析 查询参数 url编解码 query params encode decode hostname protocol path',
+	'xml-formatter': 'xml 格式化 树形视图 美化 缩进 xml formatter pretty print indent',
+	'css-formatter': 'css 格式化 样式美化 压缩 展开 整理 css prettify minify beautifier',
+	'html-formatter': 'html 格式化 网页代码美化 缩进 压缩 html beautifier indent format',
+	'password-generator': '密码 强密码 随机密码 密码生成器 字符熵 安全密码 password generator random crypto secure',
+	'uuid-generator': 'uuid guid v4 v7 唯一标识符 随机uuid 时间戳uuid uuid generator random monotonic',
+	'random-number': '随机数 随机抽取 掷骰子 抽签 范围生成器 random number generator dice range lottery',
+	'qr-code-generator': '二维码 qr code 生成 二维码制作 扫码 qr code generator barcode matrix',
+	'color-converter': '颜色转换 hex rgb hsl 调色板 互补色 颜色换算 color converter hex rgb hsl palette',
+	'word-counter': '字数统计 字符数 汉字数 英文单词 阅读时间 句子段落 word count character counter reading time cjk',
+	'character-counter': '字符统计 字母 数字 空格 字节数 utf-8 character counter bytes letters numbers',
+	'weight': '重量 质量 单位换算 公斤 千克 克 市斤 两 磅 盎司 克拉 金衡盎司 吨 weight mass kg lb oz g jin stone carat',
+	'length': '长度 距离 单位换算 米 厘米 毫米 公里 千米 尺 寸 里 英里 海里 英寸 英尺 码 length distance m km cm inch ft yard mile',
+	'area': '面积 换算 平方米 平方厘米 平方公里 平方千米 亩 公顷 平方英尺 平方英里 area square meter hectare acre sq ft',
+	'volume': '体积 容积 换算 升 毫升 立方米 立方分米 立方厘米 加仑 桶 volume capacity liter gallon cubic meter ml',
+	'temperature': '温度 换算 摄氏度 华氏度 开尔文 celsius fahrenheit kelvin temperature',
+	'speed': '速度 换算 千米每小时 公里每小时 米每秒 节 马赫 迈 码 km/h m/s knot mach mph speed velocity',
+	'pressure': '压强 压力 换算 帕斯卡 帕 千帕 兆帕 标准大气压 巴 毫米汞柱 psi bar kpa pressure atmospheric pascal',
+	'power': '功率 换算 瓦特 瓦 千瓦 兆瓦 马力 匹 w kw hp megawatt power wattage horsepower',
+	'energy': '能量 功 换算 焦耳 千焦 卡路里 大卡 千瓦时 度 电子伏特 joule calorie kwh btu energy work',
+	'time': '时间 换算 秒 分钟 小时 天 周 月 年 毫秒 微秒 time duration second minute hour day week year',
+	'data': '数据 存储容量 换算 bit 字节 byte kb mb gb tb pb 计算机存储 data storage byte gigabyte terabyte',
+	'percentage': '百分比 百分率 占比 计算 增加 减少 percentage math percent of proportion',
+	'percentage-increase': '百分比增长 增长率 变化率 增幅 跌幅 环比 同比 percentage increase growth rate change',
+	'ratio': '比例 比值 化简 黄金分割 缩放 ratio simplify scale a:b',
+	'proportion': '比例式 方程求解 a:b=c:x 内项外项 proportion solve equation cross multiply',
+	'simple-interest': '单利 利息计算 本息和 simple interest p r t principal',
+	'fraction': '分数 约分 化简 最简分数 小数转分数 分数转小数 fraction simplify decimal continued',
+	'average': '平均数 平均值 中位数 众数 统计 标准差 方差 mean median mode average statistics variance',
+	'standard': '科学计算器 计算器 算术函数 根号 三角函数 次方 scientific calculator standard math sqrt sin cos',
+	'graph': '函数图像 曲线绘制 坐标系 绘图 函数可视化 function grapher plotting curves calculus',
+};

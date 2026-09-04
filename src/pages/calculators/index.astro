@@ -1,5 +1,6 @@
 ---
 import ToolShell from '../../components/tools/ToolShell.astro';
+import ToolSearchBar from '../../components/tools/ToolSearchBar.astro';
 import { REGISTRY, CALCULATOR_FEATURED } from '../../tools/registry';
 
 const entries = [
@@ -7,10 +8,11 @@ const entries = [
 ].filter((e) => e.kind !== 'redirect');
 ---
 <ToolShell title="Calculators" description="Every calculator: scientific calculator, grapher, percentages, fractions, ratios, averages and statistics.">
+	<ToolSearchBar category="calculators" placeholder="Search calculators (e.g. percentage, fraction, ratio, graph)..." placeholderZh="搜索计算器 (如 百分比、分数、比例、函数图像、科学计算)..." totalCount={entries.length} />
 	<div class="t-cards">
 		{
 			entries.map((e) => (
-				<a class="t-card" href={`/${e.category}/${e.slug}/`}>
+				<a class="t-card" href={`/${e.category}/${e.slug}/`} data-slug={e.slug} data-cat={e.category}>
 					<h2>{e.name}{e.nameZh && <span class="t-sub-zh"> · {e.nameZh}</span>}</h2>
 					<p>{e.description}</p>
 				</a>

@@ -1,5 +1,6 @@
 ---
 import ToolShell from '../../components/tools/ToolShell.astro';
+import ToolSearchBar from '../../components/tools/ToolSearchBar.astro';
 import { REGISTRY } from '../../tools/registry';
 
 const entries = [
@@ -7,10 +8,11 @@ const entries = [
 ].filter((e) => e.kind !== 'redirect');
 ---
 <ToolShell title="Converters" description="Unit converters for length, weight, temperature, area, volume, speed, time and data sizes.">
+	<ToolSearchBar category="converters" placeholder="Search converters (e.g. weight, length, speed, temperature)..." placeholderZh="搜索换算器 (如 重量、长度、速度、温度、面积、数据)..." totalCount={entries.length} />
 	<div class="t-cards">
 		{
 			entries.map((e) => (
-				<a class="t-card" href={`/${e.category}/${e.slug}/`}>
+				<a class="t-card" href={`/${e.category}/${e.slug}/`} data-slug={e.slug} data-cat={e.category}>
 					<h2>{e.name}{e.nameZh && <span class="t-sub-zh"> · {e.nameZh}</span>}</h2>
 					<p>{e.description}</p>
 				</a>

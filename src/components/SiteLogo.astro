@@ -1,0 +1,70 @@
+---
+interface Props {
+	size?: number | string;
+	class?: string;
+}
+
+const { size = 24, class: className = '' } = Astro.props;
+const pxSize = typeof size === 'number' ? `${size}px` : size;
+---
+
+<svg
+	xmlns="http://www.w3.org/2000/svg"
+	viewBox="0 0 128 128"
+	fill="none"
+	style={`width: ${pxSize}; height: ${pxSize}; display: inline-block; vertical-align: middle; flex-shrink: 0;`}
+	class={`site-logo ${className}`}
+	aria-hidden="true"
+>
+	<defs>
+		<linearGradient id="qc-orbit-grad" x1="16" y1="16" x2="112" y2="112" gradientUnits="userSpaceOnUse">
+			<stop offset="0%" stop-color="#38bdf8"></stop>
+			<stop offset="55%" stop-color="#3b82f6"></stop>
+			<stop offset="100%" stop-color="#6366f1"></stop>
+		</linearGradient>
+		<linearGradient id="qc-sun-grad" x1="42" y1="40" x2="78" y2="76" gradientUnits="userSpaceOnUse">
+			<stop offset="0%" stop-color="#fef08a"></stop>
+			<stop offset="45%" stop-color="#f59e0b"></stop>
+			<stop offset="100%" stop-color="#ea580c"></stop>
+		</linearGradient>
+		<linearGradient id="qc-tail-grad" x1="68" y1="68" x2="114" y2="114" gradientUnits="userSpaceOnUse">
+			<stop offset="0%" stop-color="#f59e0b"></stop>
+			<stop offset="50%" stop-color="#ec4899"></stop>
+			<stop offset="100%" stop-color="#8b5cf6"></stop>
+		</linearGradient>
+		<filter id="qc-logo-glow" x="-20%" y="-20%" width="140%" height="140%">
+			<feGaussianBlur stdDeviation="3" result="blur"></feGaussianBlur>
+			<feComposite in="SourceGraphic" in2="blur" operator="over"></feComposite>
+		</filter>
+	</defs>
+
+	<!-- Ambient Halo -->
+	<circle cx="58" cy="58" r="44" fill="#3b82f6" opacity="0.14" filter="url(#qc-logo-glow)"></circle>
+	<circle cx="58" cy="58" r="28" fill="#f59e0b" opacity="0.2" filter="url(#qc-logo-glow)"></circle>
+
+	<!-- Outer Quantum Q Ring -->
+	<path
+		d="M 58 14 C 82.3 14, 102 33.7, 102 58 C 102 70.8, 96.6 82.3, 87.9 90.5 L 99.8 102.4 C 102.8 105.4, 100.7 110.5, 96.5 110.5 L 83.2 110.5 C 80.8 110.5, 78.5 109.5, 76.8 107.8 L 70.6 101.6 C 66.6 102.7, 62.4 103.3, 58 103.3 C 33.7 103.3, 14 83.6, 14 58 C 14 32.4, 33.7 14, 58 14 Z M 58 26 C 40.3 26, 26 40.3, 26 58 C 26 75.7, 40.3 90, 58 90 C 67.8 90, 76.5 85.5, 82.2 78.5 L 72.4 68.7 C 69.1 72.6, 64.1 75, 58.5 75 C 49.1 75, 41.5 67.4, 41.5 58 C 41.5 48.6, 49.1 41, 58.5 41 C 67.9 41, 75.5 48.6, 75.5 58 C 75.5 60.6, 74.9 63, 73.8 65.1 L 85.2 76.5 C 88.3 71.2, 90 64.8, 90 58 C 90 40.3, 75.7 26, 58 26 Z"
+		fill="url(#qc-orbit-grad)"
+	></path>
+
+	<!-- Dynamic Q-Tail Energy Beam -->
+	<path
+		d="M 72 72 L 108 108 C 111 111, 108.5 116, 104 116 L 86 116 C 83.5 116, 81.2 115, 79.5 113.3 L 64 97.8 C 67.2 96.2, 70.3 94, 73.2 91.5 L 81.5 99.8 L 96 99.8 L 72 75.8 Z"
+		fill="url(#qc-tail-grad)"
+	></path>
+
+	<!-- Radiant Solar Core (Sunny) -->
+	<circle cx="58" cy="58" r="15" fill="url(#qc-sun-grad)" filter="url(#qc-logo-glow)"></circle>
+
+	<!-- Precision Lab Diamond Spark (4-pointed star) -->
+	<path
+		d="M 58 45 L 60 56 L 71 58 L 60 60 L 58 71 L 56 60 L 45 58 L 56 56 Z"
+		fill="#ffffff"
+		opacity="0.95"
+	></path>
+
+	<!-- Quantum Particle Dot -->
+	<circle cx="94" cy="36" r="4.2" fill="#38bdf8" filter="url(#qc-logo-glow)"></circle>
+	<circle cx="94" cy="36" r="2.2" fill="#ffffff"></circle>
+</svg>

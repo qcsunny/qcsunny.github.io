@@ -6,6 +6,7 @@
 //  - t-prefixed global styles (runtime-built DOM never gets the scoped
 //    data-astro-cid attribute, so is:global is required)
 import BaseHead from '../BaseHead.astro';
+import SiteLogo from '../SiteLogo.astro';
 import { ADSENSE_CLIENT, AD_SLOTS, SITE_TITLE } from '../../consts';
 import {
 	CALCULATOR_FEATURED,
@@ -170,6 +171,9 @@ const year = new Date().getFullYear();
 				flex-wrap: wrap;
 			}
 			.t-site {
+				display: inline-flex;
+				align-items: center;
+				gap: 0.45rem;
 				font-weight: 700;
 				font-size: 0.95rem;
 				color: var(--fg);
@@ -208,6 +212,30 @@ const year = new Date().getFullYear();
 				display: flex;
 				align-items: center;
 				gap: 0.5em;
+			}
+			.t-search-nav {
+				font-size: 0.85rem;
+				color: var(--dim);
+				background: transparent;
+				border: 1px solid var(--gridline);
+				border-radius: 6px;
+				padding: 0.25em 0.55em;
+				text-decoration: none;
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				line-height: 1.2;
+				transition:
+					opacity 0.15s ease,
+					border-color 0.15s ease,
+					color 0.15s ease;
+			}
+			.t-search-nav:hover {
+				color: var(--accent);
+				border-color: var(--accent);
+			}
+			.t-search-nav:focus-visible {
+				outline: 2px solid currentColor;
 			}
 			.t-lang {
 				font-size: 0.8rem;
@@ -431,6 +459,22 @@ const year = new Date().getFullYear();
 			.t-row.t-emph .t-row-value {
 				color: var(--accent);
 				font-size: 1.25rem;
+			}
+			.t-row.t-row-warn {
+				background: rgba(245, 158, 11, 0.08);
+				border-left: 3px solid #f59e0b;
+				padding: 0.5em 0.8em;
+				border-radius: 6px;
+				margin-top: 0.5em;
+			}
+			.t-row.t-row-warn .t-row-label {
+				color: #f59e0b;
+				font-weight: 600;
+			}
+			.t-row.t-row-warn .t-row-value {
+				color: var(--dim);
+				font-size: 0.85rem;
+				font-weight: normal;
 			}
 			.t-note {
 				font-size: 0.85rem;
@@ -1257,7 +1301,10 @@ html[data-tool-kind='html'] .t-main {
 			) : (
 				<>
 					<header class="t-topbar">
-						<a class="t-site" href="/">{SITE_TITLE}</a>
+						<a class="t-site" href="/">
+							<SiteLogo size={20} />
+							<span>{SITE_TITLE}</span>
+						</a>
 						<nav class="t-crumbs" aria-label="Breadcrumb">
 							<a href="/tools/"><span class="i18n-en">Tools</span><span class="i18n-zh">工具库</span></a>
 							{category && (
@@ -1274,6 +1321,7 @@ html[data-tool-kind='html'] .t-main {
 							)}
 						</nav>
 						<div class="t-topbar-actions">
+							<a class="t-search-nav" href="/tools/?focus=1" title="Search tools / 搜索工具 (快捷键 /)" aria-label="Search tools">🔍</a>
 							<button class="t-lang" type="button" aria-label="切换中英文 / Switch language">中 / EN</button>
 							<button class="t-theme" type="button" aria-label="Toggle light / dark theme">☾</button>
 						</div>
@@ -1394,6 +1442,15 @@ html[data-tool-kind='html'] .t-main {
 						} catch {}
 						syncLangUI(next);
 						window.dispatchEvent(new CustomEvent('site:lang-change', { detail: next }));
+					});
+
+					document.querySelector('.t-search-nav')?.addEventListener('click', (e) => {
+						const searchInput = document.getElementById('tool-search-input');
+						if (searchInput) {
+							e.preventDefault();
+							searchInput.focus();
+							searchInput.select();
+						}
 					});
 
 					// Theme: three-state cycle light → dark → auto (auto = follow browser)

@@ -7,6 +7,10 @@ import type { FormConfig, FormField, FormResultRow, FormTable, FormValues } from
 export function initForm(host: HTMLElement, config: FormConfig): void {
 	const getters = new Map<string, () => string | boolean>();
 	const controls: Array<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement> = [];
+	const fieldWraps = new Map<string, HTMLElement>();
+	const reqStars = new Map<string, HTMLElement>();
+	const controlsMap = new Map<string, HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>();
+	const reqTips = new Map<string, HTMLElement>();
 
 	const form = document.createElement('div');
 	form.className = 't-form';
@@ -42,6 +46,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 	function fieldEl(field: FormField): HTMLElement {
 		const wrap = document.createElement('div');
 		wrap.className = field.wide ? 't-field t-wide' : 't-field';
+		fieldWraps.set(field.id, wrap);
 
 		if (field.type === 'checkbox') {
 			const row = document.createElement('label');
@@ -53,6 +58,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			cb.checked = field.def === 'true';
 			getters.set(field.id, () => cb.checked);
 			controls.push(cb);
+			controlsMap.set(field.id, cb);
 			const text = document.createElement('span');
 			text.append(makeBilingualSpan(field.label, field.labelZh));
 			row.append(cb, text);
@@ -63,13 +69,15 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 		const label = document.createElement('label');
 		label.htmlFor = `t-f-${field.id}`;
 		label.append(makeBilingualSpan(field.label, field.labelZh));
-		if (field.required) {
-			const req = document.createElement('span');
-			req.className = 't-req';
-			req.title = 'Required / 必填项';
-			req.textContent = ' *';
-			label.append(req);
-		}
+
+		const req = document.createElement('span');
+		req.className = 't-req';
+		req.title = 'Required / 必填项';
+		req.textContent = ' *';
+		req.style.display = 'none';
+		reqStars.set(field.id, req);
+		label.append(req);
+
 		if (field.suffix) {
 			const s = document.createElement('span');
 			s.className = 't-suffix';
@@ -95,7 +103,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			ta.className = 't-textarea';
 			ta.rows = 3;
 			ta.value = field.def ?? '';
-			ta.placeholder = field.placeholder ?? (field.required ? 'Required / 必填' : '');
+			ta.placeholder = field.placeholder ?? 'Required / 必填';
 			getters.set(field.id, () => ta.value);
 			control = ta;
 		} else {
@@ -105,35 +113,25 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			if (field.min) input.min = field.min;
 			if (field.max) input.max = field.max;
 			input.value = field.def ?? '';
-			input.placeholder = field.placeholder ?? (field.required ? 'Required / 必填数值' : '');
+			input.placeholder = field.placeholder ?? (field.type === 'number' ? 'Required / 必填数值' : 'Required / 必填');
 			getters.set(field.id, () => input.value);
 			control = input;
 		}
 		control.id = `t-f-${field.id}`;
 		controls.push(control);
+		controlsMap.set(field.id, control);
 		wrap.append(control);
 
-		if (field.required) {
-			const tip = document.createElement('span');
-			tip.className = 't-req-tip';
-			tip.style.display = 'none';
-			tip.append(makeBilingualSpan('This field is required', '此项为必填项，请输入数值'));
-			wrap.append(tip);
+		const tip = document.createElement('span');
+		tip.className = 't-req-tip';
+		tip.style.display = 'none';
+		const tipEn = field.type === 'number' ? 'This field is required (valid number)' : 'This field is required';
+		const tipZh = field.type === 'number' ? '此项为必填项，请输入有效数值' : '此项为必填项，请填写内容';
+		tip.append(makeBilingualSpan(tipEn, tipZh));
+		wrap.append(tip);
+		reqTips.set(field.id, tip);
 
-			const checkValidity = () => {
-				const raw = String(control.value ?? '').trim();
-				const isBad = raw === '' || (field.type === 'number' && !Number.isFinite(Number(raw)));
-				if (isBad) {
-					control.classList.add('t-invalid');
-					tip.style.display = 'block';
-				} else {
-					control.classList.remove('t-invalid');
-					tip.style.display = 'none';
-				}
-			};
-			control.addEventListener('input', checkValidity);
-			control.addEventListener('blur', checkValidity);
-		}
+		control.addEventListener('blur', update);
 
 		if (field.hint) {
 			const hint = document.createElement('span');
@@ -191,28 +189,83 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 		results.innerHTML = '';
 		host.querySelectorAll('.t-tablewrap, .t-note, .t-chartwrap').forEach((el) => el.remove());
 
-		let missingRequired = false;
+		// 1. Evaluate field visibility (showIf)
 		for (const f of config.fields) {
-			if (f.required) {
-				const raw = String(getters.get(f.id)?.() ?? '').trim();
-				if (raw === '' || (f.type === 'number' && !Number.isFinite(Number(raw)))) {
-					missingRequired = true;
-					break;
+			const wrap = fieldWraps.get(f.id);
+			if (!wrap) continue;
+			let isVisible = true;
+			if (f.showIf) {
+				try {
+					isVisible = Boolean(f.showIf(values));
+				} catch {
+					isVisible = true;
 				}
+			}
+			wrap.style.display = isVisible ? '' : 'none';
+		}
+
+		// 2. Evaluate dynamic required fields and collect missing required fields
+		const missingFields: FormField[] = [];
+		for (const f of config.fields) {
+			const wrap = fieldWraps.get(f.id);
+			const isVisible = wrap ? wrap.style.display !== 'none' : true;
+			const ctrl = controlsMap.get(f.id);
+			const star = reqStars.get(f.id);
+			const tip = reqTips.get(f.id);
+
+			if (!isVisible) {
+				if (star) star.style.display = 'none';
+				ctrl?.classList.remove('t-invalid');
+				if (tip) tip.style.display = 'none';
+				continue;
+			}
+
+			let isReq = false;
+			if (typeof f.required === 'function') {
+				try {
+					isReq = Boolean(f.required(values));
+				} catch {
+					isReq = false;
+				}
+			} else {
+				isReq = Boolean(f.required);
+			}
+
+			if (star) star.style.display = isReq ? '' : 'none';
+
+			if (isReq) {
+				const raw = String(getters.get(f.id)?.() ?? '').trim();
+				const isBad = raw === '' || (f.type === 'number' && !Number.isFinite(Number(raw)));
+				if (isBad) {
+					missingFields.push(f);
+					ctrl?.classList.add('t-invalid');
+					if (tip) tip.style.display = 'block';
+				} else {
+					ctrl?.classList.remove('t-invalid');
+					if (tip) tip.style.display = 'none';
+				}
+			} else {
+				ctrl?.classList.remove('t-invalid');
+				if (tip) tip.style.display = 'none';
 			}
 		}
 
-		if (missingRequired) {
+		// 3. Intelligent prompt if any required field is missing
+		if (missingFields.length > 0) {
+			const zhNames = missingFields.map((f) => f.labelZh || f.label).join('、');
+			const enNames = missingFields.map((f) => f.label).join(', ');
 			const promptRow = resultRow({
-				label: 'Input prompt',
-				labelZh: '输入提示',
-				value: 'Please fill in all required fields marked with * / 请完整填写带 * 的必填项',
+				label: `Required: ${enNames}`,
+				labelZh: `请填写必填项：${zhNames}`,
+				value: 'Please enter valid values in highlighted field(s) / 请在上方高亮标注框中输入有效数值',
 				emphasis: false,
 			});
+			promptRow.classList.add('t-row-warn');
 			results.append(promptRow);
 			return;
 		}
 
+		// 4. Compute and render results
 		try {
 			const out = config.compute(values);
 			for (const row of out.rows) results.append(resultRow(row));

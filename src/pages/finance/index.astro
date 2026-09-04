@@ -1,5 +1,6 @@
 ---
 import ToolShell from '../../components/tools/ToolShell.astro';
+import ToolSearchBar from '../../components/tools/ToolSearchBar.astro';
 import { REGISTRY } from '../../tools/registry';
 
 const entries = [
@@ -7,10 +8,11 @@ const entries = [
 ].filter((e) => e.kind !== 'redirect');
 ---
 <ToolShell title="Finance" description="Compound interest, loans, mortgages, investments, ROI, discounts, salary and tax calculators.">
+	<ToolSearchBar category="finance" placeholder="Search finance tools (e.g. mortgage, irr, tax, salary)..." placeholderZh="搜索金融工具 (如 房贷、公积金、IRR、个税、薪资、复利)..." totalCount={entries.length} />
 	<div class="t-cards">
 		{
 			entries.map((e) => (
-				<a class="t-card" href={`/${e.category}/${e.slug}/`}>
+				<a class="t-card" href={`/${e.category}/${e.slug}/`} data-slug={e.slug} data-cat={e.category}>
 					<h2>{e.name}{e.nameZh && <span class="t-sub-zh"> · {e.nameZh}</span>}</h2>
 					<p>{e.description}</p>
 				</a>

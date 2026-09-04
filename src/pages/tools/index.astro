@@ -1,6 +1,7 @@
 ---
 // Tools hub: every tool across the categories, grouped in sections.
 import ToolShell from '../../components/tools/ToolShell.astro';
+import ToolSearchBar from '../../components/tools/ToolSearchBar.astro';
 import {
 	CALCULATOR_FEATURED,
 	CATEGORIES,
@@ -25,6 +26,7 @@ const totalTools = CATEGORIES.reduce((acc, cat) => acc + byCategory(cat.id).leng
 			<span class="i18n-en">{totalTools} Free Online Tools · 100% Client-Side Privacy</span>
 			<span class="i18n-zh">{totalTools} 款实用在线工具 · 100% 浏览器本地运算与隐私保护</span>
 		</div>
+		<ToolSearchBar totalCount={totalTools} />
 		<div class="t-cat-pills">
 			{
 				CATEGORIES.map((cat) => (
@@ -53,7 +55,7 @@ const totalTools = CATEGORIES.reduce((acc, cat) => acc + byCategory(cat.id).leng
 					</p>
 					<div class="t-cards">
 						{entries.map((e) => (
-							<a class="t-card" href={`/${e.category}/${e.slug}/`}>
+							<a class="t-card" href={`/${e.category}/${e.slug}/`} data-slug={e.slug} data-cat={e.category}>
 								<h3>{e.name}{e.nameZh && <span class="t-sub-zh"> · {e.nameZh}</span>}</h3>
 								<p>{e.description}</p>
 							</a>

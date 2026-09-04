@@ -13,9 +13,9 @@ const money = (v: number): string => formatNumber(Math.round(v * 100) / 100);
 const percentage: FormConfig = {
 	intro: 'Answers update as you type.',
 	fields: [
-		{ id: 'p', label: 'Percent', suffix: '(%)', type: 'number', def: '15', step: 'any' },
-		{ id: 'v', label: 'Of value', type: 'number', def: '200', step: 'any' },
-		{ id: 'n', label: 'Number', type: 'number', def: '30', step: 'any' },
+		{ id: 'p', label: 'Percent', labelZh: '百分比 (P)', suffix: '(%)', type: 'number', def: '15', step: 'any', required: true },
+		{ id: 'v', label: 'Of value', labelZh: '数值 (V)', type: 'number', def: '200', step: 'any', required: true },
+		{ id: 'n', label: 'Number', labelZh: '对比数值 (N)', type: 'number', def: '30', step: 'any' },
 	],
 	compute: (v) => {
 		const p = v.num('p');
@@ -36,8 +36,8 @@ const percentage: FormConfig = {
 
 const percentageIncrease: FormConfig = {
 	fields: [
-		{ id: 'from', label: 'From (initial value)', type: 'number', def: '100', step: 'any' },
-		{ id: 'to', label: 'To (final value)', type: 'number', def: '125', step: 'any' },
+		{ id: 'from', label: 'From (initial value)', labelZh: '初始值 (From)', type: 'number', def: '100', step: 'any', required: true },
+		{ id: 'to', label: 'To (final value)', labelZh: '最终值 (To)', type: 'number', def: '125', step: 'any', required: true },
 	],
 	compute: (v) => {
 		const from = v.num('from');
@@ -132,9 +132,9 @@ const fraction: FormConfig = {
 const ratio: FormConfig = {
 	intro: 'Simplifies A:B, solves A:B = C:x, and shows A/B as decimal and percent.',
 	fields: [
-		{ id: 'a', label: 'A', type: 'number', def: '16', step: 'any' },
-		{ id: 'b', label: 'B', type: 'number', def: '24', step: 'any' },
-		{ id: 'c', label: 'C (scale A to C)', type: 'number', def: '40', step: 'any' },
+		{ id: 'a', label: 'A', labelZh: '前项 A', type: 'number', def: '16', step: 'any', required: true },
+		{ id: 'b', label: 'B', labelZh: '后项 B', type: 'number', def: '24', step: 'any', required: true },
+		{ id: 'c', label: 'C (scale A to C)', labelZh: '缩放基准 C', type: 'number', def: '40', step: 'any' },
 	],
 	compute: (v) => {
 		const a = v.num('a');
@@ -162,9 +162,9 @@ const ratio: FormConfig = {
 const proportion: FormConfig = {
 	intro: 'Solves a : b = c : x for x (equivalently a/b = c/x).',
 	fields: [
-		{ id: 'a', label: 'a', type: 'number', def: '2', step: 'any' },
-		{ id: 'b', label: 'b', type: 'number', def: '4', step: 'any' },
-		{ id: 'c', label: 'c', type: 'number', def: '8', step: 'any' },
+		{ id: 'a', label: 'a', labelZh: '比例项 a', type: 'number', def: '2', step: 'any', required: true },
+		{ id: 'b', label: 'b', labelZh: '比例项 b', type: 'number', def: '4', step: 'any', required: true },
+		{ id: 'c', label: 'c', labelZh: '比例项 c', type: 'number', def: '8', step: 'any', required: true },
 	],
 	compute: (v) => {
 		const a = v.num('a');
@@ -187,9 +187,9 @@ const proportion: FormConfig = {
 const simpleInterest: FormConfig = {
 	intro: 'Interest computed on the principal only: I = P × r × t.',
 	fields: [
-		{ id: 'p', label: 'Principal', suffix: '($)', type: 'number', def: '10000', step: 'any' },
-		{ id: 'r', label: 'Annual rate', suffix: '(%)', type: 'number', def: '5', step: 'any' },
-		{ id: 't', label: 'Time', suffix: '(years)', type: 'number', def: '3', step: 'any' },
+		{ id: 'p', label: 'Principal', labelZh: '本金', suffix: '($ / ¥)', suffixZh: '($ / 元)', type: 'number', def: '10000', step: 'any', min: '0', required: true },
+		{ id: 'r', label: 'Annual rate', labelZh: '年利率', suffix: '(%)', type: 'number', def: '5', step: 'any', min: '0', required: true },
+		{ id: 't', label: 'Time', labelZh: '投资/借款期限', suffix: '(years / 年)', type: 'number', def: '3', step: 'any', min: '0', required: true },
 	],
 	compute: (v) => {
 		const p = v.num('p');

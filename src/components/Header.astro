@@ -1,12 +1,18 @@
 ---
 import HeaderLink from './HeaderLink.astro';
+import SiteLogo from './SiteLogo.astro';
 import { SITE_TITLE } from '../consts';
 ---
 
 <header>
 	<nav>
 		<div class="nav-left">
-			<h2><a href="/">{SITE_TITLE}</a></h2>
+			<h2>
+				<a href="/" class="site-branding">
+					<SiteLogo size={24} />
+					<span>{SITE_TITLE}</span>
+				</a>
+			</h2>
 			<div class="nav-links">
 				<HeaderLink href="/"><span class="i18n-en">Home</span><span class="i18n-zh">首页</span></HeaderLink>
 				<HeaderLink href="/blog"><span class="i18n-en">Blog</span><span class="i18n-zh">博客</span></HeaderLink>
@@ -123,6 +129,11 @@ import { SITE_TITLE } from '../consts';
 	h2 a.active {
 		color: var(--fg);
 		text-decoration: none;
+	}
+	.site-branding {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.55rem;
 	}
 	h2 a:hover {
 		color: var(--accent);

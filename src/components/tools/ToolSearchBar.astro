@@ -1,0 +1,378 @@
+---
+import { TOOL_KEYWORDS } from '../../tools/registry';
+
+interface Props {
+	placeholder?: string;
+	placeholderZh?: string;
+	category?: string;
+	totalCount?: number;
+}
+
+const {
+	placeholder = 'Search tools (e.g. mortgage, json, uuid, apr, tax, weight)...',
+	placeholderZh = '搜索工具 (输入中英文或关键词，如 房贷、公积金、json、uuid、汇率、个税)...',
+	category,
+} = Astro.props;
+---
+
+<div class="t-search-wrapper" data-tool-search-wrapper data-category={category}>
+	<div class="t-search-box">
+		<span class="t-search-icon" aria-hidden="true">🔍</span>
+		<input
+			type="text"
+			class="t-search-input"
+			id="tool-search-input"
+			placeholder={placeholderZh}
+			data-placeholder-en={placeholder}
+			data-placeholder-zh={placeholderZh}
+			autocomplete="off"
+			spellcheck="false"
+			aria-label="Search tools"
+		/>
+		<button type="button" class="t-search-clear" id="tool-search-clear" aria-label="Clear search" style="display: none;">×</button>
+		<kbd class="t-search-kbd" title="Press / or Ctrl+K to search">/</kbd>
+	</div>
+
+	<div class="t-search-meta" id="tool-search-meta" style="display: none;">
+		<span class="t-search-count-text">
+			<span class="i18n-en">Found <strong class="t-search-count-num" id="tool-search-count-en">0</strong> tools</span>
+			<span class="i18n-zh">找到 <strong class="t-search-count-num" id="tool-search-count-zh">0</strong> 款匹配工具</span>
+		</span>
+		<button type="button" class="t-search-quick-clear" id="tool-search-quick-clear">
+			<span class="i18n-en">Clear filter</span>
+			<span class="i18n-zh">清除筛选</span>
+		</button>
+	</div>
+
+	<div class="t-search-empty" id="tool-search-empty" style="display: none;">
+		<div class="t-search-empty-icon">🔍</div>
+		<h3 class="t-search-empty-title">
+			<span class="i18n-en">No tools found matching "<span class="t-empty-query"></span>"</span>
+			<span class="i18n-zh">未找到与 “<span class="t-empty-query"></span>” 相关的工具</span>
+		</h3>
+		<p class="t-search-empty-desc">
+			<span class="i18n-en">Try searching with other keywords like "mortgage", "json", "tax", "uuid" or unit names.</span>
+			<span class="i18n-zh">建议尝试其他关键词搜索，例如“房贷”、“公积金”、“json”、“个税”、“重量”等。</span>
+		</p>
+		{category && (
+			<div class="t-search-empty-actions">
+				<a class="t-search-all-link" id="tool-search-all-link" href="/tools/">
+					<span class="i18n-en">🔍 Search across all categories in Tools Hub ➔</span>
+					<span class="i18n-zh">🔍 前往全部工具库中搜索 ➔</span>
+				</a>
+			</div>
+		)}
+		<button type="button" class="t-search-reset-btn" id="tool-search-reset">
+			<span class="i18n-en">Reset Search</span>
+			<span class="i18n-zh">清空搜索</span>
+		</button>
+	</div>
+</div>
+
+<script is:inline define:vars={{ keywordsMap: TOOL_KEYWORDS }}>
+	(() => {
+		const input = document.getElementById('tool-search-input');
+		const clearBtn = document.getElementById('tool-search-clear');
+		const quickClearBtn = document.getElementById('tool-search-quick-clear');
+		const metaEl = document.getElementById('tool-search-meta');
+		const countEn = document.getElementById('tool-search-count-en');
+		const countZh = document.getElementById('tool-search-count-zh');
+		const emptyEl = document.getElementById('tool-search-empty');
+		const emptyQuerySpans = document.querySelectorAll('.t-empty-query');
+		const resetBtn = document.getElementById('tool-search-reset');
+		const allLink = document.getElementById('tool-search-all-link');
+
+		if (!input) return;
+
+		// Update placeholder by site language
+		const updatePlaceholder = () => {
+			const isZh = document.documentElement.dataset.lang !== 'en';
+			const ph = isZh ? input.dataset.placeholderZh : input.dataset.placeholderEn;
+			if (ph) input.placeholder = ph;
+		};
+		updatePlaceholder();
+		const observer = new MutationObserver(updatePlaceholder);
+		observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-lang'] });
+
+		// Cache cards
+		const cards = Array.from(document.querySelectorAll('.t-card'));
+		const cardData = cards.map((card) => {
+			const slug = card.getAttribute('data-slug') || '';
+			const cat = card.getAttribute('data-cat') || '';
+			const name = (card.querySelector('h2, h3')?.textContent || '').toLowerCase();
+			const desc = (card.querySelector('p')?.textContent || '').toLowerCase();
+			const href = (card.getAttribute('href') || '').toLowerCase();
+			const extra = (keywordsMap && slug ? (keywordsMap[slug] || '') : '').toLowerCase();
+			const section = card.closest('.t-section');
+			return {
+				card,
+				section,
+				slug,
+				cat,
+				fullText: `${slug} ${cat} ${name} ${desc} ${href} ${extra}`,
+			};
+		});
+
+		const allSections = Array.from(document.querySelectorAll('.t-section'));
+
+		function filter(query) {
+			const q = (query || '').trim().toLowerCase();
+
+			if (!q) {
+				if (clearBtn) clearBtn.style.display = 'none';
+				if (metaEl) metaEl.style.display = 'none';
+				if (emptyEl) emptyEl.style.display = 'none';
+				cardData.forEach((item) => { item.card.style.display = ''; });
+				allSections.forEach((sec) => { sec.style.display = ''; });
+
+				// Clean URL without reload
+				const url = new URL(window.location.href);
+				if (url.searchParams.has('q')) {
+					url.searchParams.delete('q');
+					window.history.replaceState({}, '', url.pathname + (url.search ? url.search : '') + url.hash);
+				}
+				return;
+			}
+
+			if (clearBtn) clearBtn.style.display = 'inline-flex';
+
+			const tokens = q.split(/\s+/).filter(Boolean);
+			let matches = 0;
+			const visibleSections = new Set();
+
+			cardData.forEach((item) => {
+				const isMatch = tokens.every((token) => item.fullText.includes(token));
+				if (isMatch) {
+					item.card.style.display = '';
+					matches++;
+					if (item.section) visibleSections.add(item.section);
+				} else {
+					item.card.style.display = 'none';
+				}
+			});
+
+			allSections.forEach((sec) => {
+				sec.style.display = visibleSections.has(sec) ? '' : 'none';
+			});
+
+			if (countEn) countEn.textContent = String(matches);
+			if (countZh) countZh.textContent = String(matches);
+			if (metaEl) metaEl.style.display = 'flex';
+
+			if (matches === 0) {
+				emptyQuerySpans.forEach((el) => { el.textContent = input.value.trim(); });
+				if (emptyEl) emptyEl.style.display = 'block';
+				if (allLink) allLink.href = `/tools/?q=${encodeURIComponent(input.value.trim())}`;
+			} else {
+				if (emptyEl) emptyEl.style.display = 'none';
+			}
+
+			// Update URL ?q=
+			const url = new URL(window.location.href);
+			url.searchParams.set('q', q);
+			window.history.replaceState({}, '', url.pathname + '?' + url.searchParams.toString() + url.hash);
+		}
+
+		input.addEventListener('input', () => filter(input.value));
+
+		const clear = () => {
+			input.value = '';
+			filter('');
+			input.focus();
+		};
+
+		if (clearBtn) clearBtn.addEventListener('click', clear);
+		if (quickClearBtn) quickClearBtn.addEventListener('click', clear);
+		if (resetBtn) resetBtn.addEventListener('click', clear);
+
+		// Shortcut / and Ctrl+K / Cmd+K
+		window.addEventListener('keydown', (e) => {
+			const tag = document.activeElement ? document.activeElement.tagName : '';
+			const isEditing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || (document.activeElement && document.activeElement.isContentEditable);
+			if (e.key === '/' && !isEditing) {
+				e.preventDefault();
+				input.focus();
+				input.select();
+			} else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+				e.preventDefault();
+				input.focus();
+				input.select();
+			} else if (e.key === 'Escape' && document.activeElement === input) {
+				clear();
+				input.blur();
+			}
+		});
+
+		// Check URL params on load (?q= or ?focus=1)
+		const params = new URLSearchParams(window.location.search);
+		const initialQ = params.get('q') || params.get('search');
+		if (initialQ) {
+			input.value = initialQ;
+			filter(initialQ);
+		}
+		if (params.get('focus') === '1') {
+			input.focus();
+			input.select();
+		}
+	})();
+</script>
+
+<style>
+	.t-search-wrapper {
+		margin: 0.5rem 0 1.5rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.65rem;
+	}
+	.t-search-box {
+		position: relative;
+		display: flex;
+		align-items: center;
+		background: var(--card);
+		border: 1.5px solid var(--gridline);
+		border-radius: 12px;
+		padding: 0 0.85rem;
+		transition: border-color 0.15s ease, box-shadow 0.15s ease;
+	}
+	.t-search-box:focus-within {
+		border-color: var(--accent);
+		box-shadow: 0 0 0 3px rgba(var(--accent-rgb, 59, 130, 246), 0.15);
+	}
+	.t-search-icon {
+		font-size: 1.05rem;
+		color: var(--dim);
+		margin-right: 0.6rem;
+		user-select: none;
+	}
+	.t-search-input {
+		flex: 1;
+		border: none;
+		background: transparent;
+		color: var(--fg);
+		font-size: 0.96rem;
+		padding: 0.75rem 0;
+		outline: none;
+		font-family: inherit;
+		min-width: 0;
+	}
+	.t-search-input::placeholder {
+		color: var(--dim);
+		opacity: 0.75;
+	}
+	.t-search-clear {
+		border: none;
+		background: var(--gridline);
+		color: var(--dim);
+		width: 1.45rem;
+		height: 1.45rem;
+		border-radius: 50%;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 1.1rem;
+		cursor: pointer;
+		margin-left: 0.5rem;
+		line-height: 1;
+		transition: all 0.15s ease;
+	}
+	.t-search-clear:hover {
+		background: var(--accent);
+		color: #fff;
+	}
+	.t-search-kbd {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		font-family: var(--font-mono, monospace);
+		font-size: 0.75rem;
+		font-weight: 600;
+		padding: 0.15rem 0.45rem;
+		border-radius: 4px;
+		background: var(--bg);
+		color: var(--dim);
+		border: 1px solid var(--gridline);
+		margin-left: 0.5rem;
+		user-select: none;
+	}
+	.t-search-meta {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		font-size: 0.84rem;
+		color: var(--dim);
+		padding: 0 0.35rem;
+	}
+	.t-search-count-num {
+		font-weight: 700;
+		color: var(--accent);
+	}
+	.t-search-quick-clear {
+		border: none;
+		background: transparent;
+		color: var(--dim);
+		font-size: 0.8rem;
+		text-decoration: underline;
+		cursor: pointer;
+		padding: 0;
+	}
+	.t-search-quick-clear:hover {
+		color: var(--accent);
+	}
+	.t-search-empty {
+		text-align: center;
+		padding: 3rem 1.5rem;
+		background: var(--card);
+		border: 1px dashed var(--gridline);
+		border-radius: 12px;
+		margin: 1.5rem 0;
+	}
+	.t-search-empty-icon {
+		font-size: 2.2rem;
+		margin-bottom: 0.6rem;
+		opacity: 0.7;
+	}
+	.t-search-empty-title {
+		font-size: 1.05rem;
+		font-weight: 600;
+		color: var(--fg);
+		margin-bottom: 0.4rem;
+	}
+	.t-search-empty-desc {
+		font-size: 0.85rem;
+		color: var(--dim);
+		margin-bottom: 1.25rem;
+	}
+	.t-search-empty-actions {
+		margin-bottom: 1.25rem;
+	}
+	.t-search-all-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		font-size: 0.88rem;
+		color: var(--accent);
+		text-decoration: none;
+		font-weight: 600;
+	}
+	.t-search-all-link:hover {
+		text-decoration: underline;
+	}
+	.t-search-reset-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		padding: 0.45rem 1.1rem;
+		border-radius: 8px;
+		border: 1px solid var(--accent);
+		background: rgba(var(--accent-rgb, 59, 130, 246), 0.1);
+		color: var(--accent);
+		font-size: 0.85rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+	.t-search-reset-btn:hover {
+		background: var(--accent);
+		color: #fff;
+	}
+</style>
