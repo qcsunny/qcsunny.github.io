@@ -3,6 +3,12 @@ dist/
 # generated types
 .astro/
 
+# local-only agent and planning docs
+AGENTS.md
+CLAUDE.md
+TODO.md
+
+
 # dependencies
 node_modules/
 
