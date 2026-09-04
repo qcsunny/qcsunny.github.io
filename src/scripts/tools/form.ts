@@ -12,6 +12,9 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 	const controlsMap = new Map<string, HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>();
 	const reqTips = new Map<string, HTMLElement>();
 
+	// Slug used as localStorage key prefix (Feature 2)
+	const slug = document.documentElement.dataset.toolSlug ?? '';
+
 	const form = document.createElement('div');
 	form.className = 't-form';
 
@@ -22,7 +25,25 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 
 	const results = document.createElement('div');
 	results.className = 't-results';
+
+	// Feature 3: Export/Print button bar (created before host.append so update() can reference it)
+	const exportBar = document.createElement('div');
+	exportBar.className = 't-export-bar';
+	exportBar.style.display = 'none';
+	const exportBtn = document.createElement('button');
+	exportBtn.className = 't-export-btn';
+	const exportEnSpan = document.createElement('span');
+	exportEnSpan.className = 'i18n-en';
+	exportEnSpan.textContent = '🖨 Print / Save PDF';
+	const exportZhSpan = document.createElement('span');
+	exportZhSpan.className = 'i18n-zh';
+	exportZhSpan.textContent = '🖨 打印 / 导出 PDF';
+	exportBtn.append(exportEnSpan, exportZhSpan);
+	exportBtn.addEventListener('click', () => window.print());
+	exportBar.append(exportBtn);
+
 	host.append(results);
+	host.append(exportBar);
 
 	const values: FormValues = {
 		num: (id) => Number(String(getters.get(id)?.() ?? '')),
@@ -252,6 +273,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 
 		// 3. Intelligent prompt if any required field is missing
 		if (missingFields.length > 0) {
+			exportBar.style.display = 'none';
 			const zhNames = missingFields.map((f) => f.labelZh || f.label).join('、');
 			const enNames = missingFields.map((f) => f.label).join(', ');
 			const promptRow = resultRow({
@@ -282,7 +304,25 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 				note.append(makeBilingualSpan(out.note, out.noteZh));
 				host.append(note);
 			}
+
+			// Show export bar on successful render (Feature 3)
+			exportBar.style.display = '';
+
+			// Save draft to localStorage (Feature 2)
+			if (slug) {
+				try {
+					const data: Record<string, string | boolean> = {};
+					for (const f of config.fields) {
+						const val = getters.get(f.id)?.();
+						if (val !== undefined) data[f.id] = val;
+					}
+					localStorage.setItem(`tool-draft:${slug}`, JSON.stringify(data));
+				} catch {
+					// localStorage may be disabled; silently ignore
+				}
+			}
 		} catch (err) {
+			exportBar.style.display = 'none';
 			const note = document.createElement('p');
 			note.className = 't-note';
 			note.textContent = err instanceof Error ? err.message : 'Invalid input.';
@@ -293,6 +333,46 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 	controls.forEach((c) => {
 		c.addEventListener('input', update);
 		c.addEventListener('change', update);
+
+		// Feature 1: Enter / Esc key handling
+		c.addEventListener('keydown', (e: Event) => {
+			const ke = e as KeyboardEvent;
+			const isTextarea = c.tagName.toLowerCase() === 'textarea';
+
+			if (ke.key === 'Enter') {
+				if (!isTextarea) {
+					ke.preventDefault();
+					update();
+				}
+				// textarea: let Enter pass through for newline behavior
+			} else if (ke.key === 'Escape') {
+				ke.preventDefault();
+				(c as HTMLInputElement | HTMLTextAreaElement).value = '';
+				update();
+			}
+		});
 	});
+
+	// Feature 2: Restore draft from localStorage (before first update())
+	if (slug) {
+		try {
+			const raw = localStorage.getItem(`tool-draft:${slug}`);
+			if (raw) {
+				const data = JSON.parse(raw) as Record<string, string | boolean>;
+				for (const [id, val] of Object.entries(data)) {
+					const ctrl = controlsMap.get(id);
+					if (!ctrl) continue;
+					if (ctrl instanceof HTMLInputElement && ctrl.type === 'checkbox') {
+						ctrl.checked = Boolean(val);
+					} else {
+						(ctrl as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement).value = String(val);
+					}
+				}
+			}
+		} catch {
+			// localStorage may be disabled or JSON malformed; silently ignore
+		}
+	}
+
 	update();
 }

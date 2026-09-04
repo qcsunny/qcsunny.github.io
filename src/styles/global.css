@@ -315,3 +315,25 @@ html[data-lang='zh'] .i18n-en {
 }
 
 
+/* ── Print / Export PDF ── */
+@media print {
+  /* 隐藏所有非结果内容 */
+  header, nav, footer,
+  .t-form, .t-intro, .t-export-bar,
+  .t-related-page, .t-content, .t-ad,
+  .t-breadcrumb, .t-search-bar-wrap {
+    display: none !important;
+  }
+  /* 结果区全宽展示 */
+  .t-results, .t-tablewrap, .t-chartwrap, .t-note {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+}
