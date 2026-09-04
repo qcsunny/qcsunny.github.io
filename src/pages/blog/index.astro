@@ -18,220 +18,511 @@ const readMinutes = (body: string): number => {
 	const minutes = (words - cjk) / 220 + cjk / 400;
 	return Math.max(1, Math.round(minutes));
 };
+
+function getCategory(slug: string): { labelZh: string; labelEn: string; color: string } {
+	if (slug.includes('compound') || slug.includes('mortgage')) {
+		return { labelZh: '金融与数学', labelEn: 'Finance & Math', color: '#10b981' };
+	}
+	if (slug.includes('uuid') || slug.includes('database')) {
+		return { labelZh: '架构与数据库', labelEn: 'Architecture', color: '#6366f1' };
+	}
+	if (slug.includes('glm') || slug.includes('ai')) {
+		return { labelZh: 'AI 与大模型', labelEn: 'AI & LLM', color: '#ec4899' };
+	}
+	return { labelZh: '前端与工具研发', labelEn: 'Web Craft', color: '#f59e0b' };
+}
 ---
 
 <!doctype html>
 <html lang="en">
 	<head>
 		<BaseHead
-			title={`Blog — ${SITE_TITLE}`}
-			description="Technical write-ups: zero-dependency browser tools, QR encoding, theme systems and the math behind the calculators."
+			title={`技术博客 (Blog) — ${SITE_TITLE}`}
+			description="深入工程实战与算法手记：零依赖纯前端架构、二维码手写编码、UUID 数据库索引性能优化与金融复利数学。"
 		/>
 	</head>
 	<body>
 		<Header />
-		<main>
-			<p class="eyebrow">Blog</p>
-			<h1>Writing about the craft</h1>
-			<p class="intro">
-				Hand-rolled QR encoding, a zero-dependency expression engine, theme systems, and the
-				math behind the calculators — notes from building this site.
-			</p>
-			<p class="intro" lang="zh-CN">
-				记录本站的构建过程：手写二维码编码器、零依赖表达式引擎、主题系统，以及计算器与换算器背后的数学。
-			</p>
+		<main class="blog-container">
+			<!-- Header Intro -->
+			<div class="blog-header">
+				<div class="blog-badge">
+					<span class="badge-dot"></span>
+					<span class="i18n-zh">深度工程实战 · 算法原理解析 · 知识沉淀</span>
+					<span class="i18n-en">Technical Engineering & Math Insights</span>
+				</div>
+				<h1 class="blog-title">
+					<span class="i18n-zh">技术博客与工程手记</span>
+					<span class="i18n-en">Writing About the Craft</span>
+				</h1>
+				<p class="blog-subtitle i18n-zh">
+					记录从零手写算法、纯浏览器端零依赖架构、UUID 数据库索引性能对比、金融复利数学与高并发前端的最佳实践。
+				</p>
+				<p class="blog-subtitle i18n-en">
+					In-depth notes on hand-rolled algorithms, zero-dependency client-side architecture, database index benchmarks, and mathematical utilities.
+				</p>
+			</div>
 
+			<!-- Featured Hero Article -->
 			{
 				featured && (
-					<a class="featured" href={`/blog/${featured.id}/`}>
-						<p class="featured-label">Latest</p>
-						<h2 class="featured-title">{featured.data.title}</h2>
-						<p class="featured-desc">{featured.data.description}</p>
-						<p class="meta">
-							<FormattedDate date={featured.data.pubDate} />
-							<span aria-hidden="true">·</span>
-							<span>{readMinutes(featured.body ?? '')} min read</span>
-						</p>
-					</a>
+					<section class="featured-section">
+						<a class="featured-card" href={`/blog/${featured.id}/`}>
+							<div class="featured-badge-row">
+								<span class="featured-tag">
+									⭐ <span class="i18n-zh">最新精选</span><span class="i18n-en">Featured</span>
+								</span>
+								<span class="cat-pill" style={`--cat-color: ${getCategory(featured.id).color};`}>
+									<span class="i18n-zh">{getCategory(featured.id).labelZh}</span>
+									<span class="i18n-en">{getCategory(featured.id).labelEn}</span>
+								</span>
+								<span class="read-time-pill">
+									{readMinutes(featured.body ?? '')} min read
+								</span>
+							</div>
+
+							<h2 class="featured-title">{featured.data.title}</h2>
+							<p class="featured-desc">{featured.data.description}</p>
+
+							<div class="featured-foot">
+								<div class="featured-meta">
+									<FormattedDate date={featured.data.pubDate} />
+									<span class="meta-dot">·</span>
+									<span>QCSunny</span>
+								</div>
+								<span class="featured-cta">
+									<span class="i18n-zh">阅读完整长文</span>
+									<span class="i18n-en">Read Full Article</span>
+									<span class="cta-arrow" aria-hidden="true">→</span>
+								</span>
+							</div>
+						</a>
+					</section>
 				)
 			}
 
-			<ul class="post-list">
-				{
-					rest.map((post) => (
-						<li>
-							<a href={`/blog/${post.id}/`}>
-								<span class="date">
-									<FormattedDate date={post.data.pubDate} />
-								</span>
-								<span class="post-body">
-									<span class="post-title">{post.data.title}</span>
-									<span class="post-desc">{post.data.description}</span>
-								</span>
-								<span class="arrow" aria-hidden="true">→</span>
-							</a>
-						</li>
-					))
-				}
-			</ul>
+			<!-- Articles Grid -->
+			<section class="articles-section">
+				<div class="articles-header">
+					<h2 class="articles-title">
+						<span class="i18n-zh">全部文章</span>
+						<span class="i18n-en">All Articles</span>
+						<span class="posts-count">({posts.length})</span>
+					</h2>
+				</div>
+
+				<div class="articles-grid">
+					{
+						rest.map((post) => {
+							const cat = getCategory(post.id);
+							return (
+								<article class="article-card">
+									<a href={`/blog/${post.id}/`} class="article-card-link">
+										<div class="article-meta-row">
+											<span class="cat-pill" style={`--cat-color: ${cat.color};`}>
+												<span class="i18n-zh">{cat.labelZh}</span>
+												<span class="i18n-en">{cat.labelEn}</span>
+											</span>
+											<span class="article-date">
+												<FormattedDate date={post.data.pubDate} />
+											</span>
+											<span class="meta-dot">·</span>
+											<span class="article-read">{readMinutes(post.body ?? '')}m</span>
+										</div>
+
+										<h3 class="article-title">{post.data.title}</h3>
+										<p class="article-desc">{post.data.description}</p>
+
+										<div class="article-foot">
+											<span class="read-more">
+												<span class="i18n-zh">阅读全文</span>
+												<span class="i18n-en">Read Article</span>
+												<span class="read-arrow" aria-hidden="true">→</span>
+											</span>
+										</div>
+									</a>
+								</article>
+							);
+						})
+					}
+				</div>
+			</section>
+
+			<!-- Bottom Tools Promotion Box -->
+			<section class="tools-cta-box">
+				<div class="tools-cta-content">
+					<h3>
+						<span class="i18n-zh">探索配套开发者工具库</span>
+						<span class="i18n-en">Explore Matching Developer Tools</span>
+					</h3>
+					<p>
+						<span class="i18n-zh">本站提供 JSON 格式化、SQL 美化、JWT 本地解码、URL 解析与科学计算器等 40+ 款免费纯前端工具，零隐私上传、极速秒开。</span>
+						<span class="i18n-en">Zero data upload, instant execution in your browser. 40+ free calculators, formatters, and generators.</span>
+					</p>
+				</div>
+				<a href="/tools/" class="tools-cta-btn">
+					<span class="i18n-zh">前往工具库 →</span>
+					<span class="i18n-en">Browse Tools →</span>
+				</a>
+			</section>
 		</main>
 		<Footer />
 	</body>
 </html>
 
 <style>
-	.eyebrow {
-		font-family:
-			ui-monospace,
-			'SFMono-Regular',
-			Consolas,
-			Menlo,
-			monospace;
-		font-size: 0.8rem;
-		letter-spacing: 0.14em;
-		text-transform: uppercase;
-		color: var(--accent);
-		margin-bottom: 0.4em;
-	}
-	h1 {
-		font-size: clamp(1.9rem, 4.5vw, 2.6rem);
-		margin-bottom: 0.5em;
-	}
-	.intro {
-		color: var(--dim);
-		max-width: 40em;
-	}
-	.intro + .intro {
-		margin-top: 0.5em;
-	}
-	[lang='zh-CN'] {
-		line-height: 1.9;
+	.blog-container {
+		max-width: 960px;
+		margin: 0 auto;
+		padding: 3rem 1.5rem 5rem;
 	}
 
-	/* --- featured post --- */
-	.featured {
-		display: block;
-		margin-top: 3rem;
-		padding: 1.6em 1.7em 1.4em;
-		border: 1px solid var(--gridline);
-		border-radius: 14px;
-		background: var(--card);
-		text-decoration: none;
-		transition:
-			border-color 0.15s ease,
-			box-shadow 0.15s ease;
+	/* --- HEADER --- */
+	.blog-header {
+		margin-bottom: 2.8rem;
+		text-align: left;
 	}
-	.featured:hover {
-		border-color: var(--accent);
-		box-shadow: var(--box-shadow);
-		text-decoration: none;
-	}
-	.featured-label {
-		font-family:
-			ui-monospace,
-			'SFMono-Regular',
-			Consolas,
-			Menlo,
-			monospace;
-		font-size: 0.75rem;
-		letter-spacing: 0.14em;
-		text-transform: uppercase;
-		color: var(--accent);
-		margin: 0 0 0.7em;
-	}
-	.featured-title {
-		font-size: clamp(1.35rem, 3vw, 1.75rem);
-		margin-bottom: 0.45em;
-		transition: color 0.15s ease;
-	}
-	.featured:hover .featured-title {
-		color: var(--accent);
-	}
-	.featured-desc {
-		color: var(--dim);
-		margin-bottom: 1em;
-	}
-	.meta {
-		display: flex;
-		gap: 0.6em;
+
+	.blog-badge {
+		display: inline-flex;
 		align-items: center;
+		gap: 0.55em;
+		padding: 0.3em 0.85em;
+		background: var(--accent-soft);
+		border: 1px solid var(--gridline);
+		border-radius: 999px;
+		font-size: 0.82rem;
+		font-weight: 600;
+		color: var(--accent);
+		margin-bottom: 1.2rem;
+	}
+
+	.badge-dot {
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		background: var(--accent);
+		box-shadow: 0 0 8px var(--accent);
+	}
+
+	.blog-title {
+		font-size: clamp(2.2rem, 5vw, 3rem);
+		font-weight: 800;
+		letter-spacing: -0.03em;
+		color: var(--fg);
+		margin-bottom: 0.8rem;
+	}
+
+	.blog-subtitle {
+		font-size: 1.1rem;
 		color: var(--dim);
-		font-size: 0.85rem;
+		line-height: 1.7;
+		max-width: 44em;
 		margin: 0;
 	}
 
-	/* --- row list (Linear/Vercel style) --- */
-	.post-list {
-		list-style: none;
-		margin: 1.5rem 0 0;
-		padding: 0;
-	}
-	.post-list a {
-		display: flex;
-		align-items: baseline;
-		gap: 1.5em;
-		padding: 1.15em 0.4em;
-		border-bottom: 1px solid var(--gridline);
-		text-decoration: none;
-	}
-	.post-list li:first-child a {
-		border-top: 1px solid var(--gridline);
-	}
-	.date {
-		font-family:
-			ui-monospace,
-			'SFMono-Regular',
-			Consolas,
-			Menlo,
-			monospace;
-		font-size: 0.8rem;
-		color: var(--dim);
-		white-space: nowrap;
-		min-width: 5.5em;
-	}
-	.post-body {
-		display: flex;
-		flex-direction: column;
-		gap: 0.2em;
-		min-width: 0;
-		flex: 1;
-	}
-	.post-title {
-		color: var(--fg);
-		font-weight: 700;
-		font-size: 1.05rem;
-		letter-spacing: -0.01em;
-		transition: color 0.15s ease;
-	}
-	.post-list a:hover .post-title {
-		color: var(--accent);
-	}
-	.post-desc {
-		color: var(--dim);
-		font-size: 0.9rem;
-		line-height: 1.6;
-	}
-	.arrow {
-		color: var(--accent);
-		opacity: 0;
-		transform: translateX(-6px);
-		transition:
-			opacity 0.15s ease,
-			transform 0.15s ease;
-		font-size: 1.1rem;
-		align-self: center;
-	}
-	.post-list a:hover .arrow {
-		opacity: 1;
-		transform: translateX(0);
+	/* --- FEATURED SECTION --- */
+	.featured-section {
+		margin-bottom: 3.5rem;
 	}
 
-	@media (max-width: 720px) {
-		.post-list a {
-			gap: 1em;
+	.featured-card {
+		display: block;
+		padding: 2.2rem 2.4rem;
+		background: var(--card);
+		border: 1px solid var(--gridline);
+		border-radius: 16px;
+		text-decoration: none;
+		box-shadow: var(--box-shadow);
+		position: relative;
+		overflow: hidden;
+		transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+	}
+
+	.featured-card::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 3px;
+		background: linear-gradient(90deg, var(--accent) 0%, #a855f7 50%, #ec4899 100%);
+	}
+
+	.featured-card:hover {
+		transform: translateY(-3px);
+		border-color: var(--accent);
+		box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+		text-decoration: none;
+	}
+
+	.featured-badge-row {
+		display: flex;
+		align-items: center;
+		gap: 0.8em;
+		margin-bottom: 1rem;
+		flex-wrap: wrap;
+	}
+
+	.featured-tag {
+		font-size: 0.82rem;
+		font-weight: 700;
+		color: var(--accent);
+		background: var(--accent-soft);
+		padding: 0.2em 0.6em;
+		border-radius: 6px;
+	}
+
+	.cat-pill {
+		font-size: 0.78rem;
+		font-weight: 600;
+		color: var(--cat-color);
+		background: color-mix(in srgb, var(--cat-color) 12%, transparent);
+		padding: 0.2em 0.6em;
+		border-radius: 6px;
+	}
+
+	.read-time-pill {
+		font-size: 0.78rem;
+		color: var(--dim);
+		font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+	}
+
+	.featured-title {
+		font-size: clamp(1.45rem, 3.2vw, 1.95rem);
+		font-weight: 800;
+		color: var(--fg);
+		line-height: 1.35;
+		letter-spacing: -0.02em;
+		margin-bottom: 0.7rem;
+		transition: color 0.15s ease;
+	}
+
+	.featured-card:hover .featured-title {
+		color: var(--accent);
+	}
+
+	.featured-desc {
+		font-size: 1rem;
+		color: var(--dim);
+		line-height: 1.65;
+		margin-bottom: 1.8rem;
+		max-width: 48em;
+	}
+
+	.featured-foot {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		border-top: 1px solid var(--gridline);
+		padding-top: 1.1rem;
+		flex-wrap: wrap;
+		gap: 0.8em;
+	}
+
+	.featured-meta {
+		display: flex;
+		align-items: center;
+		gap: 0.5em;
+		font-size: 0.86rem;
+		color: var(--dim);
+		font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+	}
+
+	.meta-dot {
+		opacity: 0.5;
+	}
+
+	.featured-cta {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4em;
+		font-size: 0.92rem;
+		font-weight: 700;
+		color: var(--accent);
+	}
+
+	.cta-arrow {
+		transition: transform 0.15s ease;
+	}
+
+	.featured-card:hover .cta-arrow {
+		transform: translateX(5px);
+	}
+
+	/* --- ARTICLES SECTION --- */
+	.articles-section {
+		margin-top: 2rem;
+	}
+
+	.articles-header {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		margin-bottom: 1.5rem;
+		border-bottom: 1px solid var(--gridline);
+		padding-bottom: 0.8rem;
+	}
+
+	.articles-title {
+		font-size: 1.35rem;
+		font-weight: 700;
+		color: var(--fg);
+		margin: 0;
+	}
+
+	.posts-count {
+		font-size: 0.95rem;
+		font-weight: 400;
+		color: var(--dim);
+		margin-left: 0.4em;
+	}
+
+	.articles-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+		gap: 1.4rem;
+	}
+
+	@media (max-width: 640px) {
+		.articles-grid {
+			grid-template-columns: 1fr;
 		}
-		.date {
-			display: none;
-		}
+	}
+
+	.article-card {
+		background: var(--card);
+		border: 1px solid var(--gridline);
+		border-radius: 12px;
+		transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+	}
+
+	.article-card:hover {
+		transform: translateY(-3px);
+		border-color: var(--accent);
+		box-shadow: var(--box-shadow);
+	}
+
+	.article-card-link {
+		display: flex;
+		flex-direction: column;
+		padding: 1.5rem;
+		height: 100%;
+		box-sizing: border-box;
+		text-decoration: none;
+	}
+
+	.article-meta-row {
+		display: flex;
+		align-items: center;
+		gap: 0.5em;
+		font-size: 0.78rem;
+		color: var(--dim);
+		margin-bottom: 0.8rem;
+		font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+	}
+
+	.article-date {
+		white-space: nowrap;
+	}
+
+	.article-title {
+		font-size: 1.18rem;
+		font-weight: 700;
+		color: var(--fg);
+		line-height: 1.42;
+		letter-spacing: -0.01em;
+		margin: 0 0 0.6em;
+		transition: color 0.15s ease;
+	}
+
+	.article-card:hover .article-title {
+		color: var(--accent);
+	}
+
+	.article-desc {
+		font-size: 0.88rem;
+		color: var(--dim);
+		line-height: 1.6;
+		margin: 0 0 1.2rem;
+		flex: 1;
+	}
+
+	.article-foot {
+		border-top: 1px solid var(--gridline);
+		padding-top: 0.75rem;
+		display: flex;
+		justify-content: flex-end;
+	}
+
+	.read-more {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35em;
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: var(--accent);
+	}
+
+	.read-arrow {
+		transition: transform 0.15s ease;
+	}
+
+	.article-card:hover .read-arrow {
+		transform: translateX(4px);
+	}
+
+	/* --- TOOLS CTA BOX --- */
+	.tools-cta-box {
+		margin-top: 4.5rem;
+		padding: 2rem 2.2rem;
+		background: var(--card);
+		border: 1px solid var(--gridline);
+		border-radius: 14px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 2rem;
+		flex-wrap: wrap;
+		box-shadow: var(--box-shadow);
+	}
+
+	.tools-cta-content {
+		flex: 1;
+		min-width: 280px;
+	}
+
+	.tools-cta-content h3 {
+		font-size: 1.25rem;
+		font-weight: 700;
+		color: var(--fg);
+		margin: 0 0 0.4em;
+	}
+
+	.tools-cta-content p {
+		font-size: 0.92rem;
+		color: var(--dim);
+		line-height: 1.6;
+		margin: 0;
+	}
+
+	.tools-cta-btn {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.75rem 1.4rem;
+		background: var(--accent);
+		color: var(--on-accent);
+		border-radius: 9px;
+		font-weight: 600;
+		font-size: 0.92rem;
+		text-decoration: none;
+		white-space: nowrap;
+		transition: opacity 0.15s ease, transform 0.15s ease;
+	}
+
+	.tools-cta-btn:hover {
+		opacity: 0.92;
+		transform: translateY(-2px);
+		text-decoration: none;
 	}
 </style>

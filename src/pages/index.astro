@@ -3,32 +3,41 @@ import type { CollectionEntry } from 'astro:content';
 import { getCollection } from 'astro:content';
 import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
+import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 import { CALCULATOR_FEATURED, REGISTRY } from '../tools/registry';
 
 const all = [...CALCULATOR_FEATURED, ...REGISTRY];
 const bySlug = (slug: string) => all.find((e) => e.slug === slug);
-// hand-picked, cross-category favorites shown on the landing page
+
+// Hand-picked high-frequency tools across developer, finance and utility categories
 const featuredSlugs = [
-	'standard',
-	'qr-code-generator',
-	'password-generator',
-	'length',
+	'json-formatter',
+	'sql-formatter',
+	'jwt-decoder',
+	'url-parser',
 	'compound-interest',
 	'mortgage',
-	'json-formatter',
-	'average',
+	'uuid-generator',
+	'password-generator',
+	'xml-formatter',
 ];
-const featured = featuredSlugs.map(bySlug).filter((e) => e !== undefined).slice(0, 8);
+const featured = featuredSlugs.map(bySlug).filter((e) => e !== undefined);
 
 const posts = (await getCollection('blog'))
 	.sort((a: CollectionEntry<'blog'>, b: CollectionEntry<'blog'>) =>
 		b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
 	)
 	.slice(0, 3);
-const fmt = (d: Date) =>
-	d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+
+// rough reading-time estimate: ~220 latin words or ~400 CJK chars per minute
+const readMinutes = (body: string): number => {
+	const words = body.match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu)?.length ?? 0;
+	const cjk = body.match(/[\p{Script=Han}]/gu)?.length ?? 0;
+	const minutes = (words - cjk) / 220 + cjk / 400;
+	return Math.max(1, Math.round(minutes));
+};
 
 const siteJsonLd = {
 	'@context': 'https://schema.org',
@@ -48,61 +57,188 @@ const siteJsonLd = {
 	</head>
 	<body>
 		<Header />
-		<main>
-			<h1>{SITE_TITLE}</h1>
-			<p class="tagline">
-				A personal blog and a growing set of <a href="/tools/">free online tools</a> — 34
-				calculators, converters and generators that run entirely in your browser. No sign-up,
-				no tracking of what you type.
-			</p>
-			<p class="tagline" lang="zh-CN">
-				个人博客与免费在线工具集：科学计算器、单位换算、房贷与复利计算、二维码生成器等 34 个纯浏览器端工具——免注册，输入不上传。
-			</p>
+		<main class="home-container">
+			<!-- 1. HERO SECTION -->
+			<section class="hero-section">
+				<div class="hero-badge">
+					<span class="badge-dot"></span>
+					<span class="i18n-zh">100% 浏览器本地计算 · 零隐私上传 · 极速免费</span>
+					<span class="i18n-en">100% In-Browser Execution · Zero Data Upload · Free & Open</span>
+				</div>
 
-			<section class="home-tools">
-				<h2>Popular tools</h2>
-				<ul>
+				<h1 class="hero-title">
+					<span class="i18n-zh">开发者的高效工具箱<br /><span class="hero-gradient">与深度工程手记</span></span>
+					<span class="i18n-en">Fast, Private Utilities<br /><span class="hero-gradient">& In-Depth Engineering</span></span>
+				</h1>
+
+				<p class="hero-desc i18n-zh">
+					专注于纯客户端运行的开发者工作台与科学计算工具集。免注册、零数据上传，彻底守护代码与数据隐私；同步分享手写算法、架构调优与数学原理解析。
+				</p>
+				<p class="hero-desc i18n-en">
+					Browser-based developer workbench and mathematical calculators. Zero telemetry, zero server-side storage, complete privacy for your sensitive data and source code.
+				</p>
+
+				<div class="hero-actions">
+					<a href="/tools/" class="btn-primary">
+						<span class="i18n-zh">⚡ 探索 40+ 款实用工具</span>
+						<span class="i18n-en">⚡ Explore 40+ Tools</span>
+					</a>
+					<a href="/blog/" class="btn-secondary">
+						<span class="i18n-zh">📖 阅读技术博客</span>
+						<span class="i18n-en">📖 Read Engineering Blog</span>
+					</a>
+				</div>
+
+				<!-- Stats Bar -->
+				<div class="hero-stats">
+					<div class="stat-item">
+						<strong>40+</strong>
+						<span class="i18n-zh">实用在线工具</span>
+						<span class="i18n-en">Browser Tools</span>
+					</div>
+					<div class="stat-sep" aria-hidden="true"></div>
+					<div class="stat-item">
+						<strong>100%</strong>
+						<span class="i18n-zh">本地离线计算</span>
+						<span class="i18n-en">Client-Side Only</span>
+					</div>
+					<div class="stat-sep" aria-hidden="true"></div>
+					<div class="stat-item">
+						<strong>0</strong>
+						<span class="i18n-zh">服务端隐私留存</span>
+						<span class="i18n-en">Data Uploaded</span>
+					</div>
+					<div class="stat-sep" aria-hidden="true"></div>
+					<div class="stat-item">
+						<strong>&lt; 50ms</strong>
+						<span class="i18n-zh">全球 Edge 秒开</span>
+						<span class="i18n-en">Edge CDN Speed</span>
+					</div>
+				</div>
+			</section>
+
+			<!-- 2. POPULAR TOOLS SHOWCASE -->
+			<section class="section-block">
+				<div class="section-header">
+					<div>
+						<h2 class="section-title">
+							<span class="i18n-zh">🔥 热门常用工具</span>
+							<span class="i18n-en">🔥 Popular Tools</span>
+						</h2>
+						<p class="section-subtitle">
+							<span class="i18n-zh">代码格式化、加解密、金融测算与科学计算，开箱即用</span>
+							<span class="i18n-en">Code formatters, decoders, finance helpers, and math tools</span>
+						</p>
+					</div>
+					<a href="/tools/" class="section-link">
+						<span class="i18n-zh">查看全部 40+ 工具 →</span>
+						<span class="i18n-en">Browse all 40+ tools →</span>
+					</a>
+				</div>
+
+				<div class="tools-grid">
 					{
 						featured.map((e) => (
-							<li>
-								<a href={`/${e.category}/${e.slug}/`}>
-									<strong>{e.name}{e.nameZh && <span class="t-sub-zh">（{e.nameZh}）</span>}</strong>
-									<span>{e.description}</span>
-								</a>
-							</li>
+							<a class="tool-card" href={`/${e.category}/${e.slug}/`}>
+								<div class="tool-card-head">
+									<strong class="tool-name">
+										{e.name}
+									</strong>
+									<span class="tool-tag">{e.category}</span>
+								</div>
+								{e.nameZh && <span class="tool-zh-sub">{e.nameZh}</span>}
+								<p class="tool-desc">{e.description}</p>
+								<div class="tool-card-foot">
+									<span class="tool-action">
+										<span class="i18n-zh">打开工具</span>
+										<span class="i18n-en">Launch</span>
+										<span class="tool-arrow" aria-hidden="true">→</span>
+									</span>
+								</div>
+							</a>
 						))
 					}
-				</ul>
-				<p class="more">
-					<a href="/tools/">Browse all 34 tools →</a>
-				</p>
+				</div>
 			</section>
 
-			<section class="home-posts">
-				<h2>Latest posts</h2>
-				<ul>
+			<!-- 3. LATEST TECHNICAL POSTS -->
+			<section class="section-block">
+				<div class="section-header">
+					<div>
+						<h2 class="section-title">
+							<span class="i18n-zh">✍️ 最新技术文章</span>
+							<span class="i18n-en">✍️ Latest Articles</span>
+						</h2>
+						<p class="section-subtitle">
+							<span class="i18n-zh">深度拆解算法原理、金融复利数学与现代 Web 开发实战</span>
+							<span class="i18n-en">Deep dives into algorithms, financial mathematics, and web craft</span>
+						</p>
+					</div>
+					<a href="/blog/" class="section-link">
+						<span class="i18n-zh">查看全部博客 →</span>
+						<span class="i18n-en">View all articles →</span>
+					</a>
+				</div>
+
+				<div class="posts-grid">
 					{
 						posts.map((post) => (
-							<li>
-								<a href={`/blog/${post.id}/`}>{post.data.title}</a>
-								<time datetime={post.data.pubDate.toISOString()}>
-									{fmt(post.data.pubDate)}
-								</time>
-							</li>
+							<a class="post-card" href={`/blog/${post.id}/`}>
+								<div class="post-card-meta">
+									<FormattedDate date={post.data.pubDate} />
+									<span class="meta-dot">·</span>
+									<span class="read-chip">{readMinutes(post.body ?? '')} min read</span>
+								</div>
+								<h3 class="post-card-title">{post.data.title}</h3>
+								<p class="post-card-desc">{post.data.description}</p>
+								<div class="post-card-more">
+									<span class="i18n-zh">阅读全文</span>
+									<span class="i18n-en">Read article</span>
+									<span class="post-arrow" aria-hidden="true">→</span>
+								</div>
+							</a>
 						))
 					}
-				</ul>
+				</div>
 			</section>
 
-			<section class="home-more">
-				<h2>More on this site</h2>
-				<ul>
-					<li><a href="/calculators/standard/">Scientific calculator</a> — expressions, variables, history</li>
-					<li><a href="/calculators/graph/">Function grapher</a> — plot up to 4 functions</li>
-					<li><a href="/clock/">Clock</a> — full-screen minimal clock &amp; pomodoro</li>
-					<li><a href="/calendar/">Calendar</a> — month and year views with ISO week numbers</li>
-					<li><a href="/about/">About</a> / <a href="/privacy/">Privacy</a></li>
-				</ul>
+			<!-- 4. CORE PRINCIPLES & PRIVACY PLEDGE -->
+			<section class="pledge-section">
+				<div class="pledge-grid">
+					<div class="pledge-item">
+						<div class="pledge-icon">🛡️</div>
+						<h3 class="pledge-title">
+							<span class="i18n-zh">100% 客户端离线安全</span>
+							<span class="i18n-en">100% Client-Side Privacy</span>
+						</h3>
+						<p class="pledge-desc">
+							<span class="i18n-zh">数据库 SQL、JWT 鉴权 Token 与私密文本均在浏览器本地运算，无任何服务端数据库存储或网络传输，断网亦可顺畅运行。</span>
+							<span class="i18n-en">SQL queries, auth tokens, and secret texts run strictly in your browser. Nothing touches our servers.</span>
+						</p>
+					</div>
+					<div class="pledge-item">
+						<div class="pledge-icon">⚡</div>
+						<h3 class="pledge-title">
+							<span class="i18n-zh">零庞大依赖 · 极致轻量</span>
+							<span class="i18n-en">Zero Dependency Bloat</span>
+						</h3>
+						<p class="pledge-desc">
+							<span class="i18n-zh">拒绝臃肿框架与冗余 npm 包，基于现代 Web 标准 API 与手写原生状态机构建，打包体积以 KB 计量，毫秒极速载入。</span>
+							<span class="i18n-en">Built with standard Web APIs and custom state machines. No heavy dependencies, sub-50ms instant loading.</span>
+						</p>
+					</div>
+					<div class="pledge-item">
+						<div class="pledge-icon">🌐</div>
+						<h3 class="pledge-title">
+							<span class="i18n-zh">全球 Edge 节点高可用</span>
+							<span class="i18n-en">Global Edge High Availability</span>
+						</h3>
+						<p class="pledge-desc">
+							<span class="i18n-zh">双重部署于 Cloudflare Workers 全球边缘 CDN 与 GitHub Pages，配合 IndexNow 搜索引擎即时推送，永远在线稳定访问。</span>
+							<span class="i18n-en">Dual-deployed to Cloudflare Global Edge and GitHub Pages for rock-solid 99.99% global uptime.</span>
+						</p>
+					</div>
+				</div>
 			</section>
 		</main>
 		<Footer />
@@ -110,83 +246,420 @@ const siteJsonLd = {
 </html>
 
 <style>
-	main {
-		padding: 2rem 0 3rem;
+	.home-container {
+		max-width: 1040px;
+		margin: 0 auto;
+		padding: 3rem 1.5rem 5rem;
 	}
-	h1 {
-		color: var(--fg);
-		font-size: 2rem;
-		margin-bottom: 0.4em;
-	}
-	h2 {
-		color: var(--fg);
-		font-size: 1.25rem;
-		margin: 2.2em 0 0.6em;
-	}
-	.tagline {
-		font-size: 1.1rem;
-	}
-	.tagline + .tagline {
-		margin-top: 0.8em;
-	}
-	[lang='zh-CN'] {
-		line-height: 1.9;
-	}
-	.home-tools ul {
-		list-style: none;
-		margin: 0;
-		padding: 0;
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-		gap: 0.75em;
-	}
-	.home-tools li a {
+
+	/* --- HERO SECTION --- */
+	.hero-section {
 		display: flex;
 		flex-direction: column;
-		gap: 0.25em;
-		padding: 0.8em 1em;
+		align-items: center;
+		text-align: center;
+		padding: 2.5rem 0 3.5rem;
+		border-bottom: 1px solid var(--gridline);
+	}
+
+	.hero-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.6em;
+		padding: 0.35em 0.9em;
+		background: var(--accent-soft);
+		border: 1px solid var(--gridline);
+		border-radius: 999px;
+		font-size: 0.84rem;
+		font-weight: 600;
+		color: var(--accent);
+		margin-bottom: 1.5rem;
+	}
+
+	.badge-dot {
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		background: #10b981;
+		box-shadow: 0 0 8px #10b981;
+	}
+
+	.hero-title {
+		font-size: clamp(2.2rem, 5.5vw, 3.4rem);
+		font-weight: 800;
+		line-height: 1.22;
+		letter-spacing: -0.03em;
+		color: var(--fg);
+		margin-bottom: 1.2rem;
+	}
+
+	.hero-gradient {
+		background: linear-gradient(135deg, var(--accent) 0%, #8b5cf6 50%, #ec4899 100%);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+	}
+
+	.hero-desc {
+		font-size: clamp(1.05rem, 2vw, 1.2rem);
+		color: var(--dim);
+		max-width: 44em;
+		line-height: 1.7;
+		margin-bottom: 2rem;
+	}
+
+	.hero-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1rem;
+		justify-content: center;
+		margin-bottom: 3rem;
+	}
+
+	.btn-primary {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.75rem 1.6rem;
+		background: var(--accent);
+		color: var(--on-accent);
+		border-radius: 10px;
+		font-weight: 600;
+		font-size: 0.98rem;
+		text-decoration: none;
+		box-shadow: 0 4px 14px rgba(35, 55, 255, 0.25);
+		transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+	}
+
+	.btn-primary:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 6px 20px rgba(35, 55, 255, 0.35);
+		opacity: 0.95;
+		text-decoration: none;
+	}
+
+	.btn-secondary {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.75rem 1.6rem;
+		background: var(--card);
+		color: var(--fg);
 		border: 1px solid var(--gridline);
 		border-radius: 10px;
-		text-decoration: none;
-		height: 100%;
-		box-sizing: border-box;
-	}
-	.home-tools li a:hover {
-		border-color: var(--accent);
-	}
-	.home-tools strong {
-		color: var(--fg);
+		font-weight: 600;
 		font-size: 0.98rem;
+		text-decoration: none;
+		transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
 	}
-	.home-tools span {
-		color: var(--dim);
-		font-size: 0.85rem;
-		line-height: 1.5;
+
+	.btn-secondary:hover {
+		transform: translateY(-2px);
+		border-color: var(--accent);
+		text-decoration: none;
 	}
-	.more {
-		margin-top: 1em;
-	}
-	.home-posts ul,
-	.home-more ul {
-		list-style: none;
-		margin: 0;
-		padding: 0;
-	}
-	.home-posts li {
+
+	.hero-stats {
 		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: center;
+		gap: 1.5rem 2.5rem;
+		padding: 1rem 1.8rem;
+		background: var(--card);
+		border: 1px solid var(--gridline);
+		border-radius: 14px;
+		box-shadow: var(--box-shadow);
+	}
+
+	.stat-item {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.2em;
+	}
+
+	.stat-item strong {
+		font-size: 1.35rem;
+		font-weight: 800;
+		color: var(--fg);
+		font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+	}
+
+	.stat-item span {
+		font-size: 0.8rem;
+		color: var(--dim);
+	}
+
+	.stat-sep {
+		width: 1px;
+		height: 2rem;
+		background: var(--gridline);
+	}
+
+	@media (max-width: 640px) {
+		.stat-sep {
+			display: none;
+		}
+		.hero-stats {
+			gap: 1.2rem 1.8rem;
+		}
+	}
+
+	/* --- SECTION BLOCKS --- */
+	.section-block {
+		margin-top: 4rem;
+	}
+
+	.section-header {
+		display: flex;
+		align-items: flex-end;
 		justify-content: space-between;
-		align-items: baseline;
-		gap: 1em;
-		padding: 0.45em 0;
-		border-bottom: 1px dashed var(--gridline);
+		gap: 1rem;
+		margin-bottom: 1.8rem;
+		flex-wrap: wrap;
 	}
-	.home-posts time {
+
+	.section-title {
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: var(--fg);
+		margin: 0 0 0.3em;
+		letter-spacing: -0.02em;
+	}
+
+	.section-subtitle {
+		font-size: 0.92rem;
 		color: var(--dim);
+		margin: 0;
+	}
+
+	.section-link {
+		font-size: 0.92rem;
+		font-weight: 600;
+		color: var(--accent);
+		text-decoration: none;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3em;
+		transition: transform 0.15s ease;
+	}
+
+	.section-link:hover {
+		transform: translateX(3px);
+		text-decoration: underline;
+	}
+
+	/* --- TOOLS GRID --- */
+	.tools-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+		gap: 1.1rem;
+	}
+
+	.tool-card {
+		display: flex;
+		flex-direction: column;
+		padding: 1.2rem 1.3rem;
+		background: var(--card);
+		border: 1px solid var(--gridline);
+		border-radius: 12px;
+		text-decoration: none;
+		transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+	}
+
+	.tool-card:hover {
+		transform: translateY(-3px);
+		border-color: var(--accent);
+		box-shadow: var(--box-shadow);
+		text-decoration: none;
+	}
+
+	.tool-card-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5em;
+		margin-bottom: 0.2em;
+	}
+
+	.tool-name {
+		font-size: 1.05rem;
+		font-weight: 700;
+		color: var(--fg);
+	}
+
+	.tool-zh-sub {
 		font-size: 0.85rem;
-		white-space: nowrap;
-	}
-	.home-more li {
-		padding: 0.3em 0;
 		color: var(--dim);
+		margin-bottom: 0.6em;
+	}
+
+	.tool-tag {
+		font-size: 0.72rem;
+		text-transform: uppercase;
+		font-weight: 600;
+		padding: 0.15em 0.5em;
+		border-radius: 6px;
+		background: var(--accent-soft);
+		color: var(--accent);
+		font-family: ui-monospace, monospace;
+	}
+
+	.tool-desc {
+		font-size: 0.88rem;
+		color: var(--dim);
+		line-height: 1.55;
+		margin-bottom: 1.2rem;
+		flex: 1;
+	}
+
+	.tool-card-foot {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		border-top: 1px solid var(--gridline);
+		padding-top: 0.75rem;
+	}
+
+	.tool-action {
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: var(--accent);
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35em;
+	}
+
+	.tool-arrow {
+		transition: transform 0.15s ease;
+	}
+
+	.tool-card:hover .tool-arrow {
+		transform: translateX(4px);
+	}
+
+	/* --- POSTS GRID --- */
+	.posts-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+		gap: 1.2rem;
+	}
+
+	.post-card {
+		display: flex;
+		flex-direction: column;
+		padding: 1.4rem;
+		background: var(--card);
+		border: 1px solid var(--gridline);
+		border-radius: 12px;
+		text-decoration: none;
+		transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+	}
+
+	.post-card:hover {
+		transform: translateY(-3px);
+		border-color: var(--accent);
+		box-shadow: var(--box-shadow);
+		text-decoration: none;
+	}
+
+	.post-card-meta {
+		display: flex;
+		align-items: center;
+		gap: 0.5em;
+		font-size: 0.8rem;
+		color: var(--dim);
+		margin-bottom: 0.6em;
+		font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+	}
+
+	.meta-dot {
+		opacity: 0.6;
+	}
+
+	.read-chip {
+		background: var(--accent-soft);
+		color: var(--accent);
+		padding: 0.15em 0.45em;
+		border-radius: 4px;
+	}
+
+	.post-card-title {
+		font-size: 1.15rem;
+		font-weight: 700;
+		color: var(--fg);
+		line-height: 1.45;
+		margin: 0 0 0.6em;
+		transition: color 0.15s ease;
+	}
+
+	.post-card:hover .post-card-title {
+		color: var(--accent);
+	}
+
+	.post-card-desc {
+		font-size: 0.88rem;
+		color: var(--dim);
+		line-height: 1.6;
+		margin: 0 0 1.2rem;
+		flex: 1;
+	}
+
+	.post-card-more {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35em;
+		font-size: 0.86rem;
+		font-weight: 600;
+		color: var(--accent);
+	}
+
+	.post-arrow {
+		transition: transform 0.15s ease;
+	}
+
+	.post-card:hover .post-arrow {
+		transform: translateX(4px);
+	}
+
+	/* --- PLEDGE SECTION --- */
+	.pledge-section {
+		margin-top: 5rem;
+		padding: 2.5rem 2rem;
+		background: var(--card);
+		border: 1px solid var(--gridline);
+		border-radius: 16px;
+		box-shadow: var(--box-shadow);
+	}
+
+	.pledge-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+		gap: 2rem;
+	}
+
+	.pledge-item {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5em;
+	}
+
+	.pledge-icon {
+		font-size: 2rem;
+		margin-bottom: 0.2em;
+	}
+
+	.pledge-title {
+		font-size: 1.1rem;
+		font-weight: 700;
+		color: var(--fg);
+		margin: 0;
+	}
+
+	.pledge-desc {
+		font-size: 0.88rem;
+		color: var(--dim);
+		line-height: 1.65;
+		margin: 0;
 	}
 </style>
