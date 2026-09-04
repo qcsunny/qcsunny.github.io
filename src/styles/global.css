@@ -149,7 +149,10 @@ input {
 }
 
 table {
+	display: block;
 	width: 100%;
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
 	border-collapse: collapse;
 	font-size: 0.9em;
 }
@@ -200,10 +203,81 @@ pre > code {
 }
 
 blockquote {
-	border-left: 3px solid var(--accent);
-	padding: 0.1em 0 0.1em 1.2em;
+	border-left: 4px solid var(--accent);
+	background: color-mix(in srgb, var(--accent) 5%, var(--card));
+	border-radius: 0 8px 8px 0;
+	padding: 0.85em 1.2em;
 	margin: 1.5em 0;
-	color: var(--dim);
+	color: var(--fg);
+	line-height: 1.75;
+	overflow-x: auto;
+}
+
+/* Single-line scrollable formula card */
+.formula-scroll {
+	display: block;
+	width: 100%;
+	max-width: 100%;
+	overflow-x: auto;
+	white-space: nowrap;
+	padding: 0.9em 1.25em;
+	margin: 1.2em 0;
+	background: color-mix(in srgb, var(--accent) 6%, var(--card));
+	border-left: 4px solid var(--accent);
+	border-radius: 0 10px 10px 0;
+	font-family: var(--font-mono, ui-monospace, monospace);
+	font-size: 0.94rem;
+	font-weight: 500;
+	color: var(--fg);
+	line-height: 1.6;
+	-webkit-overflow-scrolling: touch;
+	scrollbar-width: thin;
+	scrollbar-color: var(--dim) transparent;
+}
+
+/* KaTeX formula display overflow protection */
+.katex-display {
+	overflow-x: auto;
+	overflow-y: hidden;
+	max-width: 100%;
+	padding: 0.6em 0;
+	margin: 1.2em 0;
+	-webkit-overflow-scrolling: touch;
+	scrollbar-width: thin;
+	scrollbar-color: var(--dim) transparent;
+}
+
+/* Common horizontal scrollbar slider styling for formulas, code, tables, and quotes */
+.formula-scroll::-webkit-scrollbar,
+.katex-display::-webkit-scrollbar,
+blockquote::-webkit-scrollbar,
+table::-webkit-scrollbar,
+pre::-webkit-scrollbar {
+	height: 6px;
+}
+.formula-scroll::-webkit-scrollbar-track,
+.katex-display::-webkit-scrollbar-track,
+blockquote::-webkit-scrollbar-track,
+table::-webkit-scrollbar-track,
+pre::-webkit-scrollbar-track {
+	background: color-mix(in srgb, var(--gridline) 40%, transparent);
+	border-radius: 3px;
+}
+.formula-scroll::-webkit-scrollbar-thumb,
+.katex-display::-webkit-scrollbar-thumb,
+blockquote::-webkit-scrollbar-thumb,
+table::-webkit-scrollbar-thumb,
+pre::-webkit-scrollbar-thumb {
+	background: var(--dim);
+	opacity: 0.6;
+	border-radius: 3px;
+}
+.formula-scroll::-webkit-scrollbar-thumb:hover,
+.katex-display::-webkit-scrollbar-thumb:hover,
+blockquote::-webkit-scrollbar-thumb:hover,
+table::-webkit-scrollbar-thumb:hover,
+pre::-webkit-scrollbar-thumb:hover {
+	background: var(--accent);
 }
 
 hr {
