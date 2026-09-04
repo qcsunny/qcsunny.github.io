@@ -14,11 +14,15 @@ export default defineConfig({
 	timeout: 30_000,
 	retries: 0,
 	use: {
-		baseURL: 'http://localhost:4322',
+		baseURL: 'http://localhost:4321',
 	},
 	webServer: {
-		command: 'npm run preview',
-		url: 'http://localhost:4322',
+		// Pin the port (astro preview defaults to 4321, or 4322 when 4321 is
+		// taken locally). ASTRO_PREVIEW_BACKGROUND=1 opts out of Astro's agent
+		// detection, which would otherwise daemonize the preview server in AI
+		// shells and exit the foreground process Playwright expects to own.
+		command: 'ASTRO_PREVIEW_BACKGROUND=1 npx astro preview --port 4321',
+		url: 'http://localhost:4321',
 		reuseExistingServer: true,
 		timeout: 60_000,
 	},
