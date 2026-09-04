@@ -78,6 +78,7 @@ import { SITE_TITLE } from '../consts';
 	const glyphs = { auto: '◐', light: '☀', dark: '☾' } as const;
 	const apply = (mode: string): void => {
 		// "auto" tracks the system preference, same as the anti-flash script in BaseHead
+		document.documentElement.dataset.themeMode = mode;
 		const dark =
 			mode === 'dark' || (mode === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
 		if (dark) document.documentElement.dataset.theme = 'dark';
@@ -102,7 +103,9 @@ import { SITE_TITLE } from '../consts';
 	// Search modal trigger
 	const searchBtn = document.getElementById('header-search-btn');
 	searchBtn?.addEventListener('click', () => {
-		(window as any).openSiteSearchModal?.();
+		if (typeof (window as any).openSiteSearchModal === 'function') {
+			(window as any).openSiteSearchModal();
+		}
 	});
 </script>
 

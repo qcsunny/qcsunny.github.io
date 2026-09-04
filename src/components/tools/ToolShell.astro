@@ -119,20 +119,23 @@ const year = new Date().getFullYear();
 		<script is:inline>
 			// Apply theme before first paint to avoid a flash.
 			// Shared across all tool pages via one preference key.
-			const saved = localStorage.getItem('site:theme');
-			const mode = saved === 'light' || saved === 'dark' || saved === 'auto' ? saved : 'auto';
-			document.documentElement.dataset.themeMode = mode;
-			document.documentElement.dataset.theme =
-				mode === 'auto'
-					? matchMedia('(prefers-color-scheme: dark)').matches
-						? 'dark'
-						: 'light'
-					: mode;
+			(() => {
+				const saved = localStorage.getItem('site:theme');
+				const mode = saved === 'light' || saved === 'dark' || saved === 'auto' ? saved : 'auto';
+				document.documentElement.dataset.themeMode = mode;
+				const isDark =
+					mode === 'dark' || (mode === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+				if (isDark) {
+					document.documentElement.dataset.theme = 'dark';
+				} else {
+					document.documentElement.removeAttribute('data-theme');
+				}
 
-			// Language pre-paint initialization
-			const savedLang = localStorage.getItem('site:lang') || (navigator.language.startsWith('zh') ? 'zh' : 'en');
-			document.documentElement.dataset.lang = savedLang;
-			document.documentElement.lang = savedLang === 'zh' ? 'zh-CN' : 'en';
+				// Language pre-paint initialization
+				const savedLang = localStorage.getItem('site:lang') || (navigator.language.startsWith('zh') ? 'zh' : 'en');
+				document.documentElement.dataset.lang = savedLang;
+				document.documentElement.lang = savedLang === 'zh' ? 'zh-CN' : 'en';
+			})();
 		</script>
 		<style is:global>
 			/* theme tokens (--bg/--fg/…) are defined globally in global.css,
@@ -1762,82 +1765,100 @@ html[data-tool-kind='html'] .t-main {
 		{
 			!redirectTo && (
 				<script is:inline>
-					// Language toggle
-					const langToggle = document.querySelector('.t-lang');
-					function syncLangUI(l) {
-						if (!langToggle) return;
-						langToggle.textContent = l === 'zh' ? '中' : 'EN';
-						langToggle.title = l === 'zh' ? '当前：中文 (点击切换为 English)' : 'Current: English (click for Chinese)';
-						langToggle.setAttribute('aria-label', l === 'zh' ? '切换为 English' : '切换为 中文');
-					}
-					const currentLang = root.dataset.lang || 'en';
-					syncLangUI(currentLang);
-					langToggle?.addEventListener('click', () => {
-						const next = root.dataset.lang === 'zh' ? 'en' : 'zh';
-						root.dataset.lang = next;
-						root.lang = next === 'zh' ? 'zh-CN' : 'en';
-						try {
-							localStorage.setItem('site:lang', next);
-						} catch {}
-						syncLangUI(next);
-						window.dispatchEvent(new CustomEvent('site:lang-change', { detail: next }));
-					});
+					(() => {
+						const root = document.documentElement;
 
-					document.querySelector('.t-search-nav')?.addEventListener('click', (e) => {
-						e.preventDefault();
-						const searchInput = document.getElementById('tool-search-input');
-						if (searchInput && document.contains(searchInput)) {
-							searchInput.focus();
-							searchInput.select();
-						} else if ((window as any).openSiteSearchModal) {
-							(window as any).openSiteSearchModal();
-						} else {
-							window.location.href = '/tools/?focus=1';
+						// Language toggle
+						const langToggle = document.querySelector('.t-lang');
+						function syncLangUI(l) {
+							if (!langToggle) return;
+							langToggle.textContent = l === 'zh' ? '中' : 'EN';
+							langToggle.title = l === 'zh' ? '当前：中文 (点击切换为 English)' : 'Current: English (click for Chinese)';
+							langToggle.setAttribute('aria-label', l === 'zh' ? '切换为 English' : '切换为 中文');
 						}
-					});
+						const currentLang = root.dataset.lang || localStorage.getItem('site:lang') || (navigator.language.startsWith('zh') ? 'zh' : 'en');
+						root.dataset.lang = currentLang;
+						root.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
+						syncLangUI(currentLang);
 
-					// Theme: three-state cycle light → dark → auto (auto = follow browser)
-					const root = document.documentElement;
-					const toggle = document.querySelector('.t-theme');
-					const mql = matchMedia('(prefers-color-scheme: dark)');
-					const ICONS = { light: '☀', dark: '☾', auto: '◐' };
-					const LABELS = {
-						light: 'Light theme',
-						dark: 'Dark theme',
-						auto: 'Auto theme (follows browser setting)',
-					};
-					const ORDER = ['light', 'dark', 'auto'];
+						langToggle?.addEventListener('click', () => {
+							const next = root.dataset.lang === 'zh' ? 'en' : 'zh';
+							root.dataset.lang = next;
+							root.lang = next === 'zh' ? 'zh-CN' : 'en';
+							try {
+								localStorage.setItem('site:lang', next);
+							} catch {}
+							syncLangUI(next);
+							window.dispatchEvent(new CustomEvent('site:lang-change', { detail: next }));
+						});
 
-					function syncIcon() {
-						const mode = root.dataset.themeMode;
-						toggle.textContent = ICONS[mode];
-						toggle.title = LABELS[mode];
-						toggle.setAttribute('aria-label', LABELS[mode]);
-					}
+						// Quick search trigger
+						document.querySelector('.t-search-nav')?.addEventListener('click', (e) => {
+							e.preventDefault();
+							const searchInput = document.getElementById('tool-search-input');
+							if (searchInput && document.contains(searchInput)) {
+								searchInput.focus();
+								searchInput.select();
+							} else if (typeof window.openSiteSearchModal === 'function') {
+								window.openSiteSearchModal();
+							} else {
+								window.location.href = '/tools/?focus=1';
+							}
+						});
 
-					function applyMode(mode) {
-						root.dataset.themeMode = mode;
-						root.dataset.theme = mode === 'auto' ? (mql.matches ? 'dark' : 'light') : mode;
-						try {
-							localStorage.setItem('site:theme', mode);
-						} catch {
-							/* storage unavailable — mode just won't persist */
+						// Theme: three-state cycle auto → light → dark
+						const themeToggle = document.querySelector('.t-theme');
+						const mql = matchMedia('(prefers-color-scheme: dark)');
+						const ICONS = { auto: '◐', light: '☀', dark: '☾' };
+						const LABELS = {
+							auto: 'Auto theme (follows browser) / 跟随系统',
+							light: 'Light theme / 浅色模式',
+							dark: 'Dark theme / 深色模式',
+						};
+						const ORDER = ['auto', 'light', 'dark'];
+
+						function syncThemeUI() {
+							if (!themeToggle) return;
+							const mode = root.dataset.themeMode || 'auto';
+							themeToggle.textContent = ICONS[mode] || '☾';
+							themeToggle.title = LABELS[mode] || 'Theme';
+							themeToggle.setAttribute('aria-label', LABELS[mode] || 'Theme');
 						}
-						syncIcon();
-					}
 
-					toggle.addEventListener('click', () => {
-						const current = root.dataset.themeMode;
-						applyMode(ORDER[(ORDER.indexOf(current) + 1) % ORDER.length]);
-					});
-
-					mql.addEventListener('change', () => {
-						if (root.dataset.themeMode === 'auto') {
-							root.dataset.theme = mql.matches ? 'dark' : 'light';
+						function applyMode(mode) {
+							root.dataset.themeMode = mode;
+							const isDark = mode === 'dark' || (mode === 'auto' && mql.matches);
+							if (isDark) {
+								root.dataset.theme = 'dark';
+							} else {
+								root.removeAttribute('data-theme');
+							}
+							try {
+								localStorage.setItem('site:theme', mode);
+							} catch {}
+							syncThemeUI();
 						}
-					});
 
-					syncIcon();
+						themeToggle?.addEventListener('click', () => {
+							const current = root.dataset.themeMode || 'auto';
+							const next = ORDER[(ORDER.indexOf(current) + 1) % ORDER.length];
+							applyMode(next);
+						});
+
+						mql.addEventListener('change', () => {
+							if (root.dataset.themeMode === 'auto') {
+								if (mql.matches) {
+									root.dataset.theme = 'dark';
+								} else {
+									root.removeAttribute('data-theme');
+								}
+							}
+						});
+
+						// Initialize theme state & icon
+						const initialMode = localStorage.getItem('site:theme') || root.dataset.themeMode || 'auto';
+						applyMode(initialMode);
+					})();
 				</script>
 				<ToolSearchModal />
 			)
