@@ -222,20 +222,23 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'speed',
 		'speed',
 		'Speed & Velocity Converter',
-		'速度与航速单位换算器',
-		'Convert between m/s, km/h, mph, knots, feet/second, Mach (Ma) and speed of light (c).',
+		'速度单位换算器 (米/秒 · 公里/小时 · mph · 节 · 马赫)',
+		'Convert between m/s (米/秒), km/h (公里/小时), mph (英里/小时), knots (节), Mach (马赫) and speed of light (光速).',
 		{
 			about: [
-				'Convert velocity across standard metric (m/s, km/h), road traffic (mph), marine/aviation (knot), supersonic speeds (Mach), and cosmic physics (speed of light).',
+				'Instant velocity conversion between standard scientific units (m/s), automotive traffic speeds (km/h, mph), marine and aviation navigation (knots), supersonic aeronautics (Mach), and cosmic physics (speed of light).',
 			],
 			aboutZh: [
-				'速度与航速全能转换器：支持米/秒（m/s）、千米/小时（公里/小时 km/h）、英里/小时（mph）、节（海里/小时 kn）、英尺/秒（ft/s）、超音速马赫（Ma）以及真空光速（c）。',
+				'速度与航速全能转换器：精准换算物理科学标准米/秒（m/s）、交通车速公里/小时（千米/小时 km/h，俗称码）、美英车速英里/小时（mph，俗称迈）、航海航空节（海里/小时 kn）、超音速马赫（Ma）以及真空光速（c）。',
 			],
 			faq: [
+				{ q: 'How do you convert m/s to km/h?', a: 'Multiply by 3.6. For example, 10 m/s × 3.6 = 36 km/h. To convert km/h to m/s, divide by 3.6 (e.g. 72 km/h ÷ 3.6 = 20 m/s, 100 km/h ≈ 27.78 m/s).' },
 				{ q: 'What is Mach 1 speed?', a: 'Mach 1 at standard sea level (15 °C) is approximately 340.29 m/s, or 1,225.04 km/h (761.2 mph).' },
 				{ q: 'How many km/h is 1 knot (kn)?', a: '1 knot equals 1 nautical mile per hour, or exactly 1.852 km/h.' },
 			],
 			faqZh: [
+				{ q: '米/秒（m/s）与千米/小时（公里/小时 km/h）怎么快速换算？', a: '换算公式为：1 米/秒 = 3.6 千米/小时。米/秒换算为公里/小时直接乘以 3.6；公里/小时换算为米/秒直接除以 3.6。例如：时速 72 km/h = 20 m/s，高速限速 120 km/h ≈ 33.33 m/s。' },
+				{ q: '平时开车说的“时速80码”或“80迈”是多少公里/小时？', a: '严格来说，“迈”是英里每小时（mph，1 迈 ≈ 1.609 km/h，80 迈实为 128.7 km/h）；“码”是英制长度单位（1 码 = 0.9144 米）。但在国内日常口语中，车主常将“码”和“迈”作为“公里/小时（km/h）”的俗称，因此口语里的“80码/80迈”通常即指 80 km/h。' },
 				{ q: '1 马赫（Mach）速度是多少公里/小时？', a: '在 15 °C 标准海平面气温下，1 马赫约等于 340.29 米/秒，合 1,225.04 公里/小时。' },
 				{ q: '1 节（航速 knot）等于多少公里/小时？', a: '1 节等于每小时 1 海里，精确合 1.852 公里/小时。' },
 			],

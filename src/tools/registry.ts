@@ -79,6 +79,7 @@ export interface FormField {
 	/** long explanation shown under the field */
 	hint?: string;
 	hintZh?: string;
+	wide?: boolean;
 }
 
 export interface FormResultRow {

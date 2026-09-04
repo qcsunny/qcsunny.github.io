@@ -491,7 +491,7 @@ const year = new Date().getFullYear();
 				margin: 1em 0 0.35em;
 			}
 
-			/* --- converter (two-sided unit conversion) --- */
+			/* --- converter (two-sided unit conversion + live keyword search) --- */
 			.t-conv {
 				display: flex;
 				flex-direction: column;
@@ -505,22 +505,12 @@ const year = new Date().getFullYear();
 			}
 			.t-conv-row label {
 				flex: none;
-				width: 3.2em;
+				width: 3.4em;
 				font-size: 0.82rem;
 				color: var(--dim);
 			}
-			.t-conv-row select {
-				flex: 2 1 220px;
-				font: inherit;
-				font-size: 0.92rem;
-				padding: 0.45em 0.5em;
-				border: 1px solid var(--gridline);
-				border-radius: 8px;
-				background: var(--bg);
-				color: var(--fg);
-			}
-			.t-conv-row input {
-				flex: 1 1 150px;
+			.t-conv-row .t-conv-val {
+				flex: 1 1 130px;
 				min-width: 0;
 				font: inherit;
 				font-size: 0.95rem;
@@ -531,18 +521,70 @@ const year = new Date().getFullYear();
 				color: var(--fg);
 				font-variant-numeric: tabular-nums;
 			}
-			.t-conv-row select:focus-visible,
-			.t-conv-row input:focus-visible {
+			.t-conv-picker {
+				flex: 2 1 250px;
+				min-width: 0;
+				display: flex;
+				flex-direction: column;
+				gap: 0.3em;
+			}
+			.t-conv-search-box {
+				position: relative;
+				display: flex;
+				align-items: center;
+			}
+			.t-conv-search-input {
+				width: 100%;
+				font: inherit;
+				font-size: 0.82rem;
+				padding: 0.32em 1.8em 0.32em 0.6em;
+				border: 1px dashed var(--gridline);
+				border-radius: 6px;
+				background: var(--bg);
+				color: var(--fg);
+			}
+			.t-conv-search-input:focus {
+				outline: none;
+				border-color: var(--accent);
+				border-style: solid;
+			}
+			.t-conv-search-clear {
+				position: absolute;
+				right: 0.35em;
+				background: none;
+				border: none;
+				color: var(--dim);
+				cursor: pointer;
+				font-size: 0.95rem;
+				padding: 0.1em 0.3em;
+				line-height: 1;
+			}
+			.t-conv-search-clear:hover {
+				color: var(--fg);
+			}
+			.t-conv-select {
+				width: 100%;
+				font: inherit;
+				font-size: 0.92rem;
+				padding: 0.45em 0.5em;
+				border: 1px solid var(--gridline);
+				border-radius: 8px;
+				background: var(--bg);
+				color: var(--fg);
+			}
+			.t-conv-select:focus-visible,
+			.t-conv-row .t-conv-val:focus-visible {
 				outline: 2px solid var(--accent);
 				outline-offset: -1px;
 			}
 			.t-conv-swap {
 				align-self: flex-start;
-				margin-left: 3.8em;
+				margin-left: 4em;
 			}
 			.t-conv-note {
-				font-size: 0.82rem;
+				font-size: 0.84rem;
 				color: var(--dim);
+				padding: 0.2em 0;
 			}
 			@media (max-width: 560px) {
 				.t-conv-row {
@@ -551,9 +593,149 @@ const year = new Date().getFullYear();
 				.t-conv-row label {
 					width: 100%;
 				}
+				.t-conv-picker {
+					width: 100%;
+				}
 				.t-conv-swap {
 					margin-left: 0;
 				}
+			}
+
+			/* --- all-units live conversion grid with search filter --- */
+			.t-conv-live {
+				margin-top: 1.5em;
+				border: 1px solid var(--gridline);
+				border-radius: 10px;
+				padding: 1.1em 1.25em;
+				background: var(--bg);
+			}
+			.t-conv-live-header {
+				display: flex;
+				flex-wrap: wrap;
+				align-items: center;
+				justify-content: space-between;
+				gap: 0.8em;
+				margin-bottom: 1em;
+			}
+			.t-conv-live-title {
+				font-size: 0.95rem;
+				font-weight: 600;
+				color: var(--fg);
+			}
+			.t-conv-live-searchbox {
+				position: relative;
+				display: flex;
+				align-items: center;
+				flex: 1 1 240px;
+				max-width: 360px;
+			}
+			.t-conv-live-filter {
+				width: 100%;
+				font: inherit;
+				font-size: 0.86rem;
+				padding: 0.4em 1.8em 0.4em 0.7em;
+				border: 1px solid var(--gridline);
+				border-radius: 6px;
+				background: var(--bg);
+				color: var(--fg);
+			}
+			.t-conv-live-filter:focus {
+				outline: 2px solid var(--accent);
+				outline-offset: -1px;
+			}
+			.t-conv-live-clear {
+				position: absolute;
+				right: 0.4em;
+				background: none;
+				border: none;
+				color: var(--dim);
+				cursor: pointer;
+				font-size: 0.95rem;
+				padding: 0 0.3em;
+				line-height: 1;
+			}
+			.t-conv-live-clear:hover {
+				color: var(--fg);
+			}
+			.t-conv-grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+				gap: 0.75em;
+			}
+			.t-conv-card {
+				border: 1px solid var(--gridline);
+				border-radius: 8px;
+				padding: 0.7em 0.85em;
+				background: var(--bg);
+				display: flex;
+				flex-direction: column;
+				gap: 0.4em;
+				transition: border-color 0.15s, box-shadow 0.15s;
+			}
+			.t-conv-card:hover {
+				border-color: var(--accent);
+			}
+			.t-conv-card.is-active-from {
+				border-color: var(--accent);
+				box-shadow: 0 0 0 1px var(--accent);
+			}
+			.t-conv-card.is-active-to {
+				border-color: #10b981;
+				box-shadow: 0 0 0 1px #10b981;
+			}
+			.t-conv-card-header {
+				display: flex;
+				justify-content: space-between;
+				align-items: baseline;
+				gap: 0.5em;
+				font-size: 0.8rem;
+				color: var(--dim);
+			}
+			.t-conv-card-name {
+				font-weight: 500;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+			.t-conv-card-short {
+				font-family: var(--font-mono, monospace);
+				font-size: 0.75rem;
+				opacity: 0.85;
+				flex-shrink: 0;
+			}
+			.t-conv-card-val {
+				font-size: 1.12rem;
+				font-weight: 600;
+				color: var(--fg);
+				font-variant-numeric: tabular-nums;
+				word-break: break-all;
+			}
+			.t-conv-card-actions {
+				display: flex;
+				gap: 0.45em;
+				margin-top: 0.2em;
+			}
+			.t-conv-act-btn {
+				font: inherit;
+				font-size: 0.72rem;
+				padding: 0.25em 0.55em;
+				border: 1px solid var(--gridline);
+				border-radius: 4px;
+				background: transparent;
+				color: var(--dim);
+				cursor: pointer;
+				transition: all 0.12s;
+			}
+			.t-conv-act-btn:hover {
+				border-color: var(--accent);
+				color: var(--accent);
+			}
+			.t-conv-empty {
+				grid-column: 1 / -1;
+				text-align: center;
+				color: var(--dim);
+				font-size: 0.88rem;
+				padding: 2em 1em;
 			}
 
 			/* --- generators (password / uuid / random) --- */

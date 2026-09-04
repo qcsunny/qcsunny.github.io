@@ -41,7 +41,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 
 	function fieldEl(field: FormField): HTMLElement {
 		const wrap = document.createElement('div');
-		wrap.className = 't-field';
+		wrap.className = field.wide ? 't-field t-wide' : 't-field';
 
 		if (field.type === 'checkbox') {
 			const row = document.createElement('label');

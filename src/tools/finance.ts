@@ -754,21 +754,100 @@ const salary: FormConfig = {
 	},
 };
 
-// --- progressive & flat tax -----------------------------------------------------
+// --- progressive & flat tax (China IIT Five Insurances & One Fund, 7 Special Deductions, Year-End Bonus) ---
+
+/** China IIT Annual Comprehensive Tax Brackets (7-level progressive) */
+const CN_ANNUAL_BRACKETS = [
+	{ max: 36000, rate: 0.03, quick: 0 },
+	{ max: 144000, rate: 0.10, quick: 2520 },
+	{ max: 300000, rate: 0.20, quick: 16920 },
+	{ max: 420000, rate: 0.25, quick: 31920 },
+	{ max: 660000, rate: 0.30, quick: 52920 },
+	{ max: 960000, rate: 0.35, quick: 85920 },
+	{ max: Infinity, rate: 0.45, quick: 181920 },
+];
+
+/** China IIT Year-End Bonus Monthly Equivalent Brackets (lump-sum divided by 12) */
+const CN_BONUS_MONTHLY_BRACKETS = [
+	{ maxMonthly: 3000, maxBonus: 36000, rate: 0.03, quick: 0 },
+	{ maxMonthly: 12000, maxBonus: 144000, rate: 0.10, quick: 210 },
+	{ maxMonthly: 25000, maxBonus: 300000, rate: 0.20, quick: 1410 },
+	{ maxMonthly: 35000, maxBonus: 420000, rate: 0.25, quick: 2660 },
+	{ maxMonthly: 55000, maxBonus: 660000, rate: 0.30, quick: 4410 },
+	{ maxMonthly: 80000, maxBonus: 960000, rate: 0.35, quick: 7160 },
+	{ maxMonthly: Infinity, maxBonus: Infinity, rate: 0.45, quick: 15160 },
+];
+
+/**
+ * Known Year-End Bonus Tax Pitfalls (经典多发少得盲区区间):
+ * When bonus falls strictly in (threshold, maxPitfall], the higher tax rate causes take-home pay
+ * to be strictly LESS than taking exactly the threshold bonus!
+ */
+interface BonusPitfall {
+	threshold: number;
+	minPitfall: number;
+	maxPitfall: number;
+	rate: number;
+	quick: number;
+	prevRate: number;
+}
+
+const CN_BONUS_PITFALLS: BonusPitfall[] = [
+	{ threshold: 36000, minPitfall: 36001, maxPitfall: 38566.67, rate: 0.10, quick: 210, prevRate: 0.03 },
+	{ threshold: 144000, minPitfall: 144001, maxPitfall: 160500, rate: 0.20, quick: 1410, prevRate: 0.10 },
+	{ threshold: 300000, minPitfall: 300001, maxPitfall: 318333.33, rate: 0.25, quick: 2660, prevRate: 0.20 },
+	{ threshold: 420000, minPitfall: 420001, maxPitfall: 447500, rate: 0.30, quick: 4410, prevRate: 0.25 },
+	{ threshold: 660000, minPitfall: 660001, maxPitfall: 706538.46, rate: 0.35, quick: 7160, prevRate: 0.30 },
+	{ threshold: 960000, minPitfall: 960001, maxPitfall: 1120000, rate: 0.45, quick: 15160, prevRate: 0.35 },
+];
+
+function calcCnTax(taxableIncome: number): { tax: number; marginalRate: number; rows: string[][] } {
+	let tax = 0;
+	let marginalRate = 0;
+	let prev = 0;
+	const rows: string[][] = [];
+	for (const b of CN_ANNUAL_BRACKETS) {
+		if (taxableIncome > prev) {
+			const inBracket = Math.min(taxableIncome, b.max) - prev;
+			const taxInBracket = inBracket * b.rate;
+			tax += taxInBracket;
+			marginalRate = b.rate * 100;
+			rows.push([
+				`${prev ? money(prev) : '0'} – ${b.max === Infinity ? 'Above / 以上' : money(b.max)}`,
+				`${(b.rate * 100).toFixed(0)}%`,
+				money(inBracket),
+				money(taxInBracket),
+			]);
+			prev = b.max;
+		} else {
+			break;
+		}
+	}
+	return { tax, marginalRate, rows };
+}
 
 const tax: FormConfig = {
-	intro: 'Calculate net income, tax brackets, and effective rate with China IIT, US Federal, or Flat tax.',
+	intro: 'Calculate net take-home pay, Five Insurances & Housing Fund, 7 Special Additional Deductions, and Year-End Bonus tax options (Separate vs Combined).',
 	fields: [
-		{ id: 'gross', label: 'Gross income', labelZh: '税前收入', suffix: '($ / ¥)', type: 'number', def: '120000', step: 'any', min: '0' },
+		{
+			id: 'gross',
+			label: 'Gross salary / income',
+			labelZh: '税前基本薪资 / 收入',
+			suffix: '($ / ¥)',
+			type: 'number',
+			def: '15000',
+			step: 'any',
+			min: '0',
+		},
 		{
 			id: 'period',
 			label: 'Income period',
 			labelZh: '计税周期',
 			type: 'select',
-			def: 'annual',
+			def: 'monthly',
 			options: [
-				{ value: 'annual', label: 'Annual (per year)', labelZh: '按年薪计算' },
 				{ value: 'monthly', label: 'Monthly (per month)', labelZh: '按月薪计算' },
+				{ value: 'annual', label: 'Annual (per year)', labelZh: '按年薪计算' },
 			],
 		},
 		{
@@ -778,64 +857,289 @@ const tax: FormConfig = {
 			type: 'select',
 			def: 'cn',
 			options: [
-				{ value: 'cn', label: 'China Individual Income Tax (中国新个税 3%~45% 七级累进)', labelZh: '中国新个人所得税 (七级超额累进)' },
-				{ value: 'us_single', label: 'US Federal Income Tax (美国联邦税 Single 单身)', labelZh: '美国联邦个人所得税 (Single 单身标准)' },
+				{ value: 'cn', label: 'China Individual Income Tax (中国新个税综合所得 3%~45% 七级超额累进)', labelZh: '中国新个税 (五险一金/专项扣除/年终奖)' },
+				{ value: 'us_single', label: 'US Federal Income Tax (Single)', labelZh: '美国联邦个人所得税 (Single 单身标准)' },
 				{ value: 'flat', label: 'Flat Tax Rate (固定单一税率)', labelZh: '固定单一税率' },
 			],
 		},
-		{ id: 'deduction', label: 'Pre-tax deductions', labelZh: '税前附加扣除 / 社保公积金', suffix: '($ / ¥)', type: 'number', def: '0', step: 'any', min: '0', hint: 'Social security, 401k, or special additional deductions per period', hintZh: '每期五险一金或专项附加扣除金额' },
-		{ id: 'flatRate', label: 'Flat rate (%)', labelZh: '单一固定税率 (%)', suffix: '(%)', type: 'number', def: '20', step: 'any', min: '0', hint: 'Only used when "Flat Tax Rate" is chosen', hintZh: '仅在选择"固定单一税率"时生效' },
+		{
+			id: 'insurance',
+			label: 'Five Insurances & Housing Fund (Monthly)',
+			labelZh: '五险一金个人扣除 (每月)',
+			suffix: '($ / ¥)',
+			type: 'number',
+			def: '2250',
+			step: 'any',
+			min: '0',
+			hint: 'Monthly employee deduction: Pension (8%), Medical (2%), Unemployment (0.5%), Housing Fund (5%~12%)',
+			hintZh: '每月个人承担扣缴总额：养老保险(8%) + 医疗保险(2%) + 失业保险(0.5%) + 住房公积金(5%~12%)',
+		},
+		{
+			id: 'specialDeduction',
+			label: 'Special Additional Deductions (Monthly)',
+			labelZh: '专项附加扣除 (每月合计)',
+			suffix: '($ / ¥)',
+			type: 'number',
+			def: '2000',
+			step: 'any',
+			min: '0',
+			hint: 'Monthly 7 deductions: Children education (2000/mo), Under 3 infant (2000/mo), Elderly care (1500-3000/mo), Mortgage interest (1000/mo), Rent (800-1500/mo), Continuing edu (400/mo)',
+			hintZh: '每月7项累计：子女教育(2000/月/孩)、3岁以下婴幼儿(2000/月/孩)、赡养老人(独生3000/非独生最高1500)、首套房贷(1000)或住房租金(800~1500)、继续教育(400)',
+		},
+		{
+			id: 'bonus',
+			label: 'Year-end bonus / Annual lump sum',
+			labelZh: '全年一次性奖金 (年终奖)',
+			suffix: '($ / ¥)',
+			type: 'number',
+			def: '30000',
+			step: 'any',
+			min: '0',
+			hint: 'Annual lump-sum bonus eligible for preferential separate taxation policy (extended through 2027)',
+			hintZh: '全年一次性发放的年终奖（享受国家单独计税优惠政策，延续执行至2027年12月31日）',
+		},
+		{
+			id: 'bonusMode',
+			label: 'Year-end bonus tax scheme',
+			labelZh: '年终奖计税方案',
+			type: 'select',
+			def: 'auto',
+			options: [
+				{ value: 'auto', label: 'Auto Optimal (Compare separate vs combined & recommend)', labelZh: '智能优选 (自动对比单独与合并计税，推荐最优方案)' },
+				{ value: 'separate', label: 'Taxed Separately (Preferential quotient table)', labelZh: '单独计税 (全年一次性奖金优惠政策：除以12查月税率)' },
+				{ value: 'combined', label: 'Combined with Comprehensive Income', labelZh: '并入当年综合所得计税' },
+				{ value: 'none', label: 'No Bonus (Ignore bonus)', labelZh: '不计年终奖 (仅算基本薪资)' },
+			],
+		},
+		{
+			id: 'flatRate',
+			label: 'Flat rate (%)',
+			labelZh: '单一固定税率 (%)',
+			suffix: '(%)',
+			type: 'number',
+			def: '20',
+			step: 'any',
+			min: '0',
+			hint: 'Only used when "Flat Tax Rate" is chosen',
+			hintZh: '仅在选择“固定单一税率”时生效',
+		},
 	],
 	compute: (v) => {
-		const rawGross = v.num('gross');
+		const rawGross = Math.max(0, v.num('gross') || 0);
 		const period = v.str('period');
 		const regime = v.str('regime');
-		const rawDeduction = v.num('deduction');
-		const flatRate = v.num('flatRate') / 100;
+		const monthlyInsurance = Math.max(0, v.num('insurance') || 0);
+		const monthlySpecialDeduction = Math.max(0, v.num('specialDeduction') || 0);
+		const rawBonus = Math.max(0, v.num('bonus') || 0);
+		const bonusMode = v.str('bonusMode');
+		const flatRate = Math.max(0, (v.num('flatRate') || 0) / 100);
 
 		const annualGross = period === 'monthly' ? rawGross * 12 : rawGross;
-		const annualDeduction = period === 'monthly' ? rawDeduction * 12 : rawDeduction;
+		const annualInsurance = monthlyInsurance * 12;
+		const annualSpecialDeduction = monthlySpecialDeduction * 12;
+		const effectiveBonus = bonusMode === 'none' ? 0 : rawBonus;
+		const totalGross = annualGross + effectiveBonus;
 
-		let annualTax = 0;
+		if (regime === 'cn') {
+			const STANDARD_DEDUCTION = 60000; // 5000 / month * 12
+			const totalSalaryDeductions = STANDARD_DEDUCTION + annualInsurance + annualSpecialDeduction;
+			const salaryTaxable = Math.max(0, annualGross - totalSalaryDeductions);
+			const salaryShortfall = Math.max(0, totalSalaryDeductions - annualGross);
+
+			const salaryCalc = calcCnTax(salaryTaxable);
+			const salaryTax = salaryCalc.tax;
+
+			// --- Year-End Bonus Calculations ---
+			let separateBonusTax = 0;
+			let separateBonusRate = 0;
+			let separateBonusQuick = 0;
+			let bonusTaxableForSeparate = 0;
+
+			if (effectiveBonus > 0) {
+				// According to Caishui [2018] No. 164:
+				// If annual salary is below deductions, bonus first compensates the shortfall
+				bonusTaxableForSeparate = Math.max(0, effectiveBonus - salaryShortfall);
+				if (bonusTaxableForSeparate > 0) {
+					const monthlyQuotient = bonusTaxableForSeparate / 12;
+					for (const mb of CN_BONUS_MONTHLY_BRACKETS) {
+						if (monthlyQuotient <= mb.maxMonthly) {
+							separateBonusRate = mb.rate;
+							separateBonusQuick = mb.quick;
+							separateBonusTax = Math.max(0, bonusTaxableForSeparate * mb.rate - mb.quick);
+							break;
+						}
+					}
+				}
+			}
+
+			const separateTotalTax = salaryTax + separateBonusTax;
+
+			// Combined scheme
+			const combinedTaxable = Math.max(0, totalGross - totalSalaryDeductions);
+			const combinedCalc = calcCnTax(combinedTaxable);
+			const combinedTotalTax = combinedCalc.tax;
+			const combinedBonusTax = Math.max(0, combinedTotalTax - salaryTax);
+
+			// Comparison & best selection
+			let bestScheme: 'separate' | 'combined' | 'equal' = 'separate';
+			const taxDiff = Math.abs(separateTotalTax - combinedTotalTax);
+			if (effectiveBonus <= 0) {
+				bestScheme = 'separate';
+			} else if (separateTotalTax < combinedTotalTax) {
+				bestScheme = 'separate';
+			} else if (combinedTotalTax < separateTotalTax) {
+				bestScheme = 'combined';
+			} else {
+				bestScheme = 'equal';
+			}
+
+			let activeScheme = bonusMode;
+			if (bonusMode === 'auto') {
+				activeScheme = bestScheme === 'combined' ? 'combined' : 'separate';
+			}
+
+			const isCombinedActive = activeScheme === 'combined';
+			const totalTax = isCombinedActive ? combinedTotalTax : separateTotalTax;
+			const bonusTax = isCombinedActive ? combinedBonusTax : separateBonusTax;
+			const bonusTakeHome = Math.max(0, effectiveBonus - bonusTax);
+			const annualSalaryNet = Math.max(0, annualGross - annualInsurance - salaryTax);
+			const monthlySalaryNet = annualSalaryNet / 12;
+			const totalNetTakeHome = Math.max(0, totalGross - annualInsurance - totalTax);
+			const effectiveRate = totalGross > 0 ? (totalTax / totalGross) * 100 : 0;
+			const marginalRate = isCombinedActive ? combinedCalc.marginalRate : Math.max(salaryCalc.marginalRate, separateBonusRate * 100);
+
+			// Check Pitfall (多发少得盲区)
+			let pitfallWarning: { threshold: number; min: number; max: number; safeTax: number; currTax: number; lost: number } | null = null;
+			if (effectiveBonus > 0 && !isCombinedActive && bonusTaxableForSeparate > 0) {
+				for (const p of CN_BONUS_PITFALLS) {
+					if (bonusTaxableForSeparate > p.threshold && bonusTaxableForSeparate <= p.maxPitfall) {
+						const safeTax = p.threshold * p.prevRate;
+						const currTax = bonusTaxableForSeparate * p.rate - p.quick;
+						const lost = (p.threshold - safeTax) - (bonusTaxableForSeparate - currTax);
+						if (lost > 0) {
+							pitfallWarning = {
+								threshold: p.threshold,
+								min: p.minPitfall,
+								max: Math.round(p.maxPitfall),
+								safeTax,
+								currTax,
+								lost: Math.round(lost * 100) / 100,
+							};
+						}
+						break;
+					}
+				}
+			}
+
+			const rows: FormResultRow[] = [
+				{ label: 'Net take-home income (Annual)', labelZh: '税后总收入 (全年度实发到手)', value: money(totalNetTakeHome), emphasis: true },
+				{ label: 'Base salary net pay (Monthly average)', labelZh: '基本工资税后到手 (月均)', value: money(monthlySalaryNet) },
+			];
+
+			if (effectiveBonus > 0) {
+				rows.push({ label: 'Year-end bonus net pay', labelZh: '年终奖税后到手 (实发)', value: money(bonusTakeHome) });
+			}
+
+			rows.push(
+				{ label: 'Total annual tax owed', labelZh: '全年度个人所得税总额', value: money(totalTax) },
+				{ label: 'Base salary tax owed (Annual)', labelZh: '基本工资应纳个税 (全年度)', value: money(salaryTax) },
+			);
+
+			if (effectiveBonus > 0) {
+				rows.push({
+					label: 'Year-end bonus tax owed',
+					labelZh: '年终奖应纳个税',
+					value: `${money(bonusTax)}${isCombinedActive ? ' (并入综合)' : ` (${(separateBonusRate * 100).toFixed(0)}% 档, 速算扣除 ¥${separateBonusQuick})`}`,
+				});
+				let planEvaluationZh = '';
+				if (bestScheme === 'separate') {
+					planEvaluationZh = `单独计税更优 (比合并计税省税 ¥${money(taxDiff)})`;
+				} else if (bestScheme === 'combined') {
+					planEvaluationZh = `并入综合所得更优 (比单独计税省税 ¥${money(taxDiff)})`;
+				} else {
+					planEvaluationZh = '两方案税额相同';
+				}
+				rows.push({
+					label: 'Optimal bonus scheme',
+					labelZh: '年终奖计税方案优选',
+					value: planEvaluationZh,
+				});
+			}
+
+			rows.push(
+				{ label: 'Five Insurances & Housing Fund (Annual)', labelZh: '全年五险一金个人承担扣除', value: money(annualInsurance) },
+				{ label: 'Special Additional Deductions (Annual)', labelZh: '全年专项附加扣除总额', value: money(annualSpecialDeduction) },
+				{ label: 'Taxable income (Annual comprehensive)', labelZh: '年度综合所得应纳税所得额', value: money(salaryTaxable) },
+				{ label: 'Effective overall tax rate', labelZh: '综合实际有效税率', value: `${formatNumber(effectiveRate)}%` },
+				{ label: 'Highest marginal tax rate', labelZh: '最高适用边际税率', value: `${marginalRate.toFixed(0)}%` },
+			);
+
+			let table: FormTable | undefined;
+			if (effectiveBonus > 0) {
+				table = {
+					columns: ['Tax Scheme', 'Salary Tax', 'Bonus Tax', 'Total Tax', 'Take-Home Pay', 'Recommendation'],
+					columnsZh: ['年终奖计税方案', '工资薪金个税', '年终奖个税', '全年个税总额', '最终税后到手', '优选评估'],
+					rows: [
+						[
+							'单独计税 (全年一次性奖金优惠)',
+							money(salaryTax),
+							money(separateBonusTax),
+							money(separateTotalTax),
+							money(totalGross - annualInsurance - separateTotalTax),
+							bestScheme === 'separate' ? '★ 推荐方案 (省税最高)' : (bestScheme === 'equal' ? '税负相同' : '税负偏高'),
+						],
+						[
+							'并入当年综合所得合并计税',
+							money(salaryTax),
+							money(combinedBonusTax),
+							money(combinedTotalTax),
+							money(totalGross - annualInsurance - combinedTotalTax),
+							bestScheme === 'combined' ? '★ 推荐方案 (省税最高)' : (bestScheme === 'equal' ? '税负相同' : '税负偏高'),
+						],
+					],
+				};
+			} else if (salaryCalc.rows.length) {
+				table = {
+					columns: ['Tax Bracket', 'Rate', 'Taxable in Bracket', 'Tax Owed'],
+					columnsZh: ['综合所得税率阶梯', '适用税率', '级内应纳税所得额', '本级应纳税额'],
+					rows: salaryCalc.rows,
+				};
+			}
+
+			let noteEn = `On gross income of ${money(totalGross)} (salary ${money(annualGross)}${effectiveBonus > 0 ? ` + bonus ${money(effectiveBonus)}` : ''}), deductions total ${money(totalSalaryDeductions)} (standard 60,000 + insurance ${money(annualInsurance)} + special ${money(annualSpecialDeduction)}). Total tax is ${money(totalTax)} (effective rate ${formatNumber(effectiveRate)}%), leaving ${money(totalNetTakeHome)} net take-home pay.`;
+			let noteZh = `总税前收入 ${money(totalGross)}（基本年薪 ${money(annualGross)}${effectiveBonus > 0 ? ` + 年终奖 ${money(effectiveBonus)}` : ''}），扣除项合计 ${money(totalSalaryDeductions)}（起征点6万 + 五险一金 ${money(annualInsurance)} + 专项附加扣除 ${money(annualSpecialDeduction)}）。全年个税为 ${money(totalTax)}（综合实际税率 ${formatNumber(effectiveRate)}%），税后综合到手 ${money(totalNetTakeHome)}（月均基本薪资 ${money(monthlySalaryNet)}${effectiveBonus > 0 ? ` + 年终奖实发 ${money(bonusTakeHome)}` : ''}）。`;
+
+			if (effectiveBonus > 0) {
+				if (bestScheme === 'separate') {
+					noteZh += ` 【方案建议】：建议选择【单独计税】，相比并入综合所得可少缴个税 ¥${money(taxDiff)}。`;
+				} else if (bestScheme === 'combined') {
+					noteZh += ` 【方案建议】：由于基本工资未用尽免征额或专项扣除额度，建议选择【并入综合所得计税】，可少缴个税 ¥${money(taxDiff)}。`;
+				}
+			}
+
+			if (pitfallWarning) {
+				noteZh += ` ⚠️【年终奖税收盲区预警】：您的年终奖处于多发少得税收盲区（¥${pitfallWarning.min} ~ ¥${pitfallWarning.max}）。如果将年终奖设为临界点 ¥${money(pitfallWarning.threshold)}，税额将从 ¥${money(pitfallWarning.currTax)} 降至 ¥${money(pitfallWarning.safeTax)}，税后实际到手反而增加 ¥${money(pitfallWarning.lost)}！建议与公司沟通避开此区间。`;
+				noteEn += ` ⚠️ Note: Your year-end bonus falls into the known tax pitfall bracket (${money(pitfallWarning.min)} - ${money(pitfallWarning.max)}). Reducing the bonus to ${money(pitfallWarning.threshold)} would increase your actual take-home by ${money(pitfallWarning.lost)} due to the bracket jump!`;
+			}
+
+			return {
+				rows,
+				table,
+				note: noteEn,
+				noteZh,
+			};
+		}
+
+		// US Federal (Single) & Flat Tax
+		const annualDeductions = annualInsurance + annualSpecialDeduction;
 		let taxableIncome = 0;
+		let annualTax = 0;
 		let marginalRate = 0;
 		const tableRows: string[][] = [];
 
-		if (regime === 'cn') {
-			// China Individual Income Tax: standard deduction 60,000/yr (5,000/mo)
-			const standardDeduction = 60000;
-			taxableIncome = Math.max(0, annualGross - standardDeduction - annualDeduction);
-			const brackets = [
-				{ max: 36000, rate: 0.03 },
-				{ max: 144000, rate: 0.10 },
-				{ max: 300000, rate: 0.20 },
-				{ max: 420000, rate: 0.25 },
-				{ max: 660000, rate: 0.30 },
-				{ max: 960000, rate: 0.35 },
-				{ max: Infinity, rate: 0.45 },
-			];
-			let prev = 0;
-			for (const b of brackets) {
-				if (taxableIncome > prev) {
-					const inBracket = Math.min(taxableIncome, b.max) - prev;
-					const taxInBracket = inBracket * b.rate;
-					annualTax += taxInBracket;
-					marginalRate = b.rate * 100;
-					tableRows.push([
-						`${prev ? money(prev) : '0'} – ${b.max === Infinity ? 'Above' : money(b.max)}`,
-						`${(b.rate * 100).toFixed(0)}%`,
-						money(inBracket),
-						money(taxInBracket),
-					]);
-					prev = b.max;
-				} else {
-					break;
-				}
-			}
-		} else if (regime === 'us_single') {
-			// US Federal Tax (Single 2024/2026 baseline): standard deduction $14,600
+		if (regime === 'us_single') {
 			const standardDeduction = 14600;
-			taxableIncome = Math.max(0, annualGross - standardDeduction - annualDeduction);
+			taxableIncome = Math.max(0, totalGross - standardDeduction - annualDeductions);
 			const brackets = [
 				{ max: 11600, rate: 0.10 },
 				{ max: 47150, rate: 0.12 },
@@ -853,7 +1157,7 @@ const tax: FormConfig = {
 					annualTax += taxInBracket;
 					marginalRate = b.rate * 100;
 					tableRows.push([
-						`${prev ? money(prev) : '0'} – ${b.max === Infinity ? 'Above' : money(b.max)}`,
+						`${prev ? money(prev) : '0'} – ${b.max === Infinity ? 'Above / 以上' : money(b.max)}`,
 						`${(b.rate * 100).toFixed(0)}%`,
 						money(inBracket),
 						money(taxInBracket),
@@ -865,16 +1169,16 @@ const tax: FormConfig = {
 			}
 		} else {
 			// Flat Rate
-			taxableIncome = Math.max(0, annualGross - annualDeduction);
+			taxableIncome = Math.max(0, totalGross - annualDeductions);
 			annualTax = taxableIncome * flatRate;
 			marginalRate = flatRate * 100;
 			tableRows.push(['All taxable income', `${(flatRate * 100).toFixed(1)}%`, money(taxableIncome), money(annualTax)]);
 		}
 
-		const annualNet = annualGross - annualTax;
+		const annualNet = Math.max(0, totalGross - annualDeductions - annualTax);
 		const monthlyNet = annualNet / 12;
 		const monthlyTax = annualTax / 12;
-		const effectiveRate = annualGross > 0 ? (annualTax / annualGross) * 100 : 0;
+		const effectiveRate = totalGross > 0 ? (annualTax / totalGross) * 100 : 0;
 
 		return {
 			rows: [
@@ -893,8 +1197,8 @@ const tax: FormConfig = {
 						rows: tableRows,
 					}
 				: undefined,
-			note: `On an annual gross of ${money(annualGross)}, total tax is ${money(annualTax)} (effective rate of ${formatNumber(effectiveRate)}%), leaving ${money(annualNet)} take-home.`,
-			noteZh: `在税前年收入 ${money(annualGross)} 情况下，全年度个人所得税为 ${money(annualTax)}（综合实际税率 ${formatNumber(effectiveRate)}%），税后实际到手 ${money(annualNet)}（月均 ${money(monthlyNet)}）。`,
+			note: `On gross income of ${money(totalGross)}, total tax is ${money(annualTax)} (effective rate of ${formatNumber(effectiveRate)}%), leaving ${money(annualNet)} take-home.`,
+			noteZh: `在税前收入 ${money(totalGross)} 情况下，全年度个人所得税为 ${money(annualTax)}（综合实际税率 ${formatNumber(effectiveRate)}%），税后实际到手 ${money(annualNet)}（月均 ${money(monthlyNet)}）。`,
 		};
 	},
 };
@@ -1173,27 +1477,33 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		slug: 'tax',
 		category: 'finance',
 		name: 'Income Tax & Take-Home Salary Calculator',
-		nameZh: '个人所得税与税后薪资计算器',
-		description: 'Calculate net income, tax brackets, and effective rate with China IIT, US Federal, or Flat tax.',
+		nameZh: '个人所得税计算器 (五险一金/专项扣除/年终奖)',
+		description: 'Calculate net income, tax brackets, Five Insurances & Housing Fund, 7 Special Deductions, and Year-End Bonus tax optimization (Separate vs Combined).',
 		kind: 'form',
 		config: tax,
 
 		content: {
 			about: [
-				'Compute your true take-home pay, progressive tax brackets, and effective tax rate. Choose between Chinese Individual Income Tax (新个税七级超额累进), US Federal Tax (Single brackets), or a customized flat rate.',
-				'Standard deductions and pre-tax withholdings (such as social security, 401(k), and special deductions) are deducted before computing bracket taxes, giving you an accurate financial picture.',
+				'Accurately compute net take-home salary, progressive tax brackets, Five Insurances & Housing Fund contributions, 7 Special Additional Deductions, and Year-End Bonus tax schemes (Separate vs Combined). Supports Chinese Individual Income Tax (新个税综合所得七级累进), US Federal Income Tax (Single), and customizable Flat Tax rates.',
+				'Under Chinese tax law, your gross income is reduced by standard deductions (60,000 RMB/year or 5,000 RMB/month), employee social security (pension 8%, medical 2%, unemployment 0.5%, housing fund 5%~12%), and 7 categories of special additional deductions before progressive bracket rates (3% to 45%) are applied.',
+				'Year-end bonus can be calculated under the preferential separate taxation policy (extended through 2027) or combined into annual comprehensive income. The calculator automatically analyzes both routes, identifies the exact tax difference, and warns against known bracket jump pitfalls (多发少得盲区).',
 			],
 			aboutZh: [
-				'精准计算税后到手收入、个税阶梯分布与综合实际税率。支持中国新个税（七级超额累进税率）、美国联邦个人所得税（Single 单身标准）以及自定义单一税率模式。',
-				'支持输入起征点免征额、社保五险一金以及专项附加扣除，完整呈现各档阶梯纳税额度与月均到手薪资。',
+				'全面支持中国新个人所得税（七级超额累进综合所得税率）、五险一金个人扣除、最新 7 项专项附加扣除以及全年一次性奖金（年终奖）计税优化方案。同时兼容美国联邦个人所得税（Single 单身标准）与自定义单一税率。',
+				'中国新个税实施年度综合汇算清缴制度，以税前总收入扣除 60,000 元/年（5,000 元/月）基本减除费用、五险一金（养老 8%、医疗 2%、失业 0.5%、住房公积金 5%~12%）以及 7 项专项附加扣除后作为应纳税所得额，适用 3% 至 45% 的七级累进税率。',
+				'针对年终奖，财政部与税务总局延续全年一次性奖金单独计税优惠政策至 2027 年 12 月 31 日。计算器支持【单独计税（除以12查月度税率）】与【并入当年综合所得】双向对比与智能优选推荐，并对 3.6万、14.4万、30万、42万、66万、96万等“多发1元到手反少几千上万元”的税收临界点盲区提供即时警示。',
 			],
 			faq: [
-				{ q: 'What is the difference between marginal and effective tax rate?', a: 'Marginal rate is the tax paid on your last dollar of income (the highest bracket); effective rate is total tax divided by total gross income.' },
-				{ q: 'How does China Individual Income Tax bracket system work?', a: 'It calculates cumulative annual taxable income after a standard 60,000 RMB deduction (5,000/month) and social security, applying progressive rates from 3% to 45%.' },
+				{ q: 'How are the Five Insurances and Housing Fund calculated for employees?', a: 'In China, employees typically contribute 8% for basic pension, 2% for basic medical, 0.5% for unemployment, and 5% to 12% for the housing provident fund (totaling around 15.5%~22.5% of monthly pay within local contribution base limits). Work injury and maternity insurances are paid entirely by employers.' },
+				{ q: 'What are the current standards for China’s 7 Special Additional Deductions?', a: 'According to State Council standards: Infant care under 3 (2,000 RMB/mo/child), Children education (2,000 RMB/mo/child), Elderly care (3,000 RMB/mo for only child, max 1,500 RMB/mo shared), First home mortgage interest (1,000 RMB/mo), Housing rent (800–1,500 RMB/mo depending on city), Continuing education (400 RMB/mo or 3,600 RMB/year for qualification exams), and Serious illness medical expenses (up to 80,000 RMB/year).' },
+				{ q: 'Should I choose Separate Taxation or Combined Taxation for my Year-End Bonus?', a: 'Separate taxation is generally advantageous for middle and higher earners because the bonus is divided by 12 to capture lower brackets (3%, 10%) independently. However, if your regular salary does not fully use the 60,000 RMB basic deduction or special deductions, combined taxation allows the unused deduction to offset the bonus, saving more tax. This calculator automatically calculates both and recommends the best choice.' },
+				{ q: 'What is the Year-End Bonus "tax pitfall" (多发少得盲区)?', a: 'Under separate taxation, when the bonus crosses a bracket boundary by just 1 RMB (such as 36,001 RMB vs 36,000 RMB, or 144,001 RMB vs 144,000 RMB), the entire bonus is taxed at the higher marginal rate, causing the tax owed to jump drastically and leaving you with less take-home pay than if you had received less bonus. The calculator detects this interval and alerts you to negotiate the optimal payout.' },
 			],
 			faqZh: [
-				{ q: '边际税率与实际税率有什么区别？', a: '边际税率是您最后一元收入所适用的最高税率档位；实际综合税率是总纳税额除以总收入的实际百分比，通常远低于边际税率。' },
-				{ q: '中国新个税的计算规则是怎样的？', a: '采用年度综合所得计税，扣除每年 6 万元基本减除费用（5000元/月）及五险一金与专项附加扣除后，按 3% 至 45% 七级超额累进税率计算。' },
+				{ q: '五险一金个人扣除的标准和比例通常是多少？', a: '在我国，个人承担部分通常包含：基本养老保险（8%）、基本医疗保险（2%）、失业保险（0.5%）以及住房公积金（5%~12%，常见 7%~12%），个人扣缴合计比例约为 15.5%~22.5%（以当地社保公积金月缴费基数上下限为准），均在税前全额扣除；工伤保险与生育保险由用人单位全额承担，个人无需缴费。' },
+				{ q: '2024年最新 7 项专项附加扣除标准包含哪些？', a: '国务院最新调整标准：①3岁以下婴幼儿照护：2,000元/月/孩；②子女教育：2,000元/月/孩；③赡养老人：独生子女 3,000元/月，非独生子女与其他兄弟姐妹分摊每人每月最高不超过 1,500元；④住房贷款利息：首套房贷 1,000元/月；⑤住房租金：直辖市/省会/副省级城市 1,500元/月，其他市县 800~1,100元/月；⑥继续教育：学历教育 400元/月，职业资格证书 3,600元/年；⑦大病医疗：医保自付超 15,000元部分，在 80,000元/年限额内据实扣除。' },
+				{ q: '年终奖单独计税与合并计税，哪种更划算？', a: '绝大多数情况下【单独计税】更划算，因为将年终奖除以12单独对照月度税率表，能重复利用 3% 和 10% 等低税率档位；但在基本月薪较低（全年月度工资未能扣满 6 万元免征额及五险一金与专项附加扣除）时，选择【并入综合所得】能把没用完的扣除额度抵扣年终奖，反而更省税。本工具支持智能优选，自动为您对比两者税额并推荐最佳方案。' },
+				{ q: '什么是年终奖“多发1元到手反而少拿几千块”的税收盲区？', a: '在单独计税方式下，当奖金跨越税率分界线（如 36,000元、144,000元、300,000元、420,000元、660,000元、960,000元）时，整笔年终奖全额适用跃迁后的高税率，导致税款骤增。例如发放 36,001元比发放 36,000元税后实际到手少 2,309.10元！本计算器会自动检测并标红预警该盲区，建议您主动与单位人事沟通合理调整申报金额。' },
 			],
 		},
 	},
