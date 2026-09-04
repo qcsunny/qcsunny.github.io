@@ -307,18 +307,10 @@ export const TEXT_TOOLS: ToolEntry[] = [
 	{
 		slug: 'json-formatter',
 		category: 'tools',
-		name: 'JSON Formatter',
-		nameZh: 'JSON 格式化工具',
-		description: 'Format and minify JSON with exact error positions, fully in your browser.',
-		kind: 'text',
-		config: {
-			placeholder: '{"paste": "JSON here"}',
-			mono: true,
-			transforms: [
-				{ id: 'format', label: 'Format', run: (t) => formatJson(t, 2) },
-				{ id: 'minify', label: 'Minify', run: (t) => formatJson(t, 0) },
-			],
-		} satisfies TextConfig,
+		name: 'JSON Formatter & Validator',
+		nameZh: 'JSON 格式化与校验工具',
+		description: 'Format, validate, minify, escape, and inspect JSON with exact error positions, one-click copy, and file download.',
+		kind: 'json',
 
 		content: {
 			about: [

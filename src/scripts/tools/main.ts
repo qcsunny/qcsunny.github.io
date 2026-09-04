@@ -37,5 +37,8 @@ if (kind && kind !== 'redirect') {
 		case 'color':
 			void import('./color').then((m) => m.initColor(host));
 			break;
+		case 'json':
+			void import('./json').then((m) => m.initJson(host));
+			break;
 	}
 }

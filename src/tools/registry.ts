@@ -14,7 +14,15 @@ import { GENERATOR_TOOLS } from './generators';
 import { TEXT_TOOLS } from './textTools';
 
 export type ToolCategory = 'calculators' | 'converters' | 'finance' | 'tools';
-export type ToolKind = 'form' | 'converter' | 'text' | 'qr' | 'color' | 'generator' | 'redirect';
+export type ToolKind =
+	| 'form'
+	| 'converter'
+	| 'text'
+	| 'qr'
+	| 'color'
+	| 'generator'
+	| 'redirect'
+	| 'json';
 
 export interface ToolMeta {
 	slug: string;
@@ -162,6 +170,7 @@ export type ToolEntry = ToolMeta &
 		| { kind: 'color' }
 		| { kind: 'generator'; config: GeneratorConfig }
 		| { kind: 'redirect'; config: RedirectConfig }
+		| { kind: 'json' }
 	) & { content?: ToolContent };
 
 // --- categories ----------------------------------------------------------------
