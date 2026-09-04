@@ -13,10 +13,11 @@
 // - Word count, character count, CJK count, line count, and reading time estimate
 // - Export to .md and standalone .html with styles
 // - Proportional sync scrolling between editor and preview pane
+// - Full bilingual support (Chinese & English) with reactive live switching
 
 import { formatBytes } from './workbench';
 
-const SAMPLE_MARKDOWN = `# Markdown 实时渲染与编辑工具 (QCSunny Lab)
+export const SAMPLE_MARKDOWN_ZH = `# Markdown 实时渲染与编辑工具 (QCSunny Lab)
 
 > [!TIP]
 > 本工具完全基于**纯浏览器前端**运行，零第三方臃肿依赖，零服务器上传，**100% 保证文档隐私安全**。
@@ -104,6 +105,95 @@ $$A = P \\left(1 + \\frac{r}{n}\\right)^{n \\cdot t}$$
 
 祝你写作愉快！`;
 
+export const SAMPLE_MARKDOWN_EN = `# Markdown Live Editor & Previewer (QCSunny Lab)
+
+> [!TIP]
+> This tool runs **entirely in your browser** with zero dependencies, zero network requests, and **100% data privacy**.
+
+Welcome to the high-performance real-time Markdown editor! Type Markdown on the left and preview the formatted result instantly on the right.
+
+---
+
+## 1. Basic Formatting & Text Styles
+
+You can easily format **Bold text**, *Italic text*, ***Bold & Italic***, ~~Strikethrough~~, and \`inline code\`.
+
+You can also include links and images:
+- Homepage: [QCSunny Lab Home](/)
+- Toolbox: [Explore 40+ Utilities](/tools/)
+
+> **Quote**:  
+> "Programs must be written for people to read, and only incidentally for machines to execute."  
+> — Harold Abelson, Structure and Interpretation of Computer Programs
+
+---
+
+## 2. GitHub-Style Alert Callouts
+
+> [!NOTE]
+> This is a standard informative callout for helpful background context and notes.
+
+> [!IMPORTANT]
+> Key feature: Press <kbd>Tab</kbd> in the editor to indent by 2 spaces automatically!
+
+> [!WARNING]
+> Remember to export your \`.md\` or \`.html\` file before leaving the page.
+
+---
+
+## 3. GFM Data Tables
+
+Colons specify column alignments (left, center, right):
+
+| Tool Category | Featured Utilities | Runtime | Performance |
+| :--- | :---: | :---: | ---: |
+| **Financial** | Mortgage / IRR / Income Tax | In-Browser | ⚡ Sub-millisecond |
+| **Developer** | JSON / SQL / JWT / UUID | Client-side | 🚀 Zero Network Delay |
+| **Converters** | Length / Weight / Speed / Temp | Offline Ready | 🔒 100% Private |
+| **Math Tools** | Scientific / Fractions / Graphing | Web API | 🎯 Lightweight & Fast |
+
+---
+
+## 4. Task Lists
+
+- [x] Build lightweight zero-dependency Markdown parser
+- [x] Support GitHub Flavored Markdown (GFM) tables & alerts
+- [x] Support split-screen with proportional sync scrolling
+- [x] Enable one-click HTML copy & standalone file export
+- [ ] Enjoy distraction-free writing!
+
+---
+
+## 5. Code Blocks
+
+\`\`\`typescript
+// TypeScript Quick Example
+interface ToolItem {
+  id: string;
+  name: string;
+  isClientSide: boolean;
+}
+
+const mdTool: ToolItem = {
+  id: 'markdown-preview',
+  name: 'Markdown Live Editor',
+  isClientSide: true,
+};
+
+console.log(\`[Ready] \${mdTool.name} initialized safely!\`);
+\`\`\`
+
+---
+
+## 6. Mathematical Formulas
+
+Supports inline ($E = mc^2$) and display block LaTeX-style mathematical expressions:
+$$E = mc^2$$
+$$A = P \\left(1 + \\frac{r}{n}\\right)^{n \\cdot t}$$
+$$e^{i\\pi} + 1 = 0$$
+
+Happy writing!`;
+
 // Escape HTML special characters
 function escapeHtml(str: string): string {
 	return str
@@ -125,22 +215,24 @@ function slugify(text: string): string {
 }
 
 // Core Markdown Parser (Zero-dependency GFM implementation)
-export function parseMarkdownToHtml(markdown: string): string {
+export function parseMarkdownToHtml(markdown: string, lang: 'zh' | 'en' = 'zh'): string {
 	const codeBlocks: string[] = [];
 	const mathBlocks: string[] = [];
 
 	let src = markdown.replace(/\r\n/g, '\n');
 
 	// 1. Extract fenced code blocks
-	src = src.replace(/```([a-zA-Z0-9_\-#+.]*)\n([\s\S]*?)```/g, (_, lang, code) => {
+	src = src.replace(/```([a-zA-Z0-9_\-#+.]*)\n([\s\S]*?)```/g, (_, codeLang, code) => {
 		const idx = codeBlocks.length;
-		const safeLang = (lang || 'text').toLowerCase();
+		const safeLang = (codeLang || 'text').toLowerCase();
 		const escapedCode = escapeHtml(code);
+		const copyLabel = lang === 'en' ? 'Copy' : '复制';
+		const copyAria = lang === 'en' ? 'Copy code' : '复制代码';
 		codeBlocks.push(`
 			<div class="t-md-code-box">
 				<div class="t-md-code-bar">
 					<span class="t-md-code-lang">${escapeHtml(safeLang)}</span>
-					<button type="button" class="t-md-code-copy-btn" aria-label="Copy code">复制</button>
+					<button type="button" class="t-md-code-copy-btn" aria-label="${copyAria}">${copyLabel}</button>
 				</div>
 				<pre><code class="language-${safeLang}">${escapedCode}</code></pre>
 			</div>
@@ -197,18 +289,19 @@ export function parseMarkdownToHtml(markdown: string): string {
 			if (alertMatch) {
 				const alertType = alertMatch[1].toLowerCase();
 				const restOfText = quoteContent.replace(/^\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*/i, '');
-				const titles: Record<string, { icon: string; name: string }> = {
-					note: { icon: 'ℹ️', name: 'Note' },
-					tip: { icon: '💡', name: 'Tip' },
-					important: { icon: '❗', name: 'Important' },
-					warning: { icon: '⚠️', name: 'Warning' },
-					caution: { icon: '🛑', name: 'Caution' }
+				const titles: Record<string, { icon: string; nameZh: string; nameEn: string }> = {
+					note: { icon: 'ℹ️', nameZh: '说明', nameEn: 'Note' },
+					tip: { icon: '💡', nameZh: '提示', nameEn: 'Tip' },
+					important: { icon: '❗', nameZh: '重要', nameEn: 'Important' },
+					warning: { icon: '⚠️', nameZh: '注意', nameEn: 'Warning' },
+					caution: { icon: '🛑', nameZh: '警告', nameEn: 'Caution' }
 				};
-				const meta = titles[alertType] || { icon: 'ℹ️', name: 'Notice' };
+				const meta = titles[alertType] || { icon: 'ℹ️', nameZh: '提示', nameEn: 'Notice' };
+				const alertName = lang === 'en' ? meta.nameEn : meta.nameZh;
 				const innerHtml = parseInline(restOfText).replace(/\n/g, '<br>');
 				output.push(`
 					<div class="t-md-alert t-md-alert-${alertType}">
-						<div class="t-md-alert-title"><span class="t-md-alert-icon">${meta.icon}</span> ${meta.name}</div>
+						<div class="t-md-alert-title"><span class="t-md-alert-icon">${meta.icon}</span> ${alertName}</div>
 						<div class="t-md-alert-body">${innerHtml}</div>
 					</div>
 				`);
@@ -466,9 +559,218 @@ export function calculateStats(text: string) {
 	};
 }
 
+interface ToolbarAction {
+	id: string;
+	labelZh: string;
+	labelEn: string;
+	titleZh: string;
+	titleEn: string;
+	prefixZh: string;
+	prefixEn: string;
+	suffix: string;
+	defaultTextZh: string;
+	defaultTextEn: string;
+}
+
+const ACTIONS: ToolbarAction[] = [
+	{
+		id: 'bold',
+		labelZh: 'B',
+		labelEn: 'B',
+		titleZh: '加粗 (Ctrl+B)',
+		titleEn: 'Bold (Ctrl+B)',
+		prefixZh: '**',
+		prefixEn: '**',
+		suffix: '**',
+		defaultTextZh: '粗体文本',
+		defaultTextEn: 'Bold text'
+	},
+	{
+		id: 'italic',
+		labelZh: 'I',
+		labelEn: 'I',
+		titleZh: '斜体 (Ctrl+I)',
+		titleEn: 'Italic (Ctrl+I)',
+		prefixZh: '*',
+		prefixEn: '*',
+		suffix: '*',
+		defaultTextZh: '斜体文本',
+		defaultTextEn: 'Italic text'
+	},
+	{
+		id: 'strike',
+		labelZh: 'S',
+		labelEn: 'S',
+		titleZh: '删除线',
+		titleEn: 'Strikethrough',
+		prefixZh: '~~',
+		prefixEn: '~~',
+		suffix: '~~',
+		defaultTextZh: '删除文本',
+		defaultTextEn: 'Strikethrough text'
+	},
+	{
+		id: 'h1',
+		labelZh: 'H1',
+		labelEn: 'H1',
+		titleZh: '一级标题',
+		titleEn: 'Heading 1',
+		prefixZh: '# ',
+		prefixEn: '# ',
+		suffix: '',
+		defaultTextZh: '标题',
+		defaultTextEn: 'Heading 1'
+	},
+	{
+		id: 'h2',
+		labelZh: 'H2',
+		labelEn: 'H2',
+		titleZh: '二级标题',
+		titleEn: 'Heading 2',
+		prefixZh: '## ',
+		prefixEn: '## ',
+		suffix: '',
+		defaultTextZh: '二级标题',
+		defaultTextEn: 'Heading 2'
+	},
+	{
+		id: 'h3',
+		labelZh: 'H3',
+		labelEn: 'H3',
+		titleZh: '三级标题',
+		titleEn: 'Heading 3',
+		prefixZh: '### ',
+		prefixEn: '### ',
+		suffix: '',
+		defaultTextZh: '三级标题',
+		defaultTextEn: 'Heading 3'
+	},
+	{
+		id: 'code',
+		labelZh: '`代码`',
+		labelEn: '`Code`',
+		titleZh: '行内代码',
+		titleEn: 'Inline Code',
+		prefixZh: '`',
+		prefixEn: '`',
+		suffix: '`',
+		defaultTextZh: 'code',
+		defaultTextEn: 'code'
+	},
+	{
+		id: 'codeblock',
+		labelZh: '💻 代码块',
+		labelEn: '💻 Code Block',
+		titleZh: '代码块',
+		titleEn: 'Code Block',
+		prefixZh: '```javascript\n',
+		prefixEn: '```javascript\n',
+		suffix: '\n```',
+		defaultTextZh: '// 粘贴或书写代码',
+		defaultTextEn: '// Write or paste code'
+	},
+	{
+		id: 'link',
+		labelZh: '🔗 链接',
+		labelEn: '🔗 Link',
+		titleZh: '插入链接',
+		titleEn: 'Insert Link',
+		prefixZh: '[链接文字](',
+		prefixEn: '[Link text](',
+		suffix: ')',
+		defaultTextZh: 'https://',
+		defaultTextEn: 'https://'
+	},
+	{
+		id: 'image',
+		labelZh: '🖼️ 图片',
+		labelEn: '🖼️ Image',
+		titleZh: '插入图片',
+		titleEn: 'Insert Image',
+		prefixZh: '![图片说明](',
+		prefixEn: '![Image alt](',
+		suffix: ')',
+		defaultTextZh: 'https://',
+		defaultTextEn: 'https://'
+	},
+	{
+		id: 'table',
+		labelZh: '📋 表格',
+		labelEn: '📋 Table',
+		titleZh: '插入表格',
+		titleEn: 'Insert Table',
+		prefixZh: '\n| 表头1 | 表头2 | 表头3 |\n| :--- | :---: | ---: |\n| 内容1 | 内容2 | 内容3 |\n',
+		prefixEn: '\n| Header 1 | Header 2 | Header 3 |\n| :--- | :---: | ---: |\n| Item 1 | Item 2 | Item 3 |\n',
+		suffix: '',
+		defaultTextZh: '',
+		defaultTextEn: ''
+	},
+	{
+		id: 'task',
+		labelZh: '☑️ 任务',
+		labelEn: '☑️ Task',
+		titleZh: '任务清单',
+		titleEn: 'Task Checklist',
+		prefixZh: '- [ ] ',
+		prefixEn: '- [ ] ',
+		suffix: '',
+		defaultTextZh: '待办任务',
+		defaultTextEn: 'Todo task'
+	},
+	{
+		id: 'alert',
+		labelZh: '💡 提示框',
+		labelEn: '💡 Alert',
+		titleZh: 'GitHub 提示框',
+		titleEn: 'GitHub Alert Callout',
+		prefixZh: '> [!NOTE]\n> ',
+		prefixEn: '> [!NOTE]\n> ',
+		suffix: '',
+		defaultTextZh: '在此输入重要提示信息',
+		defaultTextEn: 'Write important notice here'
+	},
+	{
+		id: 'math',
+		labelZh: '📐 公式',
+		labelEn: '📐 Math',
+		titleZh: '数学公式',
+		titleEn: 'Math Formula',
+		prefixZh: '$$',
+		prefixEn: '$$',
+		suffix: '$$',
+		defaultTextZh: 'E = mc^2',
+		defaultTextEn: 'E = mc^2'
+	},
+	{
+		id: 'hr',
+		labelZh: '➖ 分割线',
+		labelEn: '➖ Divider',
+		titleZh: '分割线',
+		titleEn: 'Horizontal Rule',
+		prefixZh: '\n---\n',
+		prefixEn: '\n---\n',
+		suffix: '',
+		defaultTextZh: '',
+		defaultTextEn: ''
+	}
+];
+
+const VIEW_MODES = [
+	{ id: 'split', labelZh: '🌓 双栏分屏', labelEn: '🌓 Split View', active: true },
+	{ id: 'preview', labelZh: '👁️ 仅预览', labelEn: '👁️ Preview Only', active: false },
+	{ id: 'editor', labelZh: '✏️ 仅编辑', labelEn: '✏️ Editor Only', active: false }
+];
+
 // Main Interactive Widget Initializer
 export function initMarkdown(host: HTMLElement): void {
 	host.innerHTML = '';
+
+	function getLang(): 'zh' | 'en' {
+		const l = document.documentElement.dataset.lang || localStorage.getItem('site:lang');
+		return l === 'en' ? 'en' : 'zh';
+	}
+
+	let currentLang: 'zh' | 'en' = getLang();
 
 	const wrap = document.createElement('div');
 	wrap.className = 't-md-container';
@@ -481,58 +783,45 @@ export function initMarkdown(host: HTMLElement): void {
 	const insertGroup = document.createElement('div');
 	insertGroup.className = 't-md-tool-group';
 
-	const actions = [
-		{ label: 'B', title: '加粗 (Ctrl+B)', prefix: '**', suffix: '**', defaultText: '粗体文本' },
-		{ label: 'I', title: '斜体 (Ctrl+I)', prefix: '*', suffix: '*', defaultText: '斜体文本' },
-		{ label: 'S', title: '删除线', prefix: '~~', suffix: '~~', defaultText: '删除文本' },
-		{ label: 'H1', title: '一级标题', prefix: '# ', suffix: '', defaultText: '标题' },
-		{ label: 'H2', title: '二级标题', prefix: '## ', suffix: '', defaultText: '二级标题' },
-		{ label: 'H3', title: '三级标题', prefix: '### ', suffix: '', defaultText: '三级标题' },
-		{ label: '`代码`', title: '行内代码', prefix: '`', suffix: '`', defaultText: 'code' },
-		{ label: '💻 代码块', title: '代码块', prefix: '```javascript\n', suffix: '\n```', defaultText: '// 粘贴或书写代码' },
-		{ label: '🔗 链接', title: '插入链接', prefix: '[链接文字](', suffix: ')', defaultText: 'https://' },
-		{ label: '🖼️ 图片', title: '插入图片', prefix: '![图片说明](', suffix: ')', defaultText: 'https://' },
-		{ label: '📋 表格', title: '插入表格', prefix: '\n| 表头1 | 表头2 | 表头3 |\n| :--- | :---: | ---: |\n| 内容1 | 内容2 | 内容3 |\n', suffix: '', defaultText: '' },
-		{ label: '☑️ 任务', title: '任务清单', prefix: '- [ ] ', suffix: '', defaultText: '待办任务' },
-		{ label: '💡 提示框', title: 'GitHub 提示框', prefix: '> [!NOTE]\n> ', suffix: '', defaultText: '在此输入重要提示信息' },
-		{ label: '📐 公式', title: '数学公式', prefix: '$$', suffix: '$$', defaultText: 'E = mc^2' },
-		{ label: '➖ 分割线', title: '分割线', prefix: '\n---\n', suffix: '', defaultText: '' }
-	];
+	const actionBtnElements: Array<{
+		action: ToolbarAction;
+		btn: HTMLButtonElement;
+	}> = [];
 
-	actions.forEach((act) => {
+	ACTIONS.forEach((act) => {
 		const btn = document.createElement('button');
 		btn.type = 'button';
 		btn.className = 't-md-tool-btn';
-		btn.textContent = act.label;
-		btn.title = act.title;
 		btn.addEventListener('click', () => {
-			insertSyntax(act.prefix, act.suffix, act.defaultText);
+			const prefix = currentLang === 'en' ? act.prefixEn : act.prefixZh;
+			const defaultText = currentLang === 'en' ? act.defaultTextEn : act.defaultTextZh;
+			insertSyntax(prefix, act.suffix, defaultText);
 		});
 		insertGroup.appendChild(btn);
+		actionBtnElements.push({ action: act, btn });
 	});
 
 	// View Modes
 	const viewGroup = document.createElement('div');
 	viewGroup.className = 't-md-tool-group t-md-view-group';
 
-	const viewModes = [
-		{ id: 'split', label: '🌓 双栏分屏', active: true },
-		{ id: 'preview', label: '👁️ 仅预览', active: false },
-		{ id: 'editor', label: '✏️ 仅编辑', active: false }
-	];
+	const viewModeElements: Array<{
+		mode: typeof VIEW_MODES[number];
+		btn: HTMLButtonElement;
+	}> = [];
 
-	viewModes.forEach((mode) => {
+	VIEW_MODES.forEach((mode) => {
 		const btn = document.createElement('button');
 		btn.type = 'button';
 		btn.className = `t-md-tool-btn t-md-view-btn ${mode.active ? 'is-active' : ''}`;
 		btn.dataset.view = mode.id;
-		btn.textContent = mode.label;
 		btn.addEventListener('click', () => {
 			viewGroup.querySelectorAll('.t-md-view-btn').forEach((b) => b.classList.remove('is-active'));
 			btn.classList.add('is-active');
 			applyViewMode(mode.id);
 		});
 		viewGroup.appendChild(btn);
+		viewModeElements.push({ mode, btn });
 	});
 
 	// Document Actions
@@ -542,46 +831,47 @@ export function initMarkdown(host: HTMLElement): void {
 	const sampleBtn = document.createElement('button');
 	sampleBtn.type = 'button';
 	sampleBtn.className = 't-md-tool-btn';
-	sampleBtn.textContent = '📄 示例文档';
 	sampleBtn.addEventListener('click', () => {
-		editor.value = SAMPLE_MARKDOWN;
+		editor.value = currentLang === 'en' ? SAMPLE_MARKDOWN_EN : SAMPLE_MARKDOWN_ZH;
 		render();
 	});
 
 	const copyHtmlBtn = document.createElement('button');
 	copyHtmlBtn.type = 'button';
 	copyHtmlBtn.className = 't-md-tool-btn t-md-btn-primary';
-	copyHtmlBtn.textContent = '📋 复制 HTML';
 	copyHtmlBtn.addEventListener('click', () => {
-		const html = parseMarkdownToHtml(editor.value);
+		const html = parseMarkdownToHtml(editor.value, currentLang);
 		navigator.clipboard.writeText(html).then(() => {
-			copyHtmlBtn.textContent = '✓ 已复制 HTML!';
-			setTimeout(() => { copyHtmlBtn.textContent = '📋 复制 HTML'; }, 1800);
+			copyHtmlBtn.textContent = currentLang === 'en' ? '✓ Copied HTML!' : '✓ 已复制 HTML!';
+			setTimeout(() => {
+				copyHtmlBtn.textContent = currentLang === 'en' ? '📋 Copy HTML' : '📋 复制 HTML';
+			}, 1800);
 		});
 	});
 
 	const copyMdBtn = document.createElement('button');
 	copyMdBtn.type = 'button';
 	copyMdBtn.className = 't-md-tool-btn';
-	copyMdBtn.textContent = '📋 复制 MD';
 	copyMdBtn.addEventListener('click', () => {
 		navigator.clipboard.writeText(editor.value).then(() => {
-			copyMdBtn.textContent = '✓ 已复制 MD!';
-			setTimeout(() => { copyMdBtn.textContent = '📋 复制 MD'; }, 1800);
+			copyMdBtn.textContent = currentLang === 'en' ? '✓ Copied MD!' : '✓ 已复制 MD!';
+			setTimeout(() => {
+				copyMdBtn.textContent = currentLang === 'en' ? '📋 Copy MD' : '📋 复制 MD';
+			}, 1800);
 		});
 	});
 
 	const exportHtmlBtn = document.createElement('button');
 	exportHtmlBtn.type = 'button';
 	exportHtmlBtn.className = 't-md-tool-btn';
-	exportHtmlBtn.textContent = '⬇️ 导出 HTML';
 	exportHtmlBtn.addEventListener('click', () => {
+		const isEn = currentLang === 'en';
 		const html = `<!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="${isEn ? 'en' : 'zh-CN'}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Exported Markdown Document</title>
+<title>${isEn ? 'Exported Markdown Document' : '导出的 Markdown 文档'}</title>
 <style>
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 860px; margin: 40px auto; padding: 0 20px; line-height: 1.8; color: #1e293b; background: #ffffff; }
 h1, h2, h3, h4 { color: #0f172a; margin-top: 1.6em; margin-bottom: 0.6em; }
@@ -593,10 +883,18 @@ th, td { border: 1px solid #cbd5e1; padding: 0.6em 0.8em; }
 th { background: #f1f5f9; }
 hr { border: none; border-top: 1px solid #e2e8f0; margin: 2em 0; }
 img { max-width: 100%; border-radius: 8px; }
+.t-md-alert { padding: 1em 1.2em; border-left: 4px solid #3b82f6; border-radius: 6px; margin: 1.2em 0; }
+.t-md-alert-title { font-weight: bold; margin-bottom: 0.4em; }
+.t-md-alert-note { border-color: #3b82f6; background: #eff6ff; }
+.t-md-alert-tip { border-color: #10b981; background: #ecfdf5; }
+.t-md-alert-important { border-color: #8b5cf6; background: #f5f3ff; }
+.t-md-alert-warning { border-color: #f59e0b; background: #fffbeb; }
+.t-md-alert-caution { border-color: #ef4444; background: #fef2f2; }
+.formula-scroll { overflow-x: auto; padding: 0.5em 0; text-align: center; }
 </style>
 </head>
 <body>
-${parseMarkdownToHtml(editor.value)}
+${parseMarkdownToHtml(editor.value, currentLang)}
 </body>
 </html>`;
 		downloadFile(html, `document-${Date.now()}.html`, 'text/html');
@@ -605,7 +903,6 @@ ${parseMarkdownToHtml(editor.value)}
 	const exportMdBtn = document.createElement('button');
 	exportMdBtn.type = 'button';
 	exportMdBtn.className = 't-md-tool-btn';
-	exportMdBtn.textContent = '⬇️ 导出 .md';
 	exportMdBtn.addEventListener('click', () => {
 		downloadFile(editor.value, `document-${Date.now()}.md`, 'text/markdown');
 	});
@@ -613,7 +910,6 @@ ${parseMarkdownToHtml(editor.value)}
 	const clearBtn = document.createElement('button');
 	clearBtn.type = 'button';
 	clearBtn.className = 't-md-tool-btn';
-	clearBtn.textContent = '🗑️ 清空';
 	clearBtn.addEventListener('click', () => {
 		editor.value = '';
 		render();
@@ -633,13 +929,11 @@ ${parseMarkdownToHtml(editor.value)}
 
 	const editorHead = document.createElement('div');
 	editorHead.className = 't-md-panel-head';
-	editorHead.innerHTML = '<span>✏️ Markdown 源码</span><span class="t-md-head-hint">支持快捷键 / Tab缩进</span>';
 
 	const editor = document.createElement('textarea');
 	editor.className = 't-md-textarea';
-	editor.placeholder = '在此输入或粘贴 Markdown 源码...';
 	editor.spellcheck = false;
-	editor.value = SAMPLE_MARKDOWN;
+	editor.value = currentLang === 'en' ? SAMPLE_MARKDOWN_EN : SAMPLE_MARKDOWN_ZH;
 
 	editorPanel.append(editorHead, editor);
 
@@ -649,7 +943,6 @@ ${parseMarkdownToHtml(editor.value)}
 
 	const previewHead = document.createElement('div');
 	previewHead.className = 't-md-panel-head';
-	previewHead.innerHTML = '<span>👁️ 实时排版渲染效果</span><span class="t-md-head-hint">GitHub 风格排版</span>';
 
 	const preview = document.createElement('div');
 	preview.className = 't-md-preview-body';
@@ -666,7 +959,6 @@ ${parseMarkdownToHtml(editor.value)}
 
 	const engineInfo = document.createElement('div');
 	engineInfo.className = 't-md-engine';
-	engineInfo.innerHTML = '✓ 本地极速渲染 · 100% 浏览器隐私保护 · 零服务器上传';
 
 	statusBar.append(statsEl, engineInfo);
 
@@ -710,21 +1002,60 @@ ${parseMarkdownToHtml(editor.value)}
 		URL.revokeObjectURL(url);
 	}
 
+	function updateUI() {
+		const isEn = currentLang === 'en';
+
+		// Update toolbar action buttons
+		actionBtnElements.forEach(({ action, btn }) => {
+			btn.textContent = isEn ? action.labelEn : action.labelZh;
+			btn.title = isEn ? action.titleEn : action.titleZh;
+		});
+
+		// Update view mode buttons
+		viewModeElements.forEach(({ mode, btn }) => {
+			btn.textContent = isEn ? mode.labelEn : mode.labelZh;
+		});
+
+		// Update document action buttons
+		sampleBtn.textContent = isEn ? '📄 Sample Document' : '📄 示例文档';
+		copyHtmlBtn.textContent = isEn ? '📋 Copy HTML' : '📋 复制 HTML';
+		copyMdBtn.textContent = isEn ? '📋 Copy MD' : '📋 复制 MD';
+		exportHtmlBtn.textContent = isEn ? '⬇️ Export HTML' : '⬇️ 导出 HTML';
+		exportMdBtn.textContent = isEn ? '⬇️ Export .md' : '⬇️ 导出 .md';
+		clearBtn.textContent = isEn ? '🗑️ Clear' : '🗑️ 清空';
+
+		// Update panel headers
+		editorHead.innerHTML = isEn
+			? '<span>✏️ Markdown Source</span><span class="t-md-head-hint">Shortcuts / Tab indent supported</span>'
+			: '<span>✏️ Markdown 源码</span><span class="t-md-head-hint">支持快捷键 / Tab缩进</span>';
+
+		previewHead.innerHTML = isEn
+			? '<span>👁️ Real-time Rendered Preview</span><span class="t-md-head-hint">GitHub Flavored Style</span>'
+			: '<span>👁️ 实时排版渲染效果</span><span class="t-md-head-hint">GitHub 风格排版</span>';
+
+		// Update textarea placeholder
+		editor.placeholder = isEn
+			? 'Type or paste Markdown source here...'
+			: '在此输入或粘贴 Markdown 源码...';
+	}
+
 	function render() {
 		const t0 = performance.now();
 		const raw = editor.value;
-		const html = parseMarkdownToHtml(raw);
+		const html = parseMarkdownToHtml(raw, currentLang);
 		preview.innerHTML = html;
 		const dt = (performance.now() - t0).toFixed(1);
 
 		// Re-bind code copy buttons inside preview
+		const copyLabel = currentLang === 'en' ? 'Copy' : '复制';
+		const copiedLabel = currentLang === 'en' ? '✓ Copied' : '✓ 已复制';
 		preview.querySelectorAll<HTMLButtonElement>('.t-md-code-copy-btn').forEach((btn) => {
 			btn.addEventListener('click', () => {
 				const codeEl = btn.closest('.t-md-code-box')?.querySelector('code');
 				if (codeEl) {
 					navigator.clipboard.writeText(codeEl.textContent || '').then(() => {
-						btn.textContent = '✓ 已复制';
-						setTimeout(() => { btn.textContent = '复制'; }, 1500);
+						btn.textContent = copiedLabel;
+						setTimeout(() => { btn.textContent = copyLabel; }, 1500);
 					});
 				}
 			});
@@ -732,19 +1063,30 @@ ${parseMarkdownToHtml(editor.value)}
 
 		// Update Stats
 		const stats = calculateStats(raw);
-		statsEl.innerHTML = `
-			<span>总字符数: <strong>${stats.totalChars.toLocaleString()}</strong></span>
-			<span>汉字数: <strong>${stats.cjk.toLocaleString()}</strong></span>
-			<span>单词数: <strong>${stats.words.toLocaleString()}</strong></span>
-			<span>总行数: <strong>${stats.lines.toLocaleString()}</strong></span>
-			<span>文件大小: <strong>${formatBytes(stats.byteSize)}</strong></span>
-			<span>预估阅读: <strong>~${stats.readingMinutes} 分钟</strong></span>
-		`;
-
-		engineInfo.innerHTML = `✓ 渲染耗时: <strong>${dt}ms</strong> · 本地引擎 · 100% 浏览器隐私保护`;
+		if (currentLang === 'en') {
+			statsEl.innerHTML = `
+				<span>Total Characters: <strong>${stats.totalChars.toLocaleString()}</strong></span>
+				<span>CJK Characters: <strong>${stats.cjk.toLocaleString()}</strong></span>
+				<span>Words: <strong>${stats.words.toLocaleString()}</strong></span>
+				<span>Lines: <strong>${stats.lines.toLocaleString()}</strong></span>
+				<span>File Size: <strong>${formatBytes(stats.byteSize)}</strong></span>
+				<span>Est. Reading: <strong>~${stats.readingMinutes} min</strong></span>
+			`;
+			engineInfo.innerHTML = `✓ Rendered in: <strong>${dt}ms</strong> · Local Engine · 100% Client Privacy`;
+		} else {
+			statsEl.innerHTML = `
+				<span>总字符数: <strong>${stats.totalChars.toLocaleString()}</strong></span>
+				<span>汉字数: <strong>${stats.cjk.toLocaleString()}</strong></span>
+				<span>单词数: <strong>${stats.words.toLocaleString()}</strong></span>
+				<span>总行数: <strong>${stats.lines.toLocaleString()}</strong></span>
+				<span>文件大小: <strong>${formatBytes(stats.byteSize)}</strong></span>
+				<span>预估阅读: <strong>~${stats.readingMinutes} 分钟</strong></span>
+			`;
+			engineInfo.innerHTML = `✓ 渲染耗时: <strong>${dt}ms</strong> · 本地引擎 · 100% 浏览器隐私保护`;
+		}
 	}
 
-	// Tab key indentation support
+	// Tab key indentation support & keyboard shortcuts
 	editor.addEventListener('keydown', (e) => {
 		if (e.key === 'Tab') {
 			e.preventDefault();
@@ -755,10 +1097,10 @@ ${parseMarkdownToHtml(editor.value)}
 			render();
 		} else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
 			e.preventDefault();
-			insertSyntax('**', '**', '粗体文本');
+			insertSyntax('**', '**', currentLang === 'en' ? 'Bold text' : '粗体文本');
 		} else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'i') {
 			e.preventDefault();
-			insertSyntax('*', '*', '斜体文本');
+			insertSyntax('*', '*', currentLang === 'en' ? 'Italic text' : '斜体文本');
 		}
 	});
 
@@ -784,6 +1126,25 @@ ${parseMarkdownToHtml(editor.value)}
 
 	editor.addEventListener('input', render);
 
-	// Initial render
+	// Reactive listener for site language change
+	window.addEventListener('site:lang-change', (e: Event) => {
+		const nextLang = ((e as CustomEvent).detail === 'en' ? 'en' : 'zh') as 'zh' | 'en';
+		if (nextLang === currentLang) return;
+		const prevLang = currentLang;
+		currentLang = nextLang;
+
+		// If the editor has the previous sample markdown or is empty, switch to new language sample
+		const curVal = editor.value.trim();
+		const prevSample = (prevLang === 'en' ? SAMPLE_MARKDOWN_EN : SAMPLE_MARKDOWN_ZH).trim();
+		if (curVal === '' || curVal === prevSample) {
+			editor.value = nextLang === 'en' ? SAMPLE_MARKDOWN_EN : SAMPLE_MARKDOWN_ZH;
+		}
+
+		updateUI();
+		render();
+	});
+
+	// Initial UI setup and render
+	updateUI();
 	render();
 }
