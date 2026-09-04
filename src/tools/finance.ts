@@ -688,50 +688,415 @@ const loanPayment: FormConfig = {
 
 // --- mortgage -----------------------------------------------------------------------
 
+/** Equal-principal amortization rows grouped by year: [year, principal, interest, balance]. */
+function amortizeEqualPrincipal(
+	principal: number,
+	annualRatePct: number,
+	months: number,
+): { rows: string[][]; totalInterest: number; month1: number; decrease: number; finalMonth: number } {
+	const i = annualRatePct / 100 / 12;
+	const prcMo = months > 0 ? principal / months : 0;
+	let balance = principal;
+	let totalInterest = 0;
+	const out: string[][] = [];
+
+	const month1 = prcMo + principal * i;
+	const decrease = prcMo * i;
+	const finalMonth = prcMo + prcMo * i;
+
+	for (let y = 1; y <= Math.ceil(months / 12); y++) {
+		let principalY = 0;
+		let interestY = 0;
+		for (let m = 0; m < 12 && (y - 1) * 12 + m < months; m++) {
+			const interest = balance * i;
+			const princ = Math.min(prcMo, balance);
+			balance -= princ;
+			principalY += princ;
+			interestY += interest;
+			totalInterest += interest;
+		}
+		out.push([String(y), money(principalY), money(interestY), money(Math.max(balance, 0))]);
+	}
+	return { rows: out, totalInterest, month1, decrease, finalMonth };
+}
+
 const mortgage: FormConfig = {
+	intro: 'Compare Equal Principal & Interest (等额本息) vs Equal Principal (等额本金), calculate monthly payments, interest savings, and support Commercial, Provident Fund, or Combined mortgages.',
 	fields: [
-		{ id: 'price', label: 'Home price', labelZh: '房产总售价', suffix: '($ / ¥)', type: 'number', def: '350000', step: 'any', min: '0', required: true },
-		{ id: 'down', label: 'Down payment', labelZh: '购房首付款', suffix: '($ / ¥)', type: 'number', def: '70000', step: 'any', min: '0', required: true },
-		{ id: 'rate', label: 'Annual interest rate', labelZh: '房贷年化利率', suffix: '(%)', type: 'number', def: '4.5', step: 'any', required: true },
-		{ id: 'years', label: 'Term', labelZh: '按揭年限', suffix: '(years / 年)', type: 'number', def: '30', step: 'any', min: '0', required: true },
-		{ id: 'tax', label: 'Property tax per year', labelZh: '年房产税', suffix: '($ / ¥)', type: 'number', def: '4200', step: 'any', min: '0' },
-		{ id: 'ins', label: 'Insurance per year', labelZh: '年房屋保险', suffix: '($ / ¥)', type: 'number', def: '1500', step: 'any', min: '0' },
-		{ id: 'hoa', label: 'HOA fees per month', labelZh: '每月物业管理费', suffix: '($ / ¥)', type: 'number', def: '0', step: 'any', min: '0' },
+		{
+			id: 'method',
+			label: 'Repayment method',
+			labelZh: '还款方式',
+			type: 'select',
+			def: 'compare',
+			options: [
+				{ value: 'compare', label: 'Compare Both (等额本息 vs 等额本金 双方案对比PK)', labelZh: '双方案对比 (等额本息 vs 等额本金 PK对比)' },
+				{ value: 'equal_pmt', label: 'Equal Principal & Interest (等额本息 - 每月月供固定)', labelZh: '等额本息 (每月月供固定，前期压力小)' },
+				{ value: 'equal_prc', label: 'Equal Principal (等额本金 - 每月递减，省利息)', labelZh: '等额本金 (每月递减，总利息更省)' },
+			],
+		},
+		{
+			id: 'loanType',
+			label: 'Loan type',
+			labelZh: '贷款类型',
+			type: 'select',
+			def: 'commercial',
+			options: [
+				{ value: 'commercial', label: 'Commercial Loan (商业贷款)', labelZh: '商业贷款' },
+				{ value: 'fund', label: 'Housing Provident Fund Loan (纯公积金贷款)', labelZh: '纯公积金贷款' },
+				{ value: 'combined', label: 'Combined Loan (组合贷款: 公积金 + 商贷)', labelZh: '组合贷款 (公积金 + 商业贷款)' },
+			],
+		},
+		{
+			id: 'calcBasis',
+			label: 'Calculation input mode',
+			labelZh: '计算方式',
+			type: 'select',
+			def: 'by_amount',
+			options: [
+				{ value: 'by_amount', label: 'By Loan Amount (按贷款本金额度直接计算)', labelZh: '按贷款额度计算 (直接输入贷款金额)' },
+				{ value: 'by_price', label: 'By Home Price & Down Payment (按房屋总价与首付成数计算)', labelZh: '按房产总价计算 (输入总价与首付比例)' },
+			],
+		},
+		{
+			id: 'price',
+			label: 'Home purchase price',
+			labelZh: '房产房屋总售价',
+			suffix: '($ / ¥)',
+			type: 'number',
+			def: '2000000',
+			step: 'any',
+			min: '0',
+			hint: 'Only used when "By Home Price & Down Payment" is selected',
+			hintZh: '仅在选择“按房产总价计算”时生效',
+		},
+		{
+			id: 'downPct',
+			label: 'Down payment percentage',
+			labelZh: '首付比例 (%)',
+			suffix: '(%)',
+			type: 'number',
+			def: '20',
+			step: 'any',
+			min: '0',
+			max: '100',
+			hint: 'e.g. 20% for 2成首付, 30% for 3成首付',
+			hintZh: '如 20% 代表2成首付，30% 代表3成首付',
+		},
+		{
+			id: 'loanAmount',
+			label: 'Loan principal / Commercial loan',
+			labelZh: '贷款本金 / 商业贷款额度',
+			suffix: '($ / ¥)',
+			type: 'number',
+			def: '1000000',
+			step: 'any',
+			min: '0',
+			required: true,
+			hint: 'Single loan: total loan amount. Combined loan: commercial loan portion.',
+			hintZh: '单一贷款时为贷款本金；组合贷款时为商业贷款金额',
+		},
+		{
+			id: 'fundAmount',
+			label: 'Provident fund loan amount',
+			labelZh: '公积金贷款额度',
+			suffix: '($ / ¥)',
+			type: 'number',
+			def: '500000',
+			step: 'any',
+			min: '0',
+			hint: 'Only used when "Combined Loan" is selected',
+			hintZh: '仅在选择【组合贷款】时生效',
+		},
+		{
+			id: 'rate',
+			label: 'Commercial / Benchmark rate',
+			labelZh: '商贷利率 / 贷款年利率 (%)',
+			suffix: '(%)',
+			type: 'number',
+			def: '3.45',
+			step: 'any',
+			min: '0',
+			required: true,
+			hint: 'China mortgage rate (LPR-points) typically 3.15%~3.45%',
+			hintZh: '当前国内商业房贷主流利率在 3.15%~3.45% 左右',
+		},
+		{
+			id: 'fundRate',
+			label: 'Provident fund rate (%)',
+			labelZh: '公积金贷款年利率 (%)',
+			suffix: '(%)',
+			type: 'number',
+			def: '2.85',
+			step: 'any',
+			min: '0',
+			hint: 'China 5+ year first-home provident rate is currently 2.85%',
+			hintZh: '当前国内首套5年以上公积金基准年利率为 2.85%',
+		},
+		{
+			id: 'years',
+			label: 'Loan term',
+			labelZh: '按揭贷款期限',
+			suffix: '(years / 年)',
+			type: 'number',
+			def: '30',
+			step: '1',
+			min: '1',
+			max: '35',
+			required: true,
+		},
+		{
+			id: 'extras',
+			label: 'Optional monthly escrow / fees',
+			labelZh: '可选每月杂费 (物业/税费/保险)',
+			suffix: '($ / ¥)',
+			type: 'number',
+			def: '0',
+			step: 'any',
+			min: '0',
+			hint: 'Optional monthly tax, insurance or HOA (default 0)',
+			hintZh: '国内通常填0；海外房贷可填入每月税费或物业管理费',
+		},
 	],
 	compute: (v) => {
-		const price = v.num('price');
-		const down = v.num('down');
-		const rate = v.num('rate');
-		const years = v.num('years');
+		const method = v.str('method') || 'compare';
+		const loanType = v.str('loanType') || 'commercial';
+		const calcBasis = v.str('calcBasis') || 'by_amount';
+
+		let commPortion = 0;
+		let gjjPortion = 0;
+		let totalLoan = 0;
+		let price = 0;
+		let downPayment = 0;
+		let downPct = 0;
+
+		if (calcBasis === 'by_price') {
+			price = Math.max(0, v.num('price') || 0);
+			downPct = Math.max(0, Math.min(100, v.num('downPct') || 0));
+			downPayment = price * (downPct / 100);
+			totalLoan = Math.max(0, price - downPayment);
+			if (loanType === 'combined') {
+				gjjPortion = Math.min(totalLoan, Math.max(0, v.num('fundAmount') || 0));
+				commPortion = Math.max(0, totalLoan - gjjPortion);
+			} else if (loanType === 'fund') {
+				gjjPortion = totalLoan;
+				commPortion = 0;
+			} else {
+				commPortion = totalLoan;
+				gjjPortion = 0;
+			}
+		} else {
+			if (loanType === 'combined') {
+				commPortion = Math.max(0, v.num('loanAmount') || 0);
+				gjjPortion = Math.max(0, v.num('fundAmount') || 0);
+				totalLoan = commPortion + gjjPortion;
+			} else if (loanType === 'fund') {
+				gjjPortion = Math.max(0, v.num('loanAmount') || 0);
+				commPortion = 0;
+				totalLoan = gjjPortion;
+			} else {
+				commPortion = Math.max(0, v.num('loanAmount') || 0);
+				gjjPortion = 0;
+				totalLoan = commPortion;
+			}
+		}
+
+		const years = Math.max(1, v.num('years') || 30);
 		const months = Math.round(years * 12);
-		const loan = price - down;
-		const rows: FormResultRow[] = [];
-		if (down > price) {
-			rows.push({ label: 'Down payment exceeds the home price — no loan needed.', labelZh: '首付金额超过房价，无需办理贷款。', value: '' });
-			return { rows };
+		const commRate = Math.max(0, v.num('rate') || 0);
+		const fundRate = Math.max(0, v.num('fundRate') || 0);
+		const extras = Math.max(0, v.num('extras') || 0);
+
+		if (!(totalLoan > 0) || !(months > 0)) {
+			return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (loan amount and term must be > 0)' }] };
 		}
-		if (!(loan > 0) || !(months > 0)) {
-			rows.push({ label: 'Monthly payment', labelZh: '每月月供', value: '— (loan amount and term must be > 0)' });
-			return { rows };
+
+		// --- Equal Principal & Interest (等额本息) ---
+		const commPmt = monthlyPayment(commPortion, commRate, months);
+		const gjjPmt = monthlyPayment(gjjPortion, fundRate, months);
+		const totalMonthlyPmt = commPmt + gjjPmt;
+		const totalRepayPmt = totalMonthlyPmt * months;
+		const totalIntPmt = Math.max(0, totalRepayPmt - totalLoan);
+
+		const commAmortPmt = amortize(commPortion, commRate, months);
+		const gjjAmortPmt = amortize(gjjPortion, fundRate, months);
+		const pmtTableRows: string[][] = [];
+		for (let y = 0; y < Math.ceil(months / 12); y++) {
+			const cRow = commAmortPmt.rows[y] ?? ['0', '0', '0', '0'];
+			const gRow = gjjAmortPmt.rows[y] ?? ['0', '0', '0', '0'];
+			const prY = (Number(cRow[1].replace(/,/g, '')) || 0) + (Number(gRow[1].replace(/,/g, '')) || 0);
+			const inY = (Number(cRow[2].replace(/,/g, '')) || 0) + (Number(gRow[2].replace(/,/g, '')) || 0);
+			const balY = (Number(cRow[3].replace(/,/g, '')) || 0) + (Number(gRow[3].replace(/,/g, '')) || 0);
+			pmtTableRows.push([String(y + 1), money(prY), money(inY), money(Math.max(balY, 0))]);
 		}
-		const pi = monthlyPayment(loan, rate, months);
-		const monthlyExtras = v.num('tax') / 12 + v.num('ins') / 12 + v.num('hoa');
-		const { rows: tableRows, totalInterest } = amortize(loan, rate, months);
+
+		// --- Equal Principal (等额本金) ---
+		const commAmortPrc = amortizeEqualPrincipal(commPortion, commRate, months);
+		const gjjAmortPrc = amortizeEqualPrincipal(gjjPortion, fundRate, months);
+		const prcMonth1 = commAmortPrc.month1 + gjjAmortPrc.month1;
+		const prcDecrease = commAmortPrc.decrease + gjjAmortPrc.decrease;
+		const prcFinalMonth = commAmortPrc.finalMonth + gjjAmortPrc.finalMonth;
+		const totalIntPrc = commAmortPrc.totalInterest + gjjAmortPrc.totalInterest;
+		const totalRepayPrc = totalLoan + totalIntPrc;
+
+		const prcTableRows: string[][] = [];
+		for (let y = 0; y < Math.ceil(months / 12); y++) {
+			const cRow = commAmortPrc.rows[y] ?? ['0', '0', '0', '0'];
+			const gRow = gjjAmortPrc.rows[y] ?? ['0', '0', '0', '0'];
+			const prY = (Number(cRow[1].replace(/,/g, '')) || 0) + (Number(gRow[1].replace(/,/g, '')) || 0);
+			const inY = (Number(cRow[2].replace(/,/g, '')) || 0) + (Number(gRow[2].replace(/,/g, '')) || 0);
+			const balY = (Number(cRow[3].replace(/,/g, '')) || 0) + (Number(gRow[3].replace(/,/g, '')) || 0);
+			prcTableRows.push([String(y + 1), money(prY), money(inY), money(Math.max(balY, 0))]);
+		}
+
+		// Comparison metrics
+		const interestSaved = Math.max(0, totalIntPmt - totalIntPrc);
+		const interestSavedPct = totalIntPmt > 0 ? (interestSaved / totalIntPmt) * 100 : 0;
+		const m1Diff = prcMonth1 - totalMonthlyPmt;
+		let crossoverMonth = 0;
+		if (prcDecrease > 0 && m1Diff > 0) {
+			crossoverMonth = Math.ceil(m1Diff / prcDecrease) + 1;
+		}
+
+		if (method === 'compare') {
+			const rows: FormResultRow[] = [
+				{
+					label: 'Interest saved with Equal Principal',
+					labelZh: '等额本金比等额本息省息',
+					value: `¥${money(interestSaved)} (利息节省 ${formatNumber(interestSavedPct)}%)`,
+					emphasis: true,
+				},
+				{
+					label: 'Equal P&I monthly payment',
+					labelZh: '【等额本息】每月固定月供',
+					value: `${money(totalMonthlyPmt + extras)} / month`,
+				},
+				{
+					label: 'Equal P&I total interest',
+					labelZh: '【等额本息】累计利息总额',
+					value: money(totalIntPmt),
+				},
+				{
+					label: 'Equal P&I total repayment',
+					labelZh: '【等额本息】还款本息总计',
+					value: money(totalRepayPmt + extras * months),
+				},
+				{
+					label: 'Equal Principal Month 1 payment',
+					labelZh: '【等额本金】首月还款额 (最高)',
+					value: `${money(prcMonth1 + extras)} (每月递减 -¥${money(prcDecrease)})`,
+				},
+				{
+					label: 'Equal Principal final month payment',
+					labelZh: '【等额本金】末月还款额 (最低)',
+					value: money(prcFinalMonth + extras),
+				},
+				{
+					label: 'Equal Principal total interest',
+					labelZh: '【等额本金】累计利息总额',
+					value: money(totalIntPrc),
+				},
+				{
+					label: 'Equal Principal total repayment',
+					labelZh: '【等额本金】还款本息总计',
+					value: money(totalRepayPrc + extras * months),
+				},
+				{
+					label: 'Total loan principal',
+					labelZh: '贷款本金总额',
+					value: `${money(totalLoan)}${loanType === 'combined' ? ` (商贷 ¥${money(commPortion)} + 公积金 ¥${money(gjjPortion)})` : ''}`,
+				},
+			];
+
+			if (calcBasis === 'by_price') {
+				rows.push(
+					{ label: 'Home purchase price', labelZh: '房屋购房总价', value: money(price) },
+					{ label: 'Down payment amount', labelZh: '购房首付款', value: `${money(downPayment)} (${downPct}%)` },
+				);
+			}
+
+			const compareTable: FormTable = {
+				columns: ['Metric', 'Equal P&I (等额本息)', 'Equal Principal (等额本金)', 'Difference & Analysis'],
+				columnsZh: ['比较维度', '等额本息 (每月固定)', '等额本金 (每月递减)', '两方案差异 / 评估'],
+				rows: [
+					['首月还款额 (Month 1)', money(totalMonthlyPmt + extras), money(prcMonth1 + extras), m1Diff > 0 ? `等额本金首月多还 ¥${money(m1Diff)}` : '两方案相同'],
+					['末月还款额 (Final Month)', money(totalMonthlyPmt + extras), money(prcFinalMonth + extras), `等额本金末月少还 ¥${money(totalMonthlyPmt - prcFinalMonth)}`],
+					['每月月供变动', '每月保持不变 (恒定月供)', `每月固定递减 -¥${money(prcDecrease)}`, '等额本金逐月减负，归还本金更快'],
+					['月供打平月份 (Crossover)', '基准线', crossoverMonth > 0 ? `第 ${crossoverMonth} 个月起更低 (~${(crossoverMonth / 12).toFixed(1)} 年)` : '始终更低', '此后等额本金月供将一直低于等额本息'],
+					['支付利息总额 (Total Interest)', money(totalIntPmt), money(totalIntPrc), `★ 等额本金累计省息 ¥${money(interestSaved)} (-${formatNumber(interestSavedPct)}%)`],
+					['还款本息总计 (Total Repaid)', money(totalRepayPmt + extras * months), money(totalRepayPrc + extras * months), `等额本金少支出 ¥${money(interestSaved)}`],
+					['前期月供压力', '较小，月供恒定便于家庭规划', '较大 (前期月供处于最高位)', '前 ${(crossoverMonth / 12).toFixed(1)} 年等额本息压力明显更轻'],
+					['适合人群画像', '适合刚需刚落户、前期资金紧、收入递增者', '适合前期收入高、资金充裕、利息敏感者', '依自身当下现金流与资金成本科学决策'],
+				],
+			};
+
+			const noteZh = `【房贷双方案PK核心结论】：贷款 ${money(totalLoan)} 元（${years} 年期 / ${months} 期），选择【等额本金】相比【等额本息】全周期可累计省息 ¥${money(interestSaved)} 元（利息直降 ${formatNumber(interestSavedPct)}%）！\n\n` +
+				`• 【等额本息】：每月固定还款 ¥${money(totalMonthlyPmt + extras)} 元，累计利息 ¥${money(totalIntPmt)} 元。适合刚步入职场、前期资金较紧张、月收入较稳定或预期未来收入持续增长的购房者。\n\n` +
+				`• 【等额本金】：首月还款 ¥${money(prcMonth1 + extras)} 元，随后每月固定减少 ¥${money(prcDecrease)} 元，在第 ${crossoverMonth} 个月（约 ${(crossoverMonth / 12).toFixed(1)} 年）后月供开始低于等额本息，末月降至 ¥${money(prcFinalMonth + extras)} 元。适合当前收入充裕、手头流动资金宽裕、希望尽可能节省利息支出的购房者。`;
+
+			const noteEn = `[Mortgage Repayment Comparison]: For a ${money(totalLoan)} loan over ${years} years, choosing Equal Principal saves ${money(interestSaved)} in total interest (-${formatNumber(interestSavedPct)}%) compared to Equal P&I!\n\n` +
+				`• Equal P&I: Fixed monthly payment of ${money(totalMonthlyPmt + extras)}, total interest of ${money(totalIntPmt)}. Ideal for buyers wanting predictable monthly cash flows.\n\n` +
+				`• Equal Principal: Month 1 payment is ${money(prcMonth1 + extras)}, decreasing by ${money(prcDecrease)} each month. It crosses below Equal P&I at month ${crossoverMonth} (~${(crossoverMonth / 12).toFixed(1)} years), ending at ${money(prcFinalMonth + extras)}. Saves significant interest if you can afford higher initial payments.`;
+
+			return {
+				rows,
+				table: compareTable,
+				note: noteEn,
+				noteZh,
+			};
+		}
+
+		if (method === 'equal_pmt') {
+			const rows: FormResultRow[] = [
+				{ label: 'Monthly payment (Fixed)', labelZh: '每月月供 (固定等额)', value: money(totalMonthlyPmt + extras), emphasis: true },
+				{ label: 'Total interest paid', labelZh: '支付利息总额', value: money(totalIntPmt) },
+				{ label: 'Total repayment (Principal + Interest)', labelZh: '还款本息总计', value: money(totalRepayPmt + extras * months) },
+				{ label: 'Loan principal', labelZh: '贷款本金总额', value: money(totalLoan) },
+				{ label: 'Number of payments', labelZh: '还款期数', value: `${months} months / 期 (${years} 年)` },
+			];
+			if (calcBasis === 'by_price') {
+				rows.push(
+					{ label: 'Home price', labelZh: '房屋总价', value: money(price) },
+					{ label: 'Down payment', labelZh: '首付款', value: `${money(downPayment)} (${downPct}%)` },
+				);
+			}
+			return {
+				rows,
+				table: {
+					columns: ['Year', 'Principal Paid', 'Interest Paid', 'Remaining Balance'],
+					columnsZh: ['年份', '已还本金', '已付利息', '剩余本金余额'],
+					rows: pmtTableRows,
+				},
+				note: `Financing ${money(totalLoan)} under Equal P&I over ${years} years costs ${money(totalMonthlyPmt + extras)}/month with ${money(totalIntPmt)} in total interest.`,
+				noteZh: `贷款 ${money(totalLoan)} 元按等额本息还款，${years} 年期（${months}期）每月固定还款 ${money(totalMonthlyPmt + extras)} 元，全周期累计支付利息 ${money(totalIntPmt)} 元，还款总额 ${money(totalRepayPmt + extras * months)} 元。`,
+			};
+		}
+
+		// method === 'equal_prc'
+		const rows: FormResultRow[] = [
+			{ label: 'First month payment (Peak)', labelZh: '首月还款额 (最高月供)', value: money(prcMonth1 + extras), emphasis: true },
+			{ label: 'Monthly decrease', labelZh: '每月递减金额', value: `-${money(prcDecrease)} / month` },
+			{ label: 'Final month payment', labelZh: '末月还款额 (最低月供)', value: money(prcFinalMonth + extras) },
+			{ label: 'Total interest paid', labelZh: '支付利息总额', value: money(totalIntPrc) },
+			{ label: 'Total repayment (Principal + Interest)', labelZh: '还款本息总计', value: money(totalRepayPrc + extras * months) },
+			{ label: 'Loan principal', labelZh: '贷款本金总额', value: money(totalLoan) },
+			{ label: 'Number of payments', labelZh: '还款期数', value: `${months} months / 期 (${years} 年)` },
+		];
+		if (calcBasis === 'by_price') {
+			rows.push(
+				{ label: 'Home price', labelZh: '房屋总价', value: money(price) },
+				{ label: 'Down payment', labelZh: '首付款', value: `${money(downPayment)} (${downPct}%)` },
+			);
+		}
 		return {
-			rows: [
-				{ label: 'Total monthly payment', labelZh: '每月总供款 (含税费保险)', value: money(pi + monthlyExtras), emphasis: true },
-				{ label: 'Principal & interest (P&I)', labelZh: '贷款本息月供', value: money(pi) },
-				{ label: 'Property tax (monthly)', labelZh: '每月房产税', value: money(v.num('tax') / 12) },
-				{ label: 'Home insurance (monthly)', labelZh: '每月房屋保险', value: money(v.num('ins') / 12) },
-				{ label: 'HOA fees', labelZh: '每月物业管理费', value: money(v.num('hoa')) },
-				{ label: 'Loan principal', labelZh: '贷款总额', value: money(loan) },
-				{ label: 'Total interest over term', labelZh: '全周期利息总额', value: money(totalInterest) },
-			],
+			rows,
 			table: {
 				columns: ['Year', 'Principal Paid', 'Interest Paid', 'Remaining Balance'],
 				columnsZh: ['年份', '已还本金', '已付利息', '剩余本金余额'],
-				rows: tableRows,
+				rows: prcTableRows,
 			},
+			note: `Financing ${money(totalLoan)} under Equal Principal starts at ${money(prcMonth1 + extras)} in month 1 and decreases by ${money(prcDecrease)} monthly. Total interest is ${money(totalIntPrc)}.`,
+			noteZh: `贷款 ${money(totalLoan)} 元按等额本金还款，${years} 年期（${months}期）首月月供 ${money(prcMonth1 + extras)} 元，随后每月递减 ${money(prcDecrease)} 元，全周期累计支付利息 ${money(totalIntPrc)} 元，还款总额 ${money(totalRepayPrc + extras * months)} 元。`,
 		};
 	},
 };
@@ -1640,28 +2005,30 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 	{
 		slug: 'mortgage',
 		category: 'finance',
-		name: 'Mortgage Calculator',
-		nameZh: '房贷月供与购房成本计算器',
-		description: 'Monthly mortgage payment including principal, interest, property tax, home insurance and HOA fees.',
+		name: 'Mortgage Loan Calculator (Equal P&I vs Equal Principal)',
+		nameZh: '房贷计算器 (等额本息 vs 等额本金对比)',
+		description: 'Compare Equal Principal & Interest (等额本息) vs Equal Principal (等额本金), calculate monthly payments, interest savings, and support Commercial, Provident Fund, or Combined mortgages.',
 		kind: 'form',
 		config: mortgage,
 
 		content: {
 			about: [
-				'A real home mortgage involves more than loan principal and interest: property taxes, homeowners insurance, and HOA dues are typically paid alongside the mortgage. This calculator provides the complete monthly housing cost and a full multi-year amortization schedule.',
-				'A 20% down payment eliminates the need for private mortgage insurance (PMI) and lowers the principal amount.',
+				'Comprehensive mortgage calculator supporting Equal Principal & Interest (等额本息), Equal Principal (等额本金), Commercial loans, Housing Provident Fund (公积金), and Combined loans (组合贷款).',
+				'Side-by-side comparison reveals the exact month-by-month payment difference, crossover payoff point, and total interest saved between the two repayment methods.',
 			],
 			aboutZh: [
-				'真实的房贷支出不仅仅是本金和利息：房产税、房屋保险与物业费通常随月供一同支出。本计算器给出完整的综合月供开销与逐年摊还明细。',
-				'提供 20% 以上首付款不仅能降低贷款本金，还能免去额外的贷款保险费用。',
+				'专业级房贷综合计算器，深度支持【等额本息】与【等额本金】双方案同屏PK对比，支持商业贷款、纯公积金贷款以及公积金+商贷【组合贷款】。',
+				'通过可视化对比清晰展示首月月供、每月递减金额、月供持平反超节点（Crossover）、累计利息差额与全周期还款明细，为您买房贷款决策提供科学客观的财务参考。',
 			],
 			faq: [
-				{ q: 'How is the mortgage payment calculated?', a: 'Using standard monthly amortization formula based on home price minus down payment, annual rate, and loan term.' },
-				{ q: 'What are escrow expenses?', a: 'Taxes and insurance collected monthly by the lender and paid on your behalf.' },
+				{ q: 'What is the difference between Equal P&I and Equal Principal?', a: 'Equal P&I has fixed monthly payments throughout the loan. Equal Principal pays a fixed amount of principal each month plus accrued interest, so payments start highest and decrease every month, saving more total interest.' },
+				{ q: 'Which repayment method is better: Equal P&I or Equal Principal?', a: 'Equal Principal saves significantly more interest overall, but requires higher monthly income in early years. Equal P&I is better if you prefer predictable cash flow or expect your income to rise in the future.' },
+				{ q: 'How does a Combined Mortgage (组合贷款) work?', a: 'Combined loans combine low-interest Housing Provident Fund quotas with commercial bank loans, calculating interest on each portion at its respective rate.' },
 			],
 			faqZh: [
-				{ q: '房贷月供如何计算？', a: '以房价减去首付后的贷款本金为基础，结合执行年利率与贷款年限，按等额本息标准公式摊还。' },
-				{ q: '附加费用（税费保险）是必须的吗？', a: '根据当地政策与小区规定，房产税、房屋保险与物业费通常属于固定持有成本。' },
+				{ q: '等额本息和等额本金有什么区别？哪种还款方式更划算？', a: '等额本息每月还款金额恒定，前期利息占比大，后期本金占比大；等额本金每月归还等额本金，利息随剩余本金逐月减少，因此首月还款最多并逐月递减。从全周期总支出看，等额本金节省的利息显著多于等额本息，但前期月供压力较大。' },
+				{ q: '公积金贷款与商业贷款有什么利率差异？什么是组合贷款？', a: '公积金贷款利率通常明显低于商业贷款（如目前首套公积金5年以上为2.85%，商贷普遍在3.15%~3.45%）。当公积金可贷额度不足以覆盖购房所需总额时，可将公积金贷满，不足部分办理商业贷款，即为组合贷款。' },
+				{ q: '提前还贷选等额本息还是等额本金更合适？', a: '若计划在贷款前几年提前还清，等额本金前期偿还的本金更多，剩余本金少于等额本息；等额本息前期还的大多是利息，提前还贷时本金基数依然较高。' },
 			],
 		},
 	},
