@@ -6,56 +6,61 @@ import type { TextConfig, ToolEntry } from './registry';
 
 // --- word counter ---------------------------------------------------------------------
 
-const WORD_RE = /[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu;
+const CJK_RE = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu;
+const LATIN_WORD_RE = /[a-zA-Z0-9]+(?:['’_-][a-zA-Z0-9]+)*/gu;
 
 function wordStats(text: string) {
-	const words = text.match(WORD_RE) ?? [];
-	const sentences = (text.match(/[^.!?…]+[.!?…]+(\s|$)/g) ?? []).length || (text.trim() ? 1 : 0);
+	const cjkMatches = text.match(CJK_RE) ?? [];
+	const latinMatches = text.match(LATIN_WORD_RE) ?? [];
+	// Standard international bilingual rule: 1 CJK char = 1 word + Latin space-delimited words
+	const totalWords = cjkMatches.length + latinMatches.length;
+	const sentences = (text.match(/[^.!?…\n。！？]+[.!?…\n。！？]+(\s|$)/gu) ?? []).length || (text.trim() ? 1 : 0);
 	const paragraphs = text.split(/\n\s*\n/).filter((p) => p.trim()).length;
 	const lines = text ? text.split('\n').length : 0;
 	const letters = [...text].length;
-	const avgLen = words.length
-		? words.reduce((sum, w) => sum + [...w].length, 0) / words.length
-		: 0;
-	// ~220 words per minute
-	const minutes = words.length / 220;
+
+	// Reading time: ~220 Latin words/min, ~400 CJK characters/min
+	const minutes = latinMatches.length / 220 + cjkMatches.length / 400;
+	const readTimeStr = minutes < 0.5 ? (totalWords > 0 ? '< 1 min' : '0 min') : `${Math.ceil(minutes)} min`;
+
 	return [
-		{ label: 'Words', value: String(words.length) },
-		{ label: 'Characters', value: String(letters) },
-		{ label: 'Characters (no spaces)', value: String(text.replace(/\s/g, '').length) },
-		{ label: 'Sentences', value: String(sentences) },
-		{ label: 'Paragraphs', value: String(paragraphs) },
-		{ label: 'Lines', value: String(lines) },
-		{ label: 'Avg. word length', value: avgLen ? avgLen.toFixed(2) : '0' },
-		{
-			label: 'Reading time',
-			value: minutes < 1 ? '< 1 min' : `${Math.round(minutes)} min`,
-		},
+		{ label: 'Total Words (Bilingual)', labelZh: '综合总字数 (中英双语标准)', value: String(totalWords) },
+		{ label: 'Chinese / CJK Characters', labelZh: '中文字数 / 汉字数', value: String(cjkMatches.length) },
+		{ label: 'English / Latin Words', labelZh: '英文 / 西文单词数', value: String(latinMatches.length) },
+		{ label: 'Characters (with spaces)', labelZh: '总字符数 (含空格与换行)', value: String(letters) },
+		{ label: 'Characters (no spaces)', labelZh: '有效字符数 (不含空格)', value: String([...text.replace(/\s/g, '')].length) },
+		{ label: 'Sentences', labelZh: '句子数', value: String(sentences) },
+		{ label: 'Paragraphs', labelZh: '段落数', value: String(paragraphs) },
+		{ label: 'Lines', labelZh: '行数', value: String(lines) },
+		{ label: 'Estimated Reading Time', labelZh: '预估阅读时长', value: readTimeStr },
 	];
 }
 
 // --- character counter ------------------------------------------------------------------
 
 function charStats(text: string) {
-	let letters = 0;
+	let cjk = 0;
+	let latin = 0;
 	let digits = 0;
 	let spaces = 0;
 	let symbols = 0;
 	for (const ch of text) {
 		if (/\s/.test(ch)) spaces++;
-		else if (/\p{L}/u.test(ch)) letters++;
+		else if (/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(ch)) cjk++;
+		else if (/[a-zA-Z]/u.test(ch)) latin++;
 		else if (/\p{N}/u.test(ch)) digits++;
 		else symbols++;
 	}
+	const utf8Bytes = new TextEncoder().encode(text).length;
 	return [
-		{ label: 'Characters', value: String([...text].length) },
-		{ label: 'Characters (no spaces)', value: String([...text.replace(/\s/g, '')].length) },
-		{ label: 'Words', value: String((text.match(WORD_RE) ?? []).length) },
-		{ label: 'Letters', value: String(letters) },
-		{ label: 'Digits', value: String(digits) },
-		{ label: 'Spaces & line breaks', value: String(spaces) },
-		{ label: 'Symbols & punctuation', value: String(symbols) },
-		{ label: 'Bytes (UTF-8)', value: String(new TextEncoder().encode(text).length) },
+		{ label: 'Total Characters', labelZh: '总字符数', value: String([...text].length) },
+		{ label: 'Characters (no spaces)', labelZh: '有效字符数 (不含空格)', value: String([...text.replace(/\s/g, '')].length) },
+		{ label: 'Chinese / CJK Characters', labelZh: '汉字字符数', value: String(cjk) },
+		{ label: 'Latin Letters (A-Z, a-z)', labelZh: '英文字母数', value: String(latin) },
+		{ label: 'Numbers / Digits (0-9)', labelZh: '阿拉伯数字数', value: String(digits) },
+		{ label: 'Punctuation & Symbols', labelZh: '标点与特殊符号数', value: String(symbols) },
+		{ label: 'Spaces & Line Breaks', labelZh: '空格与换行符数', value: String(spaces) },
+		{ label: 'UTF-8 Bytes', labelZh: 'UTF-8 编码字节大小', value: `${utf8Bytes} B (${(utf8Bytes / 1024).toFixed(2)} KB)` },
 	];
 }
 

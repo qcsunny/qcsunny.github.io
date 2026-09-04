@@ -126,6 +126,7 @@ export interface ConverterConfig {
 
 export interface TextStat {
 	label: string;
+	labelZh?: string;
 	value: string;
 }
 

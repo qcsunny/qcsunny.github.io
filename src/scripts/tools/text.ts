@@ -18,7 +18,7 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 	if (config.stats) {
 		const label = document.createElement('span');
 		label.className = 't-label';
-		label.textContent = 'Statistics';
+		label.innerHTML = '<span class="i18n-en">Statistics</span><span class="i18n-zh">统计数据</span>';
 		statsHost = document.createElement('div');
 		statsHost.className = 't-results';
 		host.append(label, statsHost);
@@ -52,7 +52,7 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 
 		outLabel = document.createElement('span');
 		outLabel.className = 't-label';
-		outLabel.textContent = 'Output';
+		outLabel.innerHTML = '<span class="i18n-en">Output</span><span class="i18n-zh">转换输出</span>';
 		out = document.createElement('textarea');
 		out.className = 't-textarea t-mono t-out';
 		out.rows = 8;
@@ -68,7 +68,17 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 		el.className = 't-row';
 		const l = document.createElement('span');
 		l.className = 't-row-label';
-		l.textContent = stat.label;
+		if (stat.labelZh) {
+			const en = document.createElement('span');
+			en.className = 'i18n-en';
+			en.textContent = stat.label;
+			const zh = document.createElement('span');
+			zh.className = 'i18n-zh';
+			zh.textContent = stat.labelZh;
+			l.append(en, zh);
+		} else {
+			l.textContent = stat.label;
+		}
 		const v = document.createElement('span');
 		v.className = 't-row-value';
 		v.textContent = stat.value;

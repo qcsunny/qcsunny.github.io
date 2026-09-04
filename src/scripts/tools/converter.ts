@@ -78,7 +78,12 @@ export function initConverter(host: HTMLElement, config: ConverterConfig): void 
 		for (const name of names) {
 			const opt = document.createElement('option');
 			opt.value = name;
-			opt.textContent = c.units[name]?.label ?? name;
+			const u = c.units[name];
+			if (u?.labelZh) {
+				opt.textContent = `${u.label} · ${u.labelZh}`;
+			} else {
+				opt.textContent = u?.label ?? name;
+			}
 			sel.append(opt);
 		}
 		sel.value = initial;
@@ -86,7 +91,9 @@ export function initConverter(host: HTMLElement, config: ConverterConfig): void 
 	}
 
 	function unitShort(c: UnitCategory, name: string): string {
-		const label = c.units[name]?.label ?? name;
+		const u = c.units[name];
+		if (u?.short) return u.short;
+		const label = u?.label ?? name;
 		const m = /\(([^)]+)\)\s*$/.exec(label);
 		return m ? (m[1] as string) : label;
 	}
