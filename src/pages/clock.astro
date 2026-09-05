@@ -123,6 +123,12 @@ import BaseHead from '../components/BaseHead.astro';
 				outline: 2px solid currentColor;
 				opacity: 1;
 			}
+			/* "EN" is two characters and "中" is one — a fixed width keeps the row of
+			   corner buttons from shifting when the language changes. */
+			.lang-toggle {
+				min-width: 2.6em;
+				text-align: center;
+			}
 			.pomodoro-toggle {
 				font-variant-numeric: tabular-nums;
 				min-width: 3.2em;
@@ -155,6 +161,7 @@ import BaseHead from '../components/BaseHead.astro';
 			<button class="corner pomodoro-reset" type="button" aria-label="Reset Pomodoro timer" hidden>✕</button>
 		</div>
 		<div class="corner-group">
+			<button class="corner lang-toggle" type="button" aria-label="Switch language">EN</button>
 			<button class="corner seconds-toggle" type="button" aria-label="Hide seconds" aria-pressed="true">
 				:ss
 			</button>
@@ -166,245 +173,8 @@ import BaseHead from '../components/BaseHead.astro';
 			<div class="time" id="clock-time"></div>
 			<div class="pomodoro-line" id="clock-pomodoro" hidden></div>
 		</main>
-		<script is:inline>
-			const weekdayEl = document.getElementById('clock-weekday');
-			const dateEl = document.getElementById('clock-date');
-			const timeEl = document.getElementById('clock-time');
-			const root = document.documentElement;
-
-			function render() {
-				const now = new Date();
-				weekdayEl.textContent = now.toLocaleDateString('en-US', { weekday: 'long' });
-				dateEl.textContent = now.toLocaleDateString('en-US', {
-					year: 'numeric',
-					month: 'long',
-					day: 'numeric',
-				});
-				const p = (n) => String(n).padStart(2, '0');
-				const showSeconds = () => document.documentElement.dataset.seconds !== 'off';
-				timeEl.textContent = showSeconds()
-					? `${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`
-					: `${p(now.getHours())}:${p(now.getMinutes())}`;
-			}
-
-			render();
-
-			// Seconds toggle: show / hide the seconds part of the time
-			const secondsToggle = document.querySelector('.seconds-toggle');
-
-			function syncSecondsButton() {
-				const off = root.dataset.seconds === 'off';
-				secondsToggle.setAttribute('aria-pressed', String(!off));
-				secondsToggle.setAttribute('aria-label', off ? 'Show seconds' : 'Hide seconds');
-			}
-
-			secondsToggle.addEventListener('click', () => {
-				root.dataset.seconds = root.dataset.seconds === 'off' ? 'on' : 'off';
-				try {
-					localStorage.setItem('clock:seconds', root.dataset.seconds);
-				} catch {
-					/* storage unavailable — choice just won't persist */
-				}
-				syncSecondsButton();
-				render();
-			});
-
-			syncSecondsButton();
-
-			// Pomodoro: 🍅 click starts a 25-min focus countdown, then a 5-min
-			// break. While running: click pauses/resumes, ✕ resets. State is
-			// stored as timestamps so a page refresh resumes the countdown.
-			const POMO_KEY = 'clock:pomodoro';
-			const FOCUS_MS = 25 * 60_000;
-			const BREAK_MS = 5 * 60_000;
-			const pomoToggle = document.querySelector('.pomodoro-toggle');
-			const pomoReset = document.querySelector('.pomodoro-reset');
-			const pomoLine = document.getElementById('clock-pomodoro');
-			const baseTitle = document.title;
-			/** @type {{phase: 'focus'|'break', endAt: number, paused: boolean, pausedRemaining: number} | null} */
-			let pomo = null;
-
-			function loadPomo() {
-				try {
-					const raw = localStorage.getItem(POMO_KEY);
-					if (!raw) return null;
-					const p = JSON.parse(raw);
-					if (!p || (p.phase !== 'focus' && p.phase !== 'break')) return null;
-					// a timer that expired while the page was closed is simply gone
-					if (!p.paused && Date.now() >= p.endAt) return null;
-					return p;
-				} catch {
-					return null;
-				}
-			}
-			function savePomo() {
-				try {
-					localStorage.setItem(POMO_KEY, pomo ? JSON.stringify(pomo) : '');
-				} catch {
-					/* ignore */
-				}
-			}
-
-			// one short triple beep, synthesised — no audio files
-			let audioCtx = null;
-			// must be called from a user gesture, or the browser keeps audio suspended
-			function initAudio() {
-				try {
-					audioCtx ??= new (window.AudioContext || window.webkitAudioContext)();
-					audioCtx.resume();
-				} catch {
-					/* audio unavailable */
-				}
-			}
-			function beep() {
-				try {
-					audioCtx ??= new (window.AudioContext || window.webkitAudioContext)();
-					const t = audioCtx.currentTime;
-					for (const off of [0, 0.22, 0.44]) {
-						const osc = audioCtx.createOscillator();
-						const gain = audioCtx.createGain();
-						osc.frequency.value = 880;
-						osc.connect(gain);
-						gain.connect(audioCtx.destination);
-						gain.gain.setValueAtTime(0.0001, t + off);
-						gain.gain.exponentialRampToValueAtTime(0.2, t + off + 0.02);
-						gain.gain.exponentialRampToValueAtTime(0.0001, t + off + 0.18);
-						osc.start(t + off);
-						osc.stop(t + off + 0.2);
-					}
-				} catch {
-					/* audio unavailable — silent fallback */
-				}
-			}
-
-			function startPhase(phase, duration) {
-				pomo = { phase, endAt: Date.now() + duration, paused: false, pausedRemaining: duration };
-				savePomo();
-				syncPomo();
-			}
-
-			function syncPomo() {
-				let remaining = null;
-				if (pomo) {
-					remaining = pomo.paused ? pomo.pausedRemaining : Math.max(0, pomo.endAt - Date.now());
-				}
-				const fmt = (ms) => {
-					const s = Math.ceil(ms / 1000);
-					return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
-				};
-				if (pomo && remaining !== null) {
-					const label = pomo.phase === 'focus' ? 'Focus' : 'Break';
-					pomoToggle.textContent = fmt(remaining);
-					pomoToggle.classList.toggle('running', !pomo.paused);
-					pomoToggle.classList.toggle('paused', pomo.paused);
-					pomoToggle.setAttribute(
-						'aria-label',
-						`${pomo.paused ? 'Resume' : 'Pause'} Pomodoro ${label.toLowerCase()} (${fmt(remaining)})`,
-					);
-					pomoReset.hidden = false;
-					pomoLine.hidden = false;
-					pomoLine.textContent = `${label} ${fmt(remaining)}${pomo.paused ? ' · paused' : ''}`;
-					document.title = remaining > 0 ? `${fmt(remaining)} · ${label}` : baseTitle;
-				} else {
-					pomoToggle.textContent = '🍅';
-					pomoToggle.classList.remove('running', 'paused');
-					pomoToggle.setAttribute('aria-label', 'Start Pomodoro timer (25 minutes)');
-					pomoReset.hidden = true;
-					pomoLine.hidden = true;
-					document.title = baseTitle;
-				}
-			}
-
-			function tickPomo() {
-				if (!pomo || pomo.paused) return;
-				if (Date.now() >= pomo.endAt) {
-					beep();
-					if (pomo.phase === 'focus') {
-						startPhase('break', BREAK_MS);
-					} else {
-						pomo = null;
-						savePomo();
-					}
-				}
-				syncPomo();
-			}
-
-			pomoToggle.addEventListener('click', () => {
-				initAudio();
-				if (!pomo) {
-					startPhase('focus', FOCUS_MS);
-				} else if (pomo.paused) {
-					pomo.endAt = Date.now() + pomo.pausedRemaining;
-					pomo.paused = false;
-					savePomo();
-				} else {
-					pomo.pausedRemaining = Math.max(0, pomo.endAt - Date.now());
-					pomo.paused = true;
-					savePomo();
-				}
-				syncPomo();
-			});
-
-			pomoReset.addEventListener('click', () => {
-				pomo = null;
-				savePomo();
-				syncPomo();
-			});
-
-			pomo = loadPomo();
-			syncPomo();
-			// sync to the next whole second, then tick clock + pomodoro together
-			const tickAll = () => {
-				render();
-				tickPomo();
-			};
-			setTimeout(() => {
-				tickAll();
-				setInterval(tickAll, 1000);
-			}, 1000 - (Date.now() % 1000));
-
-			// Theme: light / dark / auto (auto = follow browser)
-			const toggle = document.querySelector('.theme-toggle');
-			const mql = matchMedia('(prefers-color-scheme: dark)');
-			const ICONS = { light: '☀', dark: '☾', auto: '◐' };
-			const LABELS = {
-				light: 'Light theme',
-				dark: 'Dark theme',
-				auto: 'Auto theme (follows browser setting)',
-			};
-			const ORDER = ['light', 'dark', 'auto'];
-
-			function syncIcon() {
-				const mode = root.dataset.themeMode;
-				toggle.textContent = ICONS[mode];
-				toggle.title = LABELS[mode];
-				toggle.setAttribute('aria-label', LABELS[mode]);
-			}
-
-			function applyMode(mode) {
-				root.dataset.themeMode = mode;
-				root.dataset.theme = mode === 'auto' ? (mql.matches ? 'dark' : 'light') : mode;
-				try {
-					localStorage.setItem('clock:theme', mode);
-				} catch {
-					/* storage unavailable — mode just won't persist */
-				}
-				syncIcon();
-			}
-
-			toggle.addEventListener('click', () => {
-				const current = root.dataset.themeMode;
-				applyMode(ORDER[(ORDER.indexOf(current) + 1) % ORDER.length]);
-			});
-
-			// In auto mode, react live when the browser theme changes
-			mql.addEventListener('change', () => {
-				if (root.dataset.themeMode === 'auto') {
-					root.dataset.theme = mql.matches ? 'dark' : 'light';
-				}
-			});
-
-			syncIcon();
+		<script>
+			import '../scripts/clock';
 		</script>
 	</body>
 </html>

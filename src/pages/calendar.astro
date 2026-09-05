@@ -90,6 +90,12 @@ import BaseHead from '../components/BaseHead.astro';
 				outline: 2px solid currentColor;
 				opacity: 1;
 			}
+			/* "EN" is two characters and "中" is one — a fixed width keeps the corner
+			   buttons from shifting when the language changes. */
+			.lang-toggle {
+				min-width: 2.6em;
+				text-align: center;
+			}
 
 			/* --- top bar --- */
 			.cal-topbar {
@@ -365,13 +371,18 @@ import BaseHead from '../components/BaseHead.astro';
 	</head>
 	<body>
 		<div class="corner-group">
+			<button class="corner lang-toggle" type="button" aria-label="Switch language">EN</button>
 			<button class="corner theme-toggle" type="button" aria-label="Toggle light / dark theme">☾</button>
 		</div>
 		<main class="cal">
 			<div class="cal-topbar">
 				<div class="seg" role="group" aria-label="Calendar view">
-					<button type="button" id="cal-view-month" data-view="month" aria-pressed="true">Month</button>
-					<button type="button" id="cal-view-year" data-view="year" aria-pressed="false">Year</button>
+					<button type="button" id="cal-view-month" data-view="month" aria-pressed="true"
+						><span class="i18n-en">Month</span><span class="i18n-zh">月</span></button
+					>
+					<button type="button" id="cal-view-year" data-view="year" aria-pressed="false"
+						><span class="i18n-en">Year</span><span class="i18n-zh">年</span></button
+					>
 				</div>
 				<div class="cal-nav">
 					<button type="button" id="cal-prev" aria-label="Previous month">‹</button>
@@ -379,11 +390,17 @@ import BaseHead from '../components/BaseHead.astro';
 					<button type="button" id="cal-next" aria-label="Next month">›</button>
 				</div>
 				<div class="cal-jump">
-					<label class="sr-only" for="cal-date-input">Jump to date</label>
+					<label class="sr-only" for="cal-date-input"
+						><span class="i18n-en">Jump to date</span><span class="i18n-zh">跳转到日期</span></label
+					>
 					<input type="date" id="cal-date-input" />
-					<button type="button" id="cal-go">Go</button>
+					<button type="button" id="cal-go"
+						><span class="i18n-en">Go</span><span class="i18n-zh">跳转</span></button
+					>
 				</div>
-				<button type="button" id="cal-today" class="cal-today">Today</button>
+				<button type="button" id="cal-today" class="cal-today"
+					><span class="i18n-en">Today</span><span class="i18n-zh">今天</span></button
+				>
 			</div>
 
 			<div id="cal-month" class="cal-month" aria-label="Month calendar"></div>
@@ -392,17 +409,23 @@ import BaseHead from '../components/BaseHead.astro';
 			<p id="cal-info" class="cal-info" aria-live="polite"></p>
 
 			<div class="cal-settings">
-				<div class="cal-setting" role="group" aria-label="Week starts on">
-					<span>Week starts on</span>
+				<div class="cal-setting" id="cal-week-start" role="group" aria-label="Week starts on">
+					<span><span class="i18n-en">Week starts on</span><span class="i18n-zh">每周起始</span></span>
 					<div class="seg">
-						<button type="button" data-week-start="0" aria-pressed="true">Sun</button>
-						<button type="button" data-week-start="1" aria-pressed="false">Mon</button>
+						<button type="button" data-week-start="0" aria-pressed="true"
+							><span class="i18n-en">Sun</span><span class="i18n-zh">周日</span></button
+						>
+						<button type="button" data-week-start="1" aria-pressed="false"
+							><span class="i18n-en">Mon</span><span class="i18n-zh">周一</span></button
+						>
 					</div>
 				</div>
-				<div class="cal-setting" role="group" aria-label="Week number rule">
-					<span>Week numbers</span>
+				<div class="cal-setting" id="cal-week-rule" role="group" aria-label="Week number rule">
+					<span><span class="i18n-en">Week numbers</span><span class="i18n-zh">周数规则</span></span>
 					<div class="seg">
-						<button type="button" data-week-rule="full" aria-pressed="true">Full week</button>
+						<button type="button" data-week-rule="full" aria-pressed="true"
+							><span class="i18n-en">Full week</span><span class="i18n-zh">整周</span></button
+						>
 						<button type="button" data-week-rule="iso" aria-pressed="false">ISO 8601</button>
 					</div>
 				</div>
@@ -418,18 +441,30 @@ import BaseHead from '../components/BaseHead.astro';
 			const mql = matchMedia('(prefers-color-scheme: dark)');
 			const ICONS = { light: '☀', dark: '☾', auto: '◐' };
 			const LABELS = {
-				light: 'Light theme',
-				dark: 'Dark theme',
-				auto: 'Auto theme (follows browser setting)',
+				en: {
+					light: 'Light theme',
+					dark: 'Dark theme',
+					auto: 'Auto theme (follows browser setting)',
+				},
+				zh: { light: '浅色主题', dark: '深色主题', auto: '自动主题 (跟随浏览器设置)' },
 			};
 			const ORDER = ['light', 'dark', 'auto'];
 
 			function syncIcon() {
 				const mode = root.dataset.themeMode;
+				const labels = LABELS[root.dataset.lang === 'zh' ? 'zh' : 'en'];
 				toggle.textContent = ICONS[mode];
-				toggle.title = LABELS[mode];
-				toggle.setAttribute('aria-label', LABELS[mode]);
+				toggle.title = labels[mode];
+				toggle.setAttribute('aria-label', labels[mode]);
 			}
+
+			// Both halves of the site's switch, per src/scripts/tools/i18n.ts: the
+			// attribute is the source of truth and the event is a second trigger.
+			new MutationObserver(syncIcon).observe(root, {
+				attributes: true,
+				attributeFilter: ['data-lang'],
+			});
+			window.addEventListener('site:lang-change', syncIcon);
 
 			function applyMode(mode) {
 				root.dataset.themeMode = mode;

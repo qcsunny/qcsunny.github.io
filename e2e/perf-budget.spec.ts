@@ -112,13 +112,25 @@ test('the inlined search index stays small enough to justify inlining', () => {
 // modulepreload.mjs names the static imports in <head> instead. Pinned per route
 // by chunk-name prefix rather than recomputed from the bundles, so a chunk that
 // starts importing something new has to be looked at.
+//
+// i18n (564 B brotli) became a chunk of its own in 2026-09, when /clock and
+// /calendar started importing the same language helper the tool bundle uses —
+// three entry points sharing a module is what makes Rollup hoist it. The
+// alternative was a second copy of the switch logic in each standalone page,
+// which is the thing src/scripts/tools/i18n.ts exists to prevent. It costs the
+// tool pages one more request, and because it is named in <head> beside main and
+// engine that request goes out in parallel rather than lengthening the chain.
 const PRELOADS: [string, string[]][] = [
-	['tools/json-formatter/index.html', ['main', 'engine']],
-	['finance/loan-payment/index.html', ['main', 'engine']],
-	['converters/weight/index.html', ['main', 'engine']],
-	['calculators/percentage/index.html', ['main', 'engine']],
+	['tools/json-formatter/index.html', ['main', 'engine', 'i18n']],
+	['finance/loan-payment/index.html', ['main', 'engine', 'i18n']],
+	['converters/weight/index.html', ['main', 'engine', 'i18n']],
+	['calculators/percentage/index.html', ['main', 'engine', 'i18n']],
 	['calculators/graph3d/index.html', ['engine', 'vars']],
 	['calculators/standard/index.html', ['engine', 'vars']],
+	// The two pages outside the toolbox: no ToolShell, so the language helper is
+	// the only thing their own controller shares with anything else.
+	['clock/index.html', ['i18n']],
+	['calendar/index.html', ['i18n']],
 	// A prose page has no module script, so nothing to preload.
 	['blog/canvas-2d-surface-plot/index.html', []],
 ];

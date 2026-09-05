@@ -80,3 +80,31 @@ export function langAttr(el: Element, attr: string, en: string, zh?: string): vo
 	}
 	onLang((z) => el.setAttribute(attr, z ? zh : en));
 }
+
+/**
+ * Wire a button that flips the site language, for the two pages that have no
+ * Header.astro — the fullscreen clock and the calendar. Header's toggle is an
+ * inline script and cannot import this module, so this is a third writer of the
+ * same four things: localStorage, html[data-lang], html.lang and the
+ * site:lang-change event. A choice made here is the one the rest of the site
+ * then reads.
+ */
+export function wireLangToggle(btn: HTMLElement): void {
+	const root = document.documentElement;
+	btn.addEventListener('click', () => {
+		const next = isZh() ? 'en' : 'zh';
+		root.dataset.lang = next;
+		root.lang = next === 'zh' ? 'zh-CN' : 'en';
+		try {
+			localStorage.setItem('site:lang', next);
+		} catch {
+			/* storage unavailable — the choice just won't persist */
+		}
+		window.dispatchEvent(new CustomEvent('site:lang-change', { detail: next }));
+	});
+	onLang((zh) => {
+		btn.textContent = zh ? '中' : 'EN';
+		btn.title = zh ? '当前：中文 (点击切换为 English)' : 'Current: English (click for Chinese)';
+		btn.setAttribute('aria-label', zh ? '切换为 English' : 'Switch to Chinese');
+	});
+}

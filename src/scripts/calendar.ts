@@ -6,6 +6,7 @@
 // numbering (e.g. Jan 1-3 of 2026 belong to 2025's last week) and the trailing
 // partial week of December continues the numbering.
 
+import { isZh, langAttr, onLang, wireLangToggle } from './tools/i18n';
 import {
 	addDays,
 	dateOf,
@@ -36,6 +37,33 @@ const MONTHS_LONG = [
 ];
 const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DAYS_MINI = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+// One character per weekday is what a Chinese calendar grid prints, in both the
+// month and the year view — so the wide form is only ever a label, never a
+// column head, and no grid has to be re-measured for it.
+const DAYS_ZH = ['日', '一', '二', '三', '四', '五', '六'];
+const DAYS_LONG_ZH = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+
+// Chinese writes a date the other way round — 2026年9月6日 周日 against
+// Sun, September 6, 2026 — so each label is assembled per language instead of
+// being swapped word for word.
+const t = (en: string, zh: string): string => (isZh() ? zh : en);
+
+const monthLabel = (year: number, month: number): string =>
+	isZh() ? `${year}年${month + 1}月` : `${MONTHS_LONG[month]} ${year}`;
+
+const dayLabel = (d: Date): string =>
+	isZh()
+		? `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 ${DAYS_LONG_ZH[d.getDay()]}`
+		: `${DAYS_SHORT[d.getDay()]}, ${MONTHS_LONG[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+
+const weekLabel = (week: number, year: number, withYear: boolean): string =>
+	isZh()
+		? withYear
+			? `${year}年第 ${week} 周`
+			: `第 ${week} 周`
+		: withYear
+			? `Week ${week} of ${year}`
+			: `Week ${week}`;
 
 interface State {
 	view: 'month' | 'year';
@@ -88,26 +116,52 @@ const state: State = {
 };
 
 // --- elements ----------------------------------------------------------------
-const monthHost = document.querySelector<HTMLElement>('#cal-month');
-const yearHost = document.querySelector<HTMLElement>('#cal-year');
-const labelEl = document.querySelector<HTMLElement>('#cal-label');
-const infoEl = document.querySelector<HTMLElement>('#cal-info');
-const prevBtn = document.querySelector<HTMLButtonElement>('#cal-prev');
-const nextBtn = document.querySelector<HTMLButtonElement>('#cal-next');
-const todayBtn = document.querySelector<HTMLButtonElement>('#cal-today');
-const goBtn = document.querySelector<HTMLButtonElement>('#cal-go');
-const dateInput = document.querySelector<HTMLInputElement>('#cal-date-input');
+// A throwing lookup rather than one compound null guard: a guard narrows only
+// the straight-line code after it, and every use below is inside a function, so
+// each of these consts read as possibly-null in the type checker.
+const pick = <T extends Element>(sel: string): T => {
+	const el = document.querySelector<T>(sel);
+	if (!el) throw new Error(`calendar: ${sel} missing`);
+	return el;
+};
+
+const monthHost = pick<HTMLElement>('#cal-month');
+const yearHost = pick<HTMLElement>('#cal-year');
+const labelEl = pick<HTMLElement>('#cal-label');
+const infoEl = pick<HTMLElement>('#cal-info');
+const prevBtn = pick<HTMLButtonElement>('#cal-prev');
+const nextBtn = pick<HTMLButtonElement>('#cal-next');
+const todayBtn = pick<HTMLButtonElement>('#cal-today');
+const goBtn = pick<HTMLButtonElement>('#cal-go');
+const dateInput = pick<HTMLInputElement>('#cal-date-input');
 const viewButtons = document.querySelectorAll<HTMLButtonElement>('.cal-topbar [data-view]');
 const weekStartButtons = document.querySelectorAll<HTMLButtonElement>('[data-week-start]');
 const weekRuleButtons = document.querySelectorAll<HTMLButtonElement>('[data-week-rule]');
-if (!monthHost || !yearHost || !labelEl || !infoEl || !prevBtn || !nextBtn || !todayBtn || !goBtn || !dateInput) {
-	throw new Error('calendar: required elements missing');
-}
+
+// No Header.astro on this page, so the switch itself has to live in the corner.
+wireLangToggle(pick<HTMLButtonElement>('.lang-toggle'));
+
+// Group names and the two grid labels: attributes, so no span pair can hold them.
+langAttr(pick('.cal-topbar .seg'), 'aria-label', 'Calendar view', '日历视图');
+langAttr(monthHost, 'aria-label', 'Month calendar', '月历');
+langAttr(yearHost, 'aria-label', 'Year calendar', '年历');
+langAttr(pick('#cal-week-start'), 'aria-label', 'Week starts on', '每周起始');
+langAttr(pick('#cal-week-rule'), 'aria-label', 'Week number rule', '周数规则');
 
 // --- rendering ---------------------------------------------------------------
 function render(): void {
 	labelEl.textContent =
-		state.view === 'month' ? `${MONTHS_LONG[state.month]} ${state.year}` : String(state.year);
+		state.view === 'month' ? monthLabel(state.year, state.month) : t(String(state.year), `${state.year}年`);
+	// The arrows step by month in the month view and by year in the year view, so
+	// their names are part of the render rather than fixed at load.
+	prevBtn.setAttribute(
+		'aria-label',
+		state.view === 'month' ? t('Previous month', '上一月') : t('Previous year', '上一年'),
+	);
+	nextBtn.setAttribute(
+		'aria-label',
+		state.view === 'month' ? t('Next month', '下一月') : t('Next year', '下一年'),
+	);
 	monthHost.hidden = state.view !== 'month';
 	yearHost.hidden = state.view !== 'year';
 	// drop the inactive view's stale DOM (it would otherwise linger hidden)
@@ -128,8 +182,7 @@ function renderInfo(): void {
 	const s = state.selected;
 	const wn =
 		state.rule === 'iso' ? isoWeekNum(s) : fullWeekNum(s, state.weekStart);
-	const weekYearNote = wn.year !== s.getFullYear() ? ` of ${wn.year}` : '';
-	infoEl.textContent = `${DAYS_SHORT[s.getDay()]}, ${MONTHS_LONG[s.getMonth()]} ${s.getDate()}, ${s.getFullYear()} · Week ${wn.week}${weekYearNote}`;
+	infoEl.textContent = `${dayLabel(s)} · ${weekLabel(wn.week, wn.year, wn.year !== s.getFullYear())}`;
 }
 
 function dayButton(date: Date, mini: boolean, monthContext = state.month): HTMLButtonElement {
@@ -141,10 +194,7 @@ function dayButton(date: Date, mini: boolean, monthContext = state.month): HTMLB
 	if (date.getMonth() !== monthContext) btn.classList.add('out');
 	if (sameDay(date, today)) btn.classList.add('today');
 	if (sameDay(date, state.selected)) btn.classList.add('sel');
-	btn.setAttribute(
-		'aria-label',
-		`${DAYS_SHORT[date.getDay()]}, ${MONTHS_LONG[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`,
-	);
+	btn.setAttribute('aria-label', dayLabel(date));
 	btn.addEventListener('click', () => {
 		state.selected = date;
 		state.year = date.getFullYear();
@@ -165,7 +215,7 @@ function renderMonth(): void {
 	for (let i = 0; i < 7; i++) {
 		const h = document.createElement('span');
 		h.className = 'dow';
-		h.textContent = DAYS_SHORT[(state.weekStart + i) % 7] as string;
+		h.textContent = (isZh() ? DAYS_ZH : DAYS_SHORT)[(state.weekStart + i) % 7] as string;
 		h.setAttribute('aria-hidden', 'true');
 		monthHost.append(h);
 	}
@@ -177,7 +227,7 @@ function renderMonth(): void {
 		wn.className = 'wnum';
 		const num = rowWeekNumber(rowStart, state.weekStart, state.rule);
 		wn.textContent = String(num.week);
-		wn.title = `Week ${num.week} of ${num.year}`;
+		wn.title = weekLabel(num.week, num.year, true);
 		monthHost.append(wn);
 		for (let col = 0; col < 7; col++) {
 			monthHost.append(dayButton(addDays(rowStart, col), false));
@@ -195,8 +245,11 @@ function renderYear(): void {
 		const title = document.createElement('button');
 		title.type = 'button';
 		title.className = 'mini-title';
-		title.textContent = MONTHS_LONG[m] as string;
-		title.setAttribute('aria-label', `Go to ${MONTHS_LONG[m]} ${state.year}`);
+		title.textContent = isZh() ? `${m + 1}月` : (MONTHS_LONG[m] as string);
+		title.setAttribute(
+			'aria-label',
+			t(`Go to ${MONTHS_LONG[m]} ${state.year}`, `跳转到 ${monthLabel(state.year, m)}`),
+		);
 		title.addEventListener('click', () => {
 			state.view = 'month';
 			state.month = m;
@@ -208,7 +261,7 @@ function renderYear(): void {
 		for (let i = 0; i < 7; i++) {
 			const h = document.createElement('span');
 			h.className = 'dow';
-			h.textContent = DAYS_MINI[(state.weekStart + i) % 7] as string;
+			h.textContent = (isZh() ? DAYS_ZH : DAYS_MINI)[(state.weekStart + i) % 7] as string;
 			h.setAttribute('aria-hidden', 'true');
 			grid.append(h);
 		}
@@ -323,4 +376,7 @@ weekStartButtons.forEach((btn) => {
 weekRuleButtons.forEach((btn) => {
 	btn.setAttribute('aria-pressed', String(btn.dataset.weekRule === state.rule));
 });
-render();
+// onLang runs this once immediately, so it is also the first paint; the grids,
+// the month label and every aria-label are built here rather than in the markup,
+// so CSS has no span pair to swap and only a re-render follows the switch.
+onLang(render);
