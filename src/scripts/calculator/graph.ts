@@ -11,9 +11,12 @@ export interface GraphController {
 	refresh(): void;
 }
 
-/** Slot colors, fixed order — CVD-safe on both themes, max 4 curves by design. */
-const COLORS = ['#2337ff', '#eb6834', '#1baf7a', '#eda100'];
-const MAX_FNS = 4;
+/** Slot colors, fixed order — readable on both themes. The first four are hue-
+ *  separated enough to stay distinguishable with color-vision deficiency; the
+ *  fifth (reddish purple) is the closest to slot 1 under deuteranopia, which is
+ *  why the swatch beside each formula row, not color alone, identifies a curve. */
+const COLORS = ['#2337ff', '#eb6834', '#1baf7a', '#eda100', '#b5539c'];
+const MAX_FNS = 5;
 const DEFAULT_VIEW = { xMin: -10, xMax: 10, yMin: -6, yMax: 6 };
 const MIN_SPAN = 1e-9;
 const MAX_SPAN = 1e9;

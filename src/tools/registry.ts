@@ -199,6 +199,7 @@ export type ToolEntry = ToolMeta &
 		| { kind: 'xml' }
 		| { kind: 'css' }
 		| { kind: 'html' }
+		| { kind: 'markdown' }
 	) & { content?: ToolContent };
 
 // --- categories ----------------------------------------------------------------
@@ -240,8 +241,11 @@ export const CATEGORIES: {
 	},
 ];
 
-/** Static feature pages listed on the calculators index (real routes live in src/pages/calculators/). */
-export const CALCULATOR_FEATURED: (ToolMeta & { content?: ToolContent })[] = [
+/** Static feature pages listed on the calculators index (real routes live in src/pages/calculators/).
+ *  They are hand-written pages rather than registry-driven ones, so they carry
+ *  no `kind`; the field stays optional so the index listings can filter these
+ *  and REGISTRY entries with one expression. */
+export const CALCULATOR_FEATURED: (ToolMeta & { kind?: ToolKind; content?: ToolContent })[] = [
 	{
 		slug: 'standard',
 		category: 'calculators',
@@ -255,8 +259,8 @@ export const CALCULATOR_FEATURED: (ToolMeta & { content?: ToolContent })[] = [
 		category: 'calculators',
 		name: 'Function Grapher',
 		nameZh: '函数图像绘制器',
-		description: 'Plot up to 4 functions with zoom, pan and a live value crosshair.',
-		descriptionZh: '同时绘制多达 4 条函数图像，支持平移缩放与十字准星实时取值。',
+		description: 'Plot up to 5 functions with zoom, pan and a live value crosshair.',
+		descriptionZh: '同时绘制多达 5 条函数图像，支持平移缩放与十字准星实时取值。',
 	},
 ];
 
