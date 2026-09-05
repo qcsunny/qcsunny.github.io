@@ -1,34 +1,35 @@
 ---
-title: '网页工具集：科学计算器、二维码与 34 个免费小工具'
-description: '博客自建的 34 个纯浏览器端工具页：科学计算器、函数绘图、复利/房贷计算、二维码生成器（手写编码器）等，全部零第三方依赖。'
+title: '网页工具集：科学计算器、二维码与 49 个免费小工具'
+description: '博客自建的 49 个纯浏览器端工具页：科学计算器、函数绘图、Canvas 2D 三维曲面、复利/房贷计算、二维码生成器（手写编码器）等，全部零第三方依赖。'
 pubDate: 'Sep 01 2026'
 ---
 
 博客导航栏里的 **Calculator**（[/calculators/standard/](/calculators/standard/)）是一个纯浏览器端运行的进阶计算器。它最初是四个选项卡挤在一个页面里，后来随着工具页体系（见 [Tools](/tools/)）的建立被拆成了独立子页面——每个工具一个网址，更好分享、更好搜索：
 
 - **Calculator** → [/calculators/standard/](/calculators/standard/)（科学计算器）
-- **Graph** → [/calculators/graph/](/calculators/graph/)（函数绘图）
-- **Units** → 独立成 8 个换算页 [/converters/length/](/converters/length/) 等（长度、重量、温度、面积、体积、速度、时间、数据大小）
+- **Graph** → [/calculators/graph/](/calculators/graph/)（函数绘图），另有 [/calculators/graph3d/](/calculators/graph3d/)（三维曲面，同样只用 Canvas 2D）
+- **Units** → 独立成 11 个换算页 [/converters/length/](/converters/length/) 等（长度、重量、温度、面积、体积、速度、时间、数据大小、压强、功率、能量）
 - **Stats** → 并入 [/calculators/average/](/calculators/average/)（平均数与统计）
 
 旧地址 `/calculator/` 会自动跳转到新页面。
 
-## 一个注册表，34 个工具
+## 一个注册表，49 个工具
 
-这次拆分顺带建起了整套工具页体系（入口在导航栏的 **Tools**，共 34 个工具、四大分类）：
+这次拆分顺带建起了整套工具页体系（入口在导航栏的 **Tools**，共 49 个工具、四大分类）：
 
 | 分类 | 内容 |
 | --- | --- |
-| [Calculators](/calculators/) | 科学计算器、函数绘图、百分比、百分比变化、分数、比例、平均数与统计、单利 |
-| [Converters](/converters/) | 长度、重量、温度、面积、体积、速度、时间、数据大小——双向换算、一键交换 |
-| [Finance](/finance/) | 复利（含月定投、逐年明细）、等额本息月供与摊销表、房贷（含税险 HOA）、投资回报、ROI、折扣、年薪换算、个税 |
-| [Tools](/tools/) | 密码/UUID/随机数生成器、二维码生成器、字数统计、字符统计、JSON 格式化、Base64、颜色转换 |
+| [Calculators](/calculators/)（9） | 科学计算器、函数绘图、三维曲面、百分比、百分比变化、分数、平均数与统计、比例、单利 |
+| [Converters](/converters/)（11） | 长度、重量、温度、面积、体积、速度、时间、数据大小、压强、功率、能量——双向换算、一键交换 |
+| [Finance](/finance/)（13） | 复利（含月定投、逐年明细）、等额本息月供与摊销表、房贷（含税险 HOA）、提前还款、真实年化与分期 IRR、通胀购买力、储蓄目标、车贷、FIRE、个税、年薪换算、ROI、折扣 |
+| [Tools](/tools/)（16） | 密码/UUID/随机数生成器、二维码生成器、字数与字符统计、JSON/SQL/XML/CSS/HTML 格式化、JWT 解码、URL 解析、Markdown 预览、Base64、颜色转换 |
 
 几个值得一提的细节：
 
-- **JSON 格式化**报错不只说"Invalid JSON"，还给出**精确的行列号**——浏览器的 V8 错误消息里只有上下文片段没有位置，所以格式化前先跑一遍自己写的结构扫描器定位第一个错误
+- **JSON 格式化**报错不只说"Invalid JSON"，还给出**精确的行列号**——引擎的 `SyntaxError` 各版本文案不一，所以定位逻辑写成两级降级（先找 `position`，再找 `line/column`），[另有一篇专门拆解](/blog/sql-tokenizer-and-code-formatter/)
 - **三个生成器**（密码/UUID/随机数）全部用 `crypto.getRandomValues` 并做**拒绝采样**，保证每个字符均匀分布——`Math.random` 做密码是不合格的
 - **二维码生成器**的编码器是手写的（下文展开），支持版本 1–10、四档纠错、PNG 下载
+- **Markdown 预览**的解析器同样是手写的，公式排版则用打包进产物的 KaTeX 按需加载（[这条界线为什么这么划](/blog/markdown-parser-and-katex-math/)）
 - 所有计算在浏览器本地完成，**没有任何数据离开你的设备**
 
 ## 功能总览
@@ -60,9 +61,19 @@ ans * 2          → 上一轮结果
 - 修改科学计算器页里的变量，图形实时联动重绘
 - 暗色主题下画布配色自动跟随重绘（颜色从 CSS 变量读取，MutationObserver 监听主题切换）
 
+### 三维曲面
+
+[/calculators/graph3d/](/calculators/graph3d/) 画 `z = f(x, y)`，用的仍然是 Canvas 2D——**没有 three.js，也没有 WebGL**。一个曲面图需要的东西只有正交投影加画家算法深度排序，一个软件渲染器就能覆盖：
+
+- 拖拽旋转、滚轮缩放、键盘也能开（画布 `tabindex=0`，方向键转视角、`+/-` 缩放、`0` 复位）
+- **采样网格带缓存**：真正贵的是求值 `f()`，所以旋转和缩放只重新投影已有网格，改公式、改定义域、改分辨率才重新采样
+- `1/(x²+y²)` 这类有极点的函数会把真实值域拉到无穷大，让其余部分挤成一个颜色。所以当尾部极端时，高度与配色的映射改用 **1–99 百分位**，尖峰按裁剪画出来
+
+之所以不上 WebGL：瓶颈在 JS 里的表达式求值，不在光栅化——换渲染后端不会让 `f()` 跑得更快。
+
 ## 实现原理
 
-整个工具**零第三方依赖**——没有 math.js，没有 React，只有 TypeScript 和浏览器原生 API。
+整个工具**零第三方依赖**——没有 math.js，没有 React，只有 TypeScript 和浏览器原生 API。唯一的例外是 Markdown 预览页的数学排版用了 KaTeX，而且是**打包进产物**的本地依赖（版本锁死、字体一并提交进仓库），不走任何 CDN——[为什么这条界线划在这里](/blog/markdown-parser-and-katex-math/)。
 
 ### 手写表达式引擎
 
@@ -124,9 +135,11 @@ UTF-8 字节 → 位流（模式+长度+数据+填充）
 | 部分 | 方案 |
 | --- | --- |
 | 表达式求值 | 手写 tokenizer + 递归下降 parser + 闭包编译 |
-| 绘图 | 原生 Canvas 2D + Pointer Events |
+| 二维绘图 | 原生 Canvas 2D + Pointer Events |
+| 三维曲面 | 同一块 Canvas 2D：正交投影 + 画家算法，采样网格带缓存 |
 | 二维码 | 手写编码器：RS 纠错 + 8 掩码 ISO 罚分选择 |
 | 金融计算 | 等额本息/复利闭式解，摊销表按年分组 |
 | 随机性 | crypto.getRandomValues + 拒绝采样 |
+| 数学排版 | KaTeX，版本锁死、字体 vendored、按需加载 |
 | 状态持久化 | localStorage（历史、变量、主题） |
 | 框架依赖 | 0 |
