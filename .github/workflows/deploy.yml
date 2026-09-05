@@ -39,6 +39,12 @@ jobs:
           retention-days: 7
       - name: Submit URLs to IndexNow
         run: node scripts/indexnow.mjs || true
+      # No-ops with a clear message until BAIDU_PUSH_TOKEN is added as a repo
+      # secret (ziyuan.baidu.com → 站点管理 → 普通收录 → API 提交).
+      - name: Submit URLs to Baidu
+        env:
+          BAIDU_PUSH_TOKEN: ${{ secrets.BAIDU_PUSH_TOKEN }}
+        run: node scripts/baidu-push.mjs || true
 
   deploy:
     needs: build

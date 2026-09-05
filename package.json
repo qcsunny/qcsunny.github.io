@@ -13,6 +13,7 @@
     "test": "playwright test",
     "astro": "astro",
     "indexnow": "node scripts/indexnow.mjs",
+    "baidu:push": "node scripts/baidu-push.mjs",
     "vendor:katex": "python3 scripts/build-katex-css.py"
   },
   "dependencies": {
