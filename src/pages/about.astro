@@ -170,9 +170,12 @@ import { SITE_TITLE } from '../consts';
 
 <style>
 	.about-main {
-		max-width: min(46rem, calc(100% - 2.5rem));
+		/* was `max-width: min(46rem, …)`, which never took effect: global.css
+		   already pins `main` to width 720px, below the 736px cap. Setting
+		   `width` gives this page the same reading measure as blog posts. */
+		width: min(var(--w-prose), 100% - 2.5rem);
 		margin: 0 auto;
-		padding: 2.5rem 1.25rem 4rem;
+		padding: 2.5rem 0 4rem;
 		font-size: 1.02rem;
 		line-height: 1.8;
 		color: var(--fg);

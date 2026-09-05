@@ -72,8 +72,15 @@ test('mobile viewport: blog index has no horizontal overflow', async ({ page }) 
 });
 
 // The About page and post pages carry the widest fixed-width content (support
-// chips, tool chips, code blocks), so they get the same 375px guard.
-for (const route of ['/about/', '/blog/uuid-v4-vs-v7-database-guide/']) {
+// chips, tool chips, code blocks), so they get the same 375px guard. /privacy/
+// and a workbench tool page are here because their containers are the ones the
+// --w-* refactor changed.
+for (const route of [
+	'/about/',
+	'/privacy/',
+	'/tools/sql-formatter/',
+	'/blog/uuid-v4-vs-v7-database-guide/',
+]) {
 	test(`mobile viewport: ${route} has no horizontal overflow`, async ({ page }) => {
 		await page.setViewportSize({ width: 375, height: 667 });
 		await page.goto(route);

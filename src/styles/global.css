@@ -23,6 +23,16 @@
 		0 8px 24px rgba(0, 0, 0, 0.07);
 	color-scheme: light;
 
+	/* page measures — every page container picks one of these four instead of
+	   hard-coding a pixel width. Each is a *content* width; horizontal gutters
+	   live inside the width expression (`min(var(--w-x), 100% - 2em)`) rather
+	   than in `padding`, so the box-sizing of the container never matters and
+	   the same rule works on a 320px phone and a 4K monitor. */
+	--w-page: 720px; /* default single-column page, tool pages */
+	--w-prose: 780px; /* long-form reading: blog posts, about, privacy */
+	--w-wide: 960px; /* listings and grids: blog index, calendar */
+	--w-max: 1040px; /* widest layout: home page, workbench tools */
+
 	/* legacy aliases used by the original template */
 	--black: 24, 24, 27;
 	--gray: 113, 113, 122;
@@ -77,10 +87,9 @@ body {
 }
 
 main {
-	width: 720px;
-	max-width: calc(100% - 2em);
+	width: min(var(--w-page), 100% - 2em);
 	margin: auto;
-	padding: 3em 1em;
+	padding: 3em 0;
 }
 
 h1,
@@ -295,7 +304,7 @@ hr {
 		font-size: 16.5px;
 	}
 	main {
-		padding: 1.5em 1em;
+		padding: 1.5em 0;
 	}
 }
 

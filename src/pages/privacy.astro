@@ -211,9 +211,11 @@ import { SITE_TITLE } from '../consts';
 
 <style>
 	.privacy-main {
-		max-width: min(46rem, calc(100% - 2.5rem));
+		/* same fix as about.astro: the old `max-width: min(46rem, …)` sat above
+		   global.css's `main { width: 720px }` and so never applied. */
+		width: min(var(--w-prose), 100% - 2.5rem);
 		margin: 0 auto;
-		padding: 2.5rem 1.25rem 4rem;
+		padding: 2.5rem 0 4rem;
 		font-size: 1rem;
 		line-height: 1.8;
 		color: var(--fg);

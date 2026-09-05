@@ -106,16 +106,18 @@ const jsonLd = {
 		</script>
 		<style>
 			main {
+				/* full-width so the hero image can go wider than the prose
+				   measure; the 1em gutter keeps it off the viewport edge on
+				   phones, where global.css's own gutter no longer applies. */
 				width: 100%;
 				max-width: 100%;
 				margin: 0;
-				/* global.css gives main 1em side padding with content-box sizing,
-				   which pushed the page 32px past a 375px viewport. */
+				padding: 3em 1em;
 				box-sizing: border-box;
 			}
 			.hero-image {
 				width: 100%;
-				max-width: 960px;
+				max-width: var(--w-wide);
 				margin: 0 auto;
 			}
 			.hero-image img {
@@ -125,7 +127,7 @@ const jsonLd = {
 				box-shadow: var(--box-shadow);
 			}
 			.prose {
-				width: min(780px, calc(100% - 2.5em));
+				width: min(var(--w-prose), calc(100% - 2.5em));
 				margin: auto;
 				padding: 2rem 0 4rem;
 				color: var(--fg);
