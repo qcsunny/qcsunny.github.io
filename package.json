@@ -9,6 +9,8 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
+    "check": "astro check",
+    "test": "playwright test",
     "astro": "astro",
     "indexnow": "node scripts/indexnow.mjs"
   },
@@ -23,6 +25,8 @@
     "esbuild": true
   },
   "devDependencies": {
-    "@playwright/test": "^1.62.1"
+    "@astrojs/check": "^0.9.10",
+    "@playwright/test": "^1.62.1",
+    "typescript": "^6.0.3"
   }
 }
