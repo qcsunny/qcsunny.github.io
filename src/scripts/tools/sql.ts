@@ -83,13 +83,13 @@ having count(o.id) > 0
 order by total_spent desc, u.id asc
 limit 50 offset 0;`;
 
-export function formatSql(sql: string, indentSize = 2): string {
-	const indentStr = ' '.repeat(indentSize);
-	const text = sql.trim();
-	if (!text) return '';
+type SqlToken = { type: 'str' | 'comment' | 'word' | 'punct' | 'op' | 'ws'; val: string };
 
-	// Tokenize to preserve strings and comments intact
-	const tokens: { type: 'str' | 'comment' | 'word' | 'punct' | 'ws'; val: string }[] = [];
+/** Split SQL into tokens. String literals and comments come out verbatim, so no
+ *  downstream pass can rewrite user data; everything else is classified, so the
+ *  formatter and the minifier can make spacing decisions from structure alone. */
+function tokenizeSql(text: string): SqlToken[] {
+	const tokens: SqlToken[] = [];
 	let i = 0;
 	const n = text.length;
 
@@ -114,7 +114,7 @@ export function formatSql(sql: string, indentSize = 2): string {
 			continue;
 		}
 
-		// String literal '...' or "..."
+		// String literal '...', "..." or `...`
 		if (c === "'" || c === '"' || c === '`') {
 			let j = i + 1;
 			while (j < n && text[j] !== c) {
@@ -126,7 +126,6 @@ export function formatSql(sql: string, indentSize = 2): string {
 			i = j;
 			continue;
 		}
-
 		// Whitespace
 		if (/\s/.test(c)) {
 			while (i < n && /\s/.test(text[i])) i++;
@@ -141,16 +140,37 @@ export function formatSql(sql: string, indentSize = 2): string {
 			continue;
 		}
 
-		// Word
+		// Word. A lone delimiter that no branch above claimed — subtraction,
+		// division, a stray backtick — leaves j === i, which would spin this
+		// loop forever; emit it as a one-character operator instead.
 		let j = i;
-		while (j < n && !/[\s(),;'"\-\/]/.test(text[j])) j++;
+		while (j < n && !/[\s(),;'"`\-/]/.test(text[j])) j++;
+		if (j === i) {
+			tokens.push({ type: 'op', val: c });
+			i++;
+			continue;
+		}
 		tokens.push({ type: 'word', val: text.slice(i, j) });
 		i = j;
 	}
 
+	return tokens;
+}
+
+export function formatSql(sql: string, indentSize = 2): string {
+	const indentStr = ' '.repeat(indentSize);
+	const text = sql.trim();
+	if (!text) return '';
+
+	const tokens = tokenizeSql(text);
+
 	// Reconstruct and format
 	let result = '';
 	let currentIndent = 0;
+	// Clause indentation is relative to how deep in parentheses we are, so a
+	// subquery's SELECT/FROM/WHERE nest under their bracket instead of resetting
+	// to column 0 and reading like a second, unrelated statement.
+	let parenDepth = 0;
 	let atLineStart = true;
 
 	const append = (str: string) => {
@@ -181,14 +201,25 @@ export function formatSql(sql: string, indentSize = 2): string {
 			continue;
 		}
 
+		// Operators (=, >, -, /, *, …) keep whatever spacing the ws tokens gave
+		// them; only their surroundings are normalised, never their content.
+		if (token.type === 'op') {
+			append(token.val);
+			continue;
+		}
+
 		if (token.type === 'punct') {
 			if (token.val === ',') {
 				append(', ');
 			} else if (token.val === '(') {
-				append(' (');
-				currentIndent++;
+				// no space of our own — the preceding ws token, if there was one,
+				// already added it. Keeps `count(x)` tight and `from (select …)` open.
+				append('(');
+				parenDepth++;
+				currentIndent = parenDepth;
 			} else if (token.val === ')') {
-				currentIndent = Math.max(0, currentIndent - 1);
+				parenDepth = Math.max(0, parenDepth - 1);
+				currentIndent = parenDepth;
 				append(')');
 			} else if (token.val === ';') {
 				append(';');
@@ -223,13 +254,13 @@ export function formatSql(sql: string, indentSize = 2): string {
 
 			if (isMajor) {
 				if (!atLineStart) newLine();
-				currentIndent = 0;
+				currentIndent = parenDepth;
 				append(wordUpper);
-				currentIndent = 1;
+				currentIndent = parenDepth + 1;
 				newLine();
 			} else if (isSub) {
 				if (!atLineStart) newLine();
-				currentIndent = 1;
+				currentIndent = parenDepth + 1;
 				append(wordUpper);
 				append(' ');
 			} else if (isOther) {
@@ -243,13 +274,42 @@ export function formatSql(sql: string, indentSize = 2): string {
 	return result.trim();
 }
 
+/** Collapse to one line through the same tokenizer the formatter uses. Regexes
+ *  over raw SQL cannot tell code from data: `/--.*$/` truncates a literal that
+ *  merely contains a double dash, and normalising spaces around `,` rewrites
+ *  the inside of 'a,b'. Going through tokens keeps literals byte-for-byte. */
 export function minifySql(sql: string): string {
-	return sql
-		.replace(/--.*$/gm, '') // remove line comments
-		.replace(/\/\*[\s\S]*?\*\//g, '') // remove block comments
-		.replace(/\s+/g, ' ') // collapse whitespace
-		.replace(/\s*([(),;=])\s*/g, '$1 ') // clean around punctuation
-		.trim();
+	let out = '';
+	let skipWs = false;
+
+	for (const token of tokenizeSql(sql.trim())) {
+		switch (token.type) {
+			case 'comment':
+				skipWs = false;
+				break;
+			case 'ws':
+				if (!skipWs && out && !out.endsWith(' ')) out += ' ';
+				skipWs = false;
+				break;
+			case 'punct':
+				if (token.val === '(') {
+					out += '(';
+					skipWs = true; // no gap between "(" and what follows
+				} else if (token.val === ')') {
+					out = out.trimEnd() + ')';
+					skipWs = false;
+				} else {
+					out = `${out.trimEnd()}${token.val} `; // "," and ";"
+					skipWs = true;
+				}
+				break;
+			default:
+				out += token.val; // word / str / op verbatim
+				skipWs = false;
+		}
+	}
+
+	return out.trim();
 }
 
 export function initSql(host: HTMLElement): void {

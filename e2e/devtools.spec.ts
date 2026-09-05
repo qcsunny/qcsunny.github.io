@@ -50,3 +50,42 @@ test('markdown preview renders live HTML', async ({ page }) => {
 	await expect(preview.locator('strong')).toHaveText('bold');
 	await expect(preview.locator('code')).toHaveText('code');
 });
+
+// The SQL tokenizer used to have no branch for a bare '-' or '/': the word scan
+// stopped on them without advancing, so `a - b` spun forever and froze the tab.
+// These three specs pin the fix and the two literal-safety properties that a
+// regex-based formatter cannot give.
+test('sql formatter handles bare operators without hanging', async ({ page }) => {
+	await page.goto('/tools/sql-formatter/');
+
+	await page.locator('[aria-label="Input Area"]').fill('select price - discount as net, a/b from items where qty > -1');
+	await page.getByRole('button', { name: /Format \(2 spaces\)|格式化 \(2 空格\)/ }).click();
+
+	const output = page.locator('[aria-label="Output Area"]');
+	await expect(output).toHaveValue(/price - discount AS net/);
+	await expect(output).toHaveValue(/a\/b/);
+	await expect(output).toHaveValue(/qty > -1/);
+});
+
+test('sql formatter leaves string literals untouched', async ({ page }) => {
+	await page.goto('/tools/sql-formatter/');
+
+	// 'a,b--c' contains both a comma and a line-comment marker: a formatter that
+	// normalises spacing or strips comments by regex would corrupt it.
+	await page.locator('[aria-label="Input Area"]').fill("select * from t where tag = 'a,b--c'");
+	await page.getByRole('button', { name: /Format \(2 spaces\)|格式化 \(2 空格\)/ }).click();
+
+	await expect(page.locator('[aria-label="Output Area"]')).toHaveValue(/'a,b--c'/);
+});
+
+test('sql minify keeps literals and drops comments', async ({ page }) => {
+	await page.goto('/tools/sql-formatter/');
+
+	await page.locator('[aria-label="Input Area"]').fill("select id -- keep me out\nfrom t where tag = 'a,b--c';");
+	await page.getByRole('button', { name: /^(Minify|单行压缩)$/ }).click();
+
+	const output = page.locator('[aria-label="Output Area"]');
+	await expect(output).toHaveValue(/'a,b--c'/);
+	await expect(output).not.toHaveValue(/keep me out/);
+	await expect(output).not.toHaveValue(/\n/);
+});
