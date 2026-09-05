@@ -252,9 +252,20 @@ export const UNIT_CATEGORIES: UnitCategory[] = [
 			bar: lin('bar (巴)', 100000, '巴 (100 kPa · 汽车胎压 2.5 bar)', 'bar'),
 			mbar: lin('millibar (mbar)', 100, '毫巴', 'mbar'),
 			psi: lin('pounds per sq inch (psi)', 6894.757293168, '磅力/平方英寸 (美制胎压 36 psi)', 'psi'),
+			// Exactly 101325 Pa by definition (10th CGPM, 1954) — *not* 760 mmHg. Both
+			// units later got independent exact definitions, so the identity every
+			// textbook prints is off by 1.4e-7: this table converts 1 atm to
+			// 759.999891726 mmHg, which is the honest answer. Do not "round" either one
+			// to make them meet.
 			atm: lin('standard atmosphere (atm)', 101325, '标准大气压 (101.325 kPa)', 'atm'),
 			mmHg: lin('millimeter of mercury (mmHg / Torr)', 133.322387415, '毫米汞柱 / 托 (人体血压 120/80 mmHg 与真空度)', 'mmHg'),
-			inHg: lin('inch of mercury (inHg)', 3386.3886666667, '英寸汞柱 (inHg · 航空气象高度计标准 29.92 inHg)', 'inHg'),
+			// Derived from mmHg rather than transcribed: the conventional inch of mercury
+			// is the same definition scaled by an exact inch, so writing it as the product
+			// keeps the two agreeing. The hand-entered 3386.3886666667 disagreed from the
+			// 8th digit, which the 12-significant-digit display was wide enough to show —
+			// 1 inHg printed as 25.4000001975 mmHg, and the standard 29.92 inHg altimeter
+			// setting as 759.968005908 instead of 759.968.
+			inHg: lin('inch of mercury (inHg)', 25.4 * 133.322387415, '英寸汞柱 (inHg · 航空气象高度计标准 29.92 inHg)', 'inHg'),
 			mmH2O: lin('millimeter of water (mmH₂O)', 9.80665, '毫米水柱 (微压差与通风管道)', 'mmH₂O'),
 			kgf_cm2: lin('kgf/cm² (公斤力/平方厘米)', 98066.5, '公斤力/平方厘米 (国内俗称"打2.5公斤气")', 'kgf/cm²'),
 		},
@@ -271,7 +282,9 @@ export const UNIT_CATEGORIES: UnitCategory[] = [
 			GW: lin('gigawatt (GW)', 1e9, '吉瓦 / 十亿瓦 (电网规模)', 'GW'),
 			ps: lin('metric horsepower (ps / 匹)', 735.49875, '米制马力 / 匹 (汽车发动机公制马力)', 'ps'),
 			hp: lin('mechanical horsepower (hp)', 745.69987158227022, '英制马力 (美英汽车功率标准)', 'hp'),
-			btu_h: lin('BTU per hour (BTU/h)', 0.29307107, '英热单位/小时 (空调制冷量匹数)', 'BTU/h'),
+			// BTU/3600 written out, so this agrees with the energy table's BTU instead of
+			// truncating at the 8th digit (0.29307107 vs 0.293071070172).
+			btu_h: lin('BTU per hour (BTU/h)', 1055.05585262 / 3600, '英热单位/小时 (空调制冷量匹数)', 'BTU/h'),
 			kcal_h: lin('kilocalorie/hour (kcal/h)', 4184 / 3600, '千卡/小时 / 大卡/时 (kcal/h · 锅炉暖通供热)', 'kcal/h'),
 			ft_lb_s: lin('foot-pound/second (ft·lb/s)', 1.3558179483314, '英尺·磅/秒', 'ft·lb/s'),
 			cal_s: lin('calorie/second (cal/s)', 4.184, '卡路里/秒', 'cal/s'),

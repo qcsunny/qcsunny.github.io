@@ -73,3 +73,41 @@ test('data-size converter shows exact byte counts, not 6-digit exponentials', as
 	await page.locator('select').first().selectOption('EiB');
 	await expect(to).toHaveValue(/e\+18$/);
 });
+
+// Factors that are definitional multiples of another entry in the same table are
+// written as the product, not transcribed as a decimal — otherwise the two
+// disagree inside the display's own 12-significant-digit window. inHg used to be
+// stored as 3386.3886666667, so `1 inHg` printed 25.4000001975 mmHg and the
+// standard 29.92 altimeter setting printed 759.968005908.
+test('pressure converter keeps definitionally derived factors consistent', async ({ page }) => {
+	await page.goto('/converters/pressure/');
+
+	const from = page.locator('[aria-label="Value to convert from"]');
+	const to = page.locator('[aria-label="Converted value"]');
+
+	await page.locator('select').first().selectOption('inHg');
+	await page.locator('select').nth(1).selectOption('mmHg');
+	await from.fill('1');
+	await expect(to).toHaveValue('25.4');
+	await from.fill('29.92');
+	await expect(to).toHaveValue('759.968');
+
+	// 1 atm is exactly 101325 Pa and 1 mmHg is exactly 133.322387415 Pa — two
+	// independent definitions, so the textbook "1 atm = 760 mmHg" is off by 1.4e-7.
+	// This asserts the honest answer so nobody rounds either factor to make them meet.
+	await page.locator('select').first().selectOption('atm');
+	await from.fill('1');
+	await expect(to).toHaveValue('759.999891726');
+});
+
+// The power table's BTU/h and the energy table's BTU have to describe the same
+// quantity: BTU/h was truncated to 0.29307107, so 1 BTU/h × 3600 s came out 1.7e-9
+// short of the BTU the energy converter reports.
+test('BTU per hour agrees with the energy table BTU', async ({ page }) => {
+	await page.goto('/converters/power/');
+
+	await page.locator('select').first().selectOption('btu_h');
+	await page.locator('select').nth(1).selectOption('W');
+	await page.locator('[aria-label="Value to convert from"]').fill('3600');
+	await expect(page.locator('[aria-label="Converted value"]')).toHaveValue('1055.05585262');
+});
