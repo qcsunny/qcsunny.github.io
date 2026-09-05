@@ -36,6 +36,13 @@ const plain = (t: string): string => t.replace(/<[^>]*>/g, ' ').replace(/&[a-z]+
 // Every branch a single selector change can reach, from the field defaults. Not
 // the full cartesian product — one override at a time already covers each
 // `if (method === …)` arm, which is where the untranslated rows were hiding.
+//
+// The defaults alone are not enough: eleven rows that only fire on out-of-range
+// input ("— (years must be > 0)") and one that needs a prepayment big enough to
+// clear the loan ("Loan fully paid off! / 贷款已全额结清！", both languages in one
+// string) shipped English-only, because every value a happy path produces was
+// already translated. So each numeric field also gets a turn at 0 and at a
+// figure large enough to saturate the calculation.
 function branches(fields: { id: string; type?: string; def?: unknown; options?: { value: string }[] }[]) {
 	const base: Record<string, string | boolean> = {};
 	for (const f of fields) if (f.def !== undefined) base[f.id] = f.def as string | boolean;
@@ -43,6 +50,8 @@ function branches(fields: { id: string; type?: string; def?: unknown; options?: 
 	for (const f of fields) {
 		if (f.type === 'select') for (const o of f.options ?? []) out.push({ ...base, [f.id]: o.value });
 		if (f.type === 'checkbox') out.push({ ...base, [f.id]: !base[f.id] });
+		if (f.type === 'number' || f.type === undefined)
+			out.push({ ...base, [f.id]: '0' }, { ...base, [f.id]: '1e9' });
 	}
 	return out;
 }

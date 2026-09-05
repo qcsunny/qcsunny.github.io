@@ -380,8 +380,8 @@ const year = new Date().getFullYear();
 			}
 			.t-field .t-suffix {
 				opacity: 0.7;
-				/* Keep the unit gloss together: "($ / ¥)" broke across lines as "($"
-				   and "/ ¥)" whenever the label filled its first line. */
+				/* Keep the unit gloss together: it broke across lines as "($" and
+				   "/ ¥)" back when one suffix carried both currencies. */
 				white-space: nowrap;
 			}
 			.t-field input,

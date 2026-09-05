@@ -8,6 +8,13 @@ import { computeStats, parseNumbers } from './stats';
 const pct = (v: number): string => `${formatNumber(v)}%`;
 const money = (v: number): string => formatNumber(Math.round(v * 100) / 100);
 
+/** A money row: "$1,234.00" in the English view, "¥1,234.00" in the Chinese one,
+ *  matching the suffix: '($)' / suffixZh: '(¥)' the inputs already declare. Same
+ *  helper as src/tools/finance.ts, alongside the same local money().
+ */
+const cash = (v: number | null): { value: string; valueZh: string } =>
+	v === null || !Number.isFinite(v) ? { value: '—', valueZh: '—' } : { value: `$${money(v)}`, valueZh: `¥${money(v)}` };
+
 // --- percentage -----------------------------------------------------------------
 
 const percentage: FormConfig = {
@@ -245,9 +252,9 @@ const simpleInterest: FormConfig = {
 		const interest = p * (r / 100) * t;
 		return {
 			rows: [
-				{ label: 'Simple interest', labelZh: '单利利息', value: money(interest), emphasis: true },
-				{ label: 'Final amount (P + I)', labelZh: '到期本息总额 (本金 + 利息)', value: money(p + interest) },
-				{ label: 'Interest per year', labelZh: '每年利息', value: money(interest / (t || 1)) },
+				{ label: 'Simple interest', labelZh: '单利利息', ...cash(interest), emphasis: true },
+				{ label: 'Final amount (P + I)', labelZh: '到期本息总额 (本金 + 利息)', ...cash(p + interest) },
+				{ label: 'Interest per year', labelZh: '每年利息', ...cash(interest / (t || 1)) },
 			],
 			note: 'Unlike compound interest, the principal never grows — each period earns the same amount.',
 			noteZh: '与复利不同，单利的计息本金始终不变——每期利息完全相同。',

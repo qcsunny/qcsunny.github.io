@@ -1,7 +1,7 @@
 // Registry entries for /finance/* — all form tools, several with result
 // tables (compound interest year by year, loan amortization, mortgage prepayment, etc.).
 
-import type { FormConfig, FormResultRow, FormTable, ToolEntry } from './registry';
+import type { FormConfig, FormResult, FormResultRow, FormTable, ToolEntry } from './registry';
 import { formatNumber } from '../scripts/calculator/engine';
 
 const money = (v: number): string => formatNumber(Math.round(v * 100) / 100);
@@ -11,12 +11,43 @@ const money = (v: number): string => formatNumber(Math.round(v * 100) / 100);
 // which is shared), so a raw ratio prints as "利息节省 14.4415580034%".
 const percent = (v: number): string => formatNumber(Math.round(v * 100) / 100);
 
+/** A money row: "$1,234.00" in the English view, "¥1,234.00" in the Chinese one —
+ *  the split the inputs already declare with suffix: '($)' / suffixZh: '(¥)'.
+ *  Spread into a row rather than written out twice, so the symbol cannot drift
+ *  apart from its twin; pass null for the em-dash placeholder. Result rows used
+ *  to print the number bare while the parenthetical beside it carried a $, which
+ *  read as "4462.58 ($371.88/mo)" — a unit on the small figure and none on the
+ *  big one.
+ */
+const cash = (v: number | null): { value: string; valueZh: string } =>
+	v === null || !Number.isFinite(v) ? { value: '—', valueZh: '—' } : { value: `$${money(v)}`, valueZh: `¥${money(v)}` };
+
 /** Equal-payment amortization monthly payment. months > 0. */
 function monthlyPayment(principal: number, annualRatePct: number, months: number): number {
 	const i = annualRatePct / 100 / 12;
 	if (i <= 0) return principal / months;
 	return (principal * i) / (1 - (1 + i) ** -months);
 }
+
+/** Longest term the schedules below will be built for. amortize() emits one row
+ *  per year with no ceiling of its own, and compute() runs on every keystroke —
+ *  so an extra digit in a term box asked it for twelve billion months and took
+ *  the tab down with it (SIGABRT out of the Node run of the same code, a frozen
+ *  page in a browser). 100 years is twice the longest mortgage anyone writes.
+ *  Rejected rather than clamped, so no figure is ever quietly computed over a
+ *  term other than the one that was typed. */
+const MAX_TERM_YEARS = 100;
+
+const overlongTerm = (): FormResult => ({
+	rows: [
+		{
+			label: 'Result',
+			labelZh: '计算结果',
+			value: `— (term must be ${MAX_TERM_YEARS} years or less)`,
+			valueZh: `— (期限不得超过 ${MAX_TERM_YEARS} 年)`,
+		},
+	],
+});
 
 /** Amortization rows grouped by year: [year, principal, interest, balance]. */
 function amortize(
@@ -86,7 +117,7 @@ const compoundInterest: FormConfig = {
 		const t = v.num('t');
 		const n = Number(v.str('n')) || 1;
 		const m = v.num('m');
-		if (!(t > 0)) return { rows: [{ label: 'Final amount', labelZh: '最终金额', value: '— (years must be > 0)' }] };
+		if (!(t > 0)) return { rows: [{ label: 'Final amount', labelZh: '最终金额', value: '— (years must be > 0)', valueZh: '— (年数需大于 0)' }] };
 		// effective monthly rate so contributions match the compounding frequency
 		const monthlyRate = (1 + r / n) ** (n / 12) - 1;
 		const months = Math.round(t * 12);
@@ -112,15 +143,15 @@ const compoundInterest: FormConfig = {
 		}
 		return {
 			rows: [
-				{ label: 'Final portfolio value', labelZh: '最终资产总值', value: money(final), emphasis: true },
-				{ label: 'Total invested (principal + contributions)', labelZh: '累计投入总本金', value: money(invested) },
-				{ label: 'Total interest / profit earned', labelZh: '累计利息与投资收益', value: money(growth) },
+				{ label: 'Final portfolio value', labelZh: '最终资产总值', ...cash(final), emphasis: true },
+				{ label: 'Total invested (principal + contributions)', labelZh: '累计投入总本金', ...cash(invested) },
+				{ label: 'Total interest / profit earned', labelZh: '累计利息与投资收益', ...cash(growth) },
 				{ label: 'Total return on investment (ROI)', labelZh: '总投资回报率 (ROI)', value: `${percent(returnPct)}%` },
 				{ label: 'Asset multiple (Final ÷ Invested)', labelZh: '资产增值倍数', value: `${percent(multiple)}×` },
 			],
 			table: {
-				columns: ['Year', 'Total Invested', 'Portfolio Value', 'Interest Earned'],
-				columnsZh: ['年份', '累计投入本金', '资产总值', '累计利息收益'],
+				columns: ['Year', 'Total Invested ($)', 'Portfolio Value ($)', 'Interest Earned ($)'],
+				columnsZh: ['年份', '累计投入本金 (¥)', '资产总值 (¥)', '累计利息收益 (¥)'],
 				rows: tableRows,
 			},
 			note: `Over ${t} years, your ${money(invested)} total investment grew by ${money(growth)} (${percent(returnPct)}%), ending at ${money(final)}.`,
@@ -161,8 +192,9 @@ const mortgagePrepayment: FormConfig = {
 		const strategy = v.str('strategy');
 
 		if (!(loan > 0) || !(totalMonths > 0)) {
-			return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (loan amount and term must be > 0)' }] };
+			return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (loan amount and term must be > 0)', valueZh: '— (贷款金额与期限需大于 0)' }] };
 		}
+		if (totalMonths > MAX_TERM_YEARS * 12) return overlongTerm();
 		const i = rate / 100 / 12;
 		const origPayment = monthlyPayment(loan, rate, totalMonths);
 
@@ -186,12 +218,17 @@ const mortgagePrepayment: FormConfig = {
 		if (balanceAfter <= 0) {
 			return {
 				rows: [
-					{ label: 'Status', labelZh: '还贷状态', value: 'Loan fully paid off! / 贷款已全额结清！', emphasis: true },
-					{ label: 'Remaining balance before prepay', labelZh: '还款前未还本金', value: money(balanceBefore) },
-					{ label: 'Actual prepayment used', labelZh: '实际用于冲还本金', value: money(prepayActual) },
-					{ label: 'Total interest saved', labelZh: '累计节省利息支出', value: money(origRemainingInterest) },
-					{ label: 'Months saved', labelZh: '提前结清期数', value: `${remainingMonthsOrig} months (${(remainingMonthsOrig / 12).toFixed(1)} years)` },
-					{ label: 'Interest already paid', labelZh: '已还利息累计', value: money(interestPaidSoFar) },
+					{ label: 'Status', labelZh: '还贷状态', value: 'Loan fully paid off!', valueZh: '贷款已全额结清！', emphasis: true },
+					{ label: 'Remaining balance before prepay', labelZh: '还款前未还本金', ...cash(balanceBefore) },
+					{ label: 'Actual prepayment used', labelZh: '实际用于冲还本金', ...cash(prepayActual) },
+					{ label: 'Total interest saved', labelZh: '累计节省利息支出', ...cash(origRemainingInterest) },
+					{
+						label: 'Months saved',
+						labelZh: '提前结清期数',
+						value: `${remainingMonthsOrig} months (${(remainingMonthsOrig / 12).toFixed(1)} years)`,
+						valueZh: `${remainingMonthsOrig} 个月 (约 ${(remainingMonthsOrig / 12).toFixed(1)} 年)`,
+					},
+					{ label: 'Interest already paid', labelZh: '已还利息累计', ...cash(interestPaidSoFar) },
 				],
 				note: 'Prepayment fully clears all outstanding principal. No further interest will accrue!',
 				noteZh: '提前还款金额已完全覆盖所有未偿本金，您的贷款已全部结清，无需再支付后续利息！',
@@ -218,7 +255,7 @@ const mortgagePrepayment: FormConfig = {
 
 			return {
 				rows: [
-					{ label: 'Total interest saved', labelZh: '累计节省利息支出', value: money(interestSaved), emphasis: true },
+					{ label: 'Total interest saved', labelZh: '累计节省利息支出', ...cash(interestSaved), emphasis: true },
 						{
 						label: 'Loan term shortened by',
 						labelZh: '缩短还款期限',
@@ -231,10 +268,10 @@ const mortgagePrepayment: FormConfig = {
 						value: `${newMonths} months (~${(newMonths / 12).toFixed(1)} yr)`,
 						valueZh: `${newMonths} 个月 (约 ${(newMonths / 12).toFixed(1)} 年)`,
 					},
-					{ label: 'Monthly payment (stays same)', labelZh: '每月月供 (基本保持不变)', value: money(origPayment) },
-					{ label: 'Remaining balance before prepay', labelZh: '提前还款前未还本金', value: money(balanceBefore) },
-					{ label: 'Remaining balance after prepay', labelZh: '提前还款后剩余本金', value: money(balanceAfter) },
-					{ label: 'Interest already paid', labelZh: '已正常支付利息', value: money(interestPaidSoFar) },
+					{ label: 'Monthly payment (stays same)', labelZh: '每月月供 (基本保持不变)', ...cash(origPayment) },
+					{ label: 'Remaining balance before prepay', labelZh: '提前还款前未还本金', ...cash(balanceBefore) },
+					{ label: 'Remaining balance after prepay', labelZh: '提前还款后剩余本金', ...cash(balanceAfter) },
+					{ label: 'Interest already paid', labelZh: '已正常支付利息', ...cash(interestPaidSoFar) },
 				],
 				note: `By prepaying ${money(prepayActual)} and keeping monthly payments at ${money(origPayment)}, you shorten your mortgage by ${yearsSaved} years and save ${money(interestSaved)} in interest.`,
 				noteZh: `通过提前偿还本金 ${money(prepayActual)} 并保持月供 ${money(origPayment)} 不变，您的房贷将提前约 ${yearsSaved} 年结清，累计节省利息 ${money(interestSaved)}。`,
@@ -248,17 +285,17 @@ const mortgagePrepayment: FormConfig = {
 
 			return {
 				rows: [
-					{ label: 'New monthly payment', labelZh: '调整后每月新月供', value: money(newPayment), emphasis: true },
+					{ label: 'New monthly payment', labelZh: '调整后每月新月供', ...cash(newPayment), emphasis: true },
 					{
 						label: 'Monthly payment reduction',
 						labelZh: '每月月供减轻',
-						value: `-${money(monthlyReduction)} / month`,
-						valueZh: `-${money(monthlyReduction)} / 月`,
+						value: `-$${money(monthlyReduction)} / month`,
+						valueZh: `-¥${money(monthlyReduction)} / 月`,
 					},
-					{ label: 'Total interest saved', labelZh: '累计节省利息支出', value: money(interestSaved) },
-					{ label: 'Original monthly payment', labelZh: '原每月月供', value: money(origPayment) },
-					{ label: 'Remaining balance before prepay', labelZh: '提前还款前未还本金', value: money(balanceBefore) },
-					{ label: 'Remaining balance after prepay', labelZh: '提前还款后剩余本金', value: money(balanceAfter) },
+					{ label: 'Total interest saved', labelZh: '累计节省利息支出', ...cash(interestSaved) },
+					{ label: 'Original monthly payment', labelZh: '原每月月供', ...cash(origPayment) },
+					{ label: 'Remaining balance before prepay', labelZh: '提前还款前未还本金', ...cash(balanceBefore) },
+					{ label: 'Remaining balance after prepay', labelZh: '提前还款后剩余本金', ...cash(balanceAfter) },
 					{
 						label: 'Remaining term (unchanged)',
 						labelZh: '剩余期限 (保持不变)',
@@ -288,7 +325,7 @@ const inflation: FormConfig = {
 		const rate = v.num('rate');
 		const years = v.num('years');
 		if (!(amount > 0) || !(years > 0)) {
-			return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (amount and years must be > 0)' }] };
+			return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (amount and years must be > 0)', valueZh: '— (金额与年数需大于 0)' }] };
 		}
 		const r = rate / 100;
 		const futureCost = amount * (1 + r) ** years;
@@ -308,14 +345,14 @@ const inflation: FormConfig = {
 
 		return {
 			rows: [
-				{ label: 'Future equivalent cost', labelZh: '未来购买等价商品所需金额', value: money(futureCost), emphasis: true },
-				{ label: 'Future purchasing power of current cash', labelZh: '当前现金在未来的实际购买力', value: money(futurePower) },
+				{ label: 'Future equivalent cost', labelZh: '未来购买等价商品所需金额', ...cash(futureCost), emphasis: true },
+				{ label: 'Future purchasing power of current cash', labelZh: '当前现金在未来的实际购买力', ...cash(futurePower) },
 				{ label: 'Total purchasing power loss', labelZh: '实际购买力缩水比例', value: `${percent(lossPct)}%` },
 				{ label: 'Price level multiplier', labelZh: '物价上涨倍数', value: `${percent(futureCost / amount)}×` },
 			],
 			table: {
-				columns: ['Years Ahead', 'Equivalent Cost', 'Real Purchasing Power', 'Loss (%)'],
-				columnsZh: ['年数', '等价商品所需金额', '现金实际购买力', '购买力缩水率'],
+				columns: ['Years Ahead', 'Equivalent Cost ($)', 'Real Purchasing Power ($)', 'Loss (%)'],
+				columnsZh: ['年数', '等价商品所需金额 (¥)', '现金实际购买力 (¥)', '购买力缩水率'],
 				rows: tableRows,
 			},
 			note: `At a ${rate}% annual inflation rate, what costs ${money(amount)} today will cost ${money(futureCost)} in ${years} years. Keeping cash under a mattress loses ${percent(lossPct)}% of its real purchasing power.`,
@@ -342,7 +379,7 @@ const savingsGoal: FormConfig = {
 		const rate = v.num('rate') / 100;
 		const months = Math.round(years * 12);
 		if (!(target > 0) || !(months > 0)) {
-			return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (target and years must be > 0)' }] };
+			return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (target and years must be > 0)', valueZh: '— (目标金额与年数需大于 0)' }] };
 		}
 		const i = rate / 12;
 		const fvCurrent = current * (1 + i) ** months;
@@ -373,15 +410,15 @@ const savingsGoal: FormConfig = {
 
 		return {
 			rows: [
-				{ label: 'Required monthly savings', labelZh: '每月需定投/储蓄金额', value: money(pmt), emphasis: true },
-				{ label: 'Total self-funded contributions', labelZh: '个人累计投入本金', value: money(totalSelfFunded) },
-				{ label: 'Gains / interest earned', labelZh: '复合收益 / 利息贡献', value: money(interestEarned) },
+				{ label: 'Required monthly savings', labelZh: '每月需定投/储蓄金额', ...cash(pmt), emphasis: true },
+				{ label: 'Total self-funded contributions', labelZh: '个人累计投入本金', ...cash(totalSelfFunded) },
+				{ label: 'Gains / interest earned', labelZh: '复合收益 / 利息贡献', ...cash(interestEarned) },
 				{ label: 'Gains share of goal', labelZh: '收益贡献占比', value: `${percent(interestShare)}%` },
-				{ label: 'Target goal amount', labelZh: '目标总储蓄额', value: money(target) },
+				{ label: 'Target goal amount', labelZh: '目标总储蓄额', ...cash(target) },
 			],
 			table: {
-				columns: ['Year', 'Total Contributed', 'Projected Balance', 'Goal Progress'],
-				columnsZh: ['年份', '累计投入本金', '预估资产总额', '目标达成度'],
+				columns: ['Year', 'Total Contributed ($)', 'Projected Balance ($)', 'Goal Progress'],
+				columnsZh: ['年份', '累计投入本金 (¥)', '预估资产总额 (¥)', '目标达成度'],
 				rows: tableRows,
 			},
 			note: `To reach ${money(target)} in ${years} years, deposit ${money(pmt)} monthly. Compound interest earns ${money(interestEarned)} (${percent(interestShare)}% of the goal).`,
@@ -427,7 +464,7 @@ const autoLoan: FormConfig = {
 		const license = v.num('license');
 
 		if (!(price > 0) || !(months > 0)) {
-			return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (price and term must be > 0)' }] };
+			return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (price and term must be > 0)', valueZh: '— (车价与期限需大于 0)' }] };
 		}
 		const downPayment = price * (downPct / 100);
 		const loanAmount = Math.max(0, price - downPayment);
@@ -439,13 +476,13 @@ const autoLoan: FormConfig = {
 
 		return {
 			rows: [
-				{ label: 'Monthly payment', labelZh: '每月车贷还款额', value: money(monthly), emphasis: true },
-				{ label: 'Initial cash required (drive-away)', labelZh: '购车落地首期总支出 (首付+税险费)', value: money(upfrontCash) },
-				{ label: 'Loan principal', labelZh: '汽车贷款总额', value: money(loanAmount) },
-				{ label: 'Down payment amount', labelZh: '裸车首付金额', value: money(downPayment) },
-				{ label: 'Total loan interest', labelZh: '贷款利息总额', value: money(totalInterest) },
-				{ label: 'Total out-of-pocket over full loan', labelZh: '分期购车落地总支出 (全部开销)', value: money(totalOutPocket) },
-				{ label: 'Extra cost vs cash purchase', labelZh: '贷款分期较全款多花费用', value: money(totalInterest) },
+				{ label: 'Monthly payment', labelZh: '每月车贷还款额', ...cash(monthly), emphasis: true },
+				{ label: 'Initial cash required (drive-away)', labelZh: '购车落地首期总支出 (首付+税险费)', ...cash(upfrontCash) },
+				{ label: 'Loan principal', labelZh: '汽车贷款总额', ...cash(loanAmount) },
+				{ label: 'Down payment amount', labelZh: '裸车首付金额', ...cash(downPayment) },
+				{ label: 'Total loan interest', labelZh: '贷款利息总额', ...cash(totalInterest) },
+				{ label: 'Total out-of-pocket over full loan', labelZh: '分期购车落地总支出 (全部开销)', ...cash(totalOutPocket) },
+				{ label: 'Extra cost vs cash purchase', labelZh: '贷款分期较全款多花费用', ...cash(totalInterest) },
 			],
 			note: `Financing ${money(loanAmount)} over ${months} months costs ${money(monthly)}/mo with ${money(totalInterest)} in interest. Upfront cash needed: ${money(upfrontCash)}.`,
 			noteZh: `贷款 ${money(loanAmount)} 分 ${months} 期还清，月供为 ${money(monthly)}，贷款利息总计 ${money(totalInterest)}。购车提车首期需准备资金：${money(upfrontCash)}。`,
@@ -469,8 +506,8 @@ const irrCalculator: FormConfig = {
 			def: 'fee_rate',
 			options: [
 				{ value: 'fee_rate', label: 'Monthly fee rate (%)', labelZh: '按每月手续费率 % (如信用卡分期)' },
-				{ value: 'monthly_payment', label: 'Fixed monthly payment ($ / ¥)', labelZh: '按每期固定还款金额' },
-				{ value: 'total_fee', label: 'Total fee / interest ($ / ¥)', labelZh: '按总手续费 / 总利息金额' },
+				{ value: 'monthly_payment', label: 'Fixed monthly payment ($)', labelZh: '按每期固定还款金额 (¥)' },
+				{ value: 'total_fee', label: 'Total fee / interest ($)', labelZh: '按总手续费 / 总利息金额 (¥)' },
 			],
 		},
 		{
@@ -537,26 +574,33 @@ const irrCalculator: FormConfig = {
 		}
 
 		if (!(P > 0) || !(n > 0) || !(pmt > 0)) {
-			return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (invalid principal, periods, or fee)' }] };
+			return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (invalid principal, periods, or fee)', valueZh: '— (本金、期数或费率不合法)' }] };
 		}
 
 		const nominalAnnualRate = ((totalFee / P) / (n / 12)) * 100;
 
-		// Newton-Raphson solver for monthly IRR r:
-		// f(r) = sum_{k=1..n} (pmt / (1+r)^k) - P = 0
+		// Newton-Raphson solver for the monthly IRR r, the rate at which n payments
+		// are worth exactly the principal today:
+		//   f(r)  = pmt · (1 − (1+r)^−n) / r − P
+		//   f′(r) = pmt · (n·r·(1+r)^(−n−1) − (1 − (1+r)^−n)) / r²
+		// Both sides used to be summed term by term, which made a single Newton step
+		// O(n) — and n is a number someone types, with compute() re-running on every
+		// keystroke. One digit too many turned 60 steps into tens of billions of `**`
+		// calls and hung the tab (a synchronous loop: no timeout can interrupt it).
+		// The closed forms are the same annuity, in constant time.
 		let r = totalFee <= 0 ? 0 : (2 * totalFee) / (n * P);
 		if (r <= 0) r = 0.001;
 
 		for (let iter = 0; iter < 60; iter++) {
-			let f = -P;
-			let df = 0;
-			for (let k = 1; k <= n; k++) {
-				const disc = (1 + r) ** -k;
-				f += pmt * disc;
-				df -= k * pmt * (1 + r) ** -(k + 1);
-			}
+			// Both expressions divide by r; at 0 they take their limits A(0) = n and
+			// A′(0) = −n(n+1)/2, which a Newton step can land on exactly.
+			const u = (1 + r) ** -n;
+			const f = r === 0 ? pmt * n - P : (pmt * (1 - u)) / r - P;
+			const df = r === 0 ? (-pmt * n * (n + 1)) / 2 : (pmt * (n * r * (1 + r) ** (-n - 1) - (1 - u))) / (r * r);
+			if (!Number.isFinite(f) || !Number.isFinite(df)) break;
 			if (Math.abs(f) < 1e-8 || Math.abs(df) < 1e-12) break;
 			const step = f / df;
+			if (!Number.isFinite(step)) break;
 			r -= step;
 			if (r < -0.99) r = -0.99;
 		}
@@ -565,14 +609,20 @@ const irrCalculator: FormConfig = {
 		const ear = ((1 + r) ** 12 - 1) * 100;
 		const rateDiff = trueApr - nominalAnnualRate;
 
+		// Newton is not guaranteed to land anywhere on an absurd term/fee pair, and
+		// "NaN%" is not a result. Same shape as the input guard above.
+		if (!Number.isFinite(trueApr) || !Number.isFinite(ear)) {
+			return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (no rate solves these numbers)', valueZh: '— (该组数据无法解出利率)' }] };
+		}
+
 		return {
 			rows: [
 				{ label: 'True Annualized Rate (APR / IRR)', labelZh: '真实实际年化利率 (APR / IRR)', value: `${trueApr.toFixed(2)}%`, emphasis: true },
 				{ label: 'Nominal Advertised Rate', labelZh: '表面名义年化费率 (宣传费率)', value: `${nominalAnnualRate.toFixed(2)}%` },
 				{ label: 'Rate Discrepancy (True vs Advertised)', labelZh: '真实利率高出宣传费率', value: `+${rateDiff.toFixed(2)}% (~${(trueApr / (nominalAnnualRate || 1)).toFixed(1)}×)` },
-				{ label: 'Monthly installment payment', labelZh: '每期实际还款额', value: money(pmt) },
-				{ label: 'Total handling fee / interest', labelZh: '累计支付手续费与利息', value: money(totalFee) },
-				{ label: 'Total repayment (Principal + Fees)', labelZh: '还款总额 (本金 + 手续费)', value: money(pmt * n) },
+				{ label: 'Monthly installment payment', labelZh: '每期实际还款额', ...cash(pmt) },
+				{ label: 'Total handling fee / interest', labelZh: '累计支付手续费与利息', ...cash(totalFee) },
+				{ label: 'Total repayment (Principal + Fees)', labelZh: '还款总额 (本金 + 手续费)', ...cash(pmt * n) },
 				{ label: 'Effective Annual Rate (EAR)', labelZh: '有效年利率 (按月复利 EAR)', value: `${ear.toFixed(2)}%` },
 			],
 			note: `Why is the true APR (${trueApr.toFixed(2)}%) almost double the advertised rate (${nominalAnnualRate.toFixed(2)}%)? Because you repay principal each month, your average loan balance is only about half the starting amount, but fees are charged on the entire initial balance throughout!`,
@@ -603,7 +653,7 @@ const fireCalculator: FormConfig = {
 		const swr = v.num('swr') / 100;
 
 		if (!(exp > 0) || !(swr > 0)) {
-			return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (expenses and withdrawal rate must be > 0)' }] };
+			return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (expenses and withdrawal rate must be > 0)', valueZh: '— (年度支出与提现率需大于 0)' }] };
 		}
 		const targetFire = exp / swr;
 		const leanFire = targetFire * 0.75;
@@ -648,16 +698,16 @@ const fireCalculator: FormConfig = {
 
 		return {
 			rows: [
-				{ label: 'Target FIRE Nest Egg', labelZh: '标准 FIRE 财务自由目标资产', value: money(targetFire), emphasis: true },
+				{ label: 'Target FIRE Nest Egg', labelZh: '标准 FIRE 财务自由目标资产', ...cash(targetFire), emphasis: true },
 				{ label: 'Time to Financial Freedom', labelZh: '距离财务自由所需时间', value: yearsText, valueZh: yearsTextZh },
 				{ label: 'Projected Retirement Age', labelZh: '预估可退休年龄', value: String(retAge) },
-				{ label: 'Lean FIRE Goal (75% expenses)', labelZh: '极简 Lean FIRE 目标 (75% 支出)', value: money(leanFire) },
-				{ label: 'Fat FIRE Goal (125% expenses)', labelZh: '宽裕 Fat FIRE 目标 (125% 支出)', value: money(fatFire) },
-				{ label: 'Annual Safe Withdrawal (at 4% SWR)', labelZh: '退休后每年安全提现额度', value: money(targetFire * swr) },
+				{ label: 'Lean FIRE Goal (75% expenses)', labelZh: '极简 Lean FIRE 目标 (75% 支出)', ...cash(leanFire) },
+				{ label: 'Fat FIRE Goal (125% expenses)', labelZh: '宽裕 Fat FIRE 目标 (125% 支出)', ...cash(fatFire) },
+				{ label: 'Annual Safe Withdrawal (at 4% SWR)', labelZh: '退休后每年安全提现额度', ...cash(targetFire * swr) },
 			],
 			table: {
-				columns: ['Year', 'Age', 'Projected Net Worth', 'FIRE Progress'],
-				columnsZh: ['年限', '年龄', '预估生息净资产', 'FIRE 进度'],
+				columns: ['Year', 'Age', 'Projected Net Worth ($)', 'FIRE Progress'],
+				columnsZh: ['年限', '年龄', '预估生息净资产 (¥)', 'FIRE 进度'],
 				rows: tableRows,
 			},
 			note: `Based on the ${v.str('swr')}% safe withdrawal rate, a portfolio of ${money(targetFire)} generates ${money(exp)}/year indefinitely without depleting your capital.`,
@@ -706,8 +756,9 @@ const loanPayment: FormConfig = {
 		const years = v.num('years');
 		const months = Math.round(years * 12);
 		if (!(inputVal > 0) || !(months > 0)) {
-			return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (amount and term must be > 0)' }] };
+			return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (amount and term must be > 0)', valueZh: '— (金额与期限需大于 0)' }] };
 		}
+		if (months > MAX_TERM_YEARS * 12) return overlongTerm();
 		const i = rate / 100 / 12;
 		let principal = 0;
 		let pay = 0;
@@ -730,20 +781,20 @@ const loanPayment: FormConfig = {
 		if (mode === 'to_principal') {
 			return {
 				rows: [
-					{ label: 'Max borrowing loan amount', labelZh: '最高可贷本金额度 (借款上限)', value: money(principal), emphasis: true },
-					{ label: 'Monthly payment budget', labelZh: '每月月供预算 (供款上限)', value: money(pay) },
+					{ label: 'Max borrowing loan amount', labelZh: '最高可贷本金额度 (借款上限)', ...cash(principal), emphasis: true },
+					{ label: 'Monthly payment budget', labelZh: '每月月供预算 (供款上限)', ...cash(pay) },
 					{
 						label: 'Number of payments',
 						labelZh: '还款期数 (月数)',
 						value: `${months} payments (~${years} yr)`,
 						valueZh: `${months} 期 (约 ${years} 年)`,
 					},
-					{ label: 'Total repayment (Principal + Interest)', labelZh: '还款本息总计', value: money(totalRepay) },
-					{ label: 'Total interest paid', labelZh: '支付利息总额', value: money(totalInterest) },
+					{ label: 'Total repayment (Principal + Interest)', labelZh: '还款本息总计', ...cash(totalRepay) },
+					{ label: 'Total interest paid', labelZh: '支付利息总额', ...cash(totalInterest) },
 				],
 				table: {
-					columns: ['Year', 'Principal Paid', 'Interest Paid', 'Remaining Balance'],
-					columnsZh: ['年份', '已还本金', '已付利息', '剩余本金余额'],
+					columns: ['Year', 'Principal Paid ($)', 'Interest Paid ($)', 'Remaining Balance ($)'],
+					columnsZh: ['年份', '已还本金 (¥)', '已付利息 (¥)', '剩余本金余额 (¥)'],
 					rows: tableRows,
 				},
 				note: `Based on your monthly budget of ${money(pay)} over ${years} years at ${rate}%, the maximum loan you can afford is ${money(principal)}. Total interest paid will be ${money(totalInterest)}.`,
@@ -753,20 +804,20 @@ const loanPayment: FormConfig = {
 
 		return {
 			rows: [
-				{ label: 'Monthly payment', labelZh: '每月还款额 (月供)', value: money(pay), emphasis: true },
-				{ label: 'Loan principal', labelZh: '贷款本金', value: money(principal) },
+				{ label: 'Monthly payment', labelZh: '每月还款额 (月供)', ...cash(pay), emphasis: true },
+				{ label: 'Loan principal', labelZh: '贷款本金', ...cash(principal) },
 				{
 						label: 'Number of payments',
 						labelZh: '还款期数 (月数)',
 						value: `${months} payments (~${years} yr)`,
 						valueZh: `${months} 期 (约 ${years} 年)`,
 					},
-				{ label: 'Total repayment (Principal + Interest)', labelZh: '还款本息总额', value: money(totalRepay) },
-				{ label: 'Total interest paid', labelZh: '支付利息总计', value: money(totalInterest) },
+				{ label: 'Total repayment (Principal + Interest)', labelZh: '还款本息总额', ...cash(totalRepay) },
+				{ label: 'Total interest paid', labelZh: '支付利息总计', ...cash(totalInterest) },
 			],
 			table: {
-				columns: ['Year', 'Principal Paid', 'Interest Paid', 'Remaining Balance'],
-				columnsZh: ['年份', '已还本金', '已付利息', '剩余本金余额'],
+				columns: ['Year', 'Principal Paid ($)', 'Interest Paid ($)', 'Remaining Balance ($)'],
+				columnsZh: ['年份', '已还本金 (¥)', '已付利息 (¥)', '剩余本金余额 (¥)'],
 				rows: tableRows,
 			},
 			note: `Financing ${money(principal)} at ${rate}% over ${years} years requires a monthly payment of ${money(pay)}. Total interest will be ${money(totalInterest)}.`,
@@ -815,13 +866,11 @@ function renderMortgageComparisonSvg(params: {
 	totalLoan: number;
 	pmtMonthly: number;
 	prcMonth1: number;
-	prcDecrease: number;
 	prcFinalMonth: number;
 	crossoverMonth: number;
 	interestSaved: number;
-	interestSavedPct: number;
 }): string {
-	const { months, years, pmtMonthly, prcMonth1, prcDecrease, prcFinalMonth, crossoverMonth, interestSaved, interestSavedPct } = params;
+	const { months, years, pmtMonthly, prcMonth1, prcFinalMonth, crossoverMonth, interestSaved } = params;
 
 	const width = 820;
 	const height = 390;
@@ -842,8 +891,15 @@ function renderMortgageComparisonSvg(params: {
 	const vMaxVal = Math.max(prcMonth1 * 1.08, pmtMonthly * 1.15);
 	const roughStep = (vMaxVal - vMinVal) / 5;
 	let yStep = 500;
-	if (roughStep > 1800) yStep = 2000;
-	else if (roughStep > 900) yStep = 1000;
+	if (roughStep > 1800) {
+		// The ladder below used to stop at 2000, so a payment in the millions asked
+		// the gridline loop for thousands of lines — each one two <text> nodes, one
+		// per language. Above its top rung, climb by decades on a 1-2-2.5-5 scale
+		// instead: the count stays near five for a loan of any size, and every step
+		// the ladder did cover is left exactly as it was.
+		const mag = 10 ** Math.floor(Math.log10(roughStep));
+		yStep = [1, 2, 2.5, 5].map((m) => mag * m).find((v) => v >= roughStep) ?? mag * 10;
+	} else if (roughStep > 900) yStep = 1000;
 	else if (roughStep > 350) yStep = 500;
 	else if (roughStep > 150) yStep = 200;
 	else yStep = 100;
@@ -1015,7 +1071,7 @@ function renderMortgageComparisonSvg(params: {
 
 	return `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;user-select:none;">
 		<!-- Title -->
-		${t(`x="${x0}" y="26" font-size="13.5" font-weight="bold" fill="var(--fg, #e2e8f0)" font-family="system-ui, sans-serif"`, '📊 Payment trajectory &amp; break-even crossover', '📊 房贷月供走势曲线与成本平衡点')}
+		${t(`x="${x0}" y="26" font-size="13.5" font-weight="bold" fill="var(--fg, #e2e8f0)" font-family="system-ui, sans-serif"`, 'Payment trajectory &amp; break-even crossover', '房贷月供走势曲线与成本平衡点')}
 
 		${pill('i18n-en', `★ Saves $${money(interestSaved)}`)}
 		${pill('i18n-zh', `★ 省息 ¥${money(interestSaved)}`)}
@@ -1245,8 +1301,9 @@ const mortgage: FormConfig = {
 		const extras = Math.max(0, v.num('extras') || 0);
 
 		if (!(totalLoan > 0) || !(months > 0)) {
-			return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (loan amount and term must be > 0)' }] };
+			return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (loan amount and term must be > 0)', valueZh: '— (贷款金额与期限需大于 0)' }] };
 		}
+		if (months > MAX_TERM_YEARS * 12) return overlongTerm();
 
 		// --- Equal Principal & Interest (等额本息) ---
 		const commPmt = monthlyPayment(commPortion, commRate, months);
@@ -1307,52 +1364,57 @@ const mortgage: FormConfig = {
 				{
 					label: 'Equal P&I monthly payment',
 					labelZh: '【等额本息】每月固定月供',
-					value: `${money(totalMonthlyPmt + extras)} / month`,
-					valueZh: `${money(totalMonthlyPmt + extras)} / 月`,
+					value: `$${money(totalMonthlyPmt + extras)} / month`,
+					valueZh: `¥${money(totalMonthlyPmt + extras)} / 月`,
 				},
 				{
 					label: 'Equal P&I total interest',
 					labelZh: '【等额本息】累计利息总额',
-					value: money(totalIntPmt),
+					...cash(totalIntPmt),
 				},
 				{
 					label: 'Equal P&I total repayment',
 					labelZh: '【等额本息】还款本息总计',
-					value: money(totalRepayPmt + extras * months),
+					...cash(totalRepayPmt + extras * months),
 				},
 				{
 					label: 'Equal Principal Month 1 payment',
 					labelZh: '【等额本金】首月还款额 (最高)',
-					value: `${money(prcMonth1 + extras)} (-$${money(prcDecrease)} each month)`,
-					valueZh: `${money(prcMonth1 + extras)} (每月递减 -¥${money(prcDecrease)})`,
+					value: `$${money(prcMonth1 + extras)} (-$${money(prcDecrease)} each month)`,
+					valueZh: `¥${money(prcMonth1 + extras)} (每月递减 -¥${money(prcDecrease)})`,
 				},
 				{
 					label: 'Equal Principal final month payment',
 					labelZh: '【等额本金】末月还款额 (最低)',
-					value: money(prcFinalMonth + extras),
+					...cash(prcFinalMonth + extras),
 				},
 				{
 					label: 'Equal Principal total interest',
 					labelZh: '【等额本金】累计利息总额',
-					value: money(totalIntPrc),
+					...cash(totalIntPrc),
 				},
 				{
 					label: 'Equal Principal total repayment',
 					labelZh: '【等额本金】还款本息总计',
-					value: money(totalRepayPrc + extras * months),
+					...cash(totalRepayPrc + extras * months),
 				},
 				{
 					label: 'Total loan principal',
 					labelZh: '贷款本金总额',
-					value: `${money(totalLoan)}${loanType === 'combined' ? ` (commercial $${money(commPortion)} + provident fund $${money(gjjPortion)})` : ''}`,
-					valueZh: `${money(totalLoan)}${loanType === 'combined' ? ` (商贷 ¥${money(commPortion)} + 公积金 ¥${money(gjjPortion)})` : ''}`,
+					value: `$${money(totalLoan)}${loanType === 'combined' ? ` (commercial $${money(commPortion)} + provident fund $${money(gjjPortion)})` : ''}`,
+					valueZh: `¥${money(totalLoan)}${loanType === 'combined' ? ` (商贷 ¥${money(commPortion)} + 公积金 ¥${money(gjjPortion)})` : ''}`,
 				},
 			];
 
 			if (calcBasis === 'by_price') {
 				rows.push(
-					{ label: 'Home purchase price', labelZh: '房屋购房总价', value: money(price) },
-					{ label: 'Down payment amount', labelZh: '购房首付款', value: `${money(downPayment)} (${downPct}%)` },
+					{ label: 'Home purchase price', labelZh: '房屋购房总价', ...cash(price) },
+					{
+						label: 'Down payment amount',
+						labelZh: '购房首付款',
+						value: `$${money(downPayment)} (${downPct}%)`,
+						valueZh: `¥${money(downPayment)} (${downPct}%)`,
+					},
 				);
 			}
 
@@ -1396,11 +1458,9 @@ const mortgage: FormConfig = {
 				totalLoan,
 				pmtMonthly: totalMonthlyPmt + extras,
 				prcMonth1: prcMonth1 + extras,
-				prcDecrease,
 				prcFinalMonth: prcFinalMonth + extras,
 				crossoverMonth,
 				interestSaved,
-				interestSavedPct,
 			});
 
 			return {
@@ -1414,10 +1474,10 @@ const mortgage: FormConfig = {
 
 		if (method === 'equal_pmt') {
 			const rows: FormResultRow[] = [
-				{ label: 'Monthly payment (Fixed)', labelZh: '每月月供 (固定等额)', value: money(totalMonthlyPmt + extras), emphasis: true },
-				{ label: 'Total interest paid', labelZh: '支付利息总额', value: money(totalIntPmt) },
-				{ label: 'Total repayment (Principal + Interest)', labelZh: '还款本息总计', value: money(totalRepayPmt + extras * months) },
-				{ label: 'Loan principal', labelZh: '贷款本金总额', value: money(totalLoan) },
+				{ label: 'Monthly payment (Fixed)', labelZh: '每月月供 (固定等额)', ...cash(totalMonthlyPmt + extras), emphasis: true },
+				{ label: 'Total interest paid', labelZh: '支付利息总额', ...cash(totalIntPmt) },
+				{ label: 'Total repayment (Principal + Interest)', labelZh: '还款本息总计', ...cash(totalRepayPmt + extras * months) },
+				{ label: 'Loan principal', labelZh: '贷款本金总额', ...cash(totalLoan) },
 				{
 				label: 'Number of payments',
 				labelZh: '还款期数',
@@ -1427,15 +1487,20 @@ const mortgage: FormConfig = {
 			];
 			if (calcBasis === 'by_price') {
 				rows.push(
-					{ label: 'Home price', labelZh: '房屋总价', value: money(price) },
-					{ label: 'Down payment', labelZh: '首付款', value: `${money(downPayment)} (${downPct}%)` },
+					{ label: 'Home price', labelZh: '房屋总价', ...cash(price) },
+					{
+						label: 'Down payment',
+						labelZh: '首付款',
+						value: `$${money(downPayment)} (${downPct}%)`,
+						valueZh: `¥${money(downPayment)} (${downPct}%)`,
+					},
 				);
 			}
 			return {
 				rows,
 				table: {
-					columns: ['Year', 'Principal Paid', 'Interest Paid', 'Remaining Balance'],
-					columnsZh: ['年份', '已还本金', '已付利息', '剩余本金余额'],
+					columns: ['Year', 'Principal Paid ($)', 'Interest Paid ($)', 'Remaining Balance ($)'],
+					columnsZh: ['年份', '已还本金 (¥)', '已付利息 (¥)', '剩余本金余额 (¥)'],
 					rows: pmtTableRows,
 				},
 				note: `Financing ${money(totalLoan)} under Equal P&I over ${years} years costs ${money(totalMonthlyPmt + extras)}/month with ${money(totalIntPmt)} in total interest.`,
@@ -1445,17 +1510,17 @@ const mortgage: FormConfig = {
 
 		// method === 'equal_prc'
 		const rows: FormResultRow[] = [
-			{ label: 'First month payment (Peak)', labelZh: '首月还款额 (最高月供)', value: money(prcMonth1 + extras), emphasis: true },
+			{ label: 'First month payment (Peak)', labelZh: '首月还款额 (最高月供)', ...cash(prcMonth1 + extras), emphasis: true },
 			{
 				label: 'Monthly decrease',
 				labelZh: '每月递减金额',
-				value: `-${money(prcDecrease)} / month`,
-				valueZh: `-${money(prcDecrease)} / 月`,
+				value: `-$${money(prcDecrease)} / month`,
+				valueZh: `-¥${money(prcDecrease)} / 月`,
 			},
-			{ label: 'Final month payment', labelZh: '末月还款额 (最低月供)', value: money(prcFinalMonth + extras) },
-			{ label: 'Total interest paid', labelZh: '支付利息总额', value: money(totalIntPrc) },
-			{ label: 'Total repayment (Principal + Interest)', labelZh: '还款本息总计', value: money(totalRepayPrc + extras * months) },
-			{ label: 'Loan principal', labelZh: '贷款本金总额', value: money(totalLoan) },
+			{ label: 'Final month payment', labelZh: '末月还款额 (最低月供)', ...cash(prcFinalMonth + extras) },
+			{ label: 'Total interest paid', labelZh: '支付利息总额', ...cash(totalIntPrc) },
+			{ label: 'Total repayment (Principal + Interest)', labelZh: '还款本息总计', ...cash(totalRepayPrc + extras * months) },
+			{ label: 'Loan principal', labelZh: '贷款本金总额', ...cash(totalLoan) },
 			{
 				label: 'Number of payments',
 				labelZh: '还款期数',
@@ -1465,15 +1530,20 @@ const mortgage: FormConfig = {
 		];
 		if (calcBasis === 'by_price') {
 			rows.push(
-				{ label: 'Home price', labelZh: '房屋总价', value: money(price) },
-				{ label: 'Down payment', labelZh: '首付款', value: `${money(downPayment)} (${downPct}%)` },
+				{ label: 'Home price', labelZh: '房屋总价', ...cash(price) },
+				{
+						label: 'Down payment',
+						labelZh: '首付款',
+						value: `$${money(downPayment)} (${downPct}%)`,
+						valueZh: `¥${money(downPayment)} (${downPct}%)`,
+					},
 			);
 		}
 		return {
 			rows,
 			table: {
-				columns: ['Year', 'Principal Paid', 'Interest Paid', 'Remaining Balance'],
-				columnsZh: ['年份', '已还本金', '已付利息', '剩余本金余额'],
+				columns: ['Year', 'Principal Paid ($)', 'Interest Paid ($)', 'Remaining Balance ($)'],
+				columnsZh: ['年份', '已还本金 (¥)', '已付利息 (¥)', '剩余本金余额 (¥)'],
 				rows: prcTableRows,
 			},
 			note: `Financing ${money(totalLoan)} under Equal Principal starts at ${money(prcMonth1 + extras)} in month 1 and decreases by ${money(prcDecrease)} monthly. Total interest is ${money(totalIntPrc)}.`,
@@ -1495,11 +1565,11 @@ const roi: FormConfig = {
 		const cost = v.num('cost');
 		const revenue = v.num('revenue');
 		const profit = revenue - cost;
-		if (cost === 0) return { rows: [{ label: 'ROI', labelZh: '投资回报率', value: '— (cost is 0)' }] };
+		if (cost === 0) return { rows: [{ label: 'ROI', labelZh: '投资回报率', value: '— (cost is 0)', valueZh: '— (成本为 0)' }] };
 		return {
 			rows: [
 				{ label: 'Return on Investment (ROI)', labelZh: '投资回报率 (ROI)', value: `${formatNumber((profit / cost) * 100)}%`, emphasis: true },
-				{ label: 'Net profit / gain', labelZh: '净收益金额', value: money(profit) },
+				{ label: 'Net profit / gain', labelZh: '净收益金额', ...cash(profit) },
 				{ label: 'Return multiple (Revenue ÷ Cost)', labelZh: '回报倍数 (收入 ÷ 成本)', value: `${percent(revenue / cost)}×` },
 			],
 			note: profit >= 0 ? `A net profit of ${money(profit)}.` : `A net loss of ${money(-profit)}.`,
@@ -1523,10 +1593,10 @@ const discount: FormConfig = {
 		const unit = price * (1 - pctOff / 100);
 		return {
 			rows: [
-				{ label: 'Final price per item', labelZh: '单件折后价', value: money(unit), emphasis: true },
-				{ label: 'Savings per item', labelZh: '单件立省金额', value: money(price - unit) },
-				{ label: `Total for ${qty} item${qty > 1 ? 's' : ''}`, labelZh: `共 ${qty} 件折后总价`, value: money(unit * qty) },
-				{ label: 'Total savings', labelZh: '整单累计节省', value: money((price - unit) * qty) },
+				{ label: 'Final price per item', labelZh: '单件折后价', ...cash(unit), emphasis: true },
+				{ label: 'Savings per item', labelZh: '单件立省金额', ...cash(price - unit) },
+				{ label: `Total for ${qty} item${qty > 1 ? 's' : ''}`, labelZh: `共 ${qty} 件折后总价`, ...cash(unit * qty) },
+				{ label: 'Total savings', labelZh: '整单累计节省', ...cash((price - unit) * qty) },
 			],
 		};
 	},
@@ -1548,19 +1618,19 @@ const salary: FormConfig = {
 		const totalHours = v.num('hours') * weeks;
 		const rows: FormResultRow[] = [];
 		if (!(weeks > 0)) {
-			rows.push({ label: 'Hourly rate', labelZh: '折合时薪', value: '— (working weeks must be > 0)' });
+			rows.push({ label: 'Hourly rate', labelZh: '折合时薪', value: '— (working weeks must be > 0)', valueZh: '— (每年工作周数需大于 0)' });
 			return { rows };
 		}
 		rows.push({
 			label: 'Hourly rate',
 			labelZh: '折合时薪',
-			value: totalHours > 0 ? money(annual / totalHours) : '—',
+			...cash(totalHours > 0 ? annual / totalHours : null),
 			emphasis: true,
 		});
-		rows.push({ label: 'Weekly pay', labelZh: '周薪', value: money(annual / weeks) });
-		rows.push({ label: 'Biweekly pay', labelZh: '双周薪 (每两周)', value: money((annual / weeks) * 2) });
-		rows.push({ label: 'Monthly pay', labelZh: '月薪', value: money(annual / 12) });
-		rows.push({ label: 'Daily pay', labelZh: '日薪', value: days > 0 ? money(annual / weeks / days) : '—' });
+		rows.push({ label: 'Weekly pay', labelZh: '周薪', ...cash(annual / weeks) });
+		rows.push({ label: 'Biweekly pay', labelZh: '双周薪 (每两周)', ...cash((annual / weeks) * 2) });
+		rows.push({ label: 'Monthly pay', labelZh: '月薪', ...cash(annual / 12) });
+		rows.push({ label: 'Daily pay', labelZh: '日薪', ...cash(days > 0 ? annual / weeks / days : null) });
 		return { rows };
 	},
 };
@@ -2029,7 +2099,14 @@ const tax: FormConfig = {
 			} else {
 				let low = 0;
 				let high = Math.max(targetAnnualNet * 2.5 + annualInsurance + 100000, 100000);
-				while (
+				// Doubling until take-home clears the target. Bounded because the
+				// condition is not guaranteed monotonic at the edges: a target big
+				// enough to push `high` to Infinity leaves `high *= 2` a no-op, and
+				// nothing else would ever end the loop. 2^80 of any currency is past
+				// every finite target a person can type.
+				for (
+					let step = 0;
+					step < 80 &&
 					computeTaxCore({
 						annualGross: high,
 						regime,
@@ -2038,7 +2115,8 @@ const tax: FormConfig = {
 						effectiveBonus,
 						bonusMode,
 						flatRate,
-					}).totalNetTakeHome < targetAnnualNet
+					}).totalNetTakeHome < targetAnnualNet;
+					step++
 				) {
 					high *= 2;
 				}
@@ -2081,30 +2159,30 @@ const tax: FormConfig = {
 				{
 					label: period === 'monthly' ? 'Required pre-tax salary (Monthly)' : 'Required pre-tax salary (Annual)',
 					labelZh: period === 'monthly' ? '所需税前基本薪资 (月薪)' : '所需税前基本薪资 (年薪)',
-					value: money(requiredPeriodGross),
+					...cash(requiredPeriodGross),
 					emphasis: true,
 				},
 				{
 					label: 'Target net take-home pay',
 					labelZh: '目标税后到手金额',
-					value: `${money(inputIncome)} (${period === 'monthly' ? 'monthly' : 'annual'})`,
-					valueZh: `${money(inputIncome)} (${period === 'monthly' ? '每月' : '全年'})`,
+					value: `$${money(inputIncome)} (${period === 'monthly' ? 'monthly' : 'annual'})`,
+					valueZh: `¥${money(inputIncome)} (${period === 'monthly' ? '每月' : '全年'})`,
 				},
 				{
 					label: 'Required pre-tax salary (Annual total)',
 					labelZh: '对应全年度税前基本年薪',
-					value: money(annualGross),
+					...cash(annualGross),
 				},
 				{
 					label: 'Total annual tax owed',
 					labelZh: '全年度预计需缴纳个税',
-					value: `${money(out.totalTax)} ($${money(out.totalTax / 12)}/mo)`,
-					valueZh: `${money(out.totalTax)} (月均 ¥${money(out.totalTax / 12)})`,
+					value: `$${money(out.totalTax)} ($${money(out.totalTax / 12)}/mo)`,
+					valueZh: `¥${money(out.totalTax)} (月均 ¥${money(out.totalTax / 12)})`,
 				},
 				{
 					label: 'Base salary net pay (Monthly average)',
 					labelZh: '月均基本工资税后到手',
-					value: money(out.monthlySalaryNet),
+					...cash(out.monthlySalaryNet),
 				},
 			];
 
@@ -2112,13 +2190,13 @@ const tax: FormConfig = {
 				rows.push({
 					label: 'Year-end bonus net pay',
 					labelZh: '年终奖税后到手 (实发)',
-					value: money(out.bonusTakeHome),
+					...cash(out.bonusTakeHome),
 				});
 				rows.push({
 					label: 'Year-end bonus tax owed',
 					labelZh: '年终奖应纳个税',
-					value: `${money(out.bonusTax)}${out.isCombinedActive ? ' (taxed with salary)' : ` (${(out.separateBonusRate * 100).toFixed(0)}% bracket, quick deduction $${out.separateBonusQuick})`}`,
-					valueZh: `${money(out.bonusTax)}${out.isCombinedActive ? ' (并入综合)' : ` (${(out.separateBonusRate * 100).toFixed(0)}% 档, 速算扣除 ¥${out.separateBonusQuick})`}`,
+					value: `$${money(out.bonusTax)}${out.isCombinedActive ? ' (taxed with salary)' : ` (${(out.separateBonusRate * 100).toFixed(0)}% bracket, quick deduction $${out.separateBonusQuick})`}`,
+					valueZh: `¥${money(out.bonusTax)}${out.isCombinedActive ? ' (并入综合)' : ` (${(out.separateBonusRate * 100).toFixed(0)}% 档, 速算扣除 ¥${out.separateBonusQuick})`}`,
 				});
 			}
 
@@ -2126,14 +2204,14 @@ const tax: FormConfig = {
 				{
 					label: 'Five Insurances & Housing Fund (Annual)',
 					labelZh: '全年五险一金个人承担扣除',
-					value: `${money(annualInsurance)} ($${money(monthlyInsurance)}/mo)`,
-					valueZh: `${money(annualInsurance)} (月均 ¥${money(monthlyInsurance)})`,
+					value: `$${money(annualInsurance)} ($${money(monthlyInsurance)}/mo)`,
+					valueZh: `¥${money(annualInsurance)} (月均 ¥${money(monthlyInsurance)})`,
 				},
 				{
 					label: 'Special Additional Deductions (Annual)',
 					labelZh: '全年专项附加扣除总额',
-					value: `${money(annualSpecialDeduction)} ($${money(monthlySpecialDeduction)}/mo)`,
-					valueZh: `${money(annualSpecialDeduction)} (月均 ¥${money(monthlySpecialDeduction)})`,
+					value: `$${money(annualSpecialDeduction)} ($${money(monthlySpecialDeduction)}/mo)`,
+					valueZh: `¥${money(annualSpecialDeduction)} (月均 ¥${money(monthlySpecialDeduction)})`,
 				},
 				{
 					label: 'Effective overall tax rate',
@@ -2150,14 +2228,14 @@ const tax: FormConfig = {
 			let table: FormTable | undefined;
 			if (out.salaryCalcRows.length) {
 				table = {
-					columns: ['Tax Bracket', 'Rate', 'Taxable in Bracket', 'Tax Owed'],
-					columnsZh: ['综合所得税率阶梯', '适用税率', '级内应纳税所得额', '本级应纳税额'],
+					columns: ['Tax Bracket', 'Rate', 'Taxable in Bracket ($)', 'Tax Owed ($)'],
+					columnsZh: ['综合所得税率阶梯', '适用税率', '级内应纳税所得额 (¥)', '本级应纳税额 (¥)'],
 					rows: out.salaryCalcRows,
 				};
 			} else if (out.usOrFlatRows.length) {
 				table = {
-					columns: ['Tax Bracket', 'Rate', 'Taxable in Bracket', 'Tax Owed'],
-					columnsZh: ['税率阶梯', '适用税率', '级内应纳税所得额', '本级应纳税额'],
+					columns: ['Tax Bracket', 'Rate', 'Taxable in Bracket ($)', 'Tax Owed ($)'],
+					columnsZh: ['税率阶梯', '适用税率', '级内应纳税所得额 (¥)', '本级应纳税额 (¥)'],
 					rows: out.usOrFlatRows,
 				};
 			}
@@ -2176,25 +2254,25 @@ const tax: FormConfig = {
 		// Forward calculation (gross_to_net)
 		if (regime === 'cn') {
 			const rows: FormResultRow[] = [
-				{ label: 'Net take-home income (Annual)', labelZh: '税后总收入 (全年度实发到手)', value: money(out.totalNetTakeHome), emphasis: true },
-				{ label: 'Base salary net pay (Monthly average)', labelZh: '基本工资税后到手 (月均)', value: money(out.monthlySalaryNet) },
+				{ label: 'Net take-home income (Annual)', labelZh: '税后总收入 (全年度实发到手)', ...cash(out.totalNetTakeHome), emphasis: true },
+				{ label: 'Base salary net pay (Monthly average)', labelZh: '基本工资税后到手 (月均)', ...cash(out.monthlySalaryNet) },
 			];
 
 			if (effectiveBonus > 0) {
-				rows.push({ label: 'Year-end bonus net pay', labelZh: '年终奖税后到手 (实发)', value: money(out.bonusTakeHome) });
+				rows.push({ label: 'Year-end bonus net pay', labelZh: '年终奖税后到手 (实发)', ...cash(out.bonusTakeHome) });
 			}
 
 			rows.push(
-				{ label: 'Total annual tax owed', labelZh: '全年度个人所得税总额', value: money(out.totalTax) },
-				{ label: 'Base salary tax owed (Annual)', labelZh: '基本工资应纳个税 (全年度)', value: money(out.salaryTax) },
+				{ label: 'Total annual tax owed', labelZh: '全年度个人所得税总额', ...cash(out.totalTax) },
+				{ label: 'Base salary tax owed (Annual)', labelZh: '基本工资应纳个税 (全年度)', ...cash(out.salaryTax) },
 			);
 
 			if (effectiveBonus > 0) {
 				rows.push({
 					label: 'Year-end bonus tax owed',
 					labelZh: '年终奖应纳个税',
-					value: `${money(out.bonusTax)}${out.isCombinedActive ? ' (taxed with salary)' : ` (${(out.separateBonusRate * 100).toFixed(0)}% bracket, quick deduction $${out.separateBonusQuick})`}`,
-					valueZh: `${money(out.bonusTax)}${out.isCombinedActive ? ' (并入综合)' : ` (${(out.separateBonusRate * 100).toFixed(0)}% 档, 速算扣除 ¥${out.separateBonusQuick})`}`,
+					value: `$${money(out.bonusTax)}${out.isCombinedActive ? ' (taxed with salary)' : ` (${(out.separateBonusRate * 100).toFixed(0)}% bracket, quick deduction $${out.separateBonusQuick})`}`,
+					valueZh: `¥${money(out.bonusTax)}${out.isCombinedActive ? ' (并入综合)' : ` (${(out.separateBonusRate * 100).toFixed(0)}% 档, 速算扣除 ¥${out.separateBonusQuick})`}`,
 				});
 				let planEvaluation: string;
 				let planEvaluationZh: string;
@@ -2217,9 +2295,9 @@ const tax: FormConfig = {
 			}
 
 			rows.push(
-				{ label: 'Five Insurances & Housing Fund (Annual)', labelZh: '全年五险一金个人承担扣除', value: money(annualInsurance) },
-				{ label: 'Special Additional Deductions (Annual)', labelZh: '全年专项附加扣除总额', value: money(annualSpecialDeduction) },
-				{ label: 'Taxable income (Annual comprehensive)', labelZh: '年度综合所得应纳税所得额', value: money(out.salaryTaxable) },
+				{ label: 'Five Insurances & Housing Fund (Annual)', labelZh: '全年五险一金个人承担扣除', ...cash(annualInsurance) },
+				{ label: 'Special Additional Deductions (Annual)', labelZh: '全年专项附加扣除总额', ...cash(annualSpecialDeduction) },
+				{ label: 'Taxable income (Annual comprehensive)', labelZh: '年度综合所得应纳税所得额', ...cash(out.salaryTaxable) },
 				{ label: 'Effective overall tax rate', labelZh: '综合实际有效税率', value: `${percent(out.effectiveRate)}%` },
 				{ label: 'Highest marginal tax rate', labelZh: '最高适用边际税率', value: `${out.marginalRate.toFixed(0)}%` },
 			);
@@ -2227,8 +2305,8 @@ const tax: FormConfig = {
 			let table: FormTable | undefined;
 			if (effectiveBonus > 0) {
 				table = {
-					columns: ['Tax Scheme', 'Salary Tax', 'Bonus Tax', 'Total Tax', 'Take-Home Pay', 'Recommendation'],
-					columnsZh: ['年终奖计税方案', '工资薪金个税', '年终奖个税', '全年个税总额', '最终税后到手', '优选评估'],
+					columns: ['Tax Scheme', 'Salary Tax ($)', 'Bonus Tax ($)', 'Total Tax ($)', 'Take-Home Pay ($)', 'Recommendation'],
+					columnsZh: ['年终奖计税方案', '工资薪金个税 (¥)', '年终奖个税 (¥)', '全年个税总额 (¥)', '最终税后到手 (¥)', '优选评估'],
 					rows: [
 						[
 							'Taxed separately (one-off annual bonus relief)',
@@ -2268,8 +2346,8 @@ const tax: FormConfig = {
 				};
 			} else if (out.salaryCalcRows.length) {
 				table = {
-					columns: ['Tax Bracket', 'Rate', 'Taxable in Bracket', 'Tax Owed'],
-					columnsZh: ['综合所得税率阶梯', '适用税率', '级内应纳税所得额', '本级应纳税额'],
+					columns: ['Tax Bracket', 'Rate', 'Taxable in Bracket ($)', 'Tax Owed ($)'],
+					columnsZh: ['综合所得税率阶梯', '适用税率', '级内应纳税所得额 (¥)', '本级应纳税额 (¥)'],
 					rows: out.salaryCalcRows,
 				};
 			}
@@ -2306,18 +2384,18 @@ const tax: FormConfig = {
 
 		return {
 			rows: [
-				{ label: 'Net take-home income (Annual)', labelZh: '税后净收入 (年度到手)', value: money(out.totalNetTakeHome), emphasis: true },
-				{ label: 'Net take-home income (Monthly average)', labelZh: '税后净收入 (月均到手)', value: money(monthlyNet) },
-				{ label: 'Total tax owed (Annual)', labelZh: '应缴个人所得税 (年度总税额)', value: money(out.totalTax) },
-				{ label: 'Tax owed (Monthly average)', labelZh: '应缴个人所得税 (月均)', value: money(monthlyTax) },
+				{ label: 'Net take-home income (Annual)', labelZh: '税后净收入 (年度到手)', ...cash(out.totalNetTakeHome), emphasis: true },
+				{ label: 'Net take-home income (Monthly average)', labelZh: '税后净收入 (月均到手)', ...cash(monthlyNet) },
+				{ label: 'Total tax owed (Annual)', labelZh: '应缴个人所得税 (年度总税额)', ...cash(out.totalTax) },
+				{ label: 'Tax owed (Monthly average)', labelZh: '应缴个人所得税 (月均)', ...cash(monthlyTax) },
 				{ label: 'Effective tax rate', labelZh: '实际综合有效税率', value: `${percent(out.effectiveRate)}%` },
 				{ label: 'Marginal top tax bracket', labelZh: '最高适用边际税率', value: `${out.marginalRate.toFixed(0)}%` },
-				{ label: 'Taxable income', labelZh: '应纳税所得额', value: money(out.salaryTaxable) },
+				{ label: 'Taxable income', labelZh: '应纳税所得额', ...cash(out.salaryTaxable) },
 			],
 			table: out.usOrFlatRows.length
 				? {
-						columns: ['Tax Bracket', 'Rate', 'Taxable in Bracket', 'Tax Owed'],
-						columnsZh: ['税率阶梯', '适用税率', '级内应纳税所得额', '本级应纳税额'],
+						columns: ['Tax Bracket', 'Rate', 'Taxable in Bracket ($)', 'Tax Owed ($)'],
+						columnsZh: ['税率阶梯', '适用税率', '级内应纳税所得额 (¥)', '本级应纳税额 (¥)'],
 						rows: out.usOrFlatRows,
 					}
 				: undefined,
