@@ -81,6 +81,25 @@ test('a dollar inside inline code does not pair with a real formula', async ({ p
 	await expect(preview.locator('code .katex, code .t-math')).toHaveCount(0);
 });
 
+// Block maths is lifted out of the source before the line loop runs, exactly like
+// a fenced code block, and comes back at the very end. Two `$$…$$` on one line
+// therefore leave two placeholders side by side in a paragraph — which parseInline()
+// then walks. With `%%MATHBLOCK_0%%` as the token, the italic rule paired the two
+// underscores across the gap and both formulas were lost, the reader left staring
+// at `%%MATHBLOCK<em>0%% 与 %%MATHBLOCK</em>1%%`.
+test('two display formulas on one line both survive the inline rules', async ({ page }) => {
+	await page.goto(TOOL);
+	const preview = page.locator('.t-md-preview-body');
+
+	await page.locator('.t-md-textarea').fill('两个公式：$$a^2$$ 与 $$b^2$$ 都在这一行。\n');
+
+	await expect(preview.locator('.t-math-display')).toHaveCount(2);
+	await expect(preview.locator('.t-math-display .katex').first()).toBeVisible();
+	// No placeholder token leaked into the output, whole or broken.
+	await expect(preview).not.toContainText('MATHBLOCK');
+	await expect(preview.locator('em')).toHaveCount(0);
+});
+
 test('a formula KaTeX cannot parse keeps its source visible', async ({ page }) => {
 	await page.goto(TOOL);
 	const editor = page.locator('.t-md-textarea');

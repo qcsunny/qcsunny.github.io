@@ -229,6 +229,15 @@ export function parseMarkdownToHtml(markdown: string, lang: 'zh' | 'en' = 'zh'):
 
 	let src = markdown.replace(/\r\n/g, '\n');
 
+	// Both extractions below leave a placeholder that has to survive every rule
+	// between here and the restore at the bottom — including parseInline(), which
+	// runs on any line a placeholder shares with prose. So the token is letters and
+	// digits only: `%%MATHBLOCK_0%%` was the earlier form, and a line holding two
+	// of them (`$$a$$ 与 $$b$$`) had the italic rule pair the two underscores —
+	// `_0%% 与 %%MATHBLOCK_` became an <em>, and both formulas were replaced by the
+	// broken placeholder text. parseInline()'s own %%ICODE<n>%% has the same shape
+	// for the same reason.
+
 	// 1. Extract fenced code blocks
 	src = src.replace(/```([a-zA-Z0-9_\-#+.]*)\n([\s\S]*?)```/g, (_, codeLang, code) => {
 		const idx = codeBlocks.length;
@@ -245,7 +254,7 @@ export function parseMarkdownToHtml(markdown: string, lang: 'zh' | 'en' = 'zh'):
 				<pre><code class="language-${safeLang}">${escapedCode}</code></pre>
 			</div>
 		`);
-		return `%%CODEBLOCK_${idx}%%`;
+		return `%%CODEBLOCK${idx}%%`;
 	});
 
 	// 2. Extract block math $$ ... $$
@@ -259,7 +268,7 @@ export function parseMarkdownToHtml(markdown: string, lang: 'zh' | 'en' = 'zh'):
 		mathBlocks.push(
 			`<div class="t-math t-math-display" data-tex="${escapeHtml(tex)}">${escapeHtml(tex)}</div>`,
 		);
-		return `%%MATHBLOCK_${idx}%%`;
+		return `%%MATHBLOCK${idx}%%`;
 	});
 
 	// Process line-by-line blocks
@@ -479,7 +488,7 @@ export function parseMarkdownToHtml(markdown: string, lang: 'zh' | 'en' = 'zh'):
 		}
 
 		// Placeholder blocks (code blocks, math blocks)
-		if (trimmed.startsWith('%%CODEBLOCK_') || trimmed.startsWith('%%MATHBLOCK_')) {
+		if (trimmed.startsWith('%%CODEBLOCK') || trimmed.startsWith('%%MATHBLOCK')) {
 			output.push(trimmed);
 			continue;
 		}
@@ -495,10 +504,10 @@ export function parseMarkdownToHtml(markdown: string, lang: 'zh' | 'en' = 'zh'):
 	let html = output.join('\n');
 
 	// Restore code blocks
-	html = html.replace(/%%CODEBLOCK_(\d+)%%/g, (_, idx) => codeBlocks[Number(idx)] || '');
+	html = html.replace(/%%CODEBLOCK(\d+)%%/g, (_, idx) => codeBlocks[Number(idx)] || '');
 
 	// Restore math blocks
-	html = html.replace(/%%MATHBLOCK_(\d+)%%/g, (_, idx) => mathBlocks[Number(idx)] || '');
+	html = html.replace(/%%MATHBLOCK(\d+)%%/g, (_, idx) => mathBlocks[Number(idx)] || '');
 
 	return html;
 }
