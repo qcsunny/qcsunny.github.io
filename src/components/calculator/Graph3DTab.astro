@@ -1,0 +1,278 @@
+---
+// 3D surface plotter UI (z = f(x, y)). Renderer: src/scripts/calculator/graph3d.ts
+---
+
+<div class="g3">
+	<div class="g3-formula">
+		<label for="g3-expr" class="g3-eq">z =</label>
+		<input
+			id="g3-expr"
+			type="text"
+			value="sin(x) * cos(y)"
+			spellcheck="false"
+			autocomplete="off"
+			placeholder="e.g. x^2 - y^2"
+			aria-label="Surface formula, z = f(x, y)"
+		/>
+		<span id="g3-error" class="g3-error" role="status" aria-live="polite"></span>
+	</div>
+
+	<div class="g3-examples">
+		<span class="g3-examples-label">
+			<span class="i18n-en">Try</span><span class="i18n-zh">示例</span>
+		</span>
+		<button type="button" data-g3-example="sin(x) * cos(y)">sin(x)·cos(y)</button>
+		<button type="button" data-g3-example="x^2 - y^2">x² − y²</button>
+		<button type="button" data-g3-example="sin(sqrt(x^2 + y^2))">sin(√(x²+y²))</button>
+		<button type="button" data-g3-example="exp(-(x^2 + y^2) / 4)">e^−(x²+y²)/4</button>
+		<button type="button" data-g3-example="x * y">x·y</button>
+		<button type="button" data-g3-example="ln(x * y)">ln(x·y)</button>
+		<button type="button" data-g3-example="1 / (x^2 + y^2)">1/(x²+y²)</button>
+	</div>
+
+	<div class="g3-toolbar">
+		<button type="button" data-g3-view="reset">
+			<span class="i18n-en">Reset</span><span class="i18n-zh">复位</span>
+		</button>
+		<button type="button" data-g3-view="top">
+			<span class="i18n-en">Top</span><span class="i18n-zh">俯视</span>
+		</button>
+		<button type="button" data-g3-view="front">
+			<span class="i18n-en">Front</span><span class="i18n-zh">正视</span>
+		</button>
+		<button type="button" data-g3-zoom="in" title="Zoom in" aria-label="Zoom in">+</button>
+		<button type="button" data-g3-zoom="out" title="Zoom out" aria-label="Zoom out">−</button>
+		<label class="g3-select">
+			<span class="i18n-en">Style</span><span class="i18n-zh">样式</span>
+			<select id="g3-style">
+				<option value="surface">Surface · 曲面</option>
+				<option value="mesh">Mesh · 网格</option>
+				<option value="wire">Wireframe · 线框</option>
+			</select>
+		</label>
+		<label class="g3-select">
+			<span class="i18n-en">Detail</span><span class="i18n-zh">精度</span>
+			<select id="g3-res">
+				<option value="28">28 × 28</option>
+				<option value="44" selected>44 × 44</option>
+				<option value="64">64 × 64</option>
+				<option value="88">88 × 88</option>
+			</select>
+		</label>
+	</div>
+
+	<canvas
+		id="g3-canvas"
+		tabindex="0"
+		role="img"
+		aria-label="3D surface plot; arrow keys rotate, plus and minus zoom, 0 resets the view"
+	></canvas>
+
+	<p class="g3-hint">
+		<span class="i18n-en">drag to rotate · scroll to zoom · pinch on touch · arrow keys once focused</span>
+		<span class="i18n-zh">拖拽旋转 · 滚轮缩放 · 触屏双指捏合 · 聚焦后可用方向键</span>
+	</p>
+
+	<div id="g3-readout" class="g3-readout" role="status" aria-live="polite"></div>
+
+	<div class="g3-domain">
+		<span class="g3-domain-label">
+			<span class="i18n-en">Domain</span><span class="i18n-zh">定义域</span>
+		</span>
+		<span class="g3-range">
+			x ∈ [
+			<input id="g3-xmin" type="number" step="any" value="-5" aria-label="x minimum" />
+			,
+			<input id="g3-xmax" type="number" step="any" value="5" aria-label="x maximum" />
+			]
+		</span>
+		<span class="g3-range">
+			y ∈ [
+			<input id="g3-ymin" type="number" step="any" value="-5" aria-label="y minimum" />
+			,
+			<input id="g3-ymax" type="number" step="any" value="5" aria-label="y maximum" />
+			]
+		</span>
+	</div>
+</div>
+
+<style is:global>
+	/* is:global: the readout rows are built at runtime and never receive the
+	   scoped data-astro-cid attribute. */
+	.g3-formula {
+		display: flex;
+		align-items: center;
+		gap: 0.5em;
+		flex-wrap: wrap;
+	}
+	.g3-eq {
+		font-family: ui-monospace, 'SFMono-Regular', Consolas, Menlo, monospace;
+		font-size: 1rem;
+		color: var(--dim);
+	}
+	#g3-expr {
+		flex: 1;
+		min-width: 12em;
+		font-family: ui-monospace, 'SFMono-Regular', Consolas, Menlo, monospace;
+		font-size: 0.95rem;
+		padding: 0.45em 0.7em;
+		border: 1px solid var(--gridline);
+		border-radius: 8px;
+		background: var(--bg);
+		color: var(--fg);
+	}
+	#g3-expr:focus {
+		outline: 2px solid var(--accent);
+		outline-offset: -1px;
+	}
+	.g3-error {
+		flex: none;
+		width: 100%;
+		font-size: 0.8rem;
+		color: var(--accent);
+	}
+	.g3-error:empty {
+		display: none;
+	}
+	.g3-examples {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.35em;
+		margin-top: 0.7em;
+	}
+	.g3-examples-label {
+		font-size: 0.8rem;
+		color: var(--dim);
+		margin-right: 0.15em;
+	}
+	.g3-examples button {
+		font-family: ui-monospace, 'SFMono-Regular', Consolas, Menlo, monospace;
+		font-size: 0.78rem;
+		padding: 0.28em 0.6em;
+		border: 1px solid var(--gridline);
+		border-radius: 999px;
+		background: var(--bg);
+		color: var(--dim);
+		cursor: pointer;
+	}
+	.g3-examples button:hover {
+		border-color: var(--accent);
+		color: var(--accent);
+	}
+	.g3-examples button:focus-visible {
+		outline: 2px solid var(--accent);
+	}
+	.g3-toolbar {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.4em;
+		margin: 0.9em 0 0.75em;
+	}
+	.g3-toolbar > button {
+		font: inherit;
+		font-size: 0.9rem;
+		min-width: 2.2em;
+		padding: 0.35em 0.7em;
+		border: 1px solid var(--gridline);
+		border-radius: 6px;
+		background: var(--bg);
+		color: var(--fg);
+		cursor: pointer;
+	}
+	.g3-toolbar > button:hover {
+		border-color: var(--accent);
+		color: var(--accent);
+	}
+	.g3-toolbar > button:focus-visible,
+	.g3-select select:focus-visible {
+		outline: 2px solid var(--accent);
+	}
+	.g3-select {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35em;
+		font-size: 0.8rem;
+		color: var(--dim);
+	}
+	.g3-select select {
+		font: inherit;
+		font-size: 0.85rem;
+		padding: 0.3em 0.5em;
+		border: 1px solid var(--gridline);
+		border-radius: 6px;
+		background: var(--bg);
+		color: var(--fg);
+	}
+	#g3-canvas {
+		display: block;
+		width: 100%;
+		height: clamp(300px, 60vw, 520px);
+		border: 1px solid var(--gridline);
+		border-radius: 10px;
+		background: var(--bg);
+		touch-action: none;
+		cursor: grab;
+	}
+	#g3-canvas:active {
+		cursor: grabbing;
+	}
+	#g3-canvas:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
+	}
+	.g3-hint {
+		margin: 0.5em 0 0;
+		font-size: 0.78rem;
+		color: var(--dim);
+	}
+	.g3-readout {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4em 1.1em;
+		margin-top: 0.6em;
+		font-size: 0.82rem;
+		color: var(--dim);
+	}
+	.g3-readout .g3-stat b {
+		font-weight: 600;
+		color: var(--fg);
+		font-family: ui-monospace, 'SFMono-Regular', Consolas, Menlo, monospace;
+	}
+	.g3-readout .g3-stat i {
+		font-style: normal;
+		font-weight: 400;
+		color: var(--dim);
+	}
+	.g3-readout .g3-note {
+		flex-basis: 100%;
+	}
+	.g3-domain {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.4em 1em;
+		margin-top: 0.9em;
+		font-family: ui-monospace, 'SFMono-Regular', Consolas, Menlo, monospace;
+		font-size: 0.85rem;
+		color: var(--dim);
+	}
+	.g3-domain-label {
+		font-family: inherit;
+		font-size: 0.8rem;
+	}
+	.g3-range input[type='number'] {
+		width: 5.2em;
+		font: inherit;
+		padding: 0.25em 0.4em;
+		border: 1px solid var(--gridline);
+		border-radius: 6px;
+		background: var(--bg);
+		color: var(--fg);
+	}
+	.g3-range input[type='number']:focus {
+		outline: 2px solid var(--accent);
+		outline-offset: -1px;
+	}
+</style>

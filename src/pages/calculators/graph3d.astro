@@ -1,0 +1,75 @@
+---
+import ToolShell from '../../components/tools/ToolShell.astro';
+import Graph3DTab from '../../components/calculator/Graph3DTab.astro';
+---
+
+<ToolShell
+	title="3D Surface Plotter"
+	description="Plot z = f(x, y) as a shaded 3D surface you can rotate, zoom and inspect."
+	category="calculators"
+	content={{
+		about: [
+			'Type any formula in two variables — sin(x)·cos(y), x² − y², 1/(x²+y²) — and it is sampled over the domain you choose and drawn as a shaded surface you can spin with the mouse, the wheel, a two-finger pinch or the arrow keys. Height and colour follow z on a viridis ramp, so ridges, valleys and saddle points are readable at a glance, and the readout under the plot gives the maximum and minimum with the (x, y) where they occur.',
+			'Surface, mesh and wireframe styles suit different questions: the shaded surface shows shape, the hidden-line mesh shows the sample grid, the wireframe lets you see through to what is behind. Detail is adjustable from 28 × 28 up to 88 × 88 samples — the grid is cached, so rotating and zooming never re-evaluates the formula.',
+			'There is no WebGL and no 3D library here: the projection, the depth sorting and the shading are a few hundred lines of TypeScript drawing on a plain 2D canvas, and every sample is computed in your browser. Formulas may also reference variables you stored in the scientific calculator, so `a*x*y` plots with your own `a`.',
+		],
+		aboutZh: [
+			'输入任意二元函数——sin(x)·cos(y)、x² − y²、1/(x²+y²)——工具会在你指定的定义域上采样，并绘制成带光照的三维曲面：鼠标拖拽旋转、滚轮缩放、触屏双指捏合，方向键同样可用。高度与配色都按 z 值映射到 viridis 色带，山脊、谷底与鞍点一目了然；图下方的读数会给出最大值、最小值及其对应的 (x, y) 坐标。',
+			'曲面、网格、线框三种样式各有用处：曲面看形状，隐藏线网格看采样结构，线框可以透视背面。精度可在 28 × 28 到 88 × 88 之间调整——采样结果会被缓存，因此旋转和缩放不会重新计算函数。',
+			'这里没有 WebGL，也没有任何三维库：投影、深度排序与光照着色只是几百行 TypeScript，直接画在普通的 2D canvas 上，所有采样都在你的浏览器里完成。公式还可以引用你在科学计算器里存下的变量，例如 `a*x*y` 会用你自己的 `a` 绘制。',
+		],
+		faq: [
+			{
+				q: 'What do the colors mean?',
+				a: 'Color and height both encode z. The strip in the bottom-right corner is the scale: its top label is the highest z drawn, its bottom label the lowest.',
+			},
+			{
+				q: 'Which functions can I use?',
+				a: 'The same set as the scientific calculator: sin, cos, tan and their inverses, ln, log, exp, sqrt, cbrt, abs, min, max, powers with ^, the constants pi and e, and any variable you have stored.',
+			},
+			{
+				q: 'Why are there holes in the surface?',
+				a: 'Where f(x, y) is undefined — ln of a negative number, a division by zero — nothing is drawn rather than a made-up value. Plot ln(x*y) to see it: only the two quadrants where x·y > 0 have a surface.',
+			},
+			{
+				q: 'Why does a tall spike look flattened?',
+				a: 'A pole such as 1/(x²+y²) has a practically unbounded range that would flatten everything else into one color. When the tails are that extreme the height and color range follow the 1st–99th percentile instead and the spike is drawn clamped; the readout says so, and the true maximum is still reported.',
+			},
+			{
+				q: 'How do I rotate and zoom?',
+				a: 'Drag to orbit, scroll or pinch to zoom, and use the Reset / Top / Front buttons for a known angle. Click the plot and the arrow keys orbit, + and − zoom, 0 resets.',
+			},
+		],
+		faqZh: [
+			{
+				q: '颜色代表什么？',
+				a: '颜色和高度都表示 z 值。右下角的色带就是刻度：上端标注当前绘制的最大 z，下端为最小 z。',
+			},
+			{
+				q: '支持哪些函数？',
+				a: '与科学计算器完全一致：sin、cos、tan 及反三角函数，ln、log、exp、sqrt、cbrt、abs、min、max，用 ^ 表示乘方，常量 pi 与 e，以及你存过的任意变量。',
+			},
+			{
+				q: '曲面上为什么有空洞？',
+				a: 'f(x, y) 无定义处（对负数取 ln、除以零）不会画出任何东西，而不是编一个值。试试 ln(x*y)：只有 x·y > 0 的两个象限才有曲面。',
+			},
+			{
+				q: '为什么高耸的尖峰被压平了？',
+				a: '像 1/(x²+y²) 这样的极点值域几乎无界，会把其余部分压成一种颜色。当尾部如此极端时，高度与配色范围改用 1%–99% 分位，尖峰按上限截断绘制；读数中会给出提示，真实最大值仍会照实报告。',
+			},
+			{
+				q: '怎么旋转和缩放？',
+				a: '拖拽旋转，滚轮或双指捏合缩放，复位/俯视/正视按钮可回到确定的角度。点击图像后，方向键旋转，+ 与 − 缩放，0 复位。',
+			},
+		],
+	}}
+>
+	<Graph3DTab />
+	<p class="t-related">
+		Also available: <a href="/calculators/graph/">Function Grapher</a> ·
+		<a href="/calculators/standard/">Scientific Calculator</a>
+	</p>
+	<script>
+		import '../../scripts/calculator/graph3d-page';
+	</script>
+</ToolShell>

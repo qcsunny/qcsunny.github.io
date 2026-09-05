@@ -262,6 +262,14 @@ export const CALCULATOR_FEATURED: (ToolMeta & { kind?: ToolKind; content?: ToolC
 		description: 'Plot up to 5 functions with zoom, pan and a live value crosshair.',
 		descriptionZh: '同时绘制多达 5 条函数图像，支持平移缩放与十字准星实时取值。',
 	},
+	{
+		slug: 'graph3d',
+		category: 'calculators',
+		name: '3D Surface Plotter',
+		nameZh: '三维函数图像绘制器',
+		description: 'Plot z = f(x, y) as a shaded 3D surface you can rotate, zoom and inspect.',
+		descriptionZh: '把 z = f(x, y) 绘制为可旋转缩放的三维曲面，支持等高配色与极值读数。',
+	},
 ];
 
 export function categoryLabel(id: ToolCategory): string {
@@ -404,6 +412,7 @@ export const TOOL_KEYWORDS: Record<string, string> = {
 	'average': '平均数 平均值 中位数 众数 统计 标准差 方差 mean median mode average statistics variance',
 	'standard': '科学计算器 计算器 算术函数 根号 三角函数 次方 scientific calculator standard math sqrt sin cos',
 	'graph': '函数图像 曲线绘制 坐标系 绘图 函数可视化 function grapher plotting curves calculus',
+	'graph3d': '三维函数 3d函数图像 空间曲面 曲面绘制 双变量函数 马鞍面 等高线 立体绘图 二元函数 偏导 3d surface plotter mesh wireframe two variable saddle contour',
 };
 
 export interface SearchItem {
