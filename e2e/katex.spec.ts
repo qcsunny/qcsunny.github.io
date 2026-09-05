@@ -168,6 +168,24 @@ function distHtml(): [string, string][] {
 		.map((p) => [p, readFileSync(join(DIST, p), 'utf-8')]);
 }
 
+// Vite inlines assets under 4 KB as base64 data URIs, and one KaTeX face is
+// 3,624 bytes — Size3, the third-largest delimiters. Inlined, it rode along
+// inside katex.css as 4,840 bytes of base64 that every maths page downloaded
+// before it could paint, whether or not a formula reached for a big brace; the
+// stylesheet was 27,231 B instead of 22,418 B. @font-face already fetches on
+// demand, so the file has to stay a file (see the vite block in astro.config.mjs).
+test('no KaTeX font is inlined into the stylesheet', () => {
+	const css = readdirSync(join(DIST, '_astro'))
+		.filter((f) => /^katex\..*\.css$/.test(f))
+		.map((f) => readFileSync(join(DIST, '_astro', f), 'utf-8'));
+	expect(css.length, 'built KaTeX stylesheet').toBe(1);
+	expect(css[0], 'a font was inlined as base64 — check assetsInlineLimit').not.toContain(
+		'data:font',
+	);
+	// All 20 faces still declared, each pointing at a hashed file of its own.
+	expect(css[0].match(/@font-face/g)?.length).toBe(20);
+});
+
 test('no page loads KaTeX from a CDN any more', () => {
 	const offenders = distHtml()
 		.filter(([, html]) => html.includes('cdn.jsdelivr.net'))

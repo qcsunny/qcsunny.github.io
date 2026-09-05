@@ -57,4 +57,17 @@ export default defineConfig({
 			},
 		},
 	],
+	vite: {
+		build: {
+			// Vite inlines any asset under 4 KB as a base64 data URI, which is the
+			// wrong trade for a webfont. KaTeX_Size3-Regular.woff2 is 3,624 bytes,
+			// so it was ending up inside katex.css as 4,840 bytes of base64 (+33%
+			// for the encoding, and compression barely touches base64) — bytes that
+			// every page carrying a formula had to download before it could paint,
+			// whether or not it used a size-3 delimiter. Keeping the face a separate
+			// file restores @font-face's on-demand fetch, which is the entire reason
+			// these are vendored (see scripts/build-katex-css.py).
+			assetsInlineLimit: (filePath) => (/\.woff2?$/.test(filePath) ? false : undefined),
+		},
+	},
 });
