@@ -415,7 +415,7 @@ const autoLoan: FormConfig = {
 		return {
 			rows: [
 				{ label: 'Monthly payment', labelZh: '每月车贷还款额', value: money(monthly), emphasis: true },
-				{ label: 'Initial cash required (落地首期支出)', labelZh: '购车落地首期总支出 (首付+税险费)', value: money(upfrontCash) },
+				{ label: 'Initial cash required (drive-away)', labelZh: '购车落地首期总支出 (首付+税险费)', value: money(upfrontCash) },
 				{ label: 'Loan principal', labelZh: '汽车贷款总额', value: money(loanAmount) },
 				{ label: 'Down payment amount', labelZh: '裸车首付金额', value: money(downPayment) },
 				{ label: 'Total loan interest', labelZh: '贷款利息总额', value: money(totalInterest) },
@@ -644,8 +644,8 @@ const loanPayment: FormConfig = {
 			type: 'select',
 			def: 'to_payment',
 			options: [
-				{ value: 'to_payment', label: 'Forward: Loan Amount to Monthly Payment (正向：已知贷款本金，计算每月月供)', labelZh: '正向：已知贷款本金，计算每月月供' },
-				{ value: 'to_principal', label: 'Reverse: Monthly Budget to Max Loan (逆向：已知月供预算，反推最高借款额度)', labelZh: '逆向：已知月供预算，反推最高借款额度' },
+				{ value: 'to_payment', label: 'Forward: loan amount → monthly payment', labelZh: '正向：已知贷款本金，计算每月月供' },
+				{ value: 'to_principal', label: 'Reverse: monthly budget → max loan', labelZh: '逆向：已知月供预算，反推最高借款额度' },
 			],
 		},
 		{
@@ -913,7 +913,7 @@ function renderMortgageComparisonSvg(params: {
 }
 
 const mortgage: FormConfig = {
-	intro: 'Compare Equal Principal & Interest (等额本息) vs Equal Principal (等额本金), calculate monthly payments, interest savings, and support Commercial, Provident Fund, or Combined mortgages.',
+	intro: 'Compare level-payment (equal principal & interest) against equal-principal repayment: monthly payment, interest saved, and commercial, provident fund or combined mortgages.',
 	fields: [
 		{
 			id: 'method',
@@ -922,9 +922,9 @@ const mortgage: FormConfig = {
 			type: 'select',
 			def: 'compare',
 			options: [
-				{ value: 'compare', label: 'Compare Both (等额本息 vs 等额本金 双方案对比PK)', labelZh: '双方案对比 (等额本息 vs 等额本金 PK对比)' },
-				{ value: 'equal_pmt', label: 'Equal Principal & Interest (等额本息 - 每月月供固定)', labelZh: '等额本息 (每月月供固定，前期压力小)' },
-				{ value: 'equal_prc', label: 'Equal Principal (等额本金 - 每月递减，省利息)', labelZh: '等额本金 (每月递减，总利息更省)' },
+				{ value: 'compare', label: 'Compare both schemes', labelZh: '双方案对比 (等额本息 vs 等额本金 PK对比)' },
+				{ value: 'equal_pmt', label: 'Equal principal & interest (level payment)', labelZh: '等额本息 (每月月供固定，前期压力小)' },
+				{ value: 'equal_prc', label: 'Equal principal (declining payment, less interest)', labelZh: '等额本金 (每月递减，总利息更省)' },
 			],
 		},
 		{
@@ -934,9 +934,9 @@ const mortgage: FormConfig = {
 			type: 'select',
 			def: 'commercial',
 			options: [
-				{ value: 'commercial', label: 'Commercial Loan (商业贷款)', labelZh: '商业贷款' },
-				{ value: 'fund', label: 'Housing Provident Fund Loan (纯公积金贷款)', labelZh: '纯公积金贷款' },
-				{ value: 'combined', label: 'Combined Loan (组合贷款: 公积金 + 商贷)', labelZh: '组合贷款 (公积金 + 商业贷款)' },
+				{ value: 'commercial', label: 'Commercial loan', labelZh: '商业贷款' },
+				{ value: 'fund', label: 'Housing provident fund loan', labelZh: '纯公积金贷款' },
+				{ value: 'combined', label: 'Combined loan (provident fund + commercial)', labelZh: '组合贷款 (公积金 + 商业贷款)' },
 			],
 		},
 		{
@@ -946,8 +946,8 @@ const mortgage: FormConfig = {
 			type: 'select',
 			def: 'by_amount',
 			options: [
-				{ value: 'by_amount', label: 'By Loan Amount (按贷款本金额度直接计算)', labelZh: '按贷款额度计算 (直接输入贷款金额)' },
-				{ value: 'by_price', label: 'By Home Price & Down Payment (按房屋总价与首付成数计算)', labelZh: '按房产总价计算 (输入总价与首付比例)' },
+				{ value: 'by_amount', label: 'By loan amount', labelZh: '按贷款额度计算 (直接输入贷款金额)' },
+				{ value: 'by_price', label: 'By home price & down payment', labelZh: '按房产总价计算 (输入总价与首付比例)' },
 			],
 		},
 		{
@@ -976,7 +976,7 @@ const mortgage: FormConfig = {
 			max: '100',
 			showIf: (v) => v.str('calcBasis') === 'by_price',
 			required: (v) => v.str('calcBasis') === 'by_price',
-			hint: 'e.g. 20% for 2成首付, 30% for 3成首付',
+			hint: 'e.g. 20% or 30% down',
 			hintZh: '如 20% 代表2成首付，30% 代表3成首付',
 		},
 		{
@@ -1726,8 +1726,8 @@ const tax: FormConfig = {
 			type: 'select',
 			def: 'gross_to_net',
 			options: [
-				{ value: 'gross_to_net', label: 'Forward: Gross to Net Take-Home (正向：税前薪资算税后到手)', labelZh: '正向：税前薪资算税后到手' },
-				{ value: 'net_to_gross', label: 'Reverse: Net Take-Home to Required Gross (逆向：税后期望到手反推税前薪资)', labelZh: '逆向：税后到手反推税前薪资' },
+				{ value: 'gross_to_net', label: 'Forward: gross → net take-home', labelZh: '正向：税前薪资算税后到手' },
+				{ value: 'net_to_gross', label: 'Reverse: net take-home → required gross', labelZh: '逆向：税后到手反推税前薪资' },
 			],
 		},
 		{
@@ -1761,9 +1761,9 @@ const tax: FormConfig = {
 			type: 'select',
 			def: 'cn',
 			options: [
-				{ value: 'cn', label: 'China Individual Income Tax (中国新个税综合所得 3%~45% 七级超额累进)', labelZh: '中国新个税 (五险一金/专项扣除/年终奖)' },
+				{ value: 'cn', label: 'China individual income tax (7 brackets, 3%–45%)', labelZh: '中国新个税 (五险一金/专项扣除/年终奖)' },
 				{ value: 'us_single', label: 'US Federal Income Tax (Single)', labelZh: '美国联邦个人所得税 (Single 单身标准)' },
-				{ value: 'flat', label: 'Flat Tax Rate (固定单一税率)', labelZh: '固定单一税率' },
+				{ value: 'flat', label: 'Flat tax rate', labelZh: '固定单一税率' },
 			],
 		},
 		{
@@ -2177,7 +2177,7 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		category: 'finance',
 		name: 'Mortgage Loan Calculator (Equal P&I vs Equal Principal)',
 		nameZh: '房贷计算器 (等额本息 vs 等额本金对比)',
-		description: 'Compare Equal Principal & Interest (等额本息) vs Equal Principal (等额本金), calculate monthly payments, interest savings, and support Commercial, Provident Fund, or Combined mortgages.',
+		description: 'Compare level-payment (equal principal & interest) against equal-principal repayment: monthly payment, interest saved, and commercial, provident fund or combined mortgages.',
 		descriptionZh: '等额本息与等额本金同屏对比，支持商业贷款、公积金贷款及组合贷款测算。',
 		kind: 'form',
 		config: mortgage,

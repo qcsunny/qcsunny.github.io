@@ -14,6 +14,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 	const reqStars = new Map<string, HTMLElement>();
 	const controlsMap = new Map<string, HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>();
 	const reqTips = new Map<string, HTMLElement>();
+	const bilingualOptions: { el: HTMLOptionElement; en: string; zh: string }[] = [];
 
 	// Slug used as localStorage key prefix (Feature 2)
 	const slug = document.documentElement.dataset.toolSlug ?? '';
@@ -138,7 +139,13 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			for (const opt of field.options ?? []) {
 				const o = document.createElement('option');
 				o.value = opt.value;
-				o.textContent = opt.labelZh ? `${opt.label} (${opt.labelZh})` : opt.label;
+				// An <option> cannot hold the pair of .i18n-en / .i18n-zh spans used
+				// everywhere else, so the text is swapped on language change instead
+				// (see applyOptionLang). It used to render `${label} (${labelZh})`,
+				// which showed both languages at once in both languages — and since
+				// several English labels carried the Chinese in parentheses already,
+				// the Chinese appeared twice in one option.
+				bilingualOptions.push({ el: o, en: opt.label, zh: opt.labelZh ?? opt.label });
 				sel.append(o);
 			}
 			if (field.def !== undefined) sel.value = field.def;
@@ -168,13 +175,21 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 		controlsMap.set(field.id, control);
 		wrap.append(control);
 
+		// Validation tip and hint share one row of the field's subgrid (see the
+		// .t-field rules in ToolShell.astro), so the wrapper is always created even
+		// when there is no hint: it keeps every field at exactly three grid items,
+		// which is what lets the inputs of a row line up regardless of how many
+		// lines each label wraps to.
+		const below = document.createElement('div');
+		below.className = 't-below';
+
 		const tip = document.createElement('span');
 		tip.className = 't-req-tip';
 		tip.style.display = 'none';
 		const tipEn = field.type === 'number' ? 'This field is required (valid number)' : 'This field is required';
 		const tipZh = field.type === 'number' ? '此项为必填项，请输入有效数值' : '此项为必填项，请填写内容';
 		tip.append(makeBilingualSpan(tipEn, tipZh));
-		wrap.append(tip);
+		below.append(tip);
 		reqTips.set(field.id, tip);
 
 		control.addEventListener('blur', update);
@@ -183,8 +198,9 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			const hint = document.createElement('span');
 			hint.className = 't-hint';
 			hint.append(makeBilingualSpan(field.hint, field.hintZh));
-			wrap.append(hint);
+			below.append(hint);
 		}
+		wrap.append(below);
 		return wrap;
 	}
 
@@ -452,6 +468,18 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 		} catch {
 			// localStorage may be disabled or JSON malformed; silently ignore
 		}
+	}
+
+	function applyOptionLang(): void {
+		const zh = document.documentElement.dataset.lang === 'zh';
+		for (const o of bilingualOptions) o.el.textContent = zh ? o.zh : o.en;
+	}
+	applyOptionLang();
+	if (bilingualOptions.length) {
+		new MutationObserver(applyOptionLang).observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ['data-lang'],
+		});
 	}
 
 	update();

@@ -332,17 +332,50 @@ const year = new Date().getFullYear();
 				gap: 0.9em 1.1em;
 				margin-bottom: 1.25em;
 			}
+			/* Every field is a subgrid of the form's own rows — label band, control
+			   band, hint band — so the inputs of a row line up even when one label
+			   wraps to two lines and its neighbours do not. Before this, the wrapped
+			   label pushed its own input 19px below the ones beside it, which is
+			   visible on nine of the finance and calculator forms (the label of
+			   `amount` on /finance/loan-payment/ is the widest offender).
+
+			   The internal 0.3em is a margin rather than a row-gap because the third
+			   band is empty on most rows, and a gap would still charge for it. */
 			.t-field {
-				display: flex;
-				flex-direction: column;
-				gap: 0.3em;
+				display: grid;
+				grid-template-rows: subgrid;
+				grid-row: span 3;
+				row-gap: 0;
+				/* A grid item's automatic minimum size is its content's — and a
+				   <select>'s content is its longest <option>. Without this, the mode
+				   select on /finance/loan-payment/ was ~490px wide inside a 228px
+				   column, painting underneath the two inputs beside it and showing
+				   through the column gap as a stray glyph. */
+				min-width: 0;
 			}
 			.t-field > label {
 				font-size: 0.82rem;
 				color: var(--dim);
+				/* Bottom of the label band, so a one-line label sits against its own
+				   control instead of floating above it. */
+				align-self: end;
+				margin-bottom: 0.3em;
+			}
+			/* Only ever holds a checkbox field, which has no separate label: place it
+			   in the control band so it lines up with the inputs beside it. */
+			.t-field > .t-checkrow {
+				grid-row: 2;
+			}
+			.t-below {
+				display: flex;
+				flex-direction: column;
+				align-self: start;
 			}
 			.t-field .t-suffix {
 				opacity: 0.7;
+				/* Keep the unit gloss together: "($ / ¥)" broke across lines as "($"
+				   and "/ ¥)" whenever the label filled its first line. */
+				white-space: nowrap;
 			}
 			.t-field input,
 			.t-field select {
@@ -353,6 +386,12 @@ const year = new Date().getFullYear();
 				border-radius: 8px;
 				background: var(--bg);
 				color: var(--fg);
+				min-width: 0;
+				max-width: 100%;
+			}
+			/* Long option text is the select's own problem to clip, not the layout's. */
+			.t-field select {
+				text-overflow: ellipsis;
 			}
 			.t-field input:focus-visible,
 			.t-field select:focus-visible,
@@ -377,12 +416,13 @@ const year = new Date().getFullYear();
 			.t-req-tip {
 				font-size: 0.75rem;
 				color: #ef4444;
-				margin-top: 0.15em;
+				margin-top: 0.3em;
 				font-weight: 500;
 			}
 			.t-field .t-hint {
 				font-size: 0.75rem;
 				color: var(--dim);
+				margin-top: 0.3em;
 			}
 			.t-field.t-wide {
 				grid-column: 1 / -1;
