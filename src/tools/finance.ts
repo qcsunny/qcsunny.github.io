@@ -2141,27 +2141,6 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		descriptionZh: '对比缩短还贷年限与减少月供两种提前还贷策略，精准计算节省利息总额。',
 		kind: 'form',
 		config: mortgagePrepayment,
-
-		content: {
-			about: [
-				'Calculate the financial impact of paying down your mortgage early. Whether you have a year-end bonus or accumulated savings, this calculator shows exactly how much interest you save and lets you compare two strategies: shortening your loan term (keeping your monthly payment the same) versus lowering your ongoing monthly payment.',
-				'Because mortgage interest is front-loaded in amortization schedules, prepaying principal in the early to middle years yields massive interest savings — often tens or hundreds of thousands in saved interest.',
-			],
-			aboutZh: [
-				'精准计算房贷提前还贷的省息效果。无论是一笔年终奖金还是储蓄结余，本计算器都能清晰展示提前还贷后的两种核心策略对比：缩短还款年限（月供基本不变，利息省最多）与减少月供金额（还款期限不变，减轻每月现金流压力）。',
-				'在等额本息还款机制下，前期还款大部分为利息。在还款前期和中期提前还贷冲抵本金，省息效果最为显著，通常可为您省下数万乃至数十万元利息支出。',
-			],
-			faq: [
-				{ q: 'Is it better to shorten the term or reduce the monthly payment?', a: 'Shortening the loan term saves significantly more total interest. Reducing the monthly payment frees up immediate cash flow each month.' },
-				{ q: 'When is the best time to prepay a mortgage?', a: 'Earlier is better, before you have already paid the bulk of the interest during the first third of the loan term.' },
-				{ q: 'Does this apply to fixed and variable rate loans?', a: 'Yes, it computes based on your current effective interest rate.' },
-			],
-			faqZh: [
-				{ q: '提前还贷选"缩短年限"还是"减少月供"更好？', a: '缩短还款年限节省的总利息远多于减少月供；而减少月供则能直接释放每月的现金流压力，两者可根据当下财务状况灵活抉择。' },
-				{ q: '房贷还款什么时候提前还最划算？', a: '通常在贷款前 1/3 周期内提前还本金最划算，因为此时利息占比最高；若已还款超过一半，大部分利息已付清，省息收益相对降低。' },
-				{ q: '支持公积金贷款和商业贷款吗？', a: '支持。只要输入当前贷款的实际执行年化利率即可准确计算。' },
-			],
-		},
 	},
 	{
 		slug: 'compound-interest',
@@ -2172,27 +2151,6 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		descriptionZh: '支持自定义复利计息频率与每月定期定投，按年推演资产长期复利增值轨迹。',
 		kind: 'form',
 		config: compoundInterest,
-
-		content: {
-			about: [
-				'Compound interest is interest earned on interest: each period, gains join the principal and the next cycle compounds on the new total. This calculator projects future wealth from starting principal, annual return, compounding frequency, and regular monthly contributions.',
-				'The formula is A = P·(1 + r/n)^(n·t) plus accumulated monthly cash flows. Over 10 to 30 years, compound interest transforms modest monthly investments into substantial fortunes.',
-			],
-			aboutZh: [
-				'复利是财富积累的核心杠杆：每期收益并入本金，下一期继续利滚利。本计算器支持初始本金、预期年化收益率、复利频率与每月定投金额，完整预测资产增长轨迹。',
-				'长期定投结合复利效应，能将每月几百或几千元的小额结余转化为数倍乃至十倍以上的终身财富。',
-			],
-			faq: [
-				{ q: 'What is the difference between simple and compound interest?', a: 'Simple interest only pays on original principal; compound interest pays on principal plus accumulated interest.' },
-				{ q: 'Does compounding frequency matter?', a: 'Yes. More frequent compounding (e.g. monthly vs annually) produces slightly higher overall returns.' },
-				{ q: 'Are monthly contributions added at the start or end of the month?', a: 'Added at the end of each month and start compounding in the following period.' },
-			],
-			faqZh: [
-				{ q: '单利与复利有什么区别？', a: '单利永远只按初始本金计息；复利按不断滚存的总资产计息，即"利生利、利滚利"。' },
-				{ q: '复利计息频率有影响吗？', a: '有影响。按月复利或按日复利比按年复利收益略高，时间越长差异越明显。' },
-				{ q: '每月定投从什么时候开始计息？', a: '定投在每月月末投入，从下个月开始计入复利池产生收益。' },
-			],
-		},
 	},
 	{
 		slug: 'investment-return',
@@ -2213,25 +2171,6 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		descriptionZh: '等额本息贷款月供测算、全周期总利息统计与逐年还款摊还明细计划表。',
 		kind: 'form',
 		config: loanPayment,
-
-		content: {
-			about: [
-				'Estimate the monthly payment and total interest for any fixed-rate loan — personal loan, car loan, or student debt — using the standard equal-payment amortization formula.',
-				'The amortization schedule details how each payment divides between principal and interest, and how the principal payoff accelerates over time.',
-			],
-			aboutZh: [
-				'用标准等额本息公式估算消费贷款、个人借款、助学贷款的月供与总利息支出。',
-				'摊还计划表详细展示了每期还款中本金与利息的动态分配，以及后期本金偿还加速的过程。',
-			],
-			faq: [
-				{ q: 'What is amortization?', a: 'A repayment structure where each equal monthly payment pays interest on the remaining balance first, with the rest reducing principal.' },
-				{ q: 'Does a longer loan term cost more?', a: 'Yes. While monthly payments are lower, total interest paid over the life of the loan increases substantially.' },
-			],
-			faqZh: [
-				{ q: '什么是等额本息（Amortization）？', a: '每月偿还固定金额，其中利息逐月减少、本金逐月增加，保持总月供恒定。' },
-				{ q: '还款期限越长利息越多吗？', a: '是的。延长期限虽然能降低每月还款压力，但全周期支付的总利息会显著增加。' },
-			],
-		},
 	},
 	{
 		slug: 'mortgage',
@@ -2242,27 +2181,6 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		descriptionZh: '等额本息与等额本金同屏对比，支持商业贷款、公积金贷款及组合贷款测算。',
 		kind: 'form',
 		config: mortgage,
-
-		content: {
-			about: [
-				'Comprehensive mortgage calculator supporting Equal Principal & Interest (等额本息), Equal Principal (等额本金), Commercial loans, Housing Provident Fund (公积金), and Combined loans (组合贷款).',
-				'Side-by-side comparison reveals the exact month-by-month payment difference, crossover payoff point, and total interest saved between the two repayment methods.',
-			],
-			aboutZh: [
-				'专业级房贷综合计算器，深度支持【等额本息】与【等额本金】双方案同屏PK对比，支持商业贷款、纯公积金贷款以及公积金+商贷【组合贷款】。',
-				'通过可视化对比清晰展示首月月供、每月递减金额、月供持平反超节点（Crossover）、累计利息差额与全周期还款明细，为您买房贷款决策提供科学客观的财务参考。',
-			],
-			faq: [
-				{ q: 'What is the difference between Equal P&I and Equal Principal?', a: 'Equal P&I has fixed monthly payments throughout the loan. Equal Principal pays a fixed amount of principal each month plus accrued interest, so payments start highest and decrease every month, saving more total interest.' },
-				{ q: 'Which repayment method is better: Equal P&I or Equal Principal?', a: 'Equal Principal saves significantly more interest overall, but requires higher monthly income in early years. Equal P&I is better if you prefer predictable cash flow or expect your income to rise in the future.' },
-				{ q: 'How does a Combined Mortgage (组合贷款) work?', a: 'Combined loans combine low-interest Housing Provident Fund quotas with commercial bank loans, calculating interest on each portion at its respective rate.' },
-			],
-			faqZh: [
-				{ q: '等额本息和等额本金有什么区别？哪种还款方式更划算？', a: '等额本息每月还款金额恒定，前期利息占比大，后期本金占比大；等额本金每月归还等额本金，利息随剩余本金逐月减少，因此首月还款最多并逐月递减。从全周期总支出看，等额本金节省的利息显著多于等额本息，但前期月供压力较大。' },
-				{ q: '公积金贷款与商业贷款有什么利率差异？什么是组合贷款？', a: '公积金贷款利率通常明显低于商业贷款（如目前首套公积金5年以上为2.85%，商贷普遍在3.15%~3.45%）。当公积金可贷额度不足以覆盖购房所需总额时，可将公积金贷满，不足部分办理商业贷款，即为组合贷款。' },
-				{ q: '提前还贷选等额本息还是等额本金更合适？', a: '若计划在贷款前几年提前还清，等额本金前期偿还的本金更多，剩余本金少于等额本息；等额本息前期还的大多是利息，提前还贷时本金基数依然较高。' },
-			],
-		},
 	},
 	{
 		slug: 'irr-calculator',
@@ -2273,27 +2191,6 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		descriptionZh: '基于牛顿迭代法求解真实年化利率 IRR 与 APR，揭秘信用卡分期等名义手续费陷阱。',
 		kind: 'form',
 		config: irrCalculator,
-
-		content: {
-			about: [
-				'Uncover the real annualized interest rate (APR / IRR) behind credit card installments, consumer financing, and car loan promotions. Lenders often advertise nominal monthly handling fees (e.g. 0.6%/month) that look harmless, but the true annualized rate is almost double (around 13.5%+) because you repay principal each month while fees are charged on the entire initial sum.',
-				'This calculator implements a robust Newton-Raphson internal rate of return (IRR) solver in your browser to give you the honest APR, effective annual rate (EAR), and total financing costs.',
-			],
-			aboutZh: [
-				'揭秘信用卡账单分期、车贷分期及消费金融背后的真实年化利率（APR / IRR）。许多平台常宣传"月费率仅 0.6%"，让借款人误以为年利率只有 0.6% × 12 = 7.2%。但由于借款人每月都在归还本金，资金实际平均占用额仅为一半左右，导致真实年化利率高达 13.5% 以上！',
-				'本计算器基于 Newton-Raphson 牛顿迭代数值算法，在浏览器本地秒级求解内部收益率（IRR），让您看清各种分期的真实融资成本，拒绝低费率消费陷阱。'
-			],
-			faq: [
-				{ q: 'Why is true APR roughly twice the advertised fee rate?', a: 'When you repay equal principal each month, your average debt balance throughout the term is roughly half of the original loan. Charging fees on the full initial amount throughout the term means you are paying interest on money you have already paid back.' },
-				{ q: 'What is the formula for calculating true APR?', a: 'It solves for internal rate of return (IRR) where the present value of all future installment cash flows equals the initial borrowed amount.' },
-				{ q: 'Is IRR calculation safe and private?', a: '100% private and computed locally in your browser with zero server telemetry.' },
-			],
-			faqZh: [
-				{ q: '为什么分期的真实利率几乎是宣传费率的两倍？', a: '因为分期每月都在偿还本金，您实际欠银行的钱逐月减少，平均欠款只有借款总额的一半左右；但银行手续费却始终按初始全额本金计算，相当于在为您已经还掉的钱继续支付利息。' },
-				{ q: '国家对贷款明示年化利率有什么规定？', a: '中国人民银行早在 2021 年就要求所有从事贷款业务的机构必须明示贷款年化利率（采用 IRR 内部收益率口径计算），杜绝用"日息万分之五"、"月手续费 0.6%"误导消费者。' },
-				{ q: '计算过程安全保密吗？', a: '完全在您本地浏览器中即时运算，不向任何服务器发送借贷数据，完全保护财务隐私。' },
-			],
-		},
 	},
 	{
 		slug: 'inflation',
@@ -2304,25 +2201,6 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		descriptionZh: '测算通货膨胀对资金购买力的长期侵蚀影响，展示未来等价物价与贬值幅度。',
 		kind: 'form',
 		config: inflation,
-
-		content: {
-			about: [
-				'Inflation silently erodes purchasing power over time. At an average annual inflation rate of 3%, prices double roughly every 24 years, meaning $100,000 kept in uninvested cash will only buy half as much.',
-				'This calculator evaluates how inflation compounds over 1 to 30 years, showing future price equivalents, the declining real value of cash, and total percentage purchasing power lost.',
-			],
-			aboutZh: [
-				'通货膨胀是财富无声的侵蚀者。在年均 3% 的通胀率下，物价大约每 24 年翻一番；这意味着如果不进行抗通胀投资，储蓄的实际购买力将随时间腰斩。',
-				'本工具帮您推演 1 至 30 年内通胀的复利影响，直观呈现未来等价商品所需金额、现金真实购买力贬值曲线与累计缩水比例。',
-			],
-			faq: [
-				{ q: 'What is a typical annual inflation rate?', a: 'Central banks typically target around 2–3% annual inflation in normal economic environments.' },
-				{ q: 'What is the Rule of 72?', a: 'Divide 72 by the inflation rate (e.g., 72 / 3 = 24) to estimate how many years it takes for prices to double.' },
-			],
-			faqZh: [
-				{ q: '一般年均通货膨胀率是多少？', a: '全球主要央行通常将年通胀率目标定在 2%~3% 之间。' },
-				{ q: '什么是"72法则"？', a: '用 72 除以年通胀率（例如 72 ÷ 3 = 24），即可快速估算出物价翻倍所需的年数。' },
-			],
-		},
 	},
 	{
 		slug: 'savings-goal',
@@ -2333,25 +2211,6 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		descriptionZh: '设定财务储蓄目标金额与到期年限，逆向测算每月所需定投金额与复合收益贡献。',
 		kind: 'form',
 		config: savingsGoal,
-
-		content: {
-			about: [
-				'Plan your path to a major financial milestone — an emergency fund, home down payment, wedding, or dream vacation. Enter your target amount, existing balance, deadline, and expected return rate.',
-				'The calculator reverse-engineers compound growth to determine the exact monthly contribution required, illustrating how much comes from your paycheck versus investment gains.',
-			],
-			aboutZh: [
-				'为购房首付、应急备用金、子女教育或愿望基金设定清晰的达成路径。输入目标金额、现有存款、计划年限与预期投资收益率。',
-				'计算器逆向求解复利模型，精准算出每月需存入的定投金额，并直观呈现个人自存本金与复合收益的各自贡献占比。',
-			],
-			faq: [
-				{ q: 'How does expected return lower monthly savings?', a: 'Investment returns compound over time, meaning compound interest shoulders part of the financial target instead of purely out-of-pocket savings.' },
-				{ q: 'What return rate should I use for short horizons?', a: 'For goals within 1–3 years, use conservative rates (2–4%) like money market or high-yield savings accounts.' },
-			],
-			faqZh: [
-				{ q: '为什么收益率能减少每月需存金额？', a: '投资收益在持有期间持续复利滚存，利息为你承担了相当一部分目标总额，减轻了自筹本金的压力。' },
-				{ q: '短期目标建议按多高收益率计算？', a: '1~3 年的短期目标建议按货币基金或高流动性存款收益率（2%~4%）保守估算，避免资本波动风险。' },
-			],
-		},
 	},
 	{
 		slug: 'auto-loan',
@@ -2362,25 +2221,6 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		descriptionZh: '测算汽车贷款月供利息，综合购置税、车险、上牌费等全套提车落地总成本。',
 		kind: 'form',
 		config: autoLoan,
-
-		content: {
-			about: [
-				'Buying a car requires more than just the sticker price or monthly installment. You must budget for the down payment, vehicle purchase tax, initial insurance, registration, and loan interest.',
-				'This calculator computes your full upfront cash requirement, monthly car note, total interest paid, and the total cost of ownership across the entire financing period.',
-			],
-			aboutZh: [
-				'买车不仅要看裸车指导价或月供，更需全盘考量首付、车辆购置税、首年车险、上牌杂费与贷款利息等全部开支。',
-				'本计算器帮您全面算清提车所需的首期落地总现金、每月实际月供、贷款利息总额以及全周期综合购车支出。',
-			],
-			faq: [
-				{ q: 'What is a typical down payment for a car loan?', a: 'Most buyers put down 20% to 30%, which lowers monthly payments and keeps negative equity risks minimal.' },
-				{ q: 'How is vehicle purchase tax calculated in China?', a: 'Generally calculated as: Sticker Price ÷ 1.13 × 10% (around 8.85% of invoice price).' },
-			],
-			faqZh: [
-				{ q: '汽车贷款首付比例一般是多少？', a: '通常为 20%~30%，适当提高首付可减少利息开销并降低每月月供压力。' },
-				{ q: '国内汽车购置税怎么计算？', a: '按计税价格的 10% 征收，即 裸车开票价 ÷ 1.13 × 10%（约合裸车价的 8.85%）。新能源汽车在免征额度内可享受免税优惠。' },
-			],
-		},
 	},
 	{
 		slug: 'fire-calculator',
@@ -2391,25 +2231,6 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		descriptionZh: '基于 4% 安全提款法则测算财务自由目标资产、提前退休年龄与提款策略。',
 		kind: 'form',
 		config: fireCalculator,
-
-		content: {
-			about: [
-				'FIRE stands for Financial Independence, Retire Early. Rooted in the landmark Trinity Study, the 4% Safe Withdrawal Rule suggests that if you accumulate 25 times your annual living expenses (or 1 ÷ 0.04), your investment portfolio can sustain your lifestyle indefinitely.',
-				'Enter your current age, annual living expenses, existing investment assets, and ongoing savings rate. This calculator maps out your trajectory to Lean FIRE, Regular FIRE, and Fat FIRE milestones.',
-			],
-			aboutZh: [
-				'FIRE（Financial Independence, Retire Early）即"财务自由，提前退休"。基于著名的 Trinity Study 4% 安全提款法则：当你积累的生息资产达到年度生活开支的 25 倍（1 ÷ 0.04）时，资产产生的被动收益即可永续覆盖生活开支。',
-				'输入您的年龄、预期年开销、现有生息资产与每年新增储蓄，计算器即可为您测算迈向 Lean FIRE（极简自由）、标准 FIRE 与 Fat FIRE（富足自由）的时间表与退休年龄。',
-			],
-			faq: [
-				{ q: 'What is the 4% rule in FIRE?', a: 'Historical analysis shows that withdrawing 4% of a balanced stock/bond portfolio annually (adjusted for inflation) has over 95% probability of never running out of money over 30+ years.' },
-				{ q: 'What is the difference between Lean FIRE and Fat FIRE?', a: 'Lean FIRE covers essential frugal living expenses (~75% of baseline); Fat FIRE provides abundant luxury and travel (~125%+ of baseline).' },
-			],
-			faqZh: [
-				{ q: '什么是 FIRE 运动中的 4% 法则？', a: '历史资产回测表明，每年从股债多元投资组合中提取不超过 4%（并随通胀微调），在 30 年以上的周期里有超过 95% 的概率本金永不枯竭。' },
-				{ q: 'Lean FIRE 与 Fat FIRE 有什么区别？', a: 'Lean FIRE 为极简生活主义（按基准支出 75% 测算）；Fat FIRE 为宽裕奢华生活（按基准支出 125% 以上测算），满足更高品质的休闲与旅行需求。' },
-			],
-		},
 	},
 	{
 		slug: 'tax',
@@ -2420,31 +2241,6 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		descriptionZh: '精准测算个税、五险一金、7项专项附加扣除与年终奖单独计税/合并计税智能优选。',
 		kind: 'form',
 		config: tax,
-
-		content: {
-			about: [
-				'Accurately compute net take-home salary, progressive tax brackets, Five Insurances & Housing Fund contributions, 7 Special Additional Deductions, and Year-End Bonus tax schemes (Separate vs Combined). Supports Chinese Individual Income Tax (新个税综合所得七级累进), US Federal Income Tax (Single), and customizable Flat Tax rates.',
-				'Under Chinese tax law, your gross income is reduced by standard deductions (60,000 RMB/year or 5,000 RMB/month), employee social security (pension 8%, medical 2%, unemployment 0.5%, housing fund 5%~12%), and 7 categories of special additional deductions before progressive bracket rates (3% to 45%) are applied.',
-				'Year-end bonus can be calculated under the preferential separate taxation policy (extended through 2027) or combined into annual comprehensive income. The calculator automatically analyzes both routes, identifies the exact tax difference, and warns against known bracket jump pitfalls (多发少得盲区).',
-			],
-			aboutZh: [
-				'全面支持中国新个人所得税（七级超额累进综合所得税率）、五险一金个人扣除、最新 7 项专项附加扣除以及全年一次性奖金（年终奖）计税优化方案。同时兼容美国联邦个人所得税（Single 单身标准）与自定义单一税率。',
-				'中国新个税实施年度综合汇算清缴制度，以税前总收入扣除 60,000 元/年（5,000 元/月）基本减除费用、五险一金（养老 8%、医疗 2%、失业 0.5%、住房公积金 5%~12%）以及 7 项专项附加扣除后作为应纳税所得额，适用 3% 至 45% 的七级累进税率。',
-				'针对年终奖，财政部与税务总局延续全年一次性奖金单独计税优惠政策至 2027 年 12 月 31 日。计算器支持【单独计税（除以12查月度税率）】与【并入当年综合所得】双向对比与智能优选推荐，并对 3.6万、14.4万、30万、42万、66万、96万等“多发1元到手反少几千上万元”的税收临界点盲区提供即时警示。',
-			],
-			faq: [
-				{ q: 'How are the Five Insurances and Housing Fund calculated for employees?', a: 'In China, employees typically contribute 8% for basic pension, 2% for basic medical, 0.5% for unemployment, and 5% to 12% for the housing provident fund (totaling around 15.5%~22.5% of monthly pay within local contribution base limits). Work injury and maternity insurances are paid entirely by employers.' },
-				{ q: 'What are the current standards for China’s 7 Special Additional Deductions?', a: 'According to State Council standards: Infant care under 3 (2,000 RMB/mo/child), Children education (2,000 RMB/mo/child), Elderly care (3,000 RMB/mo for only child, max 1,500 RMB/mo shared), First home mortgage interest (1,000 RMB/mo), Housing rent (800–1,500 RMB/mo depending on city), Continuing education (400 RMB/mo or 3,600 RMB/year for qualification exams), and Serious illness medical expenses (up to 80,000 RMB/year).' },
-				{ q: 'Should I choose Separate Taxation or Combined Taxation for my Year-End Bonus?', a: 'Separate taxation is generally advantageous for middle and higher earners because the bonus is divided by 12 to capture lower brackets (3%, 10%) independently. However, if your regular salary does not fully use the 60,000 RMB basic deduction or special deductions, combined taxation allows the unused deduction to offset the bonus, saving more tax. This calculator automatically calculates both and recommends the best choice.' },
-				{ q: 'What is the Year-End Bonus "tax pitfall" (多发少得盲区)?', a: 'Under separate taxation, when the bonus crosses a bracket boundary by just 1 RMB (such as 36,001 RMB vs 36,000 RMB, or 144,001 RMB vs 144,000 RMB), the entire bonus is taxed at the higher marginal rate, causing the tax owed to jump drastically and leaving you with less take-home pay than if you had received less bonus. The calculator detects this interval and alerts you to negotiate the optimal payout.' },
-			],
-			faqZh: [
-				{ q: '五险一金个人扣除的标准和比例通常是多少？', a: '在我国，个人承担部分通常包含：基本养老保险（8%）、基本医疗保险（2%）、失业保险（0.5%）以及住房公积金（5%~12%，常见 7%~12%），个人扣缴合计比例约为 15.5%~22.5%（以当地社保公积金月缴费基数上下限为准），均在税前全额扣除；工伤保险与生育保险由用人单位全额承担，个人无需缴费。' },
-				{ q: '2024年最新 7 项专项附加扣除标准包含哪些？', a: '国务院最新调整标准：①3岁以下婴幼儿照护：2,000元/月/孩；②子女教育：2,000元/月/孩；③赡养老人：独生子女 3,000元/月，非独生子女与其他兄弟姐妹分摊每人每月最高不超过 1,500元；④住房贷款利息：首套房贷 1,000元/月；⑤住房租金：直辖市/省会/副省级城市 1,500元/月，其他市县 800~1,100元/月；⑥继续教育：学历教育 400元/月，职业资格证书 3,600元/年；⑦大病医疗：医保自付超 15,000元部分，在 80,000元/年限额内据实扣除。' },
-				{ q: '年终奖单独计税与合并计税，哪种更划算？', a: '绝大多数情况下【单独计税】更划算，因为将年终奖除以12单独对照月度税率表，能重复利用 3% 和 10% 等低税率档位；但在基本月薪较低（全年月度工资未能扣满 6 万元免征额及五险一金与专项附加扣除）时，选择【并入综合所得】能把没用完的扣除额度抵扣年终奖，反而更省税。本工具支持智能优选，自动为您对比两者税额并推荐最佳方案。' },
-				{ q: '什么是年终奖“多发1元到手反而少拿几千块”的税收盲区？', a: '在单独计税方式下，当奖金跨越税率分界线（如 36,000元、144,000元、300,000元、420,000元、660,000元、960,000元）时，整笔年终奖全额适用跃迁后的高税率，导致税款骤增。例如发放 36,001元比发放 36,000元税后实际到手少 2,309.10元！本计算器会自动检测并标红预警该盲区，建议您主动与单位人事沟通合理调整申报金额。' },
-			],
-		},
 	},
 	{
 		slug: 'salary',
@@ -2455,23 +2251,6 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		descriptionZh: '年薪、月薪、周薪、日薪与时薪之间快速多维互转换算。',
 		kind: 'form',
 		config: salary,
-
-		content: {
-			about: [
-				'Convert an annual salary into equivalent hourly, daily, weekly, biweekly, and monthly rates. Useful when comparing contractor hourly billing rates to full-time salaried job offers.',
-				'Based on 40 hours per week and 52 working weeks per year (2,080 working hours), customizable to your exact schedule.',
-			],
-			aboutZh: [
-				'将年薪灵活换算为对应的时薪、日薪、周薪、双周薪与月薪。在对比外包自由职业时薪与全职 Offer、或进行个人工时估值时极其实用。',
-				'默认按全职每周 40 小时、每年 52 周（共 2080 小时）计算，可根据实际工作时间自由调整。',
-			],
-			faq: [
-				{ q: 'How many work hours are in a standard year?', a: 'A standard full-time schedule (40 hours/week × 52 weeks) equals 2,080 working hours per year.' },
-			],
-			faqZh: [
-				{ q: '全职一年的标准工作工时是多少？', a: '按每周 40 小时 × 每年 52 周计算，全职一年约为 2080 个工作工时。' },
-			],
-		},
 	},
 	{
 		slug: 'roi',
@@ -2482,21 +2261,6 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		descriptionZh: '根据投入成本与回收金额测算投资回报率 (ROI)、净利润与回报倍数。',
 		kind: 'form',
 		config: roi,
-
-		content: {
-			about: [
-				'Return on investment (ROI) measures efficiency: net profit divided by cost. Enter what you spent and what you recovered to see ROI percentage, net profit, and return multiple.',
-			],
-			aboutZh: [
-				'投资回报率（ROI）衡量资金利用效率：净利润除以投入成本。输入投入成本与回收金额，即可得到 ROI 百分比、净利润与回报倍数。',
-			],
-			faq: [
-				{ q: 'Can ROI be negative?', a: 'Yes. When revenue is less than initial cost, ROI is negative, representing a financial loss.' },
-			],
-			faqZh: [
-				{ q: 'ROI 可以是负数吗？', a: '可以。当回收金额低于投入成本时，ROI 为负数，表示发生亏损。' },
-			],
-		},
 	},
 	{
 		slug: 'discount',
@@ -2507,20 +2271,5 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		descriptionZh: '根据打折折扣百分比计算优惠后价格与节省金额，支持单件或批量核算。',
 		kind: 'form',
 		config: discount,
-
-		content: {
-			about: [
-				'Work out final price after a percentage discount and how much you save per item or for the whole cart.',
-			],
-			aboutZh: [
-				'计算打折促销后的实际到手价与单件或整单节省金额。',
-			],
-			faq: [
-				{ q: 'How do stacked discounts work?', a: 'Stacked discounts are multiplicative, not additive: 20% off plus another 20% off equals 36% total discount (0.8 × 0.8 = 0.64).' },
-			],
-			faqZh: [
-				{ q: '多重折扣叠加如何计算？', a: '叠加折扣是相乘而非相加：例如打 8 折再打 8 折，总折扣是 6.4 折（0.8 × 0.8 = 0.64），省 36% 而非 40%。' },
-			],
-		},
 	},
 ];

@@ -44,6 +44,10 @@ export interface ToolMeta {
 // Rendered under the tool widget by ToolShell: English sections are the page's
 // primary content (page lang is en); Chinese sections are marked up with
 // lang="zh-CN" so search engines index both language queries.
+//
+// The prose itself lives in ./content.ts, keyed "<category>/<slug>", and is
+// deliberately NOT a field on ToolEntry — see that file's header for the byte
+// count that decision is worth.
 
 export interface ToolFaq {
 	q: string;
@@ -200,7 +204,7 @@ export type ToolEntry = ToolMeta &
 		| { kind: 'css' }
 		| { kind: 'html' }
 		| { kind: 'markdown' }
-	) & { content?: ToolContent };
+	);
 
 // --- categories ----------------------------------------------------------------
 
@@ -245,7 +249,7 @@ export const CATEGORIES: {
  *  They are hand-written pages rather than registry-driven ones, so they carry
  *  no `kind`; the field stays optional so the index listings can filter these
  *  and REGISTRY entries with one expression. */
-export const CALCULATOR_FEATURED: (ToolMeta & { kind?: ToolKind; content?: ToolContent })[] = [
+export const CALCULATOR_FEATURED: (ToolMeta & { kind?: ToolKind })[] = [
 	{
 		slug: 'standard',
 		category: 'calculators',
@@ -292,27 +296,6 @@ export const TOOL_WIDGETS: ToolEntry[] = [
 		description: 'Turn text or URLs into downloadable QR codes, generated entirely in your browser.',
 		descriptionZh: '将文本或网址转换为可下载的二维码，完全在浏览器本地生成。',
 		kind: 'qr',
-
-		content: {
-			about: [
-				'Turn any text or URL into a QR code and download it as a PNG. Pick the error-correction level (L/M/Q/H) — higher levels survive more damage and are better for printing; the size and QR version adapt automatically to your input.',
-				'The encoder is written from scratch and runs entirely in your browser: no QR text ever leaves your device, which matters if you encode payment addresses, Wi-Fi credentials or private links.',
-			],
-			aboutZh: [
-				'把任意文本或 URL 变成二维码并下载 PNG。可选择纠错级别（L/M/Q/H）——级别越高越耐污损，更适合印刷；尺寸和版本会根据内容自动适配。',
-				'编码器完全手写并在浏览器本地运行：二维码内容不会离开你的设备——在编码收款地址、Wi-Fi 凭据或私密链接时这一点尤为重要。',
-			],
-			faq: [
-				{ q: 'How much text fits in one QR code?', a: 'Up to 271 characters at the lowest error correction (L) in this generator — shorter for higher ECC levels.' },
-				{ q: 'Which error-correction level should I pick?', a: 'M is the everyday default; use Q or H for stickers, packaging or anything that might get scratched.' },
-				{ q: 'How big can I print it?', a: 'A QR scans reliably at roughly one-tenth of the scanning distance — a 10 cm code works from about a meter away.' },
-			],
-			faqZh: [
-				{ q: '一个二维码能放多少字？', a: '本生成器在最低纠错级别（L）下最多 271 字符，纠错级别越高容量越小。' },
-				{ q: '纠错级别怎么选？', a: '日常用 M 即可；贴纸、包装等可能磨损的场景建议 Q 或 H。' },
-				{ q: '二维码可以印多大？', a: '大致按扫描距离的十分之一取边长即可——10 厘米的码在约 1 米外可稳定扫描。' },
-			],
-		},
 	},
 	{
 		slug: 'color-converter',
@@ -322,27 +305,6 @@ export const TOOL_WIDGETS: ToolEntry[] = [
 		description: 'Convert colors between HEX, RGB and HSL with a live swatch and complement.',
 		descriptionZh: '在 HEX、RGB 和 HSL 之间转换颜色，支持实时色块预览与互补色计算。',
 		kind: 'color',
-
-		content: {
-			about: [
-				'Convert any color between HEX, RGB and HSL. Edit any of the three representations and the others follow instantly, with a live swatch and the complementary color (the hue 180° around the wheel) shown beside it.',
-				'HEX and RGB describe exactly which red, green and blue light to mix; HSL is human-friendly — hue (position on the color wheel), saturation (intensity) and lightness — which makes it the natural way to build palettes.',
-			],
-			aboutZh: [
-				'在 HEX、RGB、HSL 三种表示之间转换颜色。编辑任意一种表示，其余两种即时联动，旁边还实时显示色块与互补色（色相环上相差 180° 的颜色）。',
-				'HEX 和 RGB 直接描述红绿蓝光的混合比例；HSL 更符合人的直觉——色相（色环位置）、饱和度（鲜艳程度）、亮度——是搭配配色方案的自然选择。',
-			],
-			faq: [
-				{ q: 'What is the difference between HEX and RGB?', a: 'Nothing functional — #ff8800 and rgb(255, 136, 0) are the same color written two ways.' },
-				{ q: 'What is a complementary color?', a: 'The color opposite on the wheel: orange #ff8800 complements azure #0088ff. Pairing them gives maximum contrast.' },
-				{ q: 'When should I use HSL?', a: 'For building palettes: keep hue, adjust lightness for shades, saturation for muted variants — much easier in HSL than RGB.' },
-			],
-			faqZh: [
-				{ q: 'HEX 和 RGB 有什么区别？', a: '功能上没有区别——#ff8800 与 rgb(255, 136, 0) 是同一颜色的两种写法。' },
-				{ q: '什么是互补色？', a: '色环上正对面的颜色：橙色 #ff8800 的互补色是天蓝 #0088ff，两者搭配对比度最强。' },
-				{ q: '什么时候用 HSL？', a: '做配色方案时：固定色相、调亮度得深浅变体、调饱和度得柔和变体——比在 RGB 下容易得多。' },
-			],
-		},
 	},
 ];
 

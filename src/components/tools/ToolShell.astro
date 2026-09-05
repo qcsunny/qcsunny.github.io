@@ -9,6 +9,7 @@ import BaseHead from '../BaseHead.astro';
 import SiteLogo from '../SiteLogo.astro';
 import ToolSearchModal from './ToolSearchModal.astro';
 import { ADSENSE_CLIENT, AD_SLOTS, SITE_TITLE } from '../../consts';
+import { TOOL_CONTENT } from '../../tools/content';
 import {
 	CALCULATOR_FEATURED,
 	REGISTRY,
@@ -35,7 +36,10 @@ interface Props {
 const { title, description, entry, category, redirectTo } = Astro.props;
 const kind = entry?.kind;
 const crumbName = entry ? entry.name : title;
-const content = Astro.props.content ?? entry?.content;
+// Looked up here rather than read off the entry: prose on a ToolEntry ends up in
+// the client bundle every tool page loads (see src/tools/content.ts).
+const content =
+	Astro.props.content ?? (entry ? TOOL_CONTENT[`${entry.category}/${entry.slug}`] : undefined);
 const pageTitle = entry
 	? (entry.nameZh ? `${entry.name} (${entry.nameZh})` : entry.name)
 	: title;
