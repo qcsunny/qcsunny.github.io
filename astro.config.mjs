@@ -1,16 +1,32 @@
 // @ts-check
 
 import mdx from '@astrojs/mdx';
+import { satteri } from '@astrojs/markdown-satteri';
 import sitemap from '@astrojs/sitemap';
 import { defineConfig, fontProviders } from 'astro/config';
 
 import llmsTxt from './llms-txt.mjs';
 import ogImages from './og-images.mjs';
+import satteriKatex from './satteri-katex.mjs';
 
 // https://astro.build/config
 export default defineConfig({
 	site: 'https://qcsunny.org',
 	integrations: [mdx(), sitemap(), llmsTxt(), ogImages()],
+	markdown: {
+		// Sätteri parses maths only when asked; satteri-katex.mjs then renders it
+		// to finished markup during the build, so the browser gets plain HTML and
+		// no KaTeX JavaScript at all. This replaced a runtime loader that pulled
+		// three files from cdn.jsdelivr.net on every post containing a `$`, which
+		// left every formula on the site dependent on a third party staying up.
+		//
+		// Passing satteri() explicitly keeps Astro's own defaults (gfm and smart
+		// punctuation on) — only the `math` feature is added.
+		processor: satteri({
+			features: { math: true },
+			mdastPlugins: [satteriKatex()],
+		}),
+	},
 	fonts: [
 		{
 			provider: fontProviders.local(),

@@ -40,6 +40,20 @@
 	                    code blocks and tables break out to inside prose */
 	--w-max: 1040px; /* widest layout: home page, nav bar, workbench tools */
 
+	/* Atkinson carries no CJK glyph at all, so every Chinese character on the
+	   site is drawn by one of these. Named as a variable because KaTeX's \text{}
+	   needs the same list on the .cjk_fallback span it emits (see below) —
+	   without it, formula Chinese like \text{元} drops to the browser default,
+	   which is a serif (SimSun) on Windows next to sans-serif body text.
+
+	   Theme-independent, so it belongs here and not in the dark block: body's
+	   `font-family: var(--font-atkinson), var(--font-cjk)` is one declaration,
+	   and an undefined var makes the whole of it invalid at computed-value
+	   time — which would drop Atkinson too, in whichever theme lacked it. */
+	--font-cjk:
+		-apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC',
+		'Source Han Sans SC', sans-serif;
+
 	/* legacy aliases used by the original template */
 	--black: 24, 24, 27;
 	--gray: 113, 113, 122;
@@ -72,15 +86,7 @@ html[data-theme='dark'] {
 }
 
 body {
-	font-family:
-		var(--font-atkinson),
-		-apple-system,
-		'PingFang SC',
-		'Hiragino Sans GB',
-		'Microsoft YaHei',
-		'Noto Sans CJK SC',
-		'Source Han Sans SC',
-		sans-serif;
+	font-family: var(--font-atkinson), var(--font-cjk);
 	margin: 0;
 	padding: 0;
 	text-align: left;
@@ -178,6 +184,24 @@ p {
 	}
 }
 
+/* Chinese inside a formula. `\text{ 元}` is how it gets there, and no KaTeX face
+   carries a CJK glyph — KaTeX detects this itself and wraps those characters in
+   `<span class="mord cjk_fallback">`, then declares no rule for the class,
+   leaving the font choice to the host page. This is that rule; without it the 13
+   Chinese characters inside formulas on four posts land in the browser default,
+   a serif (SimSun) on Windows beside sans-serif body text.
+
+   Targeting KaTeX's own hook rather than `.mord` matters: `.mord` is every
+   ordinary symbol, maths-mode included, so setting a family on it would override
+   `.mord.mathnormal` (italic KaTeX_Math for variables) at equal specificity —
+   decided by stylesheet order, and wrong either way.
+
+   Display formulas get their overflow guard further down, with the other
+   scrollable blocks. */
+.katex .cjk_fallback {
+	font-family: var(--font-cjk);
+}
+
 textarea {
 	width: 100%;
 	font-size: 16px;
@@ -273,7 +297,12 @@ blockquote {
 	scrollbar-color: var(--dim) transparent;
 }
 
-/* KaTeX formula display overflow protection */
+/* A display formula is one unbreakable line, so one wider than the 612px prose
+   measure would push the whole page sideways on a phone. KaTeX gives
+   .katex-display no overflow of its own — scrolling the formula rather than the
+   document is its documented remedy. overflow-y stays hidden so the box does not
+   also grow a vertical scrollbar, and the padding keeps the horizontal one off
+   the digits. */
 .katex-display {
 	overflow-x: auto;
 	overflow-y: hidden;

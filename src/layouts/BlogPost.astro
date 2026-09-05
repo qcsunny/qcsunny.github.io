@@ -7,10 +7,15 @@ import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
 import SupportBox from '../components/SupportBox.astro';
 import { ADSENSE_CLIENT, AD_SLOTS, SITE_TITLE } from '../consts';
+import katexHref from '../styles/katex.css?url';
 
-type Props = CollectionEntry<'blog'>['data'] & { minutes?: number; slug?: string };
+type Props = CollectionEntry<'blog'>['data'] & {
+	minutes?: number;
+	slug?: string;
+	hasMath?: boolean;
+};
 
-const { title, description, pubDate, updatedDate, heroImage, minutes, slug } = Astro.props;
+const { title, description, pubDate, updatedDate, heroImage, minutes, slug, hasMath } = Astro.props;
 
 const isZh = /[\p{Script=Han}]/u.test(title);
 const pageLang = isZh ? 'zh-CN' : 'en';
@@ -68,42 +73,15 @@ const jsonLd = {
 			></script>
 		)}
 		<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
-		<!-- KaTeX math rendering (100% on-demand in browser, 0 npm dependencies, 0 impact on non-math pages) -->
-		<script is:inline>
-			document.addEventListener('DOMContentLoaded', () => {
-				const prose = document.querySelector('.prose');
-				// If the article has no mathematical notation ($), do not load KaTeX at all
-				if (!prose || !prose.textContent || !prose.textContent.includes('$')) return;
-
-				const link = document.createElement('link');
-				link.rel = 'stylesheet';
-				link.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css';
-				link.crossOrigin = 'anonymous';
-				document.head.appendChild(link);
-
-				const scriptKaTeX = document.createElement('script');
-				scriptKaTeX.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js';
-				scriptKaTeX.crossOrigin = 'anonymous';
-				scriptKaTeX.onload = () => {
-					const scriptAuto = document.createElement('script');
-					scriptAuto.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js';
-					scriptAuto.crossOrigin = 'anonymous';
-					scriptAuto.onload = () => {
-						if (window.renderMathInElement) {
-							window.renderMathInElement(prose, {
-								delimiters: [
-									{ left: '$$', right: '$$', display: true },
-									{ left: '$', right: '$', display: false },
-								],
-								throwOnError: false,
-							});
-						}
-					};
-					document.head.appendChild(scriptAuto);
-				};
-				document.head.appendChild(scriptKaTeX);
-			});
-		</script>
+		{
+			/* Formulas are already rendered into the HTML by satteri-katex.mjs at
+			   build time (see astro.config.mjs), so all that is left to ship is
+			   KaTeX's stylesheet and the fonts it references — no JavaScript, no
+			   cdn.jsdelivr.net, nothing for a third-party outage to break. The
+			   ?url import hands back the hashed, immutably-cached emitted file;
+			   hasMath keeps the posts without formulas from loading it. */
+		}
+		{hasMath && <link rel="stylesheet" href={katexHref} />}
 		<style>
 			main {
 				/* full-width so the hero image can go wider than the prose

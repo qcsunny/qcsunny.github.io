@@ -111,7 +111,9 @@ function gfMul(a: number, b: number): number {
 
 思路是把 k 个数据码字当成多项式系数，乘上 $x^t$（左移 t 位），再除以生成多项式
 
-$$g(x) = (x - \alpha^0)(x - \alpha^1)\cdots(x - \alpha^{t-1})$$
+$$
+g(x) = (x - \alpha^0)(x - \alpha^1)\cdots(x - \alpha^{t-1})
+$$
 
 余数的 t 个系数就是纠错码字。这样构造出的完整码字多项式在 $\alpha^0 \ldots \alpha^{t-1}$ 这 t 个点上取值全为 0；解码端把收到的数据代进这些点，得到的就是**校验子**，非零即说明有错，进一步还能定位错在哪。
 
