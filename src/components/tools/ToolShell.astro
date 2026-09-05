@@ -293,7 +293,11 @@ const year = new Date().getFullYear();
 			html[data-lang='zh'] .t-content-en {
 				display: none;
 			}
-			html[data-lang='en'] .t-content-zh {
+			/* EN is the fallback when data-lang has not been written yet — no-JS
+			   and the pre-hydration paint — matching the .i18n-zh rule in
+			   global.css. Keyed on [data-lang='en'] alone, the Chinese prose used
+			   to sit under the English one until the bootstrap script ran. */
+			html:not([data-lang='zh']) .t-content-zh {
 				display: none;
 			}
 			html[data-lang='zh'] .t-content:not(:has(.t-content-zh)) .t-content-en {
@@ -1759,8 +1763,10 @@ html[data-tool-kind='html'] .t-main {
 							)}
 						</nav>
 						<div class="t-topbar-actions">
-							<button class="t-search-nav" type="button" title="Search tools / 搜索工具 (快捷键 / 或 Ctrl+K)" aria-label="Search tools">🔍</button>
-							<button class="t-lang" type="button" aria-label="切换中英文 / Switch language">中 / EN</button>
+							<button class="t-search-nav" type="button" title="Search tools (/ or Ctrl+K)" aria-label="Search tools"
+								data-title-en="Search tools (/ or Ctrl+K)" data-title-zh="搜索工具 (快捷键 / 或 Ctrl+K)"
+								data-aria-en="Search tools" data-aria-zh="搜索工具">🔍</button>
+							<button class="t-lang" type="button" aria-label="Switch language">中 / EN</button>
 							<button class="t-theme" type="button" aria-label="Toggle light / dark theme">☾</button>
 						</div>
 					</header>
@@ -1882,10 +1888,25 @@ html[data-tool-kind='html'] .t-main {
 						// Language toggle
 						const langToggle = document.querySelector('.t-lang');
 						function syncLangUI(l) {
+							const zh = l === 'zh';
+							for (const el of document.querySelectorAll('[data-aria-en]')) {
+								const v = (zh ? el.dataset.ariaZh : el.dataset.ariaEn) || el.dataset.ariaEn;
+								if (v) el.setAttribute('aria-label', v);
+							}
+							for (const el of document.querySelectorAll('[data-title-en]')) {
+								const v = (zh ? el.dataset.titleZh : el.dataset.titleEn) || el.dataset.titleEn;
+								if (v) el.title = v;
+							}
+							// An <option> cannot hold the .i18n-en / .i18n-zh span pair, so its two
+							// texts ride on the element and get swapped here (see Graph3DTab.astro).
+							for (const el of document.querySelectorAll('[data-text-en]')) {
+								const v = (zh ? el.dataset.textZh : el.dataset.textEn) || el.dataset.textEn;
+								if (v) el.textContent = v;
+							}
 							if (!langToggle) return;
 							langToggle.textContent = l === 'zh' ? '中' : 'EN';
 							langToggle.title = l === 'zh' ? '当前：中文 (点击切换为 English)' : 'Current: English (click for Chinese)';
-							langToggle.setAttribute('aria-label', l === 'zh' ? '切换为 English' : '切换为 中文');
+							langToggle.setAttribute('aria-label', l === 'zh' ? '切换为 English' : 'Switch to Chinese');
 						}
 						const currentLang = root.dataset.lang || localStorage.getItem('site:lang') || (navigator.language.startsWith('zh') ? 'zh' : 'en');
 						root.dataset.lang = currentLang;
@@ -1921,19 +1942,29 @@ html[data-tool-kind='html'] .t-main {
 						const themeToggle = document.querySelector('.t-theme');
 						const mql = matchMedia('(prefers-color-scheme: dark)');
 						const ICONS = { auto: '◐', light: '☀', dark: '☾' };
+						// aria-label and title hold plain text, so they cannot carry a span
+						// pair either: syncLangUI calls syncThemeUI on every switch.
 						const LABELS = {
-							auto: 'Auto theme (follows browser) / 跟随系统',
-							light: 'Light theme / 浅色模式',
-							dark: 'Dark theme / 深色模式',
+							en: {
+								auto: 'Auto theme (follows the browser)',
+								light: 'Light theme',
+								dark: 'Dark theme',
+							},
+							zh: {
+								auto: '主题跟随系统',
+								light: '浅色模式',
+								dark: '深色模式',
+							},
 						};
 						const ORDER = ['auto', 'light', 'dark'];
 
 						function syncThemeUI() {
 							if (!themeToggle) return;
 							const mode = root.dataset.themeMode || 'auto';
+							const labels = LABELS[root.dataset.lang === 'zh' ? 'zh' : 'en'];
 							themeToggle.textContent = ICONS[mode] || '☾';
-							themeToggle.title = LABELS[mode] || 'Theme';
-							themeToggle.setAttribute('aria-label', LABELS[mode] || 'Theme');
+							themeToggle.title = labels[mode] || labels.dark;
+							themeToggle.setAttribute('aria-label', labels[mode] || labels.dark);
 						}
 
 						function applyMode(mode) {
@@ -1955,6 +1986,14 @@ html[data-tool-kind='html'] .t-main {
 							const next = ORDER[(ORDER.indexOf(current) + 1) % ORDER.length];
 							applyMode(next);
 						});
+
+						// .t-lang is not the only writer of data-lang (BaseHead's blocking
+						// script sets it pre-paint, and a second tab can too), so the passes
+						// above follow the attribute rather than the click.
+						new MutationObserver(() => {
+							syncLangUI(root.dataset.lang === 'zh' ? 'zh' : 'en');
+							syncThemeUI();
+						}).observe(root, { attributes: true, attributeFilter: ['data-lang'] });
 
 						mql.addEventListener('change', () => {
 							if (root.dataset.themeMode === 'auto') {

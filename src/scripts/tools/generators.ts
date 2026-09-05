@@ -2,6 +2,7 @@
 // All randomness comes from crypto.getRandomValues (rejection-sampled so the
 // distribution stays uniform), never Math.random.
 
+import { bilingual, langAttr, langProp, setBilingual } from './i18n';
 import type {
 	GeneratorConfig,
 	PasswordGenConfig,
@@ -77,21 +78,22 @@ function makeCopyButton(getText: () => string): { wrap: HTMLElement; flash: () =
 	const btn = document.createElement('button');
 	btn.type = 'button';
 	btn.className = 't-btn';
-	btn.textContent = 'Copy';
+	btn.append(bilingual('Copy', '复制'));
 	const hint = document.createElement('span');
 	hint.className = 't-copy-hint';
-	hint.textContent = '';
+	const copied = (): void => setBilingual(hint, 'Copied ✓', '已复制 ✓');
 	btn.addEventListener('click', () => {
 		void copyText(getText()).then((okFlag) => {
-			hint.textContent = okFlag ? 'Copied ✓' : 'Copy failed';
-			setTimeout(() => (hint.textContent = ''), 1500);
+			if (okFlag) copied();
+			else setBilingual(hint, 'Copy failed', '复制失败');
+			setTimeout(() => hint.replaceChildren(), 1500);
 		});
 	});
 	wrap.append(btn, hint);
-	return { wrap, flash: () => (hint.textContent = 'Copied ✓') };
+	return { wrap, flash: copied };
 }
 
-function checkRow(id: string, label: string, checked: boolean): HTMLLabelElement {
+function checkRow(id: string, label: string, checked: boolean, labelZh?: string): HTMLLabelElement {
 	const row = document.createElement('label');
 	row.className = 't-checkrow';
 	const box = document.createElement('input');
@@ -99,7 +101,7 @@ function checkRow(id: string, label: string, checked: boolean): HTMLLabelElement
 	box.id = id;
 	box.checked = checked;
 	box.className = 't-check';
-	row.append(box, document.createTextNode(label));
+	row.append(box, bilingual(label, labelZh));
 	return row;
 }
 
@@ -118,11 +120,41 @@ function passwordHtml(chars: string, length: number): string {
 	return out;
 }
 
-function strengthLabel(entropyBits: number): { label: string; note: string } {
-	if (entropyBits < 40) return { label: 'Weak', note: 'Fine for throwaway accounts, not for anything you care about.' };
-	if (entropyBits < 60) return { label: 'Fair', note: 'Reasonable for most accounts with rate-limited login.' };
-	if (entropyBits < 80) return { label: 'Strong', note: 'Resistant to offline brute force at scale.' };
-	return { label: 'Very strong', note: 'Comfortably beyond brute-force reach.' };
+interface Strength {
+	label: string;
+	note: string;
+	labelZh: string;
+	noteZh: string;
+}
+
+function strengthLabel(entropyBits: number): Strength {
+	if (entropyBits < 40)
+		return {
+			label: 'Weak',
+			note: 'Fine for throwaway accounts, not for anything you care about.',
+			labelZh: '偏弱',
+			noteZh: '仅够用于一次性账号，别用在任何你在意的地方。',
+		};
+	if (entropyBits < 60)
+		return {
+			label: 'Fair',
+			note: 'Reasonable for most accounts with rate-limited login.',
+			labelZh: '一般',
+			noteZh: '对有登录频率限制的普通账号来说够用。',
+		};
+	if (entropyBits < 80)
+		return {
+			label: 'Strong',
+			note: 'Resistant to offline brute force at scale.',
+			labelZh: '较强',
+			noteZh: '足以抵御大规模离线暴力破解。',
+		};
+	return {
+		label: 'Very strong',
+		note: 'Comfortably beyond brute-force reach.',
+		labelZh: '很强',
+		noteZh: '远超暴力破解的可行范围。',
+	};
 }
 
 function initPassword(host: HTMLElement, cfg: PasswordGenConfig): void {
@@ -152,26 +184,31 @@ function initPassword(host: HTMLElement, cfg: PasswordGenConfig): void {
 	checkRowEl.className = 't-checkrow-group';
 	for (const b of boxes) checkRowEl.append(checkRow(b.id, b.label, b.on));
 
-	const noAmbiguousBox = checkRow('t-no-ambig', 'Exclude ambiguous (0, O, o, 1, l, I)', false);
+	const noAmbiguousBox = checkRow(
+		't-no-ambig',
+		'Exclude ambiguous (0, O, o, 1, l, I)',
+		false,
+		'排除易混淆字符 (0, O, o, 1, l, I)',
+	);
 	checkRowEl.append(noAmbiguousBox);
 
 	const out = document.createElement('input');
 	out.type = 'text';
 	out.className = 't-passout';
 	out.readOnly = true;
-	out.setAttribute('aria-label', 'Generated password');
+	langAttr(out, 'aria-label', 'Generated password', '生成的密码');
 
 	const regen = document.createElement('button');
 	regen.type = 'button';
 	regen.className = 't-btn';
-	regen.textContent = 'Regenerate';
+	regen.append(bilingual('Regenerate', '重新生成'));
 	const copy = makeCopyButton(() => out.value);
 
 	const strength = document.createElement('p');
 	strength.className = 't-note';
 
 	function update(): void {
-		lenLabel.textContent = `Length: ${slider.value} characters`;
+		setBilingual(lenLabel, `Length: ${slider.value} characters`, `密码长度：${slider.value} 位`);
 		lenNum.textContent = slider.value;
 		const active = boxes.filter((b) => {
 			const el = document.getElementById(b.id) as HTMLInputElement | null;
@@ -179,7 +216,7 @@ function initPassword(host: HTMLElement, cfg: PasswordGenConfig): void {
 		});
 		if (!active.length) {
 			out.value = '';
-			strength.textContent = 'Select at least one character set.';
+			setBilingual(strength, 'Select at least one character set.', '请至少勾选一类字符集。');
 			return;
 		}
 		let pool = active.map((b) => b.chars).join('');
@@ -189,13 +226,17 @@ function initPassword(host: HTMLElement, cfg: PasswordGenConfig): void {
 		}
 		if (!pool.length) {
 			out.value = '';
-			strength.textContent = 'Character pool is empty after exclusions.';
+			setBilingual(strength, 'Character pool is empty after exclusions.', '排除易混淆字符后，可用字符集为空。');
 			return;
 		}
 		out.value = passwordHtml(pool, Number(slider.value));
 		const bits = Number(slider.value) * Math.log2(pool.length);
-		const { label, note } = strengthLabel(bits);
-		strength.textContent = `${label} — about ${Math.round(bits)} bits of entropy. ${note}`;
+		const st = strengthLabel(bits);
+		setBilingual(
+			strength,
+			`${st.label} — about ${Math.round(bits)} bits of entropy. ${st.note}`,
+			`${st.labelZh} — 约 ${Math.round(bits)} 比特熵。${st.noteZh}`,
+		);
 	}
 
 	host.append(lenLabel, lenRow, checkRowEl, out);
@@ -249,15 +290,15 @@ function initUuid(host: HTMLElement, cfg: UuidGenConfig): void {
 	verField.className = 't-field';
 	const verLabel = document.createElement('label');
 	verLabel.htmlFor = 't-uuid-ver';
-	verLabel.textContent = 'Version';
+	verLabel.append(bilingual('Version', 'UUID 版本'));
 	const verSelect = document.createElement('select');
 	verSelect.id = 't-uuid-ver';
 	const optV4 = document.createElement('option');
 	optV4.value = 'v4';
-	optV4.textContent = 'UUID v4 (Random / 随机)';
+	langProp(optV4, 'textContent', 'UUID v4 (random)', 'UUID v4 (随机)');
 	const optV7 = document.createElement('option');
 	optV7.value = 'v7';
-	optV7.textContent = 'UUID v7 (Time-ordered / 时间有序)';
+	langProp(optV7, 'textContent', 'UUID v7 (time-ordered)', 'UUID v7 (时间有序)');
 	verSelect.append(optV4, optV7);
 	verField.append(verLabel, verSelect);
 
@@ -265,7 +306,7 @@ function initUuid(host: HTMLElement, cfg: UuidGenConfig): void {
 	countField.className = 't-field';
 	const countLabel = document.createElement('label');
 	countLabel.htmlFor = 't-count';
-	countLabel.textContent = 'Count';
+	countLabel.append(bilingual('Count', '生成数量'));
 	const count = document.createElement('input');
 	count.type = 'number';
 	count.id = 't-count';
@@ -274,13 +315,13 @@ function initUuid(host: HTMLElement, cfg: UuidGenConfig): void {
 	count.value = String(cfg.defCount);
 	countField.append(countLabel, count);
 
-	const hyphenBox = checkRow('t-uuid-hyphen', 'Hyphens (-)', true);
-	const upperBox = checkRow('t-uuid-upper', 'Uppercase', false);
+	const hyphenBox = checkRow('t-uuid-hyphen', 'Hyphens (-)', true, '带连字符 (-)');
+	const upperBox = checkRow('t-uuid-upper', 'Uppercase', false, '转为大写');
 
 	const gen = document.createElement('button');
 	gen.type = 'button';
 	gen.className = 't-btn t-primary';
-	gen.textContent = 'Generate';
+	gen.append(bilingual('Generate', '生成'));
 
 	controlsRow.append(verField, countField, hyphenBox, upperBox, gen);
 
@@ -288,7 +329,7 @@ function initUuid(host: HTMLElement, cfg: UuidGenConfig): void {
 	out.className = 't-textarea t-mono t-out';
 	out.rows = 8;
 	out.readOnly = true;
-	out.setAttribute('aria-label', 'Generated UUIDs');
+	langAttr(out, 'aria-label', 'Generated UUIDs', '生成的 UUID');
 	const copy = makeCopyButton(() => out.value);
 	const note = document.createElement('p');
 	note.className = 't-note';
@@ -308,9 +349,19 @@ function initUuid(host: HTMLElement, cfg: UuidGenConfig): void {
 			lines.push(id);
 		}
 		out.value = lines.join('\n');
-		note.textContent = ver === 'v7'
-			? 'UUID v7: 48-bit millisecond timestamp + 74 bits randomness (RFC 9562). Naturally sortable and database index friendly.'
-			: 'UUID v4: 122 cryptographically secure random bits (RFC 4122). Uniform distribution with zero correlation.';
+		if (ver === 'v7') {
+			setBilingual(
+				note,
+				'UUID v7: 48-bit millisecond timestamp + 74 bits randomness (RFC 9562). Naturally sortable and database index friendly.',
+				'UUID v7：48 位毫秒时间戳 + 74 位随机数 (RFC 9562)。天然可排序，对数据库索引友好。',
+			);
+		} else {
+			setBilingual(
+				note,
+				'UUID v4: 122 cryptographically secure random bits (RFC 4122). Uniform distribution with zero correlation.',
+				'UUID v4：122 位密码学安全随机数 (RFC 4122)。均匀分布，互不相关。',
+			);
+		}
 	}
 
 	const copyRow = document.createElement('div');
@@ -333,17 +384,31 @@ function initRandom(host: HTMLElement, cfg: RandomGenConfig): void {
 
 	const form = document.createElement('div');
 	form.className = 't-form';
-	const defs: { id: string; label: string; value: string; min?: string; max?: string }[] = [
-		{ id: 't-min', label: 'Minimum (inclusive)', value: String(cfg.defMin) },
-		{ id: 't-max', label: 'Maximum (inclusive)', value: String(cfg.defMax) },
-		{ id: 't-count', label: 'How many', value: String(cfg.defCount), min: '1', max: '1000' },
+	const defs: {
+		id: string;
+		label: string;
+		labelZh: string;
+		value: string;
+		min?: string;
+		max?: string;
+	}[] = [
+		{ id: 't-min', label: 'Minimum (inclusive)', labelZh: '最小值 (含)', value: String(cfg.defMin) },
+		{ id: 't-max', label: 'Maximum (inclusive)', labelZh: '最大值 (含)', value: String(cfg.defMax) },
+		{
+			id: 't-count',
+			label: 'How many',
+			labelZh: '生成数量',
+			value: String(cfg.defCount),
+			min: '1',
+			max: '1000',
+		},
 	];
 	for (const d of defs) {
 		const field = document.createElement('div');
 		field.className = 't-field';
 		const lab = document.createElement('label');
 		lab.htmlFor = d.id;
-		lab.textContent = d.label;
+		lab.append(bilingual(d.label, d.labelZh));
 		const input = document.createElement('input');
 		input.type = 'number';
 		input.id = d.id;
@@ -353,13 +418,13 @@ function initRandom(host: HTMLElement, cfg: RandomGenConfig): void {
 		field.append(lab, input);
 		form.append(field);
 	}
-	const uniqueBox = checkRow('t-unique', 'No duplicates', false);
+	const uniqueBox = checkRow('t-unique', 'No duplicates', false, '不允许重复');
 	form.append(uniqueBox);
 
 	const gen = document.createElement('button');
 	gen.type = 'button';
 	gen.className = 't-btn t-primary';
-	gen.textContent = 'Generate';
+	gen.append(bilingual('Generate', '生成'));
 	const actions = document.createElement('div');
 	actions.className = 't-btnrow';
 	const copy = makeCopyButton(() => out.value);
@@ -368,7 +433,7 @@ function initRandom(host: HTMLElement, cfg: RandomGenConfig): void {
 	const out = document.createElement('textarea');
 	out.className = 't-textarea t-mono t-out';
 	out.readOnly = true;
-	out.setAttribute('aria-label', 'Random numbers');
+	langAttr(out, 'aria-label', 'Random numbers', '生成的随机数');
 	const note = document.createElement('p');
 	note.className = 't-note';
 
@@ -379,7 +444,7 @@ function initRandom(host: HTMLElement, cfg: RandomGenConfig): void {
 		const unique = (document.getElementById('t-unique') as HTMLInputElement).checked;
 		if (max < min) {
 			out.value = '';
-			note.textContent = 'Maximum must be ≥ minimum.';
+			setBilingual(note, 'Maximum must be ≥ minimum.', '最大值必须不小于最小值。');
 			return;
 		}
 		const range = max - min + 1;
@@ -387,19 +452,31 @@ function initRandom(host: HTMLElement, cfg: RandomGenConfig): void {
 		// would silently return a neighbouring value. Say so instead.
 		if (!Number.isSafeInteger(min) || !Number.isSafeInteger(max) || !Number.isSafeInteger(range)) {
 			out.value = '';
-			note.textContent = 'Keep both bounds within ±9,007,199,254,740,991 (2⁵³ − 1).';
+			setBilingual(
+				note,
+				'Keep both bounds within ±9,007,199,254,740,991 (2⁵³ − 1).',
+				'上下界都需落在 ±9,007,199,254,740,991 (2⁵³ − 1) 之内。',
+			);
 			return;
 		}
 		if (unique) {
 			count = Math.min(count, range);
 			const lines = sampleWithoutReplacement(range, count).map((v) => min + v);
 			out.value = lines.join('\n');
-			note.textContent = `${count} unique number${count === 1 ? '' : 's'} drawn from ${min} to ${max} (range of ${range}).`;
+			setBilingual(
+				note,
+				`${count} unique number${count === 1 ? '' : 's'} drawn from ${min} to ${max} (range of ${range}).`,
+				`已从 ${min} 到 ${max} (共 ${range} 个取值) 中抽取 ${count} 个互不重复的数。`,
+			);
 		} else {
 			const lines: number[] = [];
 			for (let i = 0; i < count; i++) lines.push(min + randInt(range));
 			out.value = lines.join('\n');
-			note.textContent = `${count} number${count === 1 ? '' : 's'} from ${min} to ${max}, duplicates allowed.`;
+			setBilingual(
+				note,
+				`${count} number${count === 1 ? '' : 's'} from ${min} to ${max}, duplicates allowed.`,
+				`已生成 ${count} 个介于 ${min} 到 ${max} 的随机数，允许重复。`,
+			);
 		}
 	}
 

@@ -25,7 +25,7 @@ function validateXml(xml: string): { valid: boolean; error?: string } {
 	const doc = parser.parseFromString(xml, 'application/xml');
 	const errorNode = doc.querySelector('parsererror');
 	if (errorNode) {
-		return { valid: false, error: errorNode.textContent || 'XML 语法解析错误' };
+		return { valid: false, error: errorNode.textContent || '' };
 	}
 	return { valid: true };
 }
@@ -83,13 +83,21 @@ export function initXml(host: HTMLElement): void {
 		const raw = wb.inputArea.value.trim();
 		if (!raw) {
 			wb.outputArea.value = '';
-			wb.updateStatus('idle', '准备就绪：输入或粘贴 XML / SVG 报文后将自动校验并格式化。');
+			wb.updateStatus(
+				'idle',
+				'Ready: paste XML or SVG and it is validated and formatted as you type.',
+				'准备就绪：输入或粘贴 XML / SVG 报文后将自动校验并格式化。'
+			);
 			return;
 		}
 
 		const validation = validateXml(raw);
 		if (!validation.valid) {
-			wb.updateStatus('error', `✗ XML 语法错误: ${validation.error}`);
+			wb.updateStatus(
+				'error',
+				`✗ Invalid XML: ${validation.error || 'the document is not well-formed'}`,
+				`✗ XML 语法错误: ${validation.error || '文档格式不合法'}`
+			);
 			return;
 		}
 
@@ -101,11 +109,12 @@ export function initXml(host: HTMLElement): void {
 			const lineCount = formatted.split('\n').length;
 			wb.updateStatus(
 				'valid',
+				`✓ Valid XML · ${lineCount} lines · ${formatBytes(origBytes)} in, ${formatBytes(fmtBytes)} out`,
 				`✓ XML 校验通过 · 共 ${lineCount} 行 · 原始大小: ${formatBytes(origBytes)} · 格式化后: ${formatBytes(fmtBytes)}`
 			);
 		} catch (err) {
-			const msg = err instanceof Error ? err.message : '格式化失败';
-			wb.updateStatus('error', `✗ 格式化出错: ${msg}`);
+			const msg = err instanceof Error ? err.message : 'formatting failed';
+			wb.updateStatus('error', `✗ Formatting error: ${msg}`, `✗ 格式化出错: ${msg}`);
 		}
 	}
 
@@ -115,7 +124,11 @@ export function initXml(host: HTMLElement): void {
 
 		const validation = validateXml(raw);
 		if (!validation.valid) {
-			wb.updateStatus('error', `✗ XML 语法错误: ${validation.error}`);
+			wb.updateStatus(
+				'error',
+				`✗ Invalid XML: ${validation.error || 'the document is not well-formed'}`,
+				`✗ XML 语法错误: ${validation.error || '文档格式不合法'}`
+			);
 			return;
 		}
 

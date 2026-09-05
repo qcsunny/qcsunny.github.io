@@ -3,6 +3,7 @@
 // createElement/textContent (no HTML string building).
 
 import type { FormConfig, FormField, FormResult, FormResultRow, FormTable, FormValues } from '../../tools/registry';
+import { bilingual, langAttr, langProp } from './i18n';
 // Type-only import: erased at build time, so it does not pull the PNG renderer
 // into this bundle (the module itself is imported dynamically on click).
 import type { PngExportData } from './pngExport';
@@ -14,7 +15,6 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 	const reqStars = new Map<string, HTMLElement>();
 	const controlsMap = new Map<string, HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>();
 	const reqTips = new Map<string, HTMLElement>();
-	const bilingualOptions: { el: HTMLOptionElement; en: string; zh: string }[] = [];
 
 	// Slug used as localStorage key prefix (Feature 2)
 	const slug = document.documentElement.dataset.toolSlug ?? '';
@@ -36,13 +36,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 	exportBar.style.display = 'none';
 	const exportBtn = document.createElement('button');
 	exportBtn.className = 't-export-btn';
-	const exportEnSpan = document.createElement('span');
-	exportEnSpan.className = 'i18n-en';
-	exportEnSpan.textContent = '🖨 Print / Save PDF';
-	const exportZhSpan = document.createElement('span');
-	exportZhSpan.className = 'i18n-zh';
-	exportZhSpan.textContent = '🖨 打印 / 导出 PDF';
-	exportBtn.append(exportEnSpan, exportZhSpan);
+	exportBtn.append(bilingual('🖨 Print / Save PDF', '🖨 打印 / 导出 PDF'));
 	exportBtn.addEventListener('click', () => window.print());
 
 	// Second export path: a branded PNG of the same numbers, for pasting into
@@ -50,7 +44,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 	// code stays out of the bundle every tool page already downloads.
 	const pngBtn = document.createElement('button');
 	pngBtn.className = 't-export-btn';
-	pngBtn.append(makeBilingualSpan('🖼 Save as PNG', '🖼 导出 PNG 长图'));
+	pngBtn.append(bilingual('🖼 Save as PNG', '🖼 导出 PNG 长图'));
 	pngBtn.addEventListener('click', () => {
 		const data = collectExportData();
 		if (!data) return;
@@ -77,19 +71,6 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 	// screen instead of recomputing and risking a different (or throwing) run.
 	let lastOut: FormResult | null = null;
 
-	function makeBilingualSpan(en: string, zh?: string): Node {
-		if (!zh) return document.createTextNode(en);
-		const frag = document.createDocumentFragment();
-		const enEl = document.createElement('span');
-		enEl.className = 'i18n-en';
-		enEl.textContent = en;
-		const zhEl = document.createElement('span');
-		zhEl.className = 'i18n-zh';
-		zhEl.textContent = zh;
-		frag.append(enEl, zhEl);
-		return frag;
-	}
-
 	function fieldEl(field: FormField): HTMLElement {
 		const wrap = document.createElement('div');
 		wrap.className = field.wide ? 't-field t-wide' : 't-field';
@@ -107,7 +88,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			controls.push(cb);
 			controlsMap.set(field.id, cb);
 			const text = document.createElement('span');
-			text.append(makeBilingualSpan(field.label, field.labelZh));
+			text.append(bilingual(field.label, field.labelZh));
 			row.append(cb, text);
 			wrap.append(row);
 			return wrap;
@@ -115,11 +96,11 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 
 		const label = document.createElement('label');
 		label.htmlFor = `t-f-${field.id}`;
-		label.append(makeBilingualSpan(field.label, field.labelZh));
+		label.append(bilingual(field.label, field.labelZh));
 
 		const req = document.createElement('span');
 		req.className = 't-req';
-		req.title = 'Required / 必填项';
+		langAttr(req, 'title', 'Required', '必填项');
 		req.textContent = ' *';
 		req.style.display = 'none';
 		reqStars.set(field.id, req);
@@ -128,7 +109,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 		if (field.suffix) {
 			const s = document.createElement('span');
 			s.className = 't-suffix';
-			s.append(makeBilingualSpan(` ${field.suffix}`, field.suffixZh ? ` ${field.suffixZh}` : undefined));
+			s.append(bilingual(` ${field.suffix}`, field.suffixZh ? ` ${field.suffixZh}` : undefined));
 			label.append(s);
 		}
 		wrap.append(label);
@@ -140,12 +121,11 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 				const o = document.createElement('option');
 				o.value = opt.value;
 				// An <option> cannot hold the pair of .i18n-en / .i18n-zh spans used
-				// everywhere else, so the text is swapped on language change instead
-				// (see applyOptionLang). It used to render `${label} (${labelZh})`,
-				// which showed both languages at once in both languages — and since
-				// several English labels carried the Chinese in parentheses already,
-				// the Chinese appeared twice in one option.
-				bilingualOptions.push({ el: o, en: opt.label, zh: opt.labelZh ?? opt.label });
+				// everywhere else, so its text is rewritten on language change. It
+				// used to render `${label} (${labelZh})`, which showed both languages
+				// at once in both languages — and since several English labels carried
+				// the Chinese in parentheses already, the Chinese appeared twice.
+				langProp(o, 'textContent', opt.label, opt.labelZh);
 				sel.append(o);
 			}
 			if (field.def !== undefined) sel.value = field.def;
@@ -156,7 +136,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			ta.className = 't-textarea';
 			ta.rows = 3;
 			ta.value = field.def ?? '';
-			ta.placeholder = field.placeholder ?? 'Required / 必填';
+			langProp(ta, 'placeholder', field.placeholder ?? 'Required', field.placeholderZh ?? (field.placeholder ? undefined : '必填'));
 			getters.set(field.id, () => ta.value);
 			control = ta;
 		} else {
@@ -166,7 +146,9 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			if (field.min) input.min = field.min;
 			if (field.max) input.max = field.max;
 			input.value = field.def ?? '';
-			input.placeholder = field.placeholder ?? (field.type === 'number' ? 'Required / 必填数值' : 'Required / 必填');
+			const phEn = field.placeholder ?? (field.type === 'number' ? 'Required (number)' : 'Required');
+			const phZh = field.placeholderZh ?? (field.placeholder ? undefined : field.type === 'number' ? '必填数值' : '必填');
+			langProp(input, 'placeholder', phEn, phZh);
 			getters.set(field.id, () => input.value);
 			control = input;
 		}
@@ -188,7 +170,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 		tip.style.display = 'none';
 		const tipEn = field.type === 'number' ? 'This field is required (valid number)' : 'This field is required';
 		const tipZh = field.type === 'number' ? '此项为必填项，请输入有效数值' : '此项为必填项，请填写内容';
-		tip.append(makeBilingualSpan(tipEn, tipZh));
+		tip.append(bilingual(tipEn, tipZh));
 		below.append(tip);
 		reqTips.set(field.id, tip);
 
@@ -197,7 +179,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 		if (field.hint) {
 			const hint = document.createElement('span');
 			hint.className = 't-hint';
-			hint.append(makeBilingualSpan(field.hint, field.hintZh));
+			hint.append(bilingual(field.hint, field.hintZh));
 			below.append(hint);
 		}
 		wrap.append(below);
@@ -209,10 +191,10 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 		el.className = row.emphasis ? 't-row t-emph' : 't-row';
 		const l = document.createElement('span');
 		l.className = 't-row-label';
-		l.append(makeBilingualSpan(row.label, row.labelZh));
+		l.append(bilingual(row.label, row.labelZh));
 		const v = document.createElement('span');
 		v.className = 't-row-value';
-		v.textContent = row.value;
+		v.append(bilingual(row.value, row.valueZh));
 		el.append(l, v);
 		return el;
 	}
@@ -228,20 +210,20 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			const th = document.createElement('th');
 			th.scope = 'col';
 			const zhCol = table.columnsZh ? table.columnsZh[idx] : undefined;
-			th.append(makeBilingualSpan(col, zhCol));
+			th.append(bilingual(col, zhCol));
 			headRow.append(th);
 		});
 		thead.append(headRow);
 		const tbody = document.createElement('tbody');
-		for (const cells of table.rows) {
+		table.rows.forEach((cells, r) => {
 			const tr = document.createElement('tr');
-			for (const cell of cells) {
+			cells.forEach((cell, c) => {
 				const td = document.createElement('td');
-				td.textContent = cell;
+				td.append(bilingual(cell, table.rowsZh?.[r]?.[c]));
 				tr.append(td);
-			}
+			});
 			tbody.append(tr);
-		}
+		});
 		t.append(thead, tbody);
 		wrap.append(t);
 		return wrap;
@@ -288,7 +270,12 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 				value: r.value,
 				emphasis: r.emphasis,
 			})),
-			table: t ? { columns: zh && t.columnsZh ? t.columnsZh : t.columns, rows: t.rows } : undefined,
+			table: t
+				? {
+						columns: zh && t.columnsZh ? t.columnsZh : t.columns,
+						rows: zh && t.rowsZh ? t.rowsZh : t.rows,
+					}
+				: undefined,
 			note: zh ? lastOut.noteZh || lastOut.note : lastOut.note,
 			filename: `${slug || 'result'}-${new Date().toISOString().slice(0, 10)}`,
 		};
@@ -368,7 +355,8 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			const promptRow = resultRow({
 				label: `Required: ${enNames}`,
 				labelZh: `请填写必填项：${zhNames}`,
-				value: 'Please enter valid values in highlighted field(s) / 请在上方高亮标注框中输入有效数值',
+				value: 'Please enter valid values in the highlighted field(s)',
+				valueZh: '请在上方高亮标注的输入框中填写有效数值',
 				emphasis: false,
 			});
 			promptRow.classList.add('t-row-warn');
@@ -391,7 +379,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			if (out.note) {
 				const note = document.createElement('p');
 				note.className = 't-note';
-				note.append(makeBilingualSpan(out.note, out.noteZh));
+				note.append(bilingual(out.note, out.noteZh));
 				host.append(note);
 			}
 
@@ -468,18 +456,6 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 		} catch {
 			// localStorage may be disabled or JSON malformed; silently ignore
 		}
-	}
-
-	function applyOptionLang(): void {
-		const zh = document.documentElement.dataset.lang === 'zh';
-		for (const o of bilingualOptions) o.el.textContent = zh ? o.zh : o.en;
-	}
-	applyOptionLang();
-	if (bilingualOptions.length) {
-		new MutationObserver(applyOptionLang).observe(document.documentElement, {
-			attributes: true,
-			attributeFilter: ['data-lang'],
-		});
 	}
 
 	update();

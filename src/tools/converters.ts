@@ -26,7 +26,7 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'weight',
 		'Weight & Mass Converter',
 		'重量与质量单位换算器',
-		'Convert between kg, g, mg, tonnes, jin (市斤), liang (两), troy oz (金衡盎司), carats (克拉), pounds, ounces and stone.',
+		'Convert between kg, g, mg, tonnes, Chinese jin (catty), liang (tael), troy ounces, carats, pounds, ounces and stone.',
 		'支持千克、克、市斤、两、金衡盎司、克拉、磅、盎司等多维度重量单位换算。',
 	),
 	converter(
@@ -42,7 +42,7 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'area',
 		'Area & Land Measure Converter',
 		'面积与土地单位换算器',
-		'Convert between square meters, hectares, Chinese mu (亩), qing (顷), acres, square feet, yards and square miles.',
+		'Convert between square meters, hectares, Chinese mu and qing, acres, square feet, square yards and square miles.',
 		'支持平方米、公顷、中国市亩、顷、英亩、平方英尺、平方英里等多尺度土地面积换算。',
 	),
 	converter(
@@ -66,7 +66,7 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'power',
 		'Power & Horsepower Converter',
 		'功率与马力单位换算器',
-		'Convert between watts (W), kilowatts (kW), megawatts (MW), metric horsepower (ps/匹), mechanical horsepower (hp) and BTU/h.',
+		'Convert between watts (W), kilowatts (kW), megawatts (MW), metric horsepower (PS), mechanical horsepower (hp) and BTU/h.',
 		'支持瓦特 (W)、千瓦、兆瓦、米制公制马力 (ps/匹)、英制马力 (hp) 与 BTU/h 功率换算。',
 	),
 	converter(
@@ -74,7 +74,7 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'energy',
 		'Energy & Heat Converter',
 		'能量热量与功换算器',
-		'Convert between joules (J), kilojoules (kJ), calories, kilocalories (kcal/大卡), watt-hours (Wh), kilowatt-hours (kWh / 度电) and BTU.',
+		'Convert between joules (J), kilojoules (kJ), calories, kilocalories (kcal), watt-hours (Wh), kilowatt-hours (kWh) and BTU.',
 		'支持焦耳 (J)、千焦、卡路里、大卡 (kcal)、度电 (kWh) 与英热单位 (BTU) 能量热量换算。',
 	),
 	converter(
@@ -90,7 +90,7 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'speed',
 		'Speed & Velocity Converter',
 		'速度单位换算器 (米/秒 · 公里/小时 · mph · 节 · 马赫)',
-		'Convert between m/s (米/秒), km/h (公里/小时), mph (英里/小时), knots (节), Mach (马赫) and speed of light (光速).',
+		'Convert between m/s, km/h, mph, knots, Mach and the speed of light.',
 		'支持米/秒、公里/小时 (km/h)、英里/小时 (mph)、航速节 (knots) 与马赫 (Mach) 换算。',
 	),
 	converter(

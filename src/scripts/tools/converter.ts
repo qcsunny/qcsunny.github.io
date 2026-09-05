@@ -3,6 +3,7 @@
 // Includes row-level keyword filtering and a live all-units reference grid with real-time search.
 
 import { formatNumber } from '../calculator/engine';
+import { bilingual, langAttr, langProp, onLang } from './i18n';
 import { getCategory, type UnitCategory, type UnitDef } from '../../tools/units';
 import type { ConverterConfig } from '../../tools/registry';
 
@@ -40,9 +41,28 @@ export function initConverter(host: HTMLElement, config: ConverterConfig): void 
 		return m ? (m[1] as string) : label;
 	}
 
-	function unitFullLabel(u?: UnitDef): string {
-		if (!u) return '';
-		return u.labelZh ? `${u.label} · ${u.labelZh}` : u.label;
+	// <option> cannot hold a .i18n-en/.i18n-zh pair, and populate() rebuilds the
+	// list on every keystroke, so one callback relabels whatever options exist
+	// now — rather than one closure per option, which would pile up in the
+	// language-change registry as the visitor types.
+	function labelOptions(select: HTMLSelectElement, zh: boolean): void {
+		for (const o of select.options) {
+			if (o.dataset.nomatch) {
+				o.textContent = zh ? '未找到匹配的单位' : 'No matching units';
+				continue;
+			}
+			const u = cat.units[o.value];
+			if (u) o.textContent = zh ? (u.labelZh ?? u.label) : u.label;
+		}
+	}
+
+	// "1 kg = 2 jin" in the English view, "1 千克 = 2 市斤" in the Chinese one:
+	// the traditional units have no Latin symbol, so short is romanised and
+	// shortZh carries the character.
+	function unitSymbol(name: string, zh: boolean): string {
+		const u = cat.units[name];
+		if (zh && u?.shortZh) return u.shortZh;
+		return unitShort(cat, name);
 	}
 
 	// Create searchable unit picker: returns { picker, select, searchInput, clearBtn, populate }
@@ -59,21 +79,21 @@ export function initConverter(host: HTMLElement, config: ConverterConfig): void 
 		const searchInput = document.createElement('input');
 		searchInput.type = 'text';
 		searchInput.className = 't-conv-search-input';
-		searchInput.placeholder = '🔍 搜索单位 (如 kg, 磅, 斤)...';
-		searchInput.setAttribute('aria-label', 'Search units / 搜索单位');
+		langProp(searchInput, 'placeholder', '🔍 Search units (kg, pound, jin…)', '🔍 搜索单位 (如 kg, 磅, 斤)...');
+		langAttr(searchInput, 'aria-label', 'Search units', '搜索单位');
 
 		const clearBtn = document.createElement('button');
 		clearBtn.type = 'button';
 		clearBtn.className = 't-conv-search-clear';
 		clearBtn.textContent = '×';
-		clearBtn.title = 'Clear search / 清除搜索';
+		langAttr(clearBtn, 'title', 'Clear search', '清除搜索');
 		clearBtn.style.display = 'none';
 
 		searchBox.append(searchInput, clearBtn);
 
 		const select = document.createElement('select');
 		select.className = 't-conv-select';
-		select.setAttribute('aria-label', 'Select unit / 选择单位');
+		langAttr(select, 'aria-label', 'Select unit', '选择单位');
 
 		picker.append(searchBox, select);
 
@@ -86,13 +106,12 @@ export function initConverter(host: HTMLElement, config: ConverterConfig): void 
 				const opt = document.createElement('option');
 				opt.disabled = true;
 				opt.selected = true;
-				opt.textContent = 'No matching units / 未找到匹配单位';
+				opt.dataset.nomatch = '1';
 				select.append(opt);
 			} else {
 				for (const name of matched) {
 					const opt = document.createElement('option');
 					opt.value = name;
-					opt.textContent = unitFullLabel(cat.units[name]);
 					select.append(opt);
 				}
 				if (matched.includes(currentVal)) {
@@ -103,6 +122,7 @@ export function initConverter(host: HTMLElement, config: ConverterConfig): void 
 				}
 			}
 			clearBtn.style.display = filterText ? 'block' : 'none';
+			labelOptions(select, document.documentElement.dataset.lang === 'zh');
 		}
 
 		searchInput.addEventListener('input', () => {
@@ -127,6 +147,7 @@ export function initConverter(host: HTMLElement, config: ConverterConfig): void 
 		});
 
 		populate('');
+		onLang((zh) => labelOptions(select, zh));
 		return { picker, select, searchInput, clearBtn, populate };
 	}
 
@@ -168,7 +189,7 @@ export function initConverter(host: HTMLElement, config: ConverterConfig): void 
 	swap.type = 'button';
 	swap.className = 't-btn t-conv-swap';
 	swap.innerHTML = '<span class="i18n-en">⇅ Swap units</span><span class="i18n-zh">⇅ 交换单位</span>';
-	swap.title = 'Swap the two units / 交换两个单位';
+	langAttr(swap, 'title', 'Swap the two units', '交换两个单位');
 
 	const note = document.createElement('p');
 	note.className = 't-conv-note';
@@ -193,14 +214,14 @@ export function initConverter(host: HTMLElement, config: ConverterConfig): void 
 	const liveFilter = document.createElement('input');
 	liveFilter.type = 'text';
 	liveFilter.className = 't-conv-live-filter';
-	liveFilter.placeholder = '🔍 搜索全部单位换算 (如: 斤, 磅, oz, 吨)...';
-	liveFilter.setAttribute('aria-label', 'Filter all unit conversions');
+	langProp(liveFilter, 'placeholder', '🔍 Filter every unit (jin, pound, oz, tonne…)', '🔍 搜索全部单位换算 (如: 斤, 磅, oz, 吨)...');
+	langAttr(liveFilter, 'aria-label', 'Filter all unit conversions', '筛选全部单位换算');
 
 	const liveClear = document.createElement('button');
 	liveClear.type = 'button';
 	liveClear.className = 't-conv-live-clear';
 	liveClear.textContent = '×';
-	liveClear.title = 'Clear / 清除';
+	langAttr(liveClear, 'title', 'Clear', '清除');
 	liveClear.style.display = 'none';
 
 	liveSearchBox.append(liveFilter, liveClear);
@@ -230,11 +251,11 @@ export function initConverter(host: HTMLElement, config: ConverterConfig): void 
 
 		const cardName = document.createElement('span');
 		cardName.className = 't-conv-card-name';
-		cardName.textContent = u.labelZh ? `${u.labelZh} (${u.label})` : u.label;
+		cardName.append(bilingual(u.label, u.labelZh));
 
 		const cardShort = document.createElement('span');
 		cardShort.className = 't-conv-card-short';
-		cardShort.textContent = u.short ?? name;
+		cardShort.append(bilingual(u.short ?? name, u.shortZh));
 
 		cardHead.append(cardName, cardShort);
 
@@ -249,7 +270,7 @@ export function initConverter(host: HTMLElement, config: ConverterConfig): void 
 		toBtn.type = 'button';
 		toBtn.className = 't-conv-act-btn';
 		toBtn.innerHTML = '<span class="i18n-en">Set as To</span><span class="i18n-zh">设为目标</span>';
-		toBtn.title = 'Set this unit as target / 设为目标单位';
+		langAttr(toBtn, 'title', 'Set this unit as target', '设为目标单位');
 		toBtn.addEventListener('click', () => {
 			if (toPicker.searchInput.value) {
 				toPicker.searchInput.value = '';
@@ -263,7 +284,7 @@ export function initConverter(host: HTMLElement, config: ConverterConfig): void 
 		fromBtn.type = 'button';
 		fromBtn.className = 't-conv-act-btn';
 		fromBtn.innerHTML = '<span class="i18n-en">Set as From</span><span class="i18n-zh">设为源单位</span>';
-		fromBtn.title = 'Set this unit as source / 设为原始单位';
+		langAttr(fromBtn, 'title', 'Set this unit as source', '设为原始单位');
 		fromBtn.addEventListener('click', () => {
 			if (fromPicker.searchInput.value) {
 				fromPicker.searchInput.value = '';
@@ -352,14 +373,15 @@ export function initConverter(host: HTMLElement, config: ConverterConfig): void 
 		dst.value = formatNumber(out);
 		syncing = false;
 
-		note.textContent = `1 ${unitShort(cat, fromUnitKey)} = ${formatNumber(
+		const zh = document.documentElement.dataset.lang === 'zh';
+		note.textContent = `1 ${unitSymbol(fromUnitKey, zh)} = ${formatNumber(
 			to.fromBase(from.toBase(1)),
-		)} ${unitShort(cat, toUnitKey)}`;
+		)} ${unitSymbol(toUnitKey, zh)}`;
 
 		// Update all cards in live grid based on baseValue
 		for (const [name, entry] of cardMap.entries()) {
 			const convertedVal = entry.u.fromBase(baseValue);
-			entry.valEl.textContent = `${formatNumber(convertedVal)} ${unitShort(cat, name)}`;
+			entry.valEl.textContent = `${formatNumber(convertedVal)} ${unitSymbol(name, zh)}`;
 		}
 	}
 
@@ -387,5 +409,10 @@ export function initConverter(host: HTMLElement, config: ConverterConfig): void 
 	});
 
 	convert('from');
+
+	// The ratio note and the 30-odd card values are plain text carrying a unit
+	// symbol, so they are rewritten rather than swapped by CSS: recompute once
+	// per language change.
+	onLang(() => convert('from'));
 }
 

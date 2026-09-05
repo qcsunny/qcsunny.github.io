@@ -1,13 +1,14 @@
 import { expect, test } from '@playwright/test';
 
 // Developer workbenches (registry kind json/jwt/markdown). These share the
-// workbench textarea pattern: [aria-label="Input Area"] / [aria-label="Output Area"].
+// workbench textarea pattern. The aria-labels follow html[data-lang] now, so the
+// selector is the language-independent data-role hook the workbench sets.
 
 test('json formatter formats and reports validity', async ({ page }) => {
 	await page.goto('/tools/json-formatter/');
 
-	const input = page.locator('[aria-label="JSON Input"]');
-	const output = page.locator('[aria-label="JSON Output"]');
+	const input = page.locator('[data-role="input"]');
+	const output = page.locator('[data-role="output"]');
 
 	await input.fill('{"b":2,"a":[1,2]}');
 	await page.getByRole('button', { name: /Format \(2 spaces\)|格式化 \(2 空格\)/ }).click();
@@ -19,7 +20,7 @@ test('json formatter formats and reports validity', async ({ page }) => {
 test('json formatter flags invalid JSON with error position', async ({ page }) => {
 	await page.goto('/tools/json-formatter/');
 
-	await page.locator('[aria-label="JSON Input"]').fill('{bad json}');
+	await page.locator('[data-role="input"]').fill('{bad json}');
 	await page.getByRole('button', { name: /Format \(2 spaces\)|格式化 \(2 空格\)/ }).click();
 
 	await expect(page.locator('.t-json-status')).toContainText(/✗|error/i);
@@ -31,10 +32,10 @@ test('jwt decoder decodes header and payload', async ({ page }) => {
 	// header {"alg":"HS256","typ":"JWT"} · payload {"sub":"1"} · dummy sig
 	const token =
 		'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIn0.abc';
-	await page.locator('[aria-label="Input Area"]').fill(token);
+	await page.locator('[data-role="input"]').fill(token);
 	await page.getByRole('button', { name: /decode|解码/i }).click();
 
-	const output = page.locator('[aria-label="Output Area"]');
+	const output = page.locator('[data-role="output"]');
 	await expect(output).toHaveValue(/"alg":\s*"HS256"/);
 	await expect(output).toHaveValue(/"sub":\s*"1"/);
 });
@@ -81,10 +82,10 @@ test('inline code is opaque to the other inline rules', async ({ page }) => {
 test('sql formatter handles bare operators without hanging', async ({ page }) => {
 	await page.goto('/tools/sql-formatter/');
 
-	await page.locator('[aria-label="Input Area"]').fill('select price - discount as net, a/b from items where qty > -1');
+	await page.locator('[data-role="input"]').fill('select price - discount as net, a/b from items where qty > -1');
 	await page.getByRole('button', { name: /Format \(2 spaces\)|格式化 \(2 空格\)/ }).click();
 
-	const output = page.locator('[aria-label="Output Area"]');
+	const output = page.locator('[data-role="output"]');
 	await expect(output).toHaveValue(/price - discount AS net/);
 	await expect(output).toHaveValue(/a\/b/);
 	await expect(output).toHaveValue(/qty > -1/);
@@ -95,19 +96,19 @@ test('sql formatter leaves string literals untouched', async ({ page }) => {
 
 	// 'a,b--c' contains both a comma and a line-comment marker: a formatter that
 	// normalises spacing or strips comments by regex would corrupt it.
-	await page.locator('[aria-label="Input Area"]').fill("select * from t where tag = 'a,b--c'");
+	await page.locator('[data-role="input"]').fill("select * from t where tag = 'a,b--c'");
 	await page.getByRole('button', { name: /Format \(2 spaces\)|格式化 \(2 空格\)/ }).click();
 
-	await expect(page.locator('[aria-label="Output Area"]')).toHaveValue(/'a,b--c'/);
+	await expect(page.locator('[data-role="output"]')).toHaveValue(/'a,b--c'/);
 });
 
 test('sql minify keeps literals and drops comments', async ({ page }) => {
 	await page.goto('/tools/sql-formatter/');
 
-	await page.locator('[aria-label="Input Area"]').fill("select id -- keep me out\nfrom t where tag = 'a,b--c';");
+	await page.locator('[data-role="input"]').fill("select id -- keep me out\nfrom t where tag = 'a,b--c';");
 	await page.getByRole('button', { name: /^(Minify|单行压缩)$/ }).click();
 
-	const output = page.locator('[aria-label="Output Area"]');
+	const output = page.locator('[data-role="output"]');
 	await expect(output).toHaveValue(/'a,b--c'/);
 	await expect(output).not.toHaveValue(/keep me out/);
 	await expect(output).not.toHaveValue(/\n/);

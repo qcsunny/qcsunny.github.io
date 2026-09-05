@@ -24,10 +24,27 @@ const percentage: FormConfig = {
 		const n = v.num('n');
 		return {
 			rows: [
-				{ label: `${v.str('p')}% of ${v.str('v')}`, value: formatNumber((p / 100) * val), emphasis: true },
-				{ label: `${v.str('n')} is what % of ${v.str('v')}`, value: val === 0 ? '—' : pct((n / val) * 100) },
-				{ label: `${v.str('v')} increased by ${v.str('p')}%`, value: formatNumber(val * (1 + p / 100)) },
-				{ label: `${v.str('v')} decreased by ${v.str('p')}%`, value: formatNumber(val * (1 - p / 100)) },
+				{
+					label: `${v.str('p')}% of ${v.str('v')}`,
+					labelZh: `${v.str('v')} 的 ${v.str('p')}%`,
+					value: formatNumber((p / 100) * val),
+					emphasis: true,
+				},
+				{
+					label: `${v.str('n')} is what % of ${v.str('v')}`,
+					labelZh: `${v.str('n')} 占 ${v.str('v')} 的百分比`,
+					value: val === 0 ? '—' : pct((n / val) * 100),
+				},
+				{
+					label: `${v.str('v')} increased by ${v.str('p')}%`,
+					labelZh: `${v.str('v')} 增加 ${v.str('p')}% 后`,
+					value: formatNumber(val * (1 + p / 100)),
+				},
+				{
+					label: `${v.str('v')} decreased by ${v.str('p')}%`,
+					labelZh: `${v.str('v')} 减少 ${v.str('p')}% 后`,
+					value: formatNumber(val * (1 - p / 100)),
+				},
 			],
 		};
 	},
@@ -39,8 +56,8 @@ const percentageIncrease: FormConfig = {
 	intro: 'Measure relative change between two numbers.',
 	introZh: '衡量两个数值之间的相对增减变化与变化倍数。',
 	fields: [
-		{ id: 'from', label: 'From (initial value)', labelZh: '初始值 (From)', type: 'number', def: '100', step: 'any', required: true },
-		{ id: 'to', label: 'To (final value)', labelZh: '最终值 (To)', type: 'number', def: '125', step: 'any', required: true },
+		{ id: 'from', label: 'From (initial value)', labelZh: '初始值 (变化前)', type: 'number', def: '100', step: 'any', required: true },
+		{ id: 'to', label: 'To (final value)', labelZh: '最终值 (变化后)', type: 'number', def: '125', step: 'any', required: true },
 	],
 	compute: (v) => {
 		const from = v.num('from');
@@ -51,11 +68,13 @@ const percentageIncrease: FormConfig = {
 			rows: [
 				{
 					label: 'Percentage change',
+					labelZh: '变化百分比',
 					value: from === 0 ? '— (initial value is 0)' : pct(pctChange),
+					valueZh: from === 0 ? '— (初始值为 0，无法计算)' : undefined,
 					emphasis: true,
 				},
-				{ label: 'Absolute change', value: `${change >= 0 ? '+' : ''}${formatNumber(change)}` },
-				{ label: 'Multiplier (to ÷ from)', value: from === 0 ? '—' : formatNumber(to / from) },
+				{ label: 'Absolute change', labelZh: '绝对变化量', value: `${change >= 0 ? '+' : ''}${formatNumber(change)}` },
+				{ label: 'Multiplier (to ÷ from)', labelZh: '变化倍数 (最终值 ÷ 初始值)', value: from === 0 ? '—' : formatNumber(to / from) },
 			],
 			note:
 				from === 0
@@ -63,6 +82,12 @@ const percentageIncrease: FormConfig = {
 					: change >= 0
 						? `An increase of ${formatNumber(change)}.`
 						: `A decrease of ${formatNumber(-change)} (negative growth).`,
+			noteZh:
+				from === 0
+					? undefined
+					: change >= 0
+						? `增加了 ${formatNumber(change)}。`
+						: `减少了 ${formatNumber(-change)}（负增长）。`,
 		};
 	},
 };
@@ -116,7 +141,12 @@ const fraction: FormConfig = {
 			rows.push({ label: 'a/b as decimal', labelZh: '对应小数值', value: formatNumber(a / b) });
 			rows.push({ label: 'a/b as percent', labelZh: '对应百分比', value: pct((a / b) * 100) });
 		} else if (Number.isFinite(b) && b === 0) {
-			rows.push({ label: 'a/b simplified', labelZh: 'a/b 最简分数', value: '— (分母不能为 0)' });
+			rows.push({
+				label: 'a/b simplified',
+				labelZh: 'a/b 最简分数',
+				value: '— (denominator cannot be 0)',
+				valueZh: '— (分母不能为 0)',
+			});
 		}
 		const d = v.num('d');
 		if (Number.isFinite(d)) {
@@ -124,7 +154,8 @@ const fraction: FormConfig = {
 			rows.push({
 				label: 'Decimal as fraction',
 				labelZh: '小数还原最简分数',
-				value: f ? `${f.num} / ${f.den}` : '未找到分母 ≤ 10000 的精确分数',
+				value: f ? `${f.num} / ${f.den}` : 'no exact fraction with a denominator ≤ 10000',
+				valueZh: f ? undefined : '未找到分母 ≤ 10000 的精确分数',
 				emphasis: true,
 			});
 		}
@@ -148,15 +179,20 @@ const ratio: FormConfig = {
 		const c = v.num('c');
 		const rows: import('./registry').FormResultRow[] = [];
 		if (a === 0 && b === 0) {
-			rows.push({ label: 'A:B simplified', value: '— (both zero)' });
+			rows.push({ label: 'A:B simplified', labelZh: 'A:B 最简整数比', value: '— (both zero)', valueZh: '— (A、B 不能同时为 0)' });
 		} else {
 			const g = gcd(a, b) || 1;
-			rows.push({ label: 'A:B simplified', value: `${a / g} : ${b / g}`, emphasis: true });
-			rows.push({ label: 'A ÷ B', value: b === 0 ? '— (division by 0)' : formatNumber(a / b) });
-			rows.push({ label: 'A ÷ B as percent', value: b === 0 ? '—' : pct((a / b) * 100) });
+			rows.push({ label: 'A:B simplified', labelZh: 'A:B 最简整数比', value: `${a / g} : ${b / g}`, emphasis: true });
+			rows.push({
+				label: 'A ÷ B',
+				labelZh: 'A ÷ B 的商',
+				value: b === 0 ? '— (division by 0)' : formatNumber(a / b),
+				valueZh: b === 0 ? '— (除数不能为 0)' : undefined,
+			});
+			rows.push({ label: 'A ÷ B as percent', labelZh: 'A ÷ B 的百分比', value: b === 0 ? '—' : pct((a / b) * 100) });
 			if (a !== 0 && Number.isFinite(c)) {
 				const x = (b * c) / a;
-				rows.push({ label: `A:B = C:x → x`, value: formatNumber(x) });
+				rows.push({ label: `A:B = C:x → x`, labelZh: '解 A:B = C:x 得 x', value: formatNumber(x) });
 			}
 		}
 		return { rows };
@@ -177,7 +213,10 @@ const proportion: FormConfig = {
 		const a = v.num('a');
 		const b = v.num('b');
 		const c = v.num('c');
-		if (a === 0) return { rows: [{ label: 'x', labelZh: '未知数 x', value: '— (a 不能为 0)' }] };
+		if (a === 0)
+			return {
+				rows: [{ label: 'x', labelZh: '未知数 x', value: '— (a cannot be 0)', valueZh: '— (a 不能为 0)' }],
+			};
 		const x = (b * c) / a;
 		return {
 			rows: [
@@ -195,9 +234,9 @@ const simpleInterest: FormConfig = {
 	intro: 'Interest computed on the principal only: I = P × r × t.',
 	introZh: '按单利公式 I = P × r × t 测算利息收益与到期总本息。',
 	fields: [
-		{ id: 'p', label: 'Principal', labelZh: '本金', suffix: '($ / ¥)', suffixZh: '($ / 元)', type: 'number', def: '10000', step: 'any', min: '0', required: true },
+		{ id: 'p', label: 'Principal', labelZh: '本金', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '10000', step: 'any', min: '0', required: true },
 		{ id: 'r', label: 'Annual rate', labelZh: '年利率', suffix: '(%)', type: 'number', def: '5', step: 'any', min: '0', required: true },
-		{ id: 't', label: 'Time', labelZh: '投资/借款期限', suffix: '(years / 年)', type: 'number', def: '3', step: 'any', min: '0', required: true },
+		{ id: 't', label: 'Time', labelZh: '投资/借款期限', suffix: '(years)', suffixZh: '(年)', type: 'number', def: '3', step: 'any', min: '0', required: true },
 	],
 	compute: (v) => {
 		const p = v.num('p');
@@ -206,11 +245,12 @@ const simpleInterest: FormConfig = {
 		const interest = p * (r / 100) * t;
 		return {
 			rows: [
-				{ label: 'Simple interest', value: money(interest), emphasis: true },
-				{ label: 'Final amount (P + I)', value: money(p + interest) },
-				{ label: 'Interest per year', value: money(interest / (t || 1)) },
+				{ label: 'Simple interest', labelZh: '单利利息', value: money(interest), emphasis: true },
+				{ label: 'Final amount (P + I)', labelZh: '到期本息总额 (本金 + 利息)', value: money(p + interest) },
+				{ label: 'Interest per year', labelZh: '每年利息', value: money(interest / (t || 1)) },
 			],
 			note: 'Unlike compound interest, the principal never grows — each period earns the same amount.',
+			noteZh: '与复利不同，单利的计息本金始终不变——每期利息完全相同。',
 		};
 	},
 };
@@ -258,32 +298,34 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 		kind: 'text',
 		config: {
 			placeholder: 'e.g. 12  15  15  9  27  (spaces, commas, semicolons or new lines)',
+			placeholderZh: '例如 12  15  15  9  27（空格、逗号、分号或换行分隔均可）',
 			mono: true,
 			stats: (text) => {
 				const { nums, invalid } = parseNumbers(text);
 				const s = computeStats(nums);
 				if (!s) {
 					return invalid.length
-						? [{ label: 'Ignoring invalid entries', value: invalid.join(', ') }]
+						? [{ label: 'Ignoring invalid entries', labelZh: '已忽略的无效数据', value: invalid.join(', ') }]
 						: [];
 				}
 				const fmt = (v: number): string => (Number.isNaN(v) ? '—' : formatNumber(v));
 				const rows: import('./registry').TextStat[] = [
-					{ label: 'Mean (average)', value: fmt(s.mean) },
-					{ label: 'Median', value: fmt(s.median) },
+					{ label: 'Mean (average)', labelZh: '平均数', value: fmt(s.mean) },
+					{ label: 'Median', labelZh: '中位数', value: fmt(s.median) },
 					{
 						label: 'Mode',
+						labelZh: '众数',
 						value: s.modes ? s.modes.map((m) => formatNumber(m)).join(', ') : '—',
 					},
-					{ label: 'Count', value: String(s.count) },
-					{ label: 'Sum', value: fmt(s.sum) },
-					{ label: 'Min', value: fmt(s.min) },
-					{ label: 'Max', value: fmt(s.max) },
-					{ label: 'Sample std. deviation (s)', value: fmt(s.sdS) },
-					{ label: 'Population std. deviation (σ)', value: fmt(s.sdP) },
+					{ label: 'Count', labelZh: '数据个数', value: String(s.count) },
+					{ label: 'Sum', labelZh: '总和', value: fmt(s.sum) },
+					{ label: 'Min', labelZh: '最小值', value: fmt(s.min) },
+					{ label: 'Max', labelZh: '最大值', value: fmt(s.max) },
+					{ label: 'Sample std. deviation (s)', labelZh: '样本标准差 (s)', value: fmt(s.sdS) },
+					{ label: 'Population std. deviation (σ)', labelZh: '总体标准差 (σ)', value: fmt(s.sdP) },
 				];
 				if (invalid.length) {
-					rows.push({ label: 'Ignoring invalid entries', value: invalid.join(', ') });
+					rows.push({ label: 'Ignoring invalid entries', labelZh: '已忽略的无效数据', value: invalid.join(', ') });
 				}
 				return rows;
 			},

@@ -6,6 +6,7 @@
 // - Alphabetical sorting of query keys (essential for API signatures)
 // - 100% in-browser, native URL & URLSearchParams APIs, zero dependencies.
 
+import { isZh, onLang } from './i18n';
 import { createWorkbench, formatBytes } from './workbench';
 
 const SAMPLE_URL =
@@ -43,17 +44,29 @@ function tryParseUrl(input: string): URL | null {
 export function initUrl(host: HTMLElement): void {
 	let wb: ReturnType<typeof createWorkbench>;
 
+	const READY_EN =
+		'Ready: paste a URL to inspect its components, decode parameters and strip tracking tokens.';
+	const READY_ZH = '准备就绪：输入 URL 后将自动解析组件、拆解参数并提供清洗导出功能。';
+
+	// The breakdown is plain text in a <textarea> and cannot hold an
+	// .i18n-en/.i18n-zh pair, so it is rebuilt from the input; onLang at the
+	// bottom of this function re-runs the parse on every language change.
 	function doParse() {
+		const zh = isZh();
 		const raw = wb.inputArea.value.trim();
 		if (!raw) {
 			wb.outputArea.value = '';
-			wb.updateStatus('idle', '准备就绪：输入或粘贴 URL 后将自动解析与格式化。');
+			wb.updateStatus('idle', READY_EN, READY_ZH);
 			return;
 		}
 
 		const parsed = tryParseUrl(raw);
 		if (!parsed) {
-			wb.updateStatus('error', '✗ 无效的 URL 格式，请输入合法的网络地址。');
+			wb.updateStatus(
+				'error',
+				'✗ Not a URL — enter a full web address.',
+				'✗ 无效的 URL 格式，请输入合法的网络地址。',
+			);
 			wb.outputArea.value = '';
 			return;
 		}
@@ -65,23 +78,29 @@ export function initUrl(host: HTMLElement): void {
 
 		const paramCount = Object.keys(paramsObj).length;
 
+		// One label column, padded to the same width in both languages so the
+		// values still line up.
+		const row = (en: string, zhLabel: string, val: string): string =>
+			`${(zh ? zhLabel : en).padEnd(zh ? 10 : 18, ' ')} ${val}\n`;
+
 		let out = `/* =========================================\n`;
-		out += ` * 🌐 URL 结构化拆解\n`;
+		out += zh ? ` * 🌐 URL 结构化拆解\n` : ` * 🌐 URL breakdown\n`;
 		out += ` * ========================================= */\n`;
-		out += `协议 (Protocol):   ${parsed.protocol}\n`;
-		out += `域名 (Hostname):   ${parsed.hostname}\n`;
-		if (parsed.port) out += `端口 (Port):       ${parsed.port}\n`;
-		out += `根路径 (Origin):   ${parsed.origin}\n`;
-		out += `路由路径 (Path):   ${parsed.pathname}\n`;
-		if (parsed.hash) out += `锚点 (Hash):       ${parsed.hash}\n`;
-		out += `查询参数数量:      ${paramCount} 个\n\n`;
+		out += row('Protocol:', '协议:', parsed.protocol);
+		out += row('Hostname:', '域名:', parsed.hostname);
+		if (parsed.port) out += row('Port:', '端口:', parsed.port);
+		out += row('Origin:', '根路径:', parsed.origin);
+		out += row('Path:', '路由路径:', parsed.pathname);
+		if (parsed.hash) out += row('Hash:', '锚点:', parsed.hash);
+		out += row('Query params:', '查询参数数量:', zh ? `${paramCount} 个` : String(paramCount));
+		out += `\n`;
 
 		out += `/* =========================================\n`;
-		out += ` * 📋 查询参数明细 (Query Parameters)\n`;
+		out += zh ? ` * 📋 查询参数明细\n` : ` * 📋 Query parameters\n`;
 		out += ` * ========================================= */\n`;
 
 		if (paramCount === 0) {
-			out += `(该 URL 无任何查询参数)\n`;
+			out += zh ? `(该 URL 无任何查询参数)\n` : `(this URL carries no query parameters)\n`;
 		} else {
 			let i = 1;
 			parsed.searchParams.forEach((val, key) => {
@@ -199,7 +218,10 @@ export function initUrl(host: HTMLElement): void {
 			wb.outputArea.value = '';
 			wb.updateStatus('idle', 'Cleared', '已清空');
 		},
-		initialStatus: 'Ready: Paste URL to inspect components, decode parameters, and clean tracking tokens.',
-		initialStatusZh: '准备就绪：输入 URL 后将自动解析组件、拆解参数并提供清洗导出功能。'
+		initialStatus: READY_EN,
+		initialStatusZh: READY_ZH,
 	});
+
+	// The breakdown above is plain text, so redo it when the language flips.
+	onLang(doParse);
 }

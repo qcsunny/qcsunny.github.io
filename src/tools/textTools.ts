@@ -197,15 +197,23 @@ function jsonPosition(text: string): { message: string; pos: number } | null {
 }
 
 function posToLineCol(text: string, pos: number): string {
-	const before = text.slice(0, pos);
-	const line = before.split('\n').length;
-	const col = pos - before.lastIndexOf('\n');
+	const { line, col } = lineCol(text, pos);
 	return ` at line ${line}, column ${col}`;
+}
+
+function posToLineColZh(text: string, pos: number): string {
+	const { line, col } = lineCol(text, pos);
+	return `（第 ${line} 行，第 ${col} 列）`;
+}
+
+function lineCol(text: string, pos: number): { line: number; col: number } {
+	const before = text.slice(0, pos);
+	return { line: before.split('\n').length, col: pos - before.lastIndexOf('\n') };
 }
 
 function formatJson(text: string, space: number) {
 	const trimmed = text.trim();
-	if (!trimmed) return { output: '', error: 'Enter JSON to format.' };
+	if (!trimmed) return { output: '', error: 'Enter JSON to format.', errorZh: '请输入要格式化的 JSON。' };
 	// pre-scan for an exact error position, then parse for the message itself
 	const scanErr = jsonPosition(trimmed);
 	try {
@@ -214,7 +222,12 @@ function formatJson(text: string, space: number) {
 	} catch (err) {
 		const message = scanErr ? scanErr.message : err instanceof Error ? err.message : 'Invalid JSON';
 		const where = scanErr ? posToLineCol(trimmed, scanErr.pos) : '';
-		return { output: '', error: `Invalid JSON${where} — ${message}` };
+		const whereZh = scanErr ? posToLineColZh(trimmed, scanErr.pos) : '';
+		return {
+			output: '',
+			error: `Invalid JSON${where} — ${message}`,
+			errorZh: `JSON 不合法${whereZh} — ${message}`,
+		};
 	}
 }
 
@@ -253,6 +266,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		kind: 'text',
 		config: {
 			placeholder: 'Type or paste text…',
+			placeholderZh: '在此输入或粘贴文本…',
 			stats: wordStats,
 		} satisfies TextConfig,
 	},
@@ -266,6 +280,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		kind: 'text',
 		config: {
 			placeholder: 'Type or paste text…',
+			placeholderZh: '在此输入或粘贴文本…',
 			stats: charStats,
 		} satisfies TextConfig,
 	},
@@ -288,24 +303,30 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		kind: 'text',
 		config: {
 			placeholder: 'Text to encode, or Base64 to decode…',
+			placeholderZh: '待编码的文本，或待解码的 Base64…',
 			mono: true,
 			transforms: [
 				{
 					id: 'encode',
 					label: 'Encode → Base64',
 					labelZh: '编码为 Base64',
-					run: (t) => ({ output: t ? b64encode(t) : '', error: t ? undefined : 'Enter text first.' }),
+					run: (t) => ({
+						output: t ? b64encode(t) : '',
+						error: t ? undefined : 'Enter text first.',
+						errorZh: t ? undefined : '请先输入文本。',
+					}),
 				},
 				{
 					id: 'decode',
 					label: 'Decode ← Base64',
 					labelZh: 'Base64 解码',
 					run: (t) => {
-						if (!t.trim()) return { output: '', error: 'Enter Base64 first.' };
+						if (!t.trim())
+							return { output: '', error: 'Enter Base64 first.', errorZh: '请先输入 Base64 字符串。' };
 						try {
 							return { output: b64decode(t) };
 						} catch {
-							return { output: '', error: 'Not valid Base64.' };
+							return { output: '', error: 'Not valid Base64.', errorZh: '这不是合法的 Base64。' };
 						}
 					},
 				},
@@ -313,7 +334,11 @@ export const TEXT_TOOLS: ToolEntry[] = [
 					id: 'urlsafe',
 					label: 'Encode URL-safe',
 					labelZh: 'URL 安全编码',
-					run: (t) => ({ output: t ? b64url(t) : '', error: t ? undefined : 'Enter text first.' }),
+					run: (t) => ({
+						output: t ? b64url(t) : '',
+						error: t ? undefined : 'Enter text first.',
+						errorZh: t ? undefined : '请先输入文本。',
+					}),
 				},
 			],
 		} satisfies TextConfig,

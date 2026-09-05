@@ -146,6 +146,18 @@ function byteCapacity(version: number, ecc: Ecc): number {
  * @param forcedMask 0–7 to force a specific data mask (testing); omit to
  *        let ISO penalty scoring choose.
  */
+/** The text does not fit even the largest version this encoder supports. */
+export class QrCapacityError extends Error {
+	constructor(
+		readonly bytes: number,
+		readonly capacity: number,
+		readonly ecc: Ecc,
+	) {
+		super(`${bytes} bytes exceeds the ${capacity}-byte capacity of version 10 at ECC ${ecc}`);
+		this.name = 'QrCapacityError';
+	}
+}
+
 export function encodeQr(text: string, ecc: Ecc = 'M', forcedMask?: number): QrCode {
 	const bytes = Array.from(new TextEncoder().encode(text));
 
@@ -158,9 +170,7 @@ export function encodeQr(text: string, ecc: Ecc = 'M', forcedMask?: number): QrC
 		}
 	}
 	if (!version) {
-		throw new Error(
-			`Text is ${bytes.length} bytes — the largest supported code (version 10, ECC ${ecc}) holds ${byteCapacity(10, ecc)}.`,
-		);
+		throw new QrCapacityError(bytes.length, byteCapacity(10, ecc), ecc);
 	}
 
 	// --- bit stream: mode | length | data | terminator | padding ---

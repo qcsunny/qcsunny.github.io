@@ -4,21 +4,23 @@
 // average/statistics calculator.
 
 import type { TextConfig, TextStat } from '../../tools/registry';
+import { bilingual, langAttr, langProp, setBilingual } from './i18n';
 
 export function initText(host: HTMLElement, config: TextConfig): void {
 	const input = document.createElement('textarea');
 	input.className = config.mono ? 't-textarea t-mono' : 't-textarea';
 	input.rows = 6;
 	input.spellcheck = false;
-	input.placeholder = config.placeholder ?? '';
-	input.setAttribute('aria-label', 'Text input');
+	input.dataset.role = 'input';
+	langProp(input, 'placeholder', config.placeholder ?? '', config.placeholderZh);
+	langAttr(input, 'aria-label', 'Text input', '文本输入');
 	host.append(input);
 
 	let statsHost: HTMLElement | null = null;
 	if (config.stats) {
 		const label = document.createElement('span');
 		label.className = 't-label';
-		label.innerHTML = '<span class="i18n-en">Statistics</span><span class="i18n-zh">统计数据</span>';
+		setBilingual(label, 'Statistics', '统计数据');
 		statsHost = document.createElement('div');
 		statsHost.className = 't-results';
 		host.append(label, statsHost);
@@ -34,26 +36,18 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 			const btn = document.createElement('button');
 			btn.type = 'button';
 			btn.className = 't-btn';
-			if (t.labelZh) {
-				const en = document.createElement('span');
-				en.className = 'i18n-en';
-				en.textContent = t.label;
-				const zh = document.createElement('span');
-				zh.className = 'i18n-zh';
-				zh.textContent = t.labelZh;
-				btn.append(en, zh);
-			} else {
-				btn.textContent = t.label;
-			}
+			btn.append(bilingual(t.label, t.labelZh));
 			btn.addEventListener('click', () => {
 				if (!out) return;
 				try {
 					const r = t.run(input.value);
 					out.value = r.output;
-					if (errEl) errEl.textContent = r.error ?? '';
+					if (errEl) setBilingual(errEl, r.error ?? '', r.errorZh);
 				} catch (err) {
 					out.value = '';
-					if (errEl) errEl.textContent = err instanceof Error ? err.message : 'Error';
+					// A throw out of run() is a bug, not a user-facing state; the
+					// message is whatever the engine produced, in one language.
+					if (errEl) setBilingual(errEl, err instanceof Error ? err.message : 'Error');
 				}
 			});
 			btnRow.append(btn);
@@ -62,12 +56,13 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 
 		outLabel = document.createElement('span');
 		outLabel.className = 't-label';
-		outLabel.innerHTML = '<span class="i18n-en">Output</span><span class="i18n-zh">转换输出</span>';
+		setBilingual(outLabel, 'Output', '转换输出');
 		out = document.createElement('textarea');
 		out.className = 't-textarea t-mono t-out';
 		out.rows = 8;
 		out.readOnly = true;
-		out.setAttribute('aria-label', 'Output');
+		out.dataset.role = 'output';
+		langAttr(out, 'aria-label', 'Output', '输出');
 		errEl = document.createElement('p');
 		errEl.className = 't-error';
 		host.append(outLabel, out, errEl);
@@ -78,17 +73,7 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 		el.className = 't-row';
 		const l = document.createElement('span');
 		l.className = 't-row-label';
-		if (stat.labelZh) {
-			const en = document.createElement('span');
-			en.className = 'i18n-en';
-			en.textContent = stat.label;
-			const zh = document.createElement('span');
-			zh.className = 'i18n-zh';
-			zh.textContent = stat.labelZh;
-			l.append(en, zh);
-		} else {
-			l.textContent = stat.label;
-		}
+		l.append(bilingual(stat.label, stat.labelZh));
 		const v = document.createElement('span');
 		v.className = 't-row-value';
 		v.textContent = stat.value;

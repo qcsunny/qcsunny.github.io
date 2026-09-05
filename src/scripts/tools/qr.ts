@@ -1,8 +1,14 @@
 // QR generator page: textarea + ECC selector + canvas render + PNG download.
 // The encoder is dynamically imported by the dispatcher, so its ~350 lines
 // stay out of every other tool page's bundle.
+//
+// Every label here is built in the browser, so none of it can come from the
+// .i18n-en/.i18n-zh pairs in the HTML: bilingual() supplies the pair for text
+// nodes and langProp/langAttr rewrite the ones that cannot hold markup
+// (<option> text, aria-label).
 
-import { encodeQr, type Ecc } from './qr/encoder';
+import { bilingual, langAttr, langProp, setBilingual } from './i18n';
+import { encodeQr, QrCapacityError, type Ecc } from './qr/encoder';
 
 const QUIET_ZONE = 4; // modules of white border, per spec
 const MODULE_PX = 8; // canvas pixels per module
@@ -14,7 +20,7 @@ export function initQr(host: HTMLElement): void {
 	field.className = 't-field';
 	const label = document.createElement('label');
 	label.htmlFor = 't-qr-text';
-	label.textContent = 'Text or URL';
+	label.append(bilingual('Text or URL', '文本或网址'));
 	const input = document.createElement('textarea');
 	input.id = 't-qr-text';
 	input.className = 't-textarea';
@@ -27,18 +33,18 @@ export function initQr(host: HTMLElement): void {
 	eccField.className = 't-field t-eccfield';
 	const eccLabel = document.createElement('label');
 	eccLabel.htmlFor = 't-qr-ecc';
-	eccLabel.textContent = 'Error correction';
+	eccLabel.append(bilingual('Error correction', '容错级别'));
 	const eccSelect = document.createElement('select');
 	eccSelect.id = 't-qr-ecc';
-	for (const [value, text] of [
-		['M', 'M — balanced (default)'],
-		['L', 'L — largest capacity'],
-		['Q', 'Q — high'],
-		['H', 'H — highest (30% recoverable)'],
+	for (const [value, en, zh] of [
+		['M', 'M — balanced (default)', 'M — 均衡 (默认)'],
+		['L', 'L — largest capacity', 'L — 容量最大'],
+		['Q', 'Q — high', 'Q — 较高容错'],
+		['H', 'H — highest (30% recoverable)', 'H — 最高容错 (可恢复 30%)'],
 	] as const) {
 		const opt = document.createElement('option');
 		opt.value = value;
-		opt.textContent = text;
+		langProp(opt, 'textContent', en, zh);
 		eccSelect.append(opt);
 	}
 	eccField.append(eccLabel, eccSelect);
@@ -53,7 +59,7 @@ export function initQr(host: HTMLElement): void {
 	const canvas = document.createElement('canvas');
 	canvas.className = 't-qr-canvas';
 	canvas.setAttribute('role', 'img');
-	canvas.setAttribute('aria-label', 'Generated QR code');
+	langAttr(canvas, 'aria-label', 'Generated QR code', '生成的二维码');
 
 	const error = document.createElement('p');
 	error.className = 't-error';
@@ -63,7 +69,7 @@ export function initQr(host: HTMLElement): void {
 	const download = document.createElement('button');
 	download.type = 'button';
 	download.className = 't-btn';
-	download.textContent = 'Download PNG';
+	download.append(bilingual('Download PNG', '下载 PNG'));
 	actions.append(download);
 
 	host.append(settings, meta, canvas, error, actions);
@@ -77,7 +83,11 @@ export function initQr(host: HTMLElement): void {
 			canvas.height = total * MODULE_PX;
 			const ctx = canvas.getContext('2d');
 			if (!ctx) {
-				error.textContent = 'Canvas is unavailable in this browser.';
+				setBilingual(
+					error,
+					'Canvas is unavailable in this browser.',
+					'当前浏览器不支持 Canvas 绘图。',
+				);
 				return;
 			}
 			ctx.fillStyle = '#ffffff';
@@ -96,12 +106,29 @@ export function initQr(host: HTMLElement): void {
 				}
 			}
 			const bytes = new TextEncoder().encode(input.value).length;
-			meta.textContent = `Version ${(qr.size - 17) / 4} · ${qr.size}×${qr.size} modules · ECC ${eccSelect.value} · ${bytes} bytes encoded.`;
+			const version = (qr.size - 17) / 4;
+			setBilingual(
+				meta,
+				`Version ${version} · ${qr.size}×${qr.size} modules · ECC ${eccSelect.value} · ${bytes} bytes encoded.`,
+				`版本 ${version} · ${qr.size}×${qr.size} 模块 · 容错 ${eccSelect.value} · 已编码 ${bytes} 字节。`,
+			);
 		} catch (err) {
 			canvas.width = 0;
 			canvas.height = 0;
 			meta.textContent = '';
-			error.textContent = err instanceof Error ? err.message : 'Could not encode this text.';
+			if (err instanceof QrCapacityError) {
+				setBilingual(
+					error,
+					`Text is ${err.bytes} bytes — the largest supported code (version 10, ECC ${err.ecc}) holds ${err.capacity}.`,
+					`文本长度 ${err.bytes} 字节 — 本编码器支持的最大版本 (版本 10，容错 ${err.ecc}) 仅能容纳 ${err.capacity} 字节。`,
+				);
+			} else {
+				setBilingual(
+					error,
+					err instanceof Error ? err.message : 'Could not encode this text.',
+					err instanceof Error ? err.message : '无法编码这段文本。',
+				);
+			}
 		}
 	}
 
@@ -115,5 +142,8 @@ export function initQr(host: HTMLElement): void {
 
 	input.addEventListener('input', update);
 	eccSelect.addEventListener('change', update);
+	// Nothing here needs re-running on a language change: the readout and the
+	// error line are .i18n-en/.i18n-zh pairs, and the <option> text is rewritten
+	// by langProp above.
 	update();
 }

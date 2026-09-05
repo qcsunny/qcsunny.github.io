@@ -6,25 +6,45 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 
 const langButton = (page: Page): Locator => page.locator('.t-lang, .lang-toggle').first();
 
+// A card carries two span pairs — the tool name and its description — so a bare
+// toBeVisible() on .i18n-en is a strict-mode violation. It used to hold one,
+// back when the name was a single "Name · 名称" string; splitting that (the user
+// asked for one language at a time) is what added the second pair.
+const painted = (l: Locator): Promise<string[]> =>
+	l.evaluateAll((els) =>
+		els.filter((e) => e.checkVisibility()).map((e) => (e.textContent ?? '').trim()),
+	);
+
+async function onlyOneLanguage(card: Locator, lang: 'en' | 'zh'): Promise<void> {
+	const en = card.locator('.i18n-en');
+	const zh = card.locator('.i18n-zh');
+	const [enShown, zhShown, enTotal, zhTotal] = await Promise.all([
+		painted(en),
+		painted(zh),
+		en.count(),
+		zh.count(),
+	]);
+	expect(enTotal, 'a card has a span pair for its name and one for its blurb').toBe(2);
+	expect(zhTotal).toBe(2);
+	expect(lang === 'en' ? enShown : zhShown, `${lang} halves must all show`).toHaveLength(2);
+	expect(lang === 'en' ? zhShown : enShown, 'the other language must be hidden').toEqual([]);
+}
+
 test('language toggle switches card copy on calculators index', async ({ page }) => {
 	await page.goto('/calculators/');
 
 	const firstCard = page.locator('.t-card').first();
 
-	// default: English visible, Chinese hidden
-	await expect(firstCard.locator('.i18n-en')).toBeVisible();
-	await expect(firstCard.locator('.i18n-zh')).toBeHidden();
+	await onlyOneLanguage(firstCard, 'en');
 
 	await langButton(page).click();
 	await expect(page.locator('html')).toHaveAttribute('data-lang', 'zh');
-
-	await expect(firstCard.locator('.i18n-zh')).toBeVisible();
-	await expect(firstCard.locator('.i18n-en')).toBeHidden();
+	await onlyOneLanguage(firstCard, 'zh');
 
 	// toggle back
 	await langButton(page).click();
 	await expect(page.locator('html')).toHaveAttribute('data-lang', 'en');
-	await expect(firstCard.locator('.i18n-en')).toBeVisible();
+	await onlyOneLanguage(firstCard, 'en');
 });
 
 test('form tool export buttons follow the language switch', async ({ page }) => {

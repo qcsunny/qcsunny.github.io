@@ -6,7 +6,8 @@
 // - 100% responsive bilingual support (pure English in EN mode, pure Chinese in ZH mode)
 // - Runs 100% in-browser with zero tracking.
 
-import { formatBytes, makeBilingualSpan } from './workbench';
+import { bilingual, langAttr, langProp } from './i18n';
+import { formatBytes } from './workbench';
 
 const SAMPLE_JSON = {
 	project: 'QCSunny Lab',
@@ -18,7 +19,7 @@ const SAMPLE_JSON = {
 		dataUploaded: false
 	},
 	categories: ['calculators', 'converters', 'finance', 'tools'],
-	toolsCount: 40,
+	toolsCount: 49,
 	verified: true
 };
 
@@ -65,7 +66,7 @@ export function initJson(host: HTMLElement): void {
 		const btn = document.createElement('button');
 		btn.type = 'button';
 		btn.className = isPrimary ? 't-btn t-primary' : 't-btn';
-		btn.append(makeBilingualSpan(labelEn, labelZh));
+		btn.append(bilingual(labelEn, labelZh));
 		if (onClick) btn.addEventListener('click', onClick);
 		return btn;
 	}
@@ -98,7 +99,7 @@ export function initJson(host: HTMLElement): void {
 	const leftHead = document.createElement('div');
 	leftHead.className = 't-json-panel-head';
 	const leftTitle = document.createElement('strong');
-	leftTitle.append(makeBilingualSpan('Input JSON', '输入 JSON'));
+	leftTitle.append(bilingual('Input JSON', '输入 JSON'));
 
 	const fileInput = document.createElement('input');
 	fileInput.type = 'file';
@@ -123,7 +124,8 @@ export function initJson(host: HTMLElement): void {
 	const inputArea = document.createElement('textarea');
 	inputArea.className = 't-json-editor';
 	inputArea.spellcheck = false;
-	inputArea.setAttribute('aria-label', 'JSON Input');
+	inputArea.dataset.role = 'input';
+	langAttr(inputArea, 'aria-label', 'JSON input', 'JSON 输入');
 
 	leftPanel.append(leftHead, inputArea);
 
@@ -134,7 +136,7 @@ export function initJson(host: HTMLElement): void {
 	const rightHead = document.createElement('div');
 	rightHead.className = 't-json-panel-head';
 	const rightTitle = document.createElement('strong');
-	rightTitle.append(makeBilingualSpan('Formatted Output', '格式化输出'));
+	rightTitle.append(bilingual('Formatted Output', '格式化输出'));
 
 	const rightActions = document.createElement('div');
 	rightActions.style.display = 'flex';
@@ -155,7 +157,8 @@ export function initJson(host: HTMLElement): void {
 	outputArea.className = 't-json-editor';
 	outputArea.readOnly = true;
 	outputArea.spellcheck = false;
-	outputArea.setAttribute('aria-label', 'JSON Output');
+	outputArea.dataset.role = 'output';
+	langAttr(outputArea, 'aria-label', 'JSON output', 'JSON 输出');
 
 	rightPanel.append(rightHead, outputArea);
 
@@ -163,17 +166,18 @@ export function initJson(host: HTMLElement): void {
 	wrap.append(toolbar, status, panels);
 	host.append(wrap);
 
-	function syncPlaceholders() {
-		const isZh = document.documentElement.dataset.lang === 'zh';
-		inputArea.placeholder = isZh
-			? '在此粘贴原始 JSON 文本... 例如：{"name": "test"}'
-			: 'Paste raw JSON text here... e.g. {"name": "test"}';
-		outputArea.placeholder = isZh
-			? '格式化结果将显示在此处...'
-			: 'Formatted output will appear here...';
-	}
-	syncPlaceholders();
-	window.addEventListener('site:lang-change', syncPlaceholders);
+	langProp(
+		inputArea,
+		'placeholder',
+		'Paste raw JSON text here... e.g. {"name": "test"}',
+		'在此粘贴原始 JSON 文本... 例如：{"name": "test"}',
+	);
+	langProp(
+		outputArea,
+		'placeholder',
+		'Formatted output will appear here...',
+		'格式化结果将显示在此处...',
+	);
 
 	// --- Logic implementations ---
 
@@ -181,7 +185,7 @@ export function initJson(host: HTMLElement): void {
 		status.className = 't-json-status';
 		if (type === 'valid') status.classList.add('is-valid');
 		if (type === 'error') status.classList.add('is-error');
-		status.replaceChildren(makeBilingualSpan(msgEn, msgZh || msgEn));
+		status.replaceChildren(bilingual(msgEn, msgZh || msgEn));
 	}
 
 	function doFormat(indent: number) {
@@ -210,6 +214,9 @@ export function initJson(host: HTMLElement): void {
 				`✓ JSON 格式有效 · 键值数量: ${keyCount} · 原始大小: ${formatBytes(byteLen)} · 格式化后: ${formatBytes(fmtLen)}`
 			);
 		} catch (err) {
+			// V8's own SyntaxError text ("Unexpected token } ... at position 42").
+			// It is English in every locale and there is no structured form of it,
+			// so both views quote it verbatim after a translated prefix.
 			const msg = err instanceof Error ? err.message : 'JSON parse failed';
 			const pos = getErrorPosition(msg, raw);
 			const whereEn = pos.line ? ` [line ${pos.line}, col ${pos.col}]` : '';
@@ -291,7 +298,7 @@ export function initJson(host: HTMLElement): void {
 		try {
 			await navigator.clipboard.writeText(text);
 			const oldChildren = Array.from(copyBtn.childNodes);
-			copyBtn.replaceChildren(makeBilingualSpan('✓ Copied!', '✓ 已复制!'));
+			copyBtn.replaceChildren(bilingual('✓ Copied!', '✓ 已复制!'));
 			copyBtn.style.color = '#10b981';
 			setTimeout(() => {
 				copyBtn.replaceChildren(...oldChildren);

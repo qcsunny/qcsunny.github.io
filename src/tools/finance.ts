@@ -49,10 +49,11 @@ function amortize(
 
 const compoundInterest: FormConfig = {
 	intro: 'Compounded growth with an optional monthly contribution and year-by-year schedule.',
+	introZh: '复利增长测算，可叠加每月定投，并给出逐年资产明细表。',
 	fields: [
-		{ id: 'p', label: 'Principal / Starting balance', labelZh: '初始投资本金', suffix: '($ / ¥)', type: 'number', def: '10000', step: 'any', min: '0', required: true },
+		{ id: 'p', label: 'Principal / Starting balance', labelZh: '初始投资本金', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '10000', step: 'any', min: '0', required: true },
 		{ id: 'r', label: 'Annual interest rate / return', labelZh: '预期年化收益率 / 利率', suffix: '(%)', type: 'number', def: '6', step: 'any', required: true },
-		{ id: 't', label: 'Investment horizon', labelZh: '投资年限', suffix: '(years / 年)', type: 'number', def: '10', step: 'any', min: '0', required: true },
+		{ id: 't', label: 'Investment horizon', labelZh: '投资年限', suffix: '(years)', suffixZh: '(年)', type: 'number', def: '10', step: 'any', min: '0', required: true },
 		{
 			id: 'n',
 			label: 'Compounding frequency',
@@ -71,7 +72,7 @@ const compoundInterest: FormConfig = {
 			id: 'm',
 			label: 'Monthly contribution',
 			labelZh: '每月定期定投金额',
-			suffix: '($ / ¥)',
+			suffix: '($)', suffixZh: '(¥)',
 			type: 'number',
 			def: '500',
 			step: 'any',
@@ -132,12 +133,13 @@ const compoundInterest: FormConfig = {
 
 const mortgagePrepayment: FormConfig = {
 	intro: 'Calculate remaining loan balance, compare term reduction vs monthly savings, and total interest saved.',
+	introZh: '测算剩余贷款余额，对比"缩短年限"与"减少月供"两种方式，并算出节省的总利息。',
 	fields: [
-		{ id: 'loan', label: 'Original loan amount', labelZh: '原贷款本金', suffix: '($ / ¥)', type: 'number', def: '1000000', step: 'any', min: '0', required: true },
+		{ id: 'loan', label: 'Original loan amount', labelZh: '原贷款本金', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '1000000', step: 'any', min: '0', required: true },
 		{ id: 'rate', label: 'Annual interest rate', labelZh: '贷款年化利率', suffix: '(%)', type: 'number', def: '3.8', step: 'any', min: '0', required: true },
-		{ id: 'years', label: 'Original loan term', labelZh: '原贷款期限', suffix: '(years / 年)', type: 'number', def: '30', step: '1', min: '1', required: true },
-		{ id: 'paidMonths', label: 'Months already paid', labelZh: '已正常还款月数', suffix: '(months / 个月)', type: 'number', def: '36', step: '1', min: '0', required: true },
-		{ id: 'prepay', label: 'Lump-sum prepayment amount', labelZh: '本次提前还贷金额', suffix: '($ / ¥)', type: 'number', def: '200000', step: 'any', min: '0', required: true },
+		{ id: 'years', label: 'Original loan term', labelZh: '原贷款期限', suffix: '(years)', suffixZh: '(年)', type: 'number', def: '30', step: '1', min: '1', required: true },
+		{ id: 'paidMonths', label: 'Months already paid', labelZh: '已正常还款月数', suffix: '(months)', suffixZh: '(个月)', type: 'number', def: '36', step: '1', min: '0', required: true },
+		{ id: 'prepay', label: 'Lump-sum prepayment amount', labelZh: '本次提前还贷金额', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '200000', step: 'any', min: '0', required: true },
 		{
 			id: 'strategy',
 			label: 'Prepayment strategy',
@@ -217,8 +219,18 @@ const mortgagePrepayment: FormConfig = {
 			return {
 				rows: [
 					{ label: 'Total interest saved', labelZh: '累计节省利息支出', value: money(interestSaved), emphasis: true },
-					{ label: 'Loan term shortened by', labelZh: '缩短还款期限', value: `${monthsSaved} months / 月 (~${yearsSaved} 年)` },
-					{ label: 'New remaining loan term', labelZh: '调整后剩余还款期限', value: `${newMonths} months / 月 (~${(newMonths / 12).toFixed(1)} 年)` },
+						{
+						label: 'Loan term shortened by',
+						labelZh: '缩短还款期限',
+						value: `${monthsSaved} months (~${yearsSaved} yr)`,
+						valueZh: `${monthsSaved} 个月 (约 ${yearsSaved} 年)`,
+					},
+					{
+						label: 'New remaining loan term',
+						labelZh: '调整后剩余还款期限',
+						value: `${newMonths} months (~${(newMonths / 12).toFixed(1)} yr)`,
+						valueZh: `${newMonths} 个月 (约 ${(newMonths / 12).toFixed(1)} 年)`,
+					},
 					{ label: 'Monthly payment (stays same)', labelZh: '每月月供 (基本保持不变)', value: money(origPayment) },
 					{ label: 'Remaining balance before prepay', labelZh: '提前还款前未还本金', value: money(balanceBefore) },
 					{ label: 'Remaining balance after prepay', labelZh: '提前还款后剩余本金', value: money(balanceAfter) },
@@ -237,12 +249,22 @@ const mortgagePrepayment: FormConfig = {
 			return {
 				rows: [
 					{ label: 'New monthly payment', labelZh: '调整后每月新月供', value: money(newPayment), emphasis: true },
-					{ label: 'Monthly payment reduction', labelZh: '每月月供减轻', value: `-${money(monthlyReduction)} / month` },
+					{
+						label: 'Monthly payment reduction',
+						labelZh: '每月月供减轻',
+						value: `-${money(monthlyReduction)} / month`,
+						valueZh: `-${money(monthlyReduction)} / 月`,
+					},
 					{ label: 'Total interest saved', labelZh: '累计节省利息支出', value: money(interestSaved) },
 					{ label: 'Original monthly payment', labelZh: '原每月月供', value: money(origPayment) },
 					{ label: 'Remaining balance before prepay', labelZh: '提前还款前未还本金', value: money(balanceBefore) },
 					{ label: 'Remaining balance after prepay', labelZh: '提前还款后剩余本金', value: money(balanceAfter) },
-					{ label: 'Remaining term (unchanged)', labelZh: '剩余期限 (保持不变)', value: `${remainingMonthsOrig} months / 月 (${(remainingMonthsOrig / 12).toFixed(1)} 年)` },
+					{
+						label: 'Remaining term (unchanged)',
+						labelZh: '剩余期限 (保持不变)',
+						value: `${remainingMonthsOrig} months (${(remainingMonthsOrig / 12).toFixed(1)} yr)`,
+						valueZh: `${remainingMonthsOrig} 个月 (${(remainingMonthsOrig / 12).toFixed(1)} 年)`,
+					},
 				],
 				note: `By prepaying ${money(prepayActual)}, your monthly bill drops from ${money(origPayment)} to ${money(newPayment)} (-${money(monthlyReduction)}/mo), saving ${money(interestSaved)} in total interest over ${(remainingMonthsOrig / 12).toFixed(1)} years.`,
 				noteZh: `通过提前偿还本金 ${money(prepayActual)}，您的每月月供从 ${money(origPayment)} 降至 ${money(newPayment)}（每月减负 ${money(monthlyReduction)}），在剩余 ${(remainingMonthsOrig / 12).toFixed(1)} 年内累计省息 ${money(interestSaved)}。`,
@@ -255,10 +277,11 @@ const mortgagePrepayment: FormConfig = {
 
 const inflation: FormConfig = {
 	intro: 'Calculate future purchasing power erosion and future equivalent cost based on annual inflation.',
+	introZh: '按年通胀率测算购买力缩水程度，以及同一笔钱在未来的等值成本。',
 	fields: [
-		{ id: 'amount', label: 'Current amount / Present value', labelZh: '当前金额 / 资产现值', suffix: '($ / ¥)', type: 'number', def: '100000', step: 'any', min: '0', required: true },
+		{ id: 'amount', label: 'Current amount / Present value', labelZh: '当前金额 / 资产现值', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '100000', step: 'any', min: '0', required: true },
 		{ id: 'rate', label: 'Average annual inflation rate', labelZh: '年均通货膨胀率', suffix: '(%)', type: 'number', def: '3', step: 'any', required: true },
-		{ id: 'years', label: 'Time horizon', labelZh: '时间跨度', suffix: '(years / 年)', type: 'number', def: '20', step: 'any', min: '0', required: true },
+		{ id: 'years', label: 'Time horizon', labelZh: '时间跨度', suffix: '(years)', suffixZh: '(年)', type: 'number', def: '20', step: 'any', min: '0', required: true },
 	],
 	compute: (v) => {
 		const amount = v.num('amount');
@@ -305,10 +328,11 @@ const inflation: FormConfig = {
 
 const savingsGoal: FormConfig = {
 	intro: 'Calculate the required monthly contribution to reach your financial target by a specific date.',
+	introZh: '倒推为在目标日期前达成储蓄目标，每月需要投入多少钱。',
 	fields: [
-		{ id: 'target', label: 'Target savings goal', labelZh: '目标储蓄规划总额', suffix: '($ / ¥)', type: 'number', def: '500000', step: 'any', min: '0', required: true },
-		{ id: 'current', label: 'Current initial savings', labelZh: '当前已有初始存款', suffix: '($ / ¥)', type: 'number', def: '50000', step: 'any', min: '0', required: true },
-		{ id: 'years', label: 'Time to reach goal', labelZh: '计划储备年限', suffix: '(years / 年)', type: 'number', def: '5', step: 'any', min: '0.1', required: true },
+		{ id: 'target', label: 'Target savings goal', labelZh: '目标储蓄规划总额', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '500000', step: 'any', min: '0', required: true },
+		{ id: 'current', label: 'Current initial savings', labelZh: '当前已有初始存款', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '50000', step: 'any', min: '0', required: true },
+		{ id: 'years', label: 'Time to reach goal', labelZh: '计划储备年限', suffix: '(years)', suffixZh: '(年)', type: 'number', def: '5', step: 'any', min: '0.1', required: true },
 		{ id: 'rate', label: 'Expected annual return rate', labelZh: '预期年化投资收益率', suffix: '(%)', type: 'number', def: '5', step: 'any', required: true },
 	],
 	compute: (v) => {
@@ -370,8 +394,9 @@ const savingsGoal: FormConfig = {
 
 const autoLoan: FormConfig = {
 	intro: 'Estimate monthly car payments, interest, taxes, insurance and total out-of-pocket cost.',
+	introZh: '估算车贷月供、利息、购置税、保险与落地总花费。',
 	fields: [
-		{ id: 'carPrice', label: 'Vehicle price', labelZh: '车辆裸车指导价', suffix: '($ / ¥)', type: 'number', def: '150000', step: 'any', min: '0', required: true },
+		{ id: 'carPrice', label: 'Vehicle price', labelZh: '车辆裸车指导价', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '150000', step: 'any', min: '0', required: true },
 		{ id: 'downPct', label: 'Down payment percentage', labelZh: '首付比例', suffix: '(%)', type: 'number', def: '20', step: 'any', min: '0', max: '100', required: true },
 		{
 			id: 'months',
@@ -388,9 +413,9 @@ const autoLoan: FormConfig = {
 			],
 		},
 		{ id: 'rate', label: 'Annual interest rate', labelZh: '车贷年化利率', suffix: '(%)', type: 'number', def: '4.5', step: 'any', min: '0', required: true },
-		{ id: 'tax', label: 'Purchase tax / Sales tax', labelZh: '车辆购置税 / 消费税', suffix: '($ / ¥)', type: 'number', def: '13274', step: 'any', min: '0', hint: 'In China, roughly Price ÷ 1.13 × 10%', hintZh: '国内购置税约按 裸车价 ÷ 1.13 × 10% 计算' },
-		{ id: 'insurance', label: 'First-year insurance', labelZh: '首年车险保费 (交强险+商业险)', suffix: '($ / ¥)', type: 'number', def: '5000', step: 'any', min: '0' },
-		{ id: 'license', label: 'Registration & service fees', labelZh: '上牌与综合杂费', suffix: '($ / ¥)', type: 'number', def: '500', step: 'any', min: '0' },
+		{ id: 'tax', label: 'Purchase tax / Sales tax', labelZh: '车辆购置税 / 消费税', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '13274', step: 'any', min: '0', hint: 'In China, roughly Price ÷ 1.13 × 10%', hintZh: '国内购置税约按 裸车价 ÷ 1.13 × 10% 计算' },
+		{ id: 'insurance', label: 'First-year insurance', labelZh: '首年车险保费 (交强险+商业险)', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '5000', step: 'any', min: '0' },
+		{ id: 'license', label: 'Registration & service fees', labelZh: '上牌与综合杂费', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '500', step: 'any', min: '0' },
 	],
 	compute: (v) => {
 		const price = v.num('carPrice');
@@ -432,9 +457,10 @@ const autoLoan: FormConfig = {
 
 const irrCalculator: FormConfig = {
 	intro: 'Convert advertised installment fees into true APR / IRR via Newton-Raphson approximation.',
+	introZh: '用牛顿迭代法把分期手续费率还原成真实年化利率 IRR。',
 	fields: [
-		{ id: 'principal', label: 'Borrowed principal', labelZh: '分期 / 借款本金', suffix: '($ / ¥)', type: 'number', def: '12000', step: 'any', min: '0', required: true },
-		{ id: 'periods', label: 'Installment periods', labelZh: '分期总期数', suffix: '(months / 期)', type: 'number', def: '12', step: '1', min: '1', required: true },
+		{ id: 'principal', label: 'Borrowed principal', labelZh: '分期 / 借款本金', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '12000', step: 'any', min: '0', required: true },
+		{ id: 'periods', label: 'Installment periods', labelZh: '分期总期数', suffix: '(months)', suffixZh: '(期)', type: 'number', def: '12', step: '1', min: '1', required: true },
 		{
 			id: 'mode',
 			label: 'Fee input type',
@@ -465,7 +491,7 @@ const irrCalculator: FormConfig = {
 			id: 'monthlyPay',
 			label: 'Monthly payment amount',
 			labelZh: '每期固定还款额',
-			suffix: '($ / ¥)',
+			suffix: '($)', suffixZh: '(¥)',
 			type: 'number',
 			def: '1072',
 			step: 'any',
@@ -479,7 +505,7 @@ const irrCalculator: FormConfig = {
 			id: 'totalFee',
 			label: 'Total fee / interest',
 			labelZh: '总手续费或总利息',
-			suffix: '($ / ¥)',
+			suffix: '($)', suffixZh: '(¥)',
 			type: 'number',
 			def: '864',
 			step: 'any',
@@ -559,11 +585,12 @@ const irrCalculator: FormConfig = {
 
 const fireCalculator: FormConfig = {
 	intro: 'Calculate your target FIRE nest egg and projected retirement age based on the 4% rule.',
+	introZh: '按 4% 法则测算 FIRE 财务自由所需资产，以及预计可退休的年龄。',
 	fields: [
-		{ id: 'age', label: 'Current age', labelZh: '当前年龄', suffix: '(years / 岁)', type: 'number', def: '30', step: '1', min: '18', max: '80', required: true },
-		{ id: 'annualExp', label: 'Expected annual living expenses in retirement', labelZh: '退休后预期年生活支出', suffix: '($ / ¥)', type: 'number', def: '100000', step: 'any', min: '0', required: true },
-		{ id: 'currentAssets', label: 'Current net investment assets', labelZh: '当前已有可投资生息净资产', suffix: '($ / ¥)', type: 'number', def: '300000', step: 'any', min: '0', required: true },
-		{ id: 'annualSave', label: 'Annual savings added to investments', labelZh: '每年新增投资结余 (年储蓄额)', suffix: '($ / ¥)', type: 'number', def: '80000', step: 'any', min: '0', required: true },
+		{ id: 'age', label: 'Current age', labelZh: '当前年龄', suffix: '(years)', suffixZh: '(岁)', type: 'number', def: '30', step: '1', min: '18', max: '80', required: true },
+		{ id: 'annualExp', label: 'Expected annual living expenses in retirement', labelZh: '退休后预期年生活支出', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '100000', step: 'any', min: '0', required: true },
+		{ id: 'currentAssets', label: 'Current net investment assets', labelZh: '当前已有可投资生息净资产', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '300000', step: 'any', min: '0', required: true },
+		{ id: 'annualSave', label: 'Annual savings added to investments', labelZh: '每年新增投资结余 (年储蓄额)', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '80000', step: 'any', min: '0', required: true },
 		{ id: 'returnRate', label: 'Expected annual net return rate', labelZh: '预期年化投资回报率 (扣除通胀后)', suffix: '(%)', type: 'number', def: '6', step: 'any', required: true },
 		{ id: 'swr', label: 'Safe withdrawal rate (SWR)', labelZh: '安全提款率 (SWR)', suffix: '(%)', type: 'number', def: '4', step: 'any', required: true, hint: 'Standard 4% rule (Trinity Study)', hintZh: 'Trinity 经典 4% 法则 (即 25 倍年支出)' },
 	],
@@ -606,16 +633,23 @@ const fireCalculator: FormConfig = {
 		}
 
 		const retAge = yearsToFire >= 0 ? age + yearsToFire : '> 80';
-		const yearsText = yearsToFire === 0
-			? 'Already reached! / 已经达成！'
-			: yearsToFire > 0
-				? `${yearsToFire} years / 年 (Age / 退休年龄: ${retAge})`
-				: '> 50 years / 超过50年';
+		const yearsText =
+			yearsToFire === 0
+				? 'Already reached!'
+				: yearsToFire > 0
+					? `${yearsToFire} years (retiring at ${retAge})`
+					: '> 50 years';
+		const yearsTextZh =
+			yearsToFire === 0
+				? '已经达成！'
+				: yearsToFire > 0
+					? `${yearsToFire} 年 (退休年龄 ${retAge} 岁)`
+					: '超过 50 年';
 
 		return {
 			rows: [
 				{ label: 'Target FIRE Nest Egg', labelZh: '标准 FIRE 财务自由目标资产', value: money(targetFire), emphasis: true },
-				{ label: 'Time to Financial Freedom', labelZh: '距离财务自由所需时间', value: yearsText },
+				{ label: 'Time to Financial Freedom', labelZh: '距离财务自由所需时间', value: yearsText, valueZh: yearsTextZh },
 				{ label: 'Projected Retirement Age', labelZh: '预估可退休年龄', value: String(retAge) },
 				{ label: 'Lean FIRE Goal (75% expenses)', labelZh: '极简 Lean FIRE 目标 (75% 支出)', value: money(leanFire) },
 				{ label: 'Fat FIRE Goal (125% expenses)', labelZh: '宽裕 Fat FIRE 目标 (125% 支出)', value: money(fatFire) },
@@ -636,6 +670,7 @@ const fireCalculator: FormConfig = {
 
 const loanPayment: FormConfig = {
 	intro: 'Calculate monthly loan payments, total interest and amortization schedule, or reverse-calculate maximum borrowing capacity from your monthly budget.',
+	introZh: '测算贷款月供、总利息与还款计划表，也可由月供预算反推最高可贷金额。',
 	fields: [
 		{
 			id: 'calcMode',
@@ -652,7 +687,7 @@ const loanPayment: FormConfig = {
 			id: 'amount',
 			label: 'Amount (Loan Principal or Monthly Budget)',
 			labelZh: '输入金额 (贷款本金 或 每月月供预算)',
-			suffix: '($ / ¥)',
+			suffix: '($)', suffixZh: '(¥)',
 			type: 'number',
 			def: '300000',
 			step: 'any',
@@ -662,7 +697,7 @@ const loanPayment: FormConfig = {
 			hintZh: '正向模式输入借款本金总额；逆向模式输入每月可承受的还款预算',
 		},
 		{ id: 'rate', label: 'Annual interest rate', labelZh: '贷款年化利率', suffix: '(%)', type: 'number', def: '3.8', step: 'any', min: '0', required: true },
-		{ id: 'years', label: 'Term', labelZh: '还款期限', suffix: '(years / 年)', type: 'number', def: '30', step: 'any', min: '0.1', required: true },
+		{ id: 'years', label: 'Term', labelZh: '还款期限', suffix: '(years)', suffixZh: '(年)', type: 'number', def: '30', step: 'any', min: '0.1', required: true },
 	],
 	compute: (v) => {
 		const mode = v.str('calcMode') || 'to_payment';
@@ -697,7 +732,12 @@ const loanPayment: FormConfig = {
 				rows: [
 					{ label: 'Max borrowing loan amount', labelZh: '最高可贷本金额度 (借款上限)', value: money(principal), emphasis: true },
 					{ label: 'Monthly payment budget', labelZh: '每月月供预算 (供款上限)', value: money(pay) },
-					{ label: 'Number of payments', labelZh: '还款期数 (月数)', value: `${months} months / 期 (~${years} 年)` },
+					{
+						label: 'Number of payments',
+						labelZh: '还款期数 (月数)',
+						value: `${months} payments (~${years} yr)`,
+						valueZh: `${months} 期 (约 ${years} 年)`,
+					},
 					{ label: 'Total repayment (Principal + Interest)', labelZh: '还款本息总计', value: money(totalRepay) },
 					{ label: 'Total interest paid', labelZh: '支付利息总额', value: money(totalInterest) },
 				],
@@ -715,7 +755,12 @@ const loanPayment: FormConfig = {
 			rows: [
 				{ label: 'Monthly payment', labelZh: '每月还款额 (月供)', value: money(pay), emphasis: true },
 				{ label: 'Loan principal', labelZh: '贷款本金', value: money(principal) },
-				{ label: 'Number of payments', labelZh: '还款期数 (月数)', value: `${months} months / 期 (~${years} 年)` },
+				{
+						label: 'Number of payments',
+						labelZh: '还款期数 (月数)',
+						value: `${months} payments (~${years} yr)`,
+						valueZh: `${months} 期 (约 ${years} 年)`,
+					},
 				{ label: 'Total repayment (Principal + Interest)', labelZh: '还款本息总额', value: money(totalRepay) },
 				{ label: 'Total interest paid', labelZh: '支付利息总计', value: money(totalInterest) },
 			],
@@ -818,12 +863,42 @@ function renderMortgageComparisonSvg(params: {
 	const xCross = hasCrossover ? getX(crossoverMonth) : x0 + plotW * 0.35;
 	const yCross = yPmt;
 
+	// An SVG <text> cannot hold the .i18n-en / .i18n-zh span pair the rest of the
+	// site uses, so every label below is emitted twice at the same coordinates and
+	// the global toggle rules in global.css hide the wrong one — the chart then
+	// follows the language switch with no script of its own. The currency symbol
+	// differs for the same reason the form is labelled ($) / (¥).
+	const t = (attrs: string, en: string, zh: string): string =>
+		`<text class="i18n-en" ${attrs}>${en}</text><text class="i18n-zh" ${attrs}>${zh}</text>`;
+
+	// Rough advance width of a label. getBBox() would be exact but needs a live
+	// document, and this runs at build time — an estimate with slack is enough to
+	// keep the legend entries apart. A CJK glyph is one em in every face the site
+	// ships; Latin averages about half.
+	const textW = (s: string, size: number): number => {
+		let em = 0;
+		for (const ch of s.replace(/&amp;/g, '&')) {
+			if (/[\u2e80-\u9fff\uff00-\uffef]/.test(ch)) em += 1;
+			else if (/[ .,'|!:;()]/.test(ch)) em += 0.32;
+			else if (/[A-Z0-9$&]/.test(ch)) em += 0.62;
+			else em += 0.52;
+		}
+		return em * size;
+	};
+
+	// Badge geometry is needed twice — for the badge itself and to keep the
+	// early-phase annotation out from under it — so it is measured up here.
+	const badgeW = 230;
+	const badgeH = 38;
+	const badgeX = Math.min(Math.max(xCross - badgeW / 2, x0 + 10), x1 - badgeW - 10);
+	const badgeY = Math.max(y0 + 5, yCross - badgeH - 12);
+
 	// Y-axis gridlines & labels
 	let yGridSvg = '';
 	for (let v = yStart; v <= yEnd; v += yStep) {
 		const y = getY(v);
 		yGridSvg += `<line x1="${x0}" y1="${y.toFixed(1)}" x2="${x1}" y2="${y.toFixed(1)}" stroke="rgba(148, 163, 184, 0.15)" stroke-dasharray="3 3"/>`;
-		yGridSvg += `<text x="${x0 - 10}" y="${(y + 4).toFixed(1)}" font-size="11" font-family="system-ui, sans-serif" fill="#94a3b8" text-anchor="end">¥${formatNumber(v)}</text>`;
+		yGridSvg += t(`x="${x0 - 10}" y="${(y + 4).toFixed(1)}" font-size="11" font-family="system-ui, sans-serif" fill="#94a3b8" text-anchor="end"`, `$${formatNumber(v)}`, `¥${formatNumber(v)}`);
 	}
 
 	// X-axis gridlines & labels
@@ -833,8 +908,8 @@ function renderMortgageComparisonSvg(params: {
 		const m = Math.max(1, y * 12);
 		const x = getX(m);
 		xGridSvg += `<line x1="${x.toFixed(1)}" y1="${y0}" x2="${x.toFixed(1)}" y2="${y1}" stroke="rgba(148, 163, 184, 0.15)" stroke-dasharray="3 3"/>`;
-		xGridSvg += `<text x="${x.toFixed(1)}" y="${y1 + 18}" font-size="11" font-family="system-ui, sans-serif" fill="#94a3b8" text-anchor="middle">${y}年</text>`;
-		xGridSvg += `<text x="${x.toFixed(1)}" y="${y1 + 32}" font-size="9.5" font-family="system-ui, sans-serif" fill="#64748b" text-anchor="middle">(${y * 12}期)</text>`;
+		xGridSvg += t(`x="${x.toFixed(1)}" y="${y1 + 18}" font-size="11" font-family="system-ui, sans-serif" fill="#94a3b8" text-anchor="middle"`, `${y}y`, `${y}年`);
+		xGridSvg += t(`x="${x.toFixed(1)}" y="${y1 + 32}" font-size="9.5" font-family="system-ui, sans-serif" fill="#64748b" text-anchor="middle"`, `(${y * 12} mo)`, `(${y * 12}期)`);
 	}
 
 	// Shaded areas
@@ -845,13 +920,25 @@ function renderMortgageComparisonSvg(params: {
 		// Phase 2: Equal Principal lower than Equal P&I (savings area)
 		areaSvg += `<polygon points="${xCross.toFixed(1)},${yCross.toFixed(1)} ${x1.toFixed(1)},${yPrcN.toFixed(1)} ${x1.toFixed(1)},${yPmt.toFixed(1)}" fill="rgba(16, 185, 129, 0.15)"/>`;
 
-		const text1X = (x0 + xCross) / 2;
+		// Anchored to the left edge of the wedge it labels, not centred in it: the
+		// badge below is centred on the crossover and its box reached back far
+		// enough to sit on top of a centred label (it did at the default values).
+		// Dropped entirely when the badge leaves no room, since the two overlap
+		// vertically whenever the gap between the lines exceeds 22px.
+		const gap1En = `Higher early on (+$${money(prcMonth1 - pmtMonthly)})`;
+		const gap1Zh = `前期月供较高 (+¥${money(prcMonth1 - pmtMonthly)})`;
 		const text1Y = Math.min(yPrc1, yPmt) + Math.abs(yPrc1 - yPmt) * 0.45;
-		areaSvg += `<text x="${text1X.toFixed(1)}" y="${text1Y.toFixed(1)}" font-size="11" font-weight="600" fill="#ea580c" text-anchor="middle">前期月供较高 (+¥${money(prcMonth1 - pmtMonthly)})</text>`;
+		if (Math.max(textW(gap1En, 11), textW(gap1Zh, 11)) < badgeX - 16 - x0)
+			areaSvg += t(`x="${(x0 + 8).toFixed(1)}" y="${text1Y.toFixed(1)}" font-size="11" font-weight="600" fill="#ea580c"`, gap1En, gap1Zh);
 
-		const text2X = (xCross + x1) / 2;
+		// Centred in the savings wedge, but pulled back inside the plot: a late
+		// crossover puts its midpoint within half a label of the right edge.
+		const gap2En = `Cheaper later (saves up to $${money(pmtMonthly - prcFinalMonth)}/mo)`;
+		const gap2Zh = `后期持续省钱 (最多省 ¥${money(pmtMonthly - prcFinalMonth)}/月)`;
+		const half2 = Math.max(textW(gap2En, 11), textW(gap2Zh, 11)) / 2;
+		const text2X = Math.min((xCross + x1) / 2, x1 - half2 - 4);
 		const text2Y = yPmt + Math.abs(yPrcN - yPmt) * 0.45;
-		areaSvg += `<text x="${text2X.toFixed(1)}" y="${text2Y.toFixed(1)}" font-size="11" font-weight="600" fill="#059669" text-anchor="middle">后期持续省钱 (最多省 ¥${money(pmtMonthly - prcFinalMonth)}/月)</text>`;
+		areaSvg += t(`x="${text2X.toFixed(1)}" y="${text2Y.toFixed(1)}" font-size="11" font-weight="600" fill="#059669" text-anchor="middle"`, gap2En, gap2Zh);
 	}
 
 	// Crossover lines & badge
@@ -862,34 +949,81 @@ function renderMortgageComparisonSvg(params: {
 		crossoverSvg += `<circle cx="${xCross.toFixed(1)}" cy="${yCross.toFixed(1)}" r="8" fill="rgba(239, 68, 68, 0.25)" stroke="#ef4444" stroke-width="2"/>`;
 		crossoverSvg += `<circle cx="${xCross.toFixed(1)}" cy="${yCross.toFixed(1)}" r="4" fill="#ef4444"/>`;
 
-		const badgeW = 230;
-		const badgeH = 38;
-		const badgeX = Math.min(Math.max(xCross - badgeW / 2, x0 + 10), x1 - badgeW - 10);
-		const badgeY = Math.max(y0 + 5, yCross - badgeH - 12);
 		crossoverSvg += `<g transform="translate(${badgeX.toFixed(1)}, ${badgeY.toFixed(1)})">
 			<rect width="${badgeW}" height="${badgeH}" rx="6" fill="rgba(15, 23, 42, 0.92)" stroke="#ef4444" stroke-width="1.5"/>
-			<text x="${badgeW / 2}" y="15" font-size="10.5" font-weight="bold" fill="#f87171" text-anchor="middle" font-family="system-ui, sans-serif">★ 成本平衡点: 第 ${crossoverMonth} 个月 (~${(crossoverMonth / 12).toFixed(1)}年)</text>
-			<text x="${badgeW / 2}" y="29" font-size="9.5" fill="#e2e8f0" text-anchor="middle" font-family="system-ui, sans-serif">平衡月供线: ¥${money(pmtMonthly)} / 月 (此后等额本金更省)</text>
+			${t(`x="${badgeW / 2}" y="15" font-size="10.5" font-weight="bold" fill="#f87171" text-anchor="middle" font-family="system-ui, sans-serif"`, `★ Break-even: month ${crossoverMonth} (~${(crossoverMonth / 12).toFixed(1)} yr)`, `★ 成本平衡点: 第 ${crossoverMonth} 个月 (~${(crossoverMonth / 12).toFixed(1)}年)`)}
+			${t(`x="${badgeW / 2}" y="29" font-size="9.5" fill="#e2e8f0" text-anchor="middle" font-family="system-ui, sans-serif"`, `Break-even payment: $${money(pmtMonthly)}/mo`, `平衡月供线: ¥${money(pmtMonthly)} / 月 (此后等额本金更省)`)}
 		</g>`;
+	}
+
+	// One legend row per language rather than a row of paired <text> at shared
+	// coordinates: the entries are laid out left to right from their measured
+	// widths, and the two languages do not come out the same width. Trailing
+	// entries are dropped rather than allowed to run off the right edge.
+	//
+	// Every element carries the class itself instead of riding inside one
+	// <g class="i18n-*">. A group would be tidier and does paint correctly —
+	// display:none on an SVG container hides its children — but Chromium's
+	// checkVisibility() reports true for a <text> under such a group, and that is
+	// exactly what e2e/i18n.spec.ts's sweeps use to decide what a reader can see.
+	// Tagging the leaves keeps the guard able to see a real leak.
+	type Entry = { color: string; label: string; dot?: boolean };
+	const legendRow = (cls: 'i18n-en' | 'i18n-zh', all: Entry[]): string => {
+		const span = (list: Entry[]): number =>
+			list.reduce((n, e) => n + (e.dot ? 15 : 24) + textW(e.label, 11) + 20, -20);
+		let entries = all;
+		while (entries.length > 2 && span(entries) > plotW) entries = entries.slice(0, -1);
+		let x = 0;
+		let out = '';
+		for (const e of entries) {
+			if (e.dot) {
+				out += `<circle class="${cls}" cx="${(x + 4.5).toFixed(1)}" cy="-3" r="4.5" fill="${e.color}"/>`;
+				x += 15;
+			} else {
+				out += `<line class="${cls}" x1="${x.toFixed(1)}" y1="-3" x2="${(x + 18).toFixed(1)}" y2="-3" stroke="${e.color}" stroke-width="3"/>`;
+				x += 24;
+			}
+			const fill = e.dot ? e.color : '#94a3b8';
+			out += `<text class="${cls}" x="${x.toFixed(1)}" y="0" fill="${fill}"${e.dot ? ' font-weight="600"' : ''}>${e.label}</text>`;
+			x += textW(e.label, 11) + 20;
+		}
+		return out;
+	};
+
+	// The interest-saved pill moved up onto the title row and is right-aligned to
+	// the plot edge. It used to be a fixed 115px box at x=650 with the amount
+	// centred in it, which ran past the right edge of the viewBox as soon as the
+	// saving reached five digits — it did at the default values, in both languages.
+	const pill = (cls: 'i18n-en' | 'i18n-zh', label: string): string => {
+		const w = textW(label, 11) + 18;
+		return `<rect class="${cls}" x="${(x1 - w).toFixed(1)}" y="14" width="${w.toFixed(1)}" height="18" rx="4" fill="rgba(16, 185, 129, 0.15)"/><text class="${cls}" x="${x1 - 9}" y="27" font-size="11" font-family="system-ui, sans-serif" fill="#10b981" font-weight="600" text-anchor="end">${label}</text>`;
+	};
+
+	const crossYear = (crossoverMonth / 12).toFixed(1);
+	const legendEn: Entry[] = [
+		{ color: '#3b82f6', label: `Equal P&amp;I (fixed $${money(pmtMonthly)}/mo)` },
+		{ color: '#f97316', label: `Equal Principal ($${money(prcMonth1)} ➔ $${money(prcFinalMonth)})` },
+	];
+	const legendZh: Entry[] = [
+		{ color: '#3b82f6', label: `等额本息 (每月固定 ¥${money(pmtMonthly)})` },
+		{ color: '#f97316', label: `等额本金 (首月 ¥${money(prcMonth1)} ➔ 末月 ¥${money(prcFinalMonth)})` },
+	];
+	if (hasCrossover) {
+		legendEn.push({ color: '#ef4444', label: `Break-even (yr ${crossYear})`, dot: true });
+		legendZh.push({ color: '#ef4444', label: `平衡点 (第${crossYear}年反超)`, dot: true });
 	}
 
 	return `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;user-select:none;">
 		<!-- Title -->
-		<text x="${x0}" y="26" font-size="13.5" font-weight="bold" fill="var(--fg, #e2e8f0)" font-family="system-ui, sans-serif">📊 房贷月供走势曲线与成本平衡点 (Payment Trajectory & Break-even Crossover)</text>
+		${t(`x="${x0}" y="26" font-size="13.5" font-weight="bold" fill="var(--fg, #e2e8f0)" font-family="system-ui, sans-serif"`, '📊 Payment trajectory &amp; break-even crossover', '📊 房贷月供走势曲线与成本平衡点')}
+
+		${pill('i18n-en', `★ Saves $${money(interestSaved)}`)}
+		${pill('i18n-zh', `★ 省息 ¥${money(interestSaved)}`)}
 
 		<!-- Legends -->
 		<g transform="translate(${x0}, 42)" font-size="11" font-family="system-ui, sans-serif">
-			<line x1="0" y1="-3" x2="18" y2="-3" stroke="#3b82f6" stroke-width="3"/>
-			<text x="24" y="0" fill="#94a3b8">等额本息 (每月固定 ¥${money(pmtMonthly)})</text>
-
-			<line x1="230" y1="-3" x2="248" y2="-3" stroke="#f97316" stroke-width="3"/>
-			<text x="254" y="0" fill="#94a3b8">等额本金 (首月 ¥${money(prcMonth1)} ➔ 末月 ¥${money(prcFinalMonth)})</text>
-
-			<circle cx="515" cy="-3" r="4.5" fill="#ef4444"/>
-			<text x="525" y="0" fill="#ef4444" font-weight="600">平衡点 (第${(crossoverMonth / 12).toFixed(1)}年反超)</text>
-
-			<rect x="650" y="-12" width="115" height="18" rx="4" fill="rgba(16, 185, 129, 0.15)"/>
-			<text x="707" y="1" fill="#10b981" font-weight="600" text-anchor="middle">★ 省息 ¥${money(interestSaved)}</text>
+			${legendRow('i18n-en', legendEn)}
+			${legendRow('i18n-zh', legendZh)}
 		</g>
 
 		<!-- Gridlines -->
@@ -914,6 +1048,7 @@ function renderMortgageComparisonSvg(params: {
 
 const mortgage: FormConfig = {
 	intro: 'Compare level-payment (equal principal & interest) against equal-principal repayment: monthly payment, interest saved, and commercial, provident fund or combined mortgages.',
+	introZh: '对比等额本息与等额本金：月供、节省利息，并支持商业贷款、公积金贷款与组合贷款。',
 	fields: [
 		{
 			id: 'method',
@@ -954,7 +1089,7 @@ const mortgage: FormConfig = {
 			id: 'price',
 			label: 'Home purchase price',
 			labelZh: '房屋总价',
-			suffix: '($ / ¥)',
+			suffix: '($)', suffixZh: '(¥)',
 			type: 'number',
 			def: '2000000',
 			step: 'any',
@@ -983,7 +1118,7 @@ const mortgage: FormConfig = {
 			id: 'loanAmount',
 			label: 'Loan principal / Commercial loan',
 			labelZh: '贷款本金 / 商业贷款额度',
-			suffix: '($ / ¥)',
+			suffix: '($)', suffixZh: '(¥)',
 			type: 'number',
 			def: '1000000',
 			step: 'any',
@@ -997,7 +1132,7 @@ const mortgage: FormConfig = {
 			id: 'fundAmount',
 			label: 'Provident fund loan amount',
 			labelZh: '公积金贷款额度',
-			suffix: '($ / ¥)',
+			suffix: '($)', suffixZh: '(¥)',
 			type: 'number',
 			def: '500000',
 			step: 'any',
@@ -1039,7 +1174,7 @@ const mortgage: FormConfig = {
 			id: 'years',
 			label: 'Loan term',
 			labelZh: '按揭贷款期限',
-			suffix: '(years / 年)',
+			suffix: '(years)', suffixZh: '(年)',
 			type: 'number',
 			def: '30',
 			step: '1',
@@ -1051,7 +1186,7 @@ const mortgage: FormConfig = {
 			id: 'extras',
 			label: 'Optional monthly escrow / fees',
 			labelZh: '可选每月杂费 (物业/税费/保险)',
-			suffix: '($ / ¥)',
+			suffix: '($)', suffixZh: '(¥)',
 			type: 'number',
 			def: '0',
 			step: 'any',
@@ -1165,13 +1300,15 @@ const mortgage: FormConfig = {
 				{
 					label: 'Interest saved with Equal Principal',
 					labelZh: '等额本金比等额本息省息',
-					value: `¥${money(interestSaved)} (利息节省 ${percent(interestSavedPct)}%)`,
+					value: `$${money(interestSaved)} (${percent(interestSavedPct)}% less interest)`,
+					valueZh: `¥${money(interestSaved)} (利息节省 ${percent(interestSavedPct)}%)`,
 					emphasis: true,
 				},
 				{
 					label: 'Equal P&I monthly payment',
 					labelZh: '【等额本息】每月固定月供',
 					value: `${money(totalMonthlyPmt + extras)} / month`,
+					valueZh: `${money(totalMonthlyPmt + extras)} / 月`,
 				},
 				{
 					label: 'Equal P&I total interest',
@@ -1186,7 +1323,8 @@ const mortgage: FormConfig = {
 				{
 					label: 'Equal Principal Month 1 payment',
 					labelZh: '【等额本金】首月还款额 (最高)',
-					value: `${money(prcMonth1 + extras)} (每月递减 -¥${money(prcDecrease)})`,
+					value: `${money(prcMonth1 + extras)} (-$${money(prcDecrease)} each month)`,
+					valueZh: `${money(prcMonth1 + extras)} (每月递减 -¥${money(prcDecrease)})`,
 				},
 				{
 					label: 'Equal Principal final month payment',
@@ -1206,7 +1344,8 @@ const mortgage: FormConfig = {
 				{
 					label: 'Total loan principal',
 					labelZh: '贷款本金总额',
-					value: `${money(totalLoan)}${loanType === 'combined' ? ` (商贷 ¥${money(commPortion)} + 公积金 ¥${money(gjjPortion)})` : ''}`,
+					value: `${money(totalLoan)}${loanType === 'combined' ? ` (commercial $${money(commPortion)} + provident fund $${money(gjjPortion)})` : ''}`,
+					valueZh: `${money(totalLoan)}${loanType === 'combined' ? ` (商贷 ¥${money(commPortion)} + 公积金 ¥${money(gjjPortion)})` : ''}`,
 				},
 			];
 
@@ -1217,17 +1356,28 @@ const mortgage: FormConfig = {
 				);
 			}
 
+			const crossYears = (crossoverMonth / 12).toFixed(1);
 			const compareTable: FormTable = {
-				columns: ['Metric', 'Equal P&I (等额本息)', 'Equal Principal (等额本金)', 'Difference & Analysis'],
+				columns: ['Metric', 'Equal P&I', 'Equal Principal', 'Difference & analysis'],
 				columnsZh: ['比较维度', '等额本息 (每月固定)', '等额本金 (每月递减)', '两方案差异 / 评估'],
 				rows: [
-					['首月还款额 (Month 1)', money(totalMonthlyPmt + extras), money(prcMonth1 + extras), m1Diff > 0 ? `等额本金首月多还 ¥${money(m1Diff)}` : '两方案相同'],
-					['末月还款额 (Final Month)', money(totalMonthlyPmt + extras), money(prcFinalMonth + extras), `等额本金末月少还 ¥${money(totalMonthlyPmt - prcFinalMonth)}`],
+					['Month 1 payment', money(totalMonthlyPmt + extras), money(prcMonth1 + extras), m1Diff > 0 ? `Equal Principal pays $${money(m1Diff)} more up front` : 'identical'],
+					['Final month payment', money(totalMonthlyPmt + extras), money(prcFinalMonth + extras), `Equal Principal pays $${money(totalMonthlyPmt - prcFinalMonth)} less at the end`],
+					['Payment trajectory', 'flat for the whole term', `falls $${money(prcDecrease)} every month`, 'Equal Principal retires principal faster'],
+					['Crossover month', 'baseline', crossoverMonth > 0 ? `cheaper from month ${crossoverMonth} (~${crossYears} yr)` : 'cheaper throughout', 'past that point Equal Principal always costs less per month'],
+					['Total interest', money(totalIntPmt), money(totalIntPrc), `★ Equal Principal saves $${money(interestSaved)} (-${percent(interestSavedPct)}%)`],
+					['Total repaid', money(totalRepayPmt + extras * months), money(totalRepayPrc + extras * months), `Equal Principal pays $${money(interestSaved)} less overall`],
+					['Early-term strain', 'lower — a constant bill is easy to plan around', 'higher — the first payments are the largest', crossoverMonth > 0 ? `Equal P&I is clearly lighter for the first ${crossYears} years` : 'Equal Principal is lower from the start'],
+					['Who it suits', 'buyers who are cash-tight now and expect rising income', 'buyers with spare cash flow who mind the interest', 'decide on your own cash flow and cost of capital'],
+				],
+				rowsZh: [
+					['首月还款额', money(totalMonthlyPmt + extras), money(prcMonth1 + extras), m1Diff > 0 ? `等额本金首月多还 ¥${money(m1Diff)}` : '两方案相同'],
+					['末月还款额', money(totalMonthlyPmt + extras), money(prcFinalMonth + extras), `等额本金末月少还 ¥${money(totalMonthlyPmt - prcFinalMonth)}`],
 					['每月月供变动', '每月保持不变 (恒定月供)', `每月固定递减 -¥${money(prcDecrease)}`, '等额本金逐月减负，归还本金更快'],
-					['月供打平月份 (Crossover)', '基准线', crossoverMonth > 0 ? `第 ${crossoverMonth} 个月起更低 (~${(crossoverMonth / 12).toFixed(1)} 年)` : '始终更低', '此后等额本金月供将一直低于等额本息'],
-					['支付利息总额 (Total Interest)', money(totalIntPmt), money(totalIntPrc), `★ 等额本金累计省息 ¥${money(interestSaved)} (-${percent(interestSavedPct)}%)`],
-					['还款本息总计 (Total Repaid)', money(totalRepayPmt + extras * months), money(totalRepayPrc + extras * months), `等额本金少支出 ¥${money(interestSaved)}`],
-					['前期月供压力', '较小，月供恒定便于家庭规划', '较大 (前期月供处于最高位)', crossoverMonth > 0 ? `前 ${(crossoverMonth / 12).toFixed(1)} 年等额本息压力明显更轻` : '等额本金月供始终更低，无前期压力差'],
+					['月供打平月份', '基准线', crossoverMonth > 0 ? `第 ${crossoverMonth} 个月起更低 (~${crossYears} 年)` : '始终更低', '此后等额本金月供将一直低于等额本息'],
+					['支付利息总额', money(totalIntPmt), money(totalIntPrc), `★ 等额本金累计省息 ¥${money(interestSaved)} (-${percent(interestSavedPct)}%)`],
+					['还款本息总计', money(totalRepayPmt + extras * months), money(totalRepayPrc + extras * months), `等额本金少支出 ¥${money(interestSaved)}`],
+					['前期月供压力', '较小，月供恒定便于家庭规划', '较大 (前期月供处于最高位)', crossoverMonth > 0 ? `前 ${crossYears} 年等额本息压力明显更轻` : '等额本金月供始终更低，无前期压力差'],
 					['适合人群画像', '适合刚需刚落户、前期资金紧、收入递增者', '适合前期收入高、资金充裕、利息敏感者', '依自身当下现金流与资金成本科学决策'],
 				],
 			};
@@ -1268,7 +1418,12 @@ const mortgage: FormConfig = {
 				{ label: 'Total interest paid', labelZh: '支付利息总额', value: money(totalIntPmt) },
 				{ label: 'Total repayment (Principal + Interest)', labelZh: '还款本息总计', value: money(totalRepayPmt + extras * months) },
 				{ label: 'Loan principal', labelZh: '贷款本金总额', value: money(totalLoan) },
-				{ label: 'Number of payments', labelZh: '还款期数', value: `${months} months / 期 (${years} 年)` },
+				{
+				label: 'Number of payments',
+				labelZh: '还款期数',
+				value: `${months} payments (${years} yr)`,
+				valueZh: `${months} 期 (${years} 年)`,
+			},
 			];
 			if (calcBasis === 'by_price') {
 				rows.push(
@@ -1291,12 +1446,22 @@ const mortgage: FormConfig = {
 		// method === 'equal_prc'
 		const rows: FormResultRow[] = [
 			{ label: 'First month payment (Peak)', labelZh: '首月还款额 (最高月供)', value: money(prcMonth1 + extras), emphasis: true },
-			{ label: 'Monthly decrease', labelZh: '每月递减金额', value: `-${money(prcDecrease)} / month` },
+			{
+				label: 'Monthly decrease',
+				labelZh: '每月递减金额',
+				value: `-${money(prcDecrease)} / month`,
+				valueZh: `-${money(prcDecrease)} / 月`,
+			},
 			{ label: 'Final month payment', labelZh: '末月还款额 (最低月供)', value: money(prcFinalMonth + extras) },
 			{ label: 'Total interest paid', labelZh: '支付利息总额', value: money(totalIntPrc) },
 			{ label: 'Total repayment (Principal + Interest)', labelZh: '还款本息总计', value: money(totalRepayPrc + extras * months) },
 			{ label: 'Loan principal', labelZh: '贷款本金总额', value: money(totalLoan) },
-			{ label: 'Number of payments', labelZh: '还款期数', value: `${months} months / 期 (${years} 年)` },
+			{
+				label: 'Number of payments',
+				labelZh: '还款期数',
+				value: `${months} payments (${years} yr)`,
+				valueZh: `${months} 期 (${years} 年)`,
+			},
 		];
 		if (calcBasis === 'by_price') {
 			rows.push(
@@ -1321,9 +1486,10 @@ const mortgage: FormConfig = {
 
 const roi: FormConfig = {
 	intro: 'ROI = (revenue − cost) ÷ cost × 100.',
+	introZh: 'ROI 投资回报率 =（收入 − 成本）÷ 成本 × 100。',
 	fields: [
-		{ id: 'cost', label: 'Cost of investment', labelZh: '投资成本', suffix: '($ / ¥)', type: 'number', def: '1000', step: 'any', required: true },
-		{ id: 'revenue', label: 'Revenue / Final value', labelZh: '回收金额 / 终值', suffix: '($ / ¥)', type: 'number', def: '1500', step: 'any', required: true },
+		{ id: 'cost', label: 'Cost of investment', labelZh: '投资成本', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '1000', step: 'any', required: true },
+		{ id: 'revenue', label: 'Revenue / Final value', labelZh: '回收金额 / 终值', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '1500', step: 'any', required: true },
 	],
 	compute: (v) => {
 		const cost = v.num('cost');
@@ -1346,8 +1512,8 @@ const roi: FormConfig = {
 
 const discount: FormConfig = {
 	fields: [
-		{ id: 'price', label: 'Original price', labelZh: '商品原价', suffix: '($ / ¥)', type: 'number', def: '100', step: 'any', min: '0', required: true },
-		{ id: 'pct', label: 'Discount percentage off', labelZh: '折扣率 (%)', suffix: '(%)', type: 'number', def: '20', step: 'any', required: true },
+		{ id: 'price', label: 'Original price', labelZh: '商品原价', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '100', step: 'any', min: '0', required: true },
+		{ id: 'pct', label: 'Discount percentage off', labelZh: '折扣率', suffix: '(%)', type: 'number', def: '20', step: 'any', required: true },
 		{ id: 'qty', label: 'Quantity', labelZh: '购买件数', type: 'number', def: '1', step: '1', min: '1', required: true },
 	],
 	compute: (v) => {
@@ -1370,7 +1536,7 @@ const discount: FormConfig = {
 
 const salary: FormConfig = {
 	fields: [
-		{ id: 'annual', label: 'Annual salary', labelZh: '年薪总额', suffix: '($ / ¥)', type: 'number', def: '60000', step: 'any', min: '0', required: true },
+		{ id: 'annual', label: 'Annual salary', labelZh: '年薪总额', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '60000', step: 'any', min: '0', required: true },
 		{ id: 'hours', label: 'Hours per week', labelZh: '每周工作小时数', type: 'number', def: '40', step: 'any', min: '0', required: true },
 		{ id: 'weeks', label: 'Working weeks per year', labelZh: '每年工作周数', type: 'number', def: '52', step: 'any', min: '0', required: true },
 		{ id: 'days', label: 'Working days per week', labelZh: '每周工作天数', type: 'number', def: '5', step: 'any', min: '0', required: true },
@@ -1718,6 +1884,7 @@ function computeTaxCore(input: TaxCoreInput): TaxCoreOutput {
 
 const tax: FormConfig = {
 	intro: 'Calculate net take-home pay, Five Insurances & Housing Fund, 7 Special Additional Deductions, Year-End Bonus tax, or reverse-calculate gross salary from target take-home pay.',
+	introZh: '测算税后到手工资、五险一金、七项专项附加扣除与年终奖个税，也可由目标到手工资反推税前月薪。',
 	fields: [
 		{
 			id: 'direction',
@@ -1734,7 +1901,7 @@ const tax: FormConfig = {
 			id: 'gross',
 			label: 'Salary / Income amount',
 			labelZh: '薪资收入金额 (税前基本薪资 或 目标税后到手)',
-			suffix: '($ / ¥)',
+			suffix: '($)', suffixZh: '(¥)',
 			type: 'number',
 			def: '15000',
 			step: 'any',
@@ -1770,7 +1937,7 @@ const tax: FormConfig = {
 			id: 'insurance',
 			label: 'Five Insurances & Housing Fund (Monthly)',
 			labelZh: '五险一金个人扣除 (每月)',
-			suffix: '($ / ¥)',
+			suffix: '($)', suffixZh: '(¥)',
 			type: 'number',
 			def: '2250',
 			step: 'any',
@@ -1783,7 +1950,7 @@ const tax: FormConfig = {
 			id: 'specialDeduction',
 			label: 'Special Additional Deductions (Monthly)',
 			labelZh: '专项附加扣除 (每月合计)',
-			suffix: '($ / ¥)',
+			suffix: '($)', suffixZh: '(¥)',
 			type: 'number',
 			def: '2000',
 			step: 'any',
@@ -1810,7 +1977,7 @@ const tax: FormConfig = {
 			id: 'bonus',
 			label: 'Year-end bonus / Annual lump sum',
 			labelZh: '全年一次性奖金 (年终奖)',
-			suffix: '($ / ¥)',
+			suffix: '($)', suffixZh: '(¥)',
 			type: 'number',
 			def: '30000',
 			step: 'any',
@@ -1920,7 +2087,8 @@ const tax: FormConfig = {
 				{
 					label: 'Target net take-home pay',
 					labelZh: '目标税后到手金额',
-					value: `${money(inputIncome)} (${period === 'monthly' ? 'Monthly / 月' : 'Annual / 年'})`,
+					value: `${money(inputIncome)} (${period === 'monthly' ? 'monthly' : 'annual'})`,
+					valueZh: `${money(inputIncome)} (${period === 'monthly' ? '每月' : '全年'})`,
 				},
 				{
 					label: 'Required pre-tax salary (Annual total)',
@@ -1930,7 +2098,8 @@ const tax: FormConfig = {
 				{
 					label: 'Total annual tax owed',
 					labelZh: '全年度预计需缴纳个税',
-					value: `${money(out.totalTax)} (月均 ¥${money(out.totalTax / 12)})`,
+					value: `${money(out.totalTax)} ($${money(out.totalTax / 12)}/mo)`,
+					valueZh: `${money(out.totalTax)} (月均 ¥${money(out.totalTax / 12)})`,
 				},
 				{
 					label: 'Base salary net pay (Monthly average)',
@@ -1948,7 +2117,8 @@ const tax: FormConfig = {
 				rows.push({
 					label: 'Year-end bonus tax owed',
 					labelZh: '年终奖应纳个税',
-					value: `${money(out.bonusTax)}${out.isCombinedActive ? ' (并入综合)' : ` (${(out.separateBonusRate * 100).toFixed(0)}% 档, 速算扣除 ¥${out.separateBonusQuick})`}`,
+					value: `${money(out.bonusTax)}${out.isCombinedActive ? ' (taxed with salary)' : ` (${(out.separateBonusRate * 100).toFixed(0)}% bracket, quick deduction $${out.separateBonusQuick})`}`,
+					valueZh: `${money(out.bonusTax)}${out.isCombinedActive ? ' (并入综合)' : ` (${(out.separateBonusRate * 100).toFixed(0)}% 档, 速算扣除 ¥${out.separateBonusQuick})`}`,
 				});
 			}
 
@@ -1956,12 +2126,14 @@ const tax: FormConfig = {
 				{
 					label: 'Five Insurances & Housing Fund (Annual)',
 					labelZh: '全年五险一金个人承担扣除',
-					value: `${money(annualInsurance)} (月均 ¥${money(monthlyInsurance)})`,
+					value: `${money(annualInsurance)} ($${money(monthlyInsurance)}/mo)`,
+					valueZh: `${money(annualInsurance)} (月均 ¥${money(monthlyInsurance)})`,
 				},
 				{
 					label: 'Special Additional Deductions (Annual)',
 					labelZh: '全年专项附加扣除总额',
-					value: `${money(annualSpecialDeduction)} (月均 ¥${money(monthlySpecialDeduction)})`,
+					value: `${money(annualSpecialDeduction)} ($${money(monthlySpecialDeduction)}/mo)`,
+					valueZh: `${money(annualSpecialDeduction)} (月均 ¥${money(monthlySpecialDeduction)})`,
 				},
 				{
 					label: 'Effective overall tax rate',
@@ -2021,20 +2193,26 @@ const tax: FormConfig = {
 				rows.push({
 					label: 'Year-end bonus tax owed',
 					labelZh: '年终奖应纳个税',
-					value: `${money(out.bonusTax)}${out.isCombinedActive ? ' (并入综合)' : ` (${(out.separateBonusRate * 100).toFixed(0)}% 档, 速算扣除 ¥${out.separateBonusQuick})`}`,
+					value: `${money(out.bonusTax)}${out.isCombinedActive ? ' (taxed with salary)' : ` (${(out.separateBonusRate * 100).toFixed(0)}% bracket, quick deduction $${out.separateBonusQuick})`}`,
+					valueZh: `${money(out.bonusTax)}${out.isCombinedActive ? ' (并入综合)' : ` (${(out.separateBonusRate * 100).toFixed(0)}% 档, 速算扣除 ¥${out.separateBonusQuick})`}`,
 				});
-				let planEvaluationZh = '';
+				let planEvaluation: string;
+				let planEvaluationZh: string;
 				if (out.bestScheme === 'separate') {
+					planEvaluation = `taxed separately ($${money(out.taxDiff)} less than combining)`;
 					planEvaluationZh = `单独计税更优 (比合并计税省税 ¥${money(out.taxDiff)})`;
 				} else if (out.bestScheme === 'combined') {
+					planEvaluation = `combined with salary ($${money(out.taxDiff)} less than taxing separately)`;
 					planEvaluationZh = `并入综合所得更优 (比单独计税省税 ¥${money(out.taxDiff)})`;
 				} else {
+					planEvaluation = 'both schemes owe the same tax';
 					planEvaluationZh = '两方案税额相同';
 				}
 				rows.push({
 					label: 'Optimal bonus scheme',
 					labelZh: '年终奖计税方案优选',
-					value: planEvaluationZh,
+					value: planEvaluation,
+					valueZh: planEvaluationZh,
 				});
 			}
 
@@ -2053,12 +2231,30 @@ const tax: FormConfig = {
 					columnsZh: ['年终奖计税方案', '工资薪金个税', '年终奖个税', '全年个税总额', '最终税后到手', '优选评估'],
 					rows: [
 						[
+							'Taxed separately (one-off annual bonus relief)',
+							money(out.salaryTax),
+							money(out.separateBonusTax),
+							money(out.separateTotalTax),
+							money(out.totalGross - annualInsurance - out.separateTotalTax),
+							out.bestScheme === 'separate' ? '★ recommended (lowest tax)' : out.bestScheme === 'equal' ? 'same tax' : 'higher tax',
+						],
+						[
+							'Combined into this year’s comprehensive income',
+							money(out.salaryTax),
+							money(out.combinedBonusTax),
+							money(out.combinedTotalTax),
+							money(out.totalGross - annualInsurance - out.combinedTotalTax),
+							out.bestScheme === 'combined' ? '★ recommended (lowest tax)' : out.bestScheme === 'equal' ? 'same tax' : 'higher tax',
+						],
+					],
+					rowsZh: [
+						[
 							'单独计税 (全年一次性奖金优惠)',
 							money(out.salaryTax),
 							money(out.separateBonusTax),
 							money(out.separateTotalTax),
 							money(out.totalGross - annualInsurance - out.separateTotalTax),
-							out.bestScheme === 'separate' ? '★ 推荐方案 (省税最高)' : (out.bestScheme === 'equal' ? '税负相同' : '税负偏高'),
+							out.bestScheme === 'separate' ? '★ 推荐方案 (省税最高)' : out.bestScheme === 'equal' ? '税负相同' : '税负偏高',
 						],
 						[
 							'并入当年综合所得合并计税',
@@ -2066,7 +2262,7 @@ const tax: FormConfig = {
 							money(out.combinedBonusTax),
 							money(out.combinedTotalTax),
 							money(out.totalGross - annualInsurance - out.combinedTotalTax),
-							out.bestScheme === 'combined' ? '★ 推荐方案 (省税最高)' : (out.bestScheme === 'equal' ? '税负相同' : '税负偏高'),
+							out.bestScheme === 'combined' ? '★ 推荐方案 (省税最高)' : out.bestScheme === 'equal' ? '税负相同' : '税负偏高',
 						],
 					],
 				};
@@ -2084,8 +2280,10 @@ const tax: FormConfig = {
 			if (effectiveBonus > 0) {
 				if (out.bestScheme === 'separate') {
 					noteZh += ` 【方案建议】：建议选择【单独计税】，相比并入综合所得可少缴个税 ¥${money(out.taxDiff)}。`;
+					noteEn += ` Recommendation: tax the bonus separately — $${money(out.taxDiff)} less than combining it with salary.`;
 				} else if (out.bestScheme === 'combined') {
 					noteZh += ` 【方案建议】：由于基本工资未用尽免征额或专项扣除额度，建议选择【并入综合所得计税】，可少缴个税 ¥${money(out.taxDiff)}。`;
+					noteEn += ` Recommendation: combine the bonus with salary — the standard allowance and special deductions are not fully used up, saving $${money(out.taxDiff)}.`;
 				}
 			}
 

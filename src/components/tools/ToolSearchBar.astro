@@ -24,7 +24,7 @@ const allTools = getAllSearchItems();
 			type="text"
 			class="t-search-input"
 			id="tool-search-input"
-			placeholder={placeholderZh}
+			placeholder={placeholder}
 			data-placeholder-en={placeholder}
 			data-placeholder-zh={placeholderZh}
 			autocomplete="off"
@@ -141,13 +141,22 @@ const allTools = getAllSearchItems();
 
 		// Update placeholder by site language
 		const updatePlaceholder = () => {
-			const isZh = document.documentElement.dataset.lang !== 'en';
+			const isZh = document.documentElement.dataset.lang === 'zh';
 			const ph = isZh ? input.dataset.placeholderZh : input.dataset.placeholderEn;
 			if (ph) input.placeholder = ph;
 		};
 		updatePlaceholder();
-		const observer = new MutationObserver(updatePlaceholder);
-		observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-lang'] });
+		// The cross-category list below is built as a string, so it cannot carry
+		// .i18n-en/.i18n-zh spans: re-render it when the language changes.
+		const onLang = () => {
+			updatePlaceholder();
+			if (input.value.trim()) filter(input.value);
+		};
+		new MutationObserver(onLang).observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ['data-lang'],
+		});
+		window.addEventListener('site:lang-change', onLang);
 
 		function filter(query) {
 			ensureCards();
@@ -202,7 +211,7 @@ const allTools = getAllSearchItems();
 			if (metaEl) metaEl.style.display = 'flex';
 
 			// Search across all tools to find matches outside current page/category
-			const isZh = document.documentElement.dataset.lang !== 'en';
+			const isZh = document.documentElement.dataset.lang === 'zh';
 			const allMatches = (allTools || []).filter((item) => {
 				const full = `${item.slug} ${item.category} ${item.name} ${item.nameZh || ''} ${item.description} ${item.keywords || ''}`.toLowerCase();
 				return tokens.every((token) => full.includes(token));
@@ -219,7 +228,7 @@ const allTools = getAllSearchItems();
 							.map((tool) => {
 								const catInfo = CAT_LABELS[tool.category] || { en: tool.category, zh: tool.category, icon: '⚡' };
 								const catLabel = isZh ? catInfo.zh : catInfo.en;
-								const title = isZh && tool.nameZh ? `${tool.nameZh} · ${tool.name}` : tool.name;
+								const title = isZh && tool.nameZh ? tool.nameZh : tool.name;
 								return `
 								<a href="${tool.href}" class="t-cross-cat-item">
 									<span class="t-cross-cat-icon-sm">${catInfo.icon}</span>

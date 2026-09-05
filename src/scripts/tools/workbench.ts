@@ -6,6 +6,8 @@
 // - 100% responsive bilingual support (pure English in EN mode, pure Chinese in ZH mode)
 // - 100% in-browser, zero dependencies, zero network requests.
 
+import { bilingual, langAttr, onLang } from './i18n';
+
 export interface WorkbenchBtnConfig {
 	label: string; // English / default label
 	labelZh?: string; // Chinese label
@@ -51,17 +53,7 @@ export function formatBytes(bytes: number): string {
 
 export function makeBilingualSpan(en: string, zh?: string): HTMLElement {
 	const span = document.createElement('span');
-	if (!zh || en === zh) {
-		span.textContent = en;
-		return span;
-	}
-	const enEl = document.createElement('span');
-	enEl.className = 'i18n-en';
-	enEl.textContent = en;
-	const zhEl = document.createElement('span');
-	zhEl.className = 'i18n-zh';
-	zhEl.textContent = zh;
-	span.append(enEl, zhEl);
+	span.append(bilingual(en, zh));
 	return span;
 }
 
@@ -183,7 +175,10 @@ export function createWorkbench(options: WorkbenchOptions): WorkbenchHandle {
 	const inputArea = document.createElement('textarea');
 	inputArea.className = 't-json-editor';
 	inputArea.spellcheck = false;
-	inputArea.setAttribute('aria-label', 'Input Area');
+	// aria-label follows the language switch, so it cannot double as a selector.
+	// data-role is what e2e/devtools.spec.ts holds on to.
+	inputArea.dataset.role = 'input';
+	langAttr(inputArea, 'aria-label', 'Input', '输入');
 
 	leftPanel.append(leftHead, inputArea);
 
@@ -236,7 +231,8 @@ export function createWorkbench(options: WorkbenchOptions): WorkbenchHandle {
 	outputArea.className = 't-json-editor';
 	outputArea.readOnly = true;
 	outputArea.spellcheck = false;
-	outputArea.setAttribute('aria-label', 'Output Area');
+	outputArea.dataset.role = 'output';
+	langAttr(outputArea, 'aria-label', 'Output', '输出');
 
 	rightPanel.append(rightHead, outputArea);
 
@@ -244,13 +240,10 @@ export function createWorkbench(options: WorkbenchOptions): WorkbenchHandle {
 	wrap.append(toolbar, statusEl, panels);
 	host.append(wrap);
 
-	function syncPlaceholders() {
-		const isZh = document.documentElement.dataset.lang === 'zh';
-		inputArea.placeholder = (isZh && inputPlaceholderZh) ? inputPlaceholderZh : inputPlaceholder;
-		outputArea.placeholder = (isZh && outputPlaceholderZh) ? outputPlaceholderZh : outputPlaceholder;
-	}
-	syncPlaceholders();
-	window.addEventListener('site:lang-change', syncPlaceholders);
+	onLang((zh) => {
+		inputArea.placeholder = zh && inputPlaceholderZh ? inputPlaceholderZh : inputPlaceholder;
+		outputArea.placeholder = zh && outputPlaceholderZh ? outputPlaceholderZh : outputPlaceholder;
+	});
 
 	function updateStatus(type: 'idle' | 'valid' | 'error', msgEn: string, msgZh?: string) {
 		statusEl.className = 't-json-status';

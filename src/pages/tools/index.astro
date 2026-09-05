@@ -56,7 +56,10 @@ const totalTools = CATEGORIES.reduce((acc, cat) => acc + byCategory(cat.id).leng
 					<div class="t-cards">
 						{entries.map((e) => (
 							<a class="t-card" href={`/${e.category}/${e.slug}/`} data-slug={e.slug} data-cat={e.category}>
-								<h3>{e.name}{e.nameZh && <span class="t-sub-zh"> · {e.nameZh}</span>}</h3>
+								<h3>
+								<span class="i18n-en">{e.name}</span>
+								<span class="i18n-zh">{e.nameZh || e.name}</span>
+							</h3>
 								<p>
 									<span class="i18n-en">{e.description}</span>
 									{e.descriptionZh && <span class="i18n-zh">{e.descriptionZh}</span>}

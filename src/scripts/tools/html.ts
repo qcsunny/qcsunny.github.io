@@ -4,6 +4,7 @@
 // - Minify HTML (strips comments, redundant whitespace between tags)
 // - 100% in-browser, zero dependencies, zero network requests.
 
+import { isZh } from './i18n';
 import { createWorkbench, formatBytes } from './workbench';
 
 const VOID_ELEMENTS = new Set([
@@ -24,6 +25,24 @@ const VOID_ELEMENTS = new Set([
 ]);
 
 const SAMPLE_HTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>QCSunny Lab</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+<h1>Welcome to the online toolbox</h1>
+<nav><a href="/">Home</a><a href="/tools/">Tools</a></nav>
+</header>
+<main>
+<p>Every tool runs entirely in your browser — <b>nothing is uploaded</b>.</p>
+</main>
+</body>
+</html>`;
+
+const SAMPLE_HTML_ZH = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -95,7 +114,11 @@ export function initHtml(host: HTMLElement): void {
 		const raw = wb.inputArea.value.trim();
 		if (!raw) {
 			wb.outputArea.value = '';
-			wb.updateStatus('idle', '准备就绪：输入或粘贴 HTML 代码后将自动排版。');
+			wb.updateStatus(
+				'idle',
+				'Ready: paste HTML and it is re-indented as you type.',
+				'准备就绪：输入或粘贴 HTML 代码后将自动排版。'
+			);
 			return;
 		}
 
@@ -107,11 +130,12 @@ export function initHtml(host: HTMLElement): void {
 			const lineCount = formatted.split('\n').length;
 			wb.updateStatus(
 				'valid',
+				`✓ HTML formatted · ${lineCount} lines · ${formatBytes(origBytes)} in, ${formatBytes(fmtBytes)} out`,
 				`✓ HTML 格式化完成 · 共 ${lineCount} 行 · 原始大小: ${formatBytes(origBytes)} · 格式化后: ${formatBytes(fmtBytes)}`
 			);
 		} catch (err) {
-			const msg = err instanceof Error ? err.message : 'HTML 格式化失败';
-			wb.updateStatus('error', `✗ 格式化出错: ${msg}`);
+			const msg = err instanceof Error ? err.message : 'formatting failed';
+			wb.updateStatus('error', `✗ Formatting error: ${msg}`, `✗ 格式化出错: ${msg}`);
 		}
 	}
 
@@ -157,7 +181,7 @@ export function initHtml(host: HTMLElement): void {
 		],
 		onInput: () => doFormat(2),
 		onSample: () => {
-			wb.inputArea.value = SAMPLE_HTML;
+			wb.inputArea.value = isZh() ? SAMPLE_HTML_ZH : SAMPLE_HTML;
 			doFormat(2);
 		},
 		onClear: () => {

@@ -75,6 +75,7 @@ export interface FormField {
 	type?: 'number' | 'text' | 'select' | 'checkbox' | 'textarea';
 	def?: string;
 	placeholder?: string;
+	placeholderZh?: string;
 	/** unit hint shown after the label, e.g. "(%)" or "($)" */
 	suffix?: string;
 	suffixZh?: string;
@@ -95,6 +96,8 @@ export interface FormResultRow {
 	label: string;
 	labelZh?: string;
 	value: string;
+	/** only for rows whose value is prose rather than a number */
+	valueZh?: string;
 	/** render as the large highlighted primary result */
 	emphasis?: boolean;
 }
@@ -103,6 +106,8 @@ export interface FormTable {
 	columns: string[];
 	columnsZh?: string[];
 	rows: string[][];
+	/** same shape as rows; supply it only when a cell carries words, not digits */
+	rowsZh?: string[][];
 }
 
 export interface FormResult {
@@ -146,11 +151,14 @@ export interface TextTransform {
 	id: string;
 	label: string;
 	labelZh?: string;
-	run: (text: string) => { output: string; error?: string };
+	/** `error` is shown in the English view, `errorZh` in the Chinese one; with
+	 *  errorZh missing the English text shows in both. */
+	run: (text: string) => { output: string; error?: string; errorZh?: string };
 }
 
 export interface TextConfig {
 	placeholder?: string;
+	placeholderZh?: string;
 	/** live per-input statistics rows */
 	stats?: (text: string) => TextStat[];
 	/** button-triggered transforms writing into an output area */
@@ -383,6 +391,7 @@ export interface SearchItem {
 	name: string;
 	nameZh?: string;
 	description: string;
+	descriptionZh?: string;
 	href: string;
 	keywords: string;
 }
@@ -395,6 +404,7 @@ export function getAllSearchItems(): SearchItem[] {
 		name: e.name,
 		nameZh: e.nameZh || '',
 		description: e.description,
+		descriptionZh: e.descriptionZh || '',
 		href: `/${e.category}/${e.slug}/`,
 		keywords: TOOL_KEYWORDS[e.slug] || '',
 	}));

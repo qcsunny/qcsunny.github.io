@@ -14,8 +14,8 @@ const allTools = getAllSearchItems();
 					type="text"
 					id="sm-input"
 					class="sm-input"
-					placeholder="搜索工具 (支持中英文、拼音、关键词，如 房贷、IRR、个税、换算)..."
-					data-placeholder-en="Search 45+ tools (e.g. mortgage, irr, tax, uuid, speed)..."
+					placeholder={`Search ${allTools.length} tools (e.g. mortgage, irr, tax, uuid, speed)...`}
+					data-placeholder-en={`Search ${allTools.length} tools (e.g. mortgage, irr, tax, uuid, speed)...`}
 					data-placeholder-zh="搜索工具 (支持中英文、拼音、关键词，如 房贷、IRR、个税、换算)..."
 					autocomplete="off"
 					spellcheck="false"
@@ -107,13 +107,22 @@ const allTools = getAllSearchItems();
 
 		// Placeholder sync with site lang
 		const syncPlaceholder = () => {
-			const isZh = document.documentElement.dataset.lang !== 'en';
+			const isZh = document.documentElement.dataset.lang === 'zh';
 			const ph = isZh ? input.dataset.placeholderZh : input.dataset.placeholderEn;
 			if (ph) input.placeholder = ph;
 		};
 		syncPlaceholder();
-		const obs = new MutationObserver(syncPlaceholder);
-		obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-lang'] });
+		// The result rows are built as an HTML string, so they cannot carry
+		// .i18n-en/.i18n-zh spans: re-render them when the language changes.
+		const onLang = () => {
+			syncPlaceholder();
+			if (modal.style.display !== 'none') renderResults(input.value);
+		};
+		new MutationObserver(onLang).observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ['data-lang'],
+		});
+		window.addEventListener('site:lang-change', onLang);
 
 		function openModal(defaultQuery = '') {
 			modal.style.display = 'block';
@@ -188,13 +197,14 @@ const allTools = getAllSearchItems();
 			}
 
 			emptyEl.style.display = 'none';
-			const isZh = document.documentElement.dataset.lang !== 'en';
+			const isZh = document.documentElement.dataset.lang === 'zh';
 
 			resultsList.innerHTML = currentItems
 				.map((item, idx) => {
 					const catInfo = CAT_LABELS[item.category] || { en: item.category, zh: item.category, icon: '⚡' };
 					const catLabel = isZh ? catInfo.zh : catInfo.en;
-					const title = isZh && item.nameZh ? `${item.nameZh} <span class="sm-sub-name">${item.name}</span>` : item.name;
+					const title = isZh && item.nameZh ? item.nameZh : item.name;
+					const desc = isZh && item.descriptionZh ? item.descriptionZh : item.description;
 					return `
 					<a href="${item.href}" class="sm-item ${idx === 0 ? 'sm-item-active' : ''}" data-index="${idx}">
 						<div class="sm-item-icon">${catInfo.icon}</div>
@@ -203,7 +213,7 @@ const allTools = getAllSearchItems();
 								<span class="sm-item-title">${title}</span>
 								<span class="sm-item-badge sm-badge-${item.category}">${catLabel}</span>
 							</div>
-							<div class="sm-item-desc">${item.description}</div>
+							<div class="sm-item-desc">${desc}</div>
 						</div>
 						<span class="sm-item-arrow" aria-hidden="true">➔</span>
 					</a>
@@ -498,12 +508,6 @@ const allTools = getAllSearchItems();
 		font-weight: 600;
 		font-size: 0.95rem;
 		color: var(--fg, #0f172a);
-	}
-	.sm-sub-name {
-		font-weight: 400;
-		font-size: 0.82rem;
-		color: var(--dim, #64748b);
-		margin-left: 0.25rem;
 	}
 	.sm-item-badge {
 		font-size: 0.7rem;

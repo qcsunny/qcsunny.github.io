@@ -17,6 +17,7 @@
 // - Proportional sync scrolling between editor and preview pane
 // - Full bilingual support (Chinese & English) with reactive live switching
 
+import { isZh, onLang } from './i18n';
 import { formatBytes } from './workbench';
 // A string, not a stylesheet: the `?url` suffix keeps KaTeX's CSS out of this
 // chunk so a document with no formula never fetches it. See renderMathIn().
@@ -37,7 +38,7 @@ export const SAMPLE_MARKDOWN_ZH = `# Markdown 实时渲染与编辑工具 (QCSun
 
 甚至还能结合超链接与图片：
 - 官方主页：[QCSunny Lab 首页](/)
-- 工具库：[浏览 40+ 款实用工具](/tools/)
+- 工具库：[浏览 49 款实用工具](/tools/)
 
 > **引用名言**：  
 > “工欲善其事，必先利其器。”  
@@ -127,7 +128,7 @@ You can easily format **Bold text**, *Italic text*, ***Bold & Italic***, ~~Strik
 
 You can also include links and images:
 - Homepage: [QCSunny Lab Home](/)
-- Toolbox: [Explore 40+ Utilities](/tools/)
+- Toolbox: [Explore 49 Utilities](/tools/)
 
 > **Quote**:  
 > "Programs must be written for people to read, and only incidentally for machines to execute."  
@@ -922,12 +923,7 @@ const VIEW_MODES = [
 export function initMarkdown(host: HTMLElement): void {
 	host.innerHTML = '';
 
-	function getLang(): 'zh' | 'en' {
-		const l = document.documentElement.dataset.lang || localStorage.getItem('site:lang');
-		return l === 'en' ? 'en' : 'zh';
-	}
-
-	let currentLang: 'zh' | 'en' = getLang();
+	let currentLang: 'zh' | 'en' = isZh() ? 'zh' : 'en';
 
 	const wrap = document.createElement('div');
 	wrap.className = 't-md-container';
@@ -1101,6 +1097,7 @@ ${body.innerHTML}
 
 	const editor = document.createElement('textarea');
 	editor.className = 't-md-textarea';
+	editor.dataset.role = 'input';
 	editor.spellcheck = false;
 	editor.value = currentLang === 'en' ? SAMPLE_MARKDOWN_EN : SAMPLE_MARKDOWN_ZH;
 
@@ -1301,25 +1298,24 @@ ${body.innerHTML}
 
 	editor.addEventListener('input', render);
 
-	// Reactive listener for site language change
-	window.addEventListener('site:lang-change', (e: Event) => {
-		const nextLang = ((e as CustomEvent).detail === 'en' ? 'en' : 'zh') as 'zh' | 'en';
-		if (nextLang === currentLang) return;
+	// Every label, the sample document and the stats line are written by script
+	// here, so the switch has to be observed rather than baked into markup.
+	onLang((zh) => {
+		const nextLang: 'zh' | 'en' = zh ? 'zh' : 'en';
 		const prevLang = currentLang;
 		currentLang = nextLang;
 
-		// If the editor has the previous sample markdown or is empty, switch to new language sample
-		const curVal = editor.value.trim();
-		const prevSample = (prevLang === 'en' ? SAMPLE_MARKDOWN_EN : SAMPLE_MARKDOWN_ZH).trim();
-		if (curVal === '' || curVal === prevSample) {
-			editor.value = nextLang === 'en' ? SAMPLE_MARKDOWN_EN : SAMPLE_MARKDOWN_ZH;
+		// An untouched editor follows the language; a document the user typed or
+		// edited is left exactly as it is.
+		if (nextLang !== prevLang) {
+			const curVal = editor.value.trim();
+			const prevSample = (prevLang === 'en' ? SAMPLE_MARKDOWN_EN : SAMPLE_MARKDOWN_ZH).trim();
+			if (curVal === '' || curVal === prevSample) {
+				editor.value = nextLang === 'en' ? SAMPLE_MARKDOWN_EN : SAMPLE_MARKDOWN_ZH;
+			}
 		}
 
 		updateUI();
 		render();
 	});
-
-	// Initial UI setup and render
-	updateUI();
-	render();
 }

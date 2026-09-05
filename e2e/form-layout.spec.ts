@@ -131,11 +131,12 @@ test('option text shows one language and follows the language switch', async ({ 
 	for (const t of zh) expect(t, 'Chinese options must not repeat the English').not.toMatch(/[A-Za-z]{4}/);
 });
 
-// The unit gloss is deliberately bilingual and identical in both views — "(years
-// / 年)", "($ / ¥)" — so it is the one exception. Everything else in the English
-// view of a form must be English: this pins the fourteen option labels, one
-// result row and one hint in finance.ts whose English text used to embed its own
-// translation in parentheses.
+// Zero tolerance, unlike the share-based sweep in i18n.spec.ts: everything
+// inside a .t-form is a label, an option or a hint that comes from the registry,
+// so a Chinese character in the English view is a missing *Zh field rather than
+// a gloss. The .t-suffix exemption this used to carry is gone — the unit gloss
+// was "(years / 年)" in both views and is now suffix/suffixZh like the rest
+// (form.ts wraps it with bilingual()).
 async function visibleChinese(page: import('@playwright/test').Page): Promise<string[]> {
 	return page.evaluate(() => {
 		const form = document.querySelector('.t-form');
@@ -147,7 +148,6 @@ async function visibleChinese(page: import('@playwright/test').Page): Promise<st
 			const text = (n.nodeValue ?? '').trim();
 			if (!/[一-鿿]/.test(text)) continue;
 			const el = n.parentElement!;
-			if (el.closest('.t-suffix')) continue; // bilingual unit gloss, by design
 			const shown = el.tagName === 'OPTION' ? (el as HTMLOptionElement).selected : el.offsetParent !== null;
 			if (shown) out.push(`${el.tagName}.${el.className || '-'}: ${text.slice(0, 40)}`);
 		}

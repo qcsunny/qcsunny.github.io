@@ -45,9 +45,11 @@
 		<label class="g3-select">
 			<span class="i18n-en">Style</span><span class="i18n-zh">样式</span>
 			<select id="g3-style">
-				<option value="surface">Surface · 曲面</option>
-				<option value="mesh">Mesh · 网格</option>
-				<option value="wire">Wireframe · 线框</option>
+				<!-- an <option> holds text, not elements, so no .i18n-en/.i18n-zh pair
+				     fits: ToolShell's syncLangUI swaps data-text-* on every switch -->
+				<option value="surface" data-text-en="Surface" data-text-zh="曲面">Surface</option>
+				<option value="mesh" data-text-en="Mesh" data-text-zh="网格">Mesh</option>
+				<option value="wire" data-text-en="Wireframe" data-text-zh="线框">Wireframe</option>
 			</select>
 		</label>
 		<label class="g3-select">

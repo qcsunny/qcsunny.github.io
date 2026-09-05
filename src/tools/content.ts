@@ -465,7 +465,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 		faq: [
 			{ q: 'Does this tool upload my SQL?', a: 'Never. All parsing, indentation, and minification happen entirely within your local browser JavaScript engine.' },
 			{ q: 'Which SQL dialects are supported?', a: 'Standard ANSI SQL, MySQL, PostgreSQL, SQLite, MariaDB, and SQL Server.' },
-			{ q: 'Can I minify SQL to a single line?', a: 'Yes, click "单行压缩 (Minify)" to strip comments and redundant whitespace for embedding into application configs or code literals.' },
+			{ q: 'Can I minify SQL to a single line?', a: 'Yes — click "Minify" to strip comments and redundant whitespace, ready to embed in an application config or a code literal.' },
 		],
 		faqZh: [
 			{ q: '该工具会上传我的 SQL 吗？', a: '绝不上传。所有分词、缩进排版与压缩均在浏览器本地完成，断网也能正常运行。' },
@@ -764,6 +764,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 	'converters/pressure': {
 		about: [
 			'High-precision pressure and stress conversion for engineering, automotive tire pressures, diving, medical blood pressure, and atmospheric meteorology. Seamlessly convert between Pa, kPa, MPa, bar, psi, atm, mmHg/Torr, and kgf/cm².',
+			'Everyday uses: setting cold tire pressure (2.5 bar = 250 kPa = 36.3 psi), reading a blood-pressure monitor, pressure-testing plumbing, and following the barometric pressure in a weather report.',
 		],
 		aboutZh: [
 			'专业工程与日常生活压力/压强换算器：轻松互换帕斯卡（Pa）、千帕（kPa）、兆帕（MPa）、巴（bar）、磅力/平方英寸（psi）、标准大气压（atm）、毫米汞柱（mmHg / 托 Torr）以及公斤力/平方厘米（kgf/cm²）。',
@@ -798,14 +799,14 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 	},
 	'converters/energy': {
 		about: [
-			'Convert physical work, thermal calories, electrical storage, and fuel heating values across joules (J, kJ, MJ), dietary calories (cal, kcal / 大卡), electrical energy (Wh, kWh), British thermal units (BTU), and electronvolts (eV).',
+			'Convert physical work, thermal calories, electrical storage, and fuel heating values across joules (J, kJ, MJ), dietary calories (cal, kcal), electrical energy (Wh, kWh), British thermal units (BTU), and electronvolts (eV).',
 		],
 		aboutZh: [
 			'能量、功与热量全能转换器：涵盖物理功焦耳（J、kJ、MJ）、食品热量与减脂卡路里（卡 cal、千卡/大卡 kcal）、电力能源（瓦时 Wh、千瓦时 / 度电 kWh）、空调暖通英热单位（BTU）以及微观粒子物理电子伏特（eV）。',
 		],
 		faq: [
-			{ q: 'How many kilojoules (kJ) are in 1 food Calorie (kcal / 大卡)?', a: '1 kcal (food Calorie / 大卡) equals 4.184 kJ. To convert food labels from kJ to kcal, divide by 4.184.' },
-			{ q: 'How many joules are in 1 kilowatt-hour (1 kWh / 1 度电)?', a: 'Exactly 3,600,000 joules (3.6 MJ).' },
+			{ q: 'How many kilojoules (kJ) are in 1 food Calorie (kcal)?', a: '1 kcal — the Calorie printed on a nutrition label — equals 4.184 kJ. To read a kJ label in kcal, divide by 4.184.' },
+			{ q: 'How many joules are in 1 kilowatt-hour (kWh)?', a: 'Exactly 3,600,000 joules (3.6 MJ).' },
 		],
 		faqZh: [
 			{ q: '食品标签上的千焦（kJ）怎么换算成大卡（kcal）？', a: '1 千卡（大卡 kcal）等于 4.184 千焦（kJ）。食品袋上的千焦数值除以 4.184，即可快速得到健身常说的大卡热量。' },
@@ -837,6 +838,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 		],
 		faq: [
 			{ q: 'How do you convert m/s to km/h?', a: 'Multiply by 3.6. For example, 10 m/s × 3.6 = 36 km/h. To convert km/h to m/s, divide by 3.6 (e.g. 72 km/h ÷ 3.6 = 20 m/s, 100 km/h ≈ 27.78 m/s).' },
+			{ q: 'How many mph is 100 km/h?', a: '100 km/h is about 62.14 mph; going the other way, 60 mph is about 96.56 km/h. The factor is 0.621371 mph per km/h, so a European 130 km/h motorway limit is roughly 81 mph.' },
 			{ q: 'What is Mach 1 speed?', a: 'Mach 1 at standard sea level (15 °C) is approximately 340.29 m/s, or 1,225.04 km/h (761.2 mph).' },
 			{ q: 'How many km/h is 1 knot (kn)?', a: '1 knot equals 1 nautical mile per hour, or exactly 1.852 km/h.' },
 		],

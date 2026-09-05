@@ -95,7 +95,11 @@ export function initCss(host: HTMLElement): void {
 		const raw = wb.inputArea.value.trim();
 		if (!raw) {
 			wb.outputArea.value = '';
-			wb.updateStatus('idle', '准备就绪：输入或粘贴 CSS 代码后将自动格式化。');
+			wb.updateStatus(
+				'idle',
+				'Ready: paste CSS and it is re-indented as you type.',
+				'准备就绪：输入或粘贴 CSS 代码后将自动格式化。'
+			);
 			return;
 		}
 
@@ -107,11 +111,12 @@ export function initCss(host: HTMLElement): void {
 			const lineCount = formatted.split('\n').length;
 			wb.updateStatus(
 				'valid',
+				`✓ CSS formatted · ${lineCount} lines · ${formatBytes(origBytes)} in, ${formatBytes(fmtBytes)} out`,
 				`✓ CSS 格式化完成 · 共 ${lineCount} 行 · 原始大小: ${formatBytes(origBytes)} · 格式化后: ${formatBytes(fmtBytes)}`
 			);
 		} catch (err) {
-			const msg = err instanceof Error ? err.message : 'CSS 格式化失败';
-			wb.updateStatus('error', `✗ 格式化出错: ${msg}`);
+			const msg = err instanceof Error ? err.message : 'formatting failed';
+			wb.updateStatus('error', `✗ Formatting error: ${msg}`, `✗ 格式化出错: ${msg}`);
 		}
 	}
 

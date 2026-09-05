@@ -25,12 +25,15 @@ import { SITE_TITLE } from '../consts';
 			</div>
 		</div>
 		<div class="nav-right">
-			<button class="search-modal-btn" type="button" id="header-search-btn" aria-label="Search tools / 搜索工具 (快捷键 /)" title="搜索工具 (快捷键 / 或 Ctrl+K)">
+			<button class="search-modal-btn" type="button" id="header-search-btn"
+				aria-label="Search tools (shortcut /)" title="Search tools (/ or Ctrl+K)"
+				data-aria-en="Search tools (shortcut /)" data-aria-zh="搜索工具 (快捷键 /)"
+				data-title-en="Search tools (/ or Ctrl+K)" data-title-zh="搜索工具 (快捷键 / 或 Ctrl+K)">
 				<span class="search-btn-icon" aria-hidden="true">🔍</span>
 				<span class="search-btn-text"><span class="i18n-en">Search</span><span class="i18n-zh">搜索</span></span>
 				<kbd class="search-btn-kbd">/</kbd>
 			</button>
-			<button class="lang-toggle" type="button" aria-label="Toggle language / 切换语言">中 / EN</button>
+			<button class="lang-toggle" type="button" aria-label="Toggle language">中 / EN</button>
 			<button class="theme-toggle" type="button" aria-label="Toggle light / dark theme">☾</button>
 			<a href="https://github.com/qcsunny/qcsunny.github.io" target="_blank" rel="noopener" class="header-github-link">
 				<span class="sr-only">Source code on GitHub</span>
@@ -41,7 +44,9 @@ import { SITE_TITLE } from '../consts';
 					></path></svg
 				>
 			</a>
-			<button class="mobile-menu-btn" type="button" id="mobile-menu-toggle" aria-label="Toggle navigation menu / 打开菜单" aria-expanded="false" aria-controls="mobile-nav-panel">
+			<button class="mobile-menu-btn" type="button" id="mobile-menu-toggle"
+				aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobile-nav-panel"
+				data-aria-en="Toggle navigation menu" data-aria-zh="打开菜单">
 				<span class="hamburger-box" aria-hidden="true">
 					<span class="bar bar-top"></span>
 					<span class="bar bar-mid"></span>
@@ -100,14 +105,26 @@ import { SITE_TITLE } from '../consts';
 <script>
 	// Language toggle (localStorage "site:lang")
 	const langBtn = document.querySelector<HTMLButtonElement>('.lang-toggle');
+	const applyAttrI18n = (lang: string) => {
+		const zh = lang === 'zh';
+		for (const el of document.querySelectorAll<HTMLElement>('[data-aria-en]')) {
+			const v = (zh ? el.dataset.ariaZh : el.dataset.ariaEn) || el.dataset.ariaEn;
+			if (v) el.setAttribute('aria-label', v);
+		}
+		for (const el of document.querySelectorAll<HTMLElement>('[data-title-en]')) {
+			const v = (zh ? el.dataset.titleZh : el.dataset.titleEn) || el.dataset.titleEn;
+			if (v) el.title = v;
+		}
+	};
 	const updateLangUI = (lang: string) => {
+		applyAttrI18n(lang);
 		langBtn?.setAttribute(
 			'aria-label',
 			lang === 'zh' ? '当前语言: 中文 (点击切换至 English)' : 'Current language: English (click for Chinese)'
 		);
 		if (langBtn) {
 			langBtn.textContent = lang === 'zh' ? '中' : 'EN';
-			langBtn.title = lang === 'zh' ? '切换为 English' : '切换为 中文';
+			langBtn.title = lang === 'zh' ? '切换为 English' : 'Switch to Chinese';
 		}
 	};
 	const curLang = localStorage.getItem('site:lang') || (navigator.language.startsWith('zh') ? 'zh' : 'en');

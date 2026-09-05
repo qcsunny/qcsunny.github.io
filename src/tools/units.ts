@@ -4,7 +4,14 @@
 export interface UnitDef {
 	label: string;
 	labelZh?: string;
+	/** compact symbol shown in the readout, e.g. "kg" */
 	short?: string;
+	/**
+	 * Chinese symbol, for the traditional units that have no Latin one: the
+	 * English view reads "1 kg = 2 jin", the Chinese view "1 千克 = 2 市斤".
+	 * Left unset when the symbol reads the same in both (kg, psi, kWh).
+	 */
+	shortZh?: string;
 	toBase: (v: number) => number;
 	fromBase: (v: number) => number;
 }
@@ -17,10 +24,17 @@ export interface UnitCategory {
 }
 
 /** Linear unit: value * factor converts to base unit. */
-const lin = (label: string, factor: number, labelZh?: string, short?: string): UnitDef => ({
+const lin = (
+	label: string,
+	factor: number,
+	labelZh?: string,
+	short?: string,
+	shortZh?: string,
+): UnitDef => ({
 	label,
 	labelZh,
 	short: short ?? (label.match(/\(([^)]+)\)/)?.[1] ?? label),
+	shortZh,
 	toBase: (v) => v * factor,
 	fromBase: (v) => v / factor,
 });
@@ -40,15 +54,15 @@ export const UNIT_CATEGORIES: UnitCategory[] = [
 			t: lin('tonne (t)', 1000, '公吨 (1000 kg)', 't'),
 
 			// Chinese Traditional / 市制
-			jin: lin('jin / catty (市斤)', 0.5, '市斤 (500 g / 10两)', '市斤'),
-			liang: lin('liang / tael (市两)', 0.05, '市两 (50 g / 10钱)', '市两'),
-			qian: lin('qian / mace (市钱)', 0.005, '市钱 (5 g / 10分)', '市钱'),
-			fen_wt: lin('fen (市分)', 0.0005, '市分 (0.5 g)', '市分'),
-			dan_wt: lin('dan / picul (市担)', 50, '市担 (50 kg / 100市斤)', '市担'),
-			hk_jin: lin('Hong Kong catty (司马斤)', 0.60478982, '港斤 / 司马斤 (约604.79 g)', '港斤'),
-			hk_liang: lin('Hong Kong tael (司马两)', 0.03779936375, '港两 / 司马两 (约37.80 g，珠宝黄金)', '港两'),
-			tw_jin: lin('Taiwan catty (台斤)', 0.6, '台斤 (600 g / 16台两)', '台斤'),
-			tw_liang: lin('Taiwan tael (台两)', 0.0375, '台两 (37.5 g)', '台两'),
+			jin: lin('jin / catty', 0.5, '市斤 (500 g / 10两)', 'jin', '市斤'),
+			liang: lin('liang / tael', 0.05, '市两 (50 g / 10钱)', 'liang', '市两'),
+			qian: lin('qian / mace', 0.005, '市钱 (5 g / 10分)', 'qian', '市钱'),
+			fen_wt: lin('fen', 0.0005, '市分 (0.5 g)', 'fen', '市分'),
+			dan_wt: lin('dan / picul', 50, '市担 (50 kg / 100市斤)', 'dan', '市担'),
+			hk_jin: lin('Hong Kong catty', 0.60478982, '港斤 / 司马斤 (约604.79 g)', 'HK catty', '港斤'),
+			hk_liang: lin('Hong Kong tael', 0.03779936375, '港两 / 司马两 (约37.80 g，珠宝黄金)', 'HK tael', '港两'),
+			tw_jin: lin('Taiwan catty', 0.6, '台斤 (600 g / 16台两)', 'TW catty', '台斤'),
+			tw_liang: lin('Taiwan tael', 0.0375, '台两 (37.5 g)', 'TW tael', '台两'),
 
 			// Precious Metals & Gems
 			ozt: lin('troy ounce (oz t)', 0.0311034768, '金衡盎司 (31.1035 g，国际贵金属标准)', 'oz t'),
@@ -60,10 +74,10 @@ export const UNIT_CATEGORIES: UnitCategory[] = [
 			oz: lin('ounce (oz)', 0.028349523125, '常衡盎司 (约28.35 g)', 'oz'),
 			lb: lin('pound (lb)', 0.45359237, '磅 (约0.4536 kg)', 'lb'),
 			st: lin('stone (st)', 6.35029318, '英石 (14 磅 / 约6.35 kg)', 'st'),
-			us_cwt: lin('US hundredweight (cwt)', 45.359237, '美担 / 短担 (100 磅 / 约45.36 kg)', '美担'),
-			uk_cwt: lin('UK hundredweight (cwt)', 50.80234544, '英担 / 长担 (112 磅 / 约50.80 kg)', '英担'),
-			us_ton: lin('US short ton', 907.18474, '美吨 / 短吨 (2000 磅 / 约907.18 kg)', '美吨'),
-			uk_ton: lin('UK long ton', 1016.0469088, '英吨 / 长吨 (2240 磅 / 约1016.05 kg)', '英吨'),
+			us_cwt: lin('US hundredweight (cwt)', 45.359237, '美担 / 短担 (100 磅 / 约45.36 kg)', 'cwt (US)', '美担'),
+			uk_cwt: lin('UK hundredweight (cwt)', 50.80234544, '英担 / 长担 (112 磅 / 约50.80 kg)', 'cwt (UK)', '英担'),
+			us_ton: lin('US short ton', 907.18474, '美吨 / 短吨 (2000 磅 / 约907.18 kg)', 'short ton', '美吨'),
+			uk_ton: lin('UK long ton', 1016.0469088, '英吨 / 长吨 (2240 磅 / 约1016.05 kg)', 'long ton', '英吨'),
 		},
 	},
 	{
@@ -82,11 +96,11 @@ export const UNIT_CATEGORIES: UnitCategory[] = [
 			km: lin('kilometer (km)', 1000, '千米 / 公里', 'km'),
 
 			// Chinese Traditional / 市制
-			li: lin('li (市里 / 华里)', 500, '市里 / 华里 (500 米 / 0.5 公里)', '华里'),
-			zhang: lin('zhang (市丈)', 10 / 3, '市丈 (10/3 米 ≈ 3.333 米)', '市丈'),
-			chi: lin('chi (市尺)', 1 / 3, '市尺 (1/3 米 ≈ 0.3333 米)', '市尺'),
-			cun: lin('cun (市寸)', 1 / 30, '市寸 (1/30 米 ≈ 3.333 厘米)', '市寸'),
-			fen_len: lin('fen (市分)', 1 / 300, '市分 (1/300 米 ≈ 3.333 毫米)', '市分'),
+			li: lin('li', 500, '市里 / 华里 (500 米 / 0.5 公里)', 'li', '华里'),
+			zhang: lin('zhang', 10 / 3, '市丈 (10/3 米 ≈ 3.333 米)', 'zhang', '市丈'),
+			chi: lin('chi', 1 / 3, '市尺 (1/3 米 ≈ 0.3333 米)', 'chi', '市尺'),
+			cun: lin('cun', 1 / 30, '市寸 (1/30 米 ≈ 3.333 厘米)', 'cun', '市寸'),
+			fen_len: lin('fen', 1 / 300, '市分 (1/300 米 ≈ 3.333 毫米)', 'fen', '市分'),
 
 			// Marine & Depth
 			nmi: lin('nautical mile (nmi)', 1852, '海里 (1852 米，国际航海航空法定标准)', 'nmi'),
@@ -120,12 +134,12 @@ export const UNIT_CATEGORIES: UnitCategory[] = [
 			km2: lin('square kilometer (km²)', 1e6, '平方千米 / 平方公里', 'km²'),
 
 			// Chinese Land Area / 市制
-			mu: lin('mu (市亩)', 2000 / 3, '市亩 (2000/3 平方米 ≈ 666.67 m²)', '亩'),
-			qing: lin('qing (市顷)', 200000 / 3, '市顷 (100 亩 ≈ 6.67 公顷)', '顷'),
-			fen_area: lin('fen (分地)', 200 / 3, '分地 (0.1 亩 ≈ 66.67 平方米)', '分地'),
-			sq_zhang: lin('square zhang (平方丈)', 100 / 9, '平方丈 (100/9 平方米 ≈ 11.11 m²)', '平方丈'),
-			sq_chi: lin('square chi (平方尺)', 1 / 9, '平方尺 (1/9 平方米 ≈ 0.111 m²)', '平方尺'),
-			sq_cun: lin('square cun (平方寸)', 1 / 900, '平方寸 (约11.11 cm²)', '平方寸'),
+			mu: lin('mu', 2000 / 3, '市亩 (2000/3 平方米 ≈ 666.67 m²)', 'mu', '亩'),
+			qing: lin('qing', 200000 / 3, '市顷 (100 亩 ≈ 6.67 公顷)', 'qing', '顷'),
+			fen_area: lin('fen of land', 200 / 3, '分地 (0.1 亩 ≈ 66.67 平方米)', 'fen', '分地'),
+			sq_zhang: lin('square zhang', 100 / 9, '平方丈 (100/9 平方米 ≈ 11.11 m²)', 'sq zhang', '平方丈'),
+			sq_chi: lin('square chi', 1 / 9, '平方尺 (1/9 平方米 ≈ 0.111 m²)', 'sq chi', '平方尺'),
+			sq_cun: lin('square cun', 1 / 900, '平方寸 (约11.11 cm²)', 'sq cun', '平方寸'),
 
 			// Imperial & US Customary
 			in2: lin('square inch (in²)', 0.00064516, '平方英寸', 'in²'),
@@ -149,9 +163,9 @@ export const UNIT_CATEGORIES: UnitCategory[] = [
 			m3: lin('cubic meter (m³)', 1000, '立方米 (1000 升)', 'm³'),
 
 			// Chinese Traditional
-			sheng: lin('sheng (市升)', 1, '市升 (1 升)', '升'),
-			dou: lin('dou (市斗)', 10, '市斗 (10 升)', '斗'),
-			dan_vol: lin('dan (市石)', 100, '市石 (100 升 / 10 斗)', '石'),
+			sheng: lin('sheng', 1, '市升 (1 升)', 'sheng', '市升'),
+			dou: lin('dou', 10, '市斗 (10 升)', 'dou', '市斗'),
+			dan_vol: lin('dan', 100, '市石 (100 升 / 10 斗)', 'dan', '市石'),
 
 			// Culinary / Kitchen
 			tsp: lin('US teaspoon (tsp)', 0.00492892159375, '茶匙 (美制 / 约4.93 mL)', 'tsp'),
@@ -234,7 +248,7 @@ export const UNIT_CATEGORIES: UnitCategory[] = [
 			kn: lin('knot (kn)', 1852 / 3600, '节 (kn · 海里/小时 · 航速)', 'kn'),
 			fts: lin('foot/second (ft/s)', 0.3048, '英尺/秒 (ft/s)', 'ft/s'),
 			ft_min: lin('foot/minute (ft/min)', 0.3048 / 60, '英尺/分钟 (ft/min · 垂直升降速度)', 'ft/min'),
-			mach: lin('Mach (Ma, 15°C海平面)', 340.29, '马赫 / 声速音速 (Ma ≈ 340.29 m/s ≈ 1225 km/h)', 'Ma'),
+			mach: lin('Mach (Ma, sea level 15°C)', 340.29, '马赫 / 声速音速 (Ma ≈ 340.29 m/s ≈ 1225 km/h)', 'Ma'),
 			c: lin('speed of light (c)', 299792458, '真空中光速 (c ≈ 30万千米/秒)', 'c'),
 			kms: lin('kilometer/second (km/s)', 1000, '千米/秒 / 公里每秒 (km/s · 航天宇宙速度)', 'km/s'),
 		},
@@ -249,7 +263,7 @@ export const UNIT_CATEGORIES: UnitCategory[] = [
 			kPa: lin('kilopascal (kPa)', 1000, '千帕 (kPa · 汽车胎压标准 250 kPa)', 'kPa'),
 			MPa: lin('megapascal (MPa)', 1e6, '兆帕 (100万帕 · 材料强度与工程高压)', 'MPa'),
 			GPa: lin('gigapascal (GPa)', 1e9, '吉帕 (10亿帕 · 地质力学与超硬材料)', 'GPa'),
-			bar: lin('bar (巴)', 100000, '巴 (100 kPa · 汽车胎压 2.5 bar)', 'bar'),
+			bar: lin('bar', 100000, '巴 (100 kPa · 汽车胎压 2.5 bar)', 'bar'),
 			mbar: lin('millibar (mbar)', 100, '毫巴', 'mbar'),
 			psi: lin('pounds per sq inch (psi)', 6894.757293168, '磅力/平方英寸 (美制胎压 36 psi)', 'psi'),
 			// Exactly 101325 Pa by definition (10th CGPM, 1954) — *not* 760 mmHg. Both
@@ -267,7 +281,7 @@ export const UNIT_CATEGORIES: UnitCategory[] = [
 			// setting as 759.968005908 instead of 759.968.
 			inHg: lin('inch of mercury (inHg)', 25.4 * 133.322387415, '英寸汞柱 (inHg · 航空气象高度计标准 29.92 inHg)', 'inHg'),
 			mmH2O: lin('millimeter of water (mmH₂O)', 9.80665, '毫米水柱 (微压差与通风管道)', 'mmH₂O'),
-			kgf_cm2: lin('kgf/cm² (公斤力/平方厘米)', 98066.5, '公斤力/平方厘米 (国内俗称"打2.5公斤气")', 'kgf/cm²'),
+			kgf_cm2: lin('kgf/cm²', 98066.5, '公斤力/平方厘米 (国内俗称"打2.5公斤气")', 'kgf/cm²'),
 		},
 	},
 	{
@@ -280,7 +294,7 @@ export const UNIT_CATEGORIES: UnitCategory[] = [
 			kW: lin('kilowatt (kW)', 1000, '千瓦 (家用电器与新能源电机功率)', 'kW'),
 			MW: lin('megawatt (MW)', 1e6, '兆瓦 (100万瓦，发电机组与风电)', 'MW'),
 			GW: lin('gigawatt (GW)', 1e9, '吉瓦 / 十亿瓦 (电网规模)', 'GW'),
-			ps: lin('metric horsepower (ps / 匹)', 735.49875, '米制马力 / 匹 (汽车发动机公制马力)', 'ps'),
+			ps: lin('metric horsepower (ps)', 735.49875, '米制马力 / 匹 (汽车发动机公制马力)', 'ps'),
 			hp: lin('mechanical horsepower (hp)', 745.69987158227022, '英制马力 (美英汽车功率标准)', 'hp'),
 			// BTU/3600 written out, so this agrees with the energy table's BTU instead of
 			// truncating at the 8th digit (0.29307107 vs 0.293071070172).
@@ -300,9 +314,9 @@ export const UNIT_CATEGORIES: UnitCategory[] = [
 			MJ: lin('megajoule (MJ)', 1e6, '兆焦 (燃气热值与大工业)', 'MJ'),
 			GJ: lin('gigajoule (GJ)', 1e9, '吉焦 (10亿焦耳 · 集中供热与燃气热力)', 'GJ'),
 			cal: lin('calorie (cal)', 4.184, '卡路里 (化学热量)', 'cal'),
-			kcal: lin('kilocalorie / Calorie (kcal / 大卡)', 4184, '千卡 / 大卡 (健身减脂饮食热量核心)', 'kcal'),
+			kcal: lin('kilocalorie / Calorie (kcal)', 4184, '千卡 / 大卡 (健身减脂饮食热量核心)', 'kcal'),
 			Wh: lin('watt-hour (Wh)', 3600, '瓦时 (手机电池与充电宝额定能量)', 'Wh'),
-			kWh: lin('kilowatt-hour (kWh / 度电)', 3.6e6, '千瓦时 / 度电 (家庭用电与电动车电池度数)', 'kWh'),
+			kWh: lin('kilowatt-hour (kWh)', 3.6e6, '千瓦时 / 度电 (家庭用电与电动车电池度数)', 'kWh'),
 			MWh: lin('megawatt-hour (MWh)', 3.6e9, '兆瓦时 (1000 度电 · 发电与储能电站)', 'MWh'),
 			eV: lin('electronvolt (eV)', 1.602176634e-19, '电子伏特 (微观粒子物理能量)', 'eV'),
 			keV: lin('kiloelectronvolt (keV)', 1.602176634e-16, '千电子伏特 (X射线物理能量)', 'keV'),
@@ -325,12 +339,12 @@ export const UNIT_CATEGORIES: UnitCategory[] = [
 			h: lin('hour (h)', 3600, '小时 (60 分钟 / 3600 秒)', 'h'),
 			d: lin('day (d)', 86400, '天 / 日 (24 小时)', 'd'),
 			wk: lin('week (wk)', 604800, '周 / 星期 (7 天)', 'wk'),
-			xun: lin('xun (旬)', 864000, '旬 (10 天)', '旬'),
-			mo: lin('month (mo, 30.44d)', 2629800, '月 (平均月 ≈ 30.44 天)', '月'),
-			quarter: lin('quarter', 7889400, '季度 (3 个月 ≈ 91.31 天)', '季度'),
-			yr: lin('year (yr, 365d)', 31536000, '平年 (365 天)', '年'),
-			leap_yr: lin('leap year (366d)', 31622400, '闰年 (366 天)', '闰年'),
-			century: lin('century', 3155760000, '世纪 (100 年)', '世纪'),
+			xun: lin('xun', 864000, '旬 (10 天)', 'xun', '旬'),
+			mo: lin('month (mo, 30.44d)', 2629800, '月 (平均月 ≈ 30.44 天)', 'mo', '月'),
+			quarter: lin('quarter', 7889400, '季度 (3 个月 ≈ 91.31 天)', 'qtr', '季度'),
+			yr: lin('year (yr, 365d)', 31536000, '平年 (365 天)', 'yr', '年'),
+			leap_yr: lin('leap year (366d)', 31622400, '闰年 (366 天)', 'leap yr', '闰年'),
+			century: lin('century', 3155760000, '世纪 (100 年)', 'century', '世纪'),
 		},
 	},
 	{

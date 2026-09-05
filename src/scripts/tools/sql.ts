@@ -319,7 +319,11 @@ export function initSql(host: HTMLElement): void {
 		const raw = wb.inputArea.value.trim();
 		if (!raw) {
 			wb.outputArea.value = '';
-			wb.updateStatus('idle', '准备就绪：输入或粘贴 SQL 后将自动格式化。');
+			wb.updateStatus(
+				'idle',
+				'Ready: paste or type SQL and it is formatted as you go.',
+				'准备就绪：输入或粘贴 SQL 后将自动格式化。',
+			);
 			return;
 		}
 

@@ -366,12 +366,6 @@ hr {
 	}
 }
 
-.t-sub-zh {
-	font-weight: 400;
-	font-size: 0.88em;
-	opacity: 0.8;
-}
-
 /* Global bilingual toggle rules */
 html[data-lang='en'] .i18n-zh,
 html:not([data-lang='zh']) .i18n-zh {

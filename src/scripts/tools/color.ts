@@ -1,5 +1,11 @@
 // Color converter: three-way HEX ⇄ RGB ⇄ HSL with live swatches (base color
 // plus its complement). Editing any field updates the others.
+//
+// HEX / HSL / rgb() / hsl() and the R G B S L channel captions read the same in
+// both views; only the words get a .i18n-en/.i18n-zh pair, which the CSS picks
+// between so nothing has to re-run on a language change.
+
+import { bilingual, setBilingual } from './i18n';
 
 interface Rgb {
 	r: number;
@@ -156,9 +162,9 @@ export function initColor(host: HTMLElement): void {
 	const comp = document.createElement('div');
 	comp.className = 't-swatch';
 	const baseCap = document.createElement('span');
-	baseCap.textContent = 'Color';
+	baseCap.append(bilingual('Color', '当前颜色'));
 	const compCap = document.createElement('span');
-	compCap.textContent = 'Complement';
+	compCap.append(bilingual('Complement', '互补色'));
 	const baseWrap = document.createElement('div');
 	baseWrap.className = 't-swatchwrap';
 	baseWrap.append(base, baseCap);
@@ -230,7 +236,7 @@ export function initColor(host: HTMLElement): void {
 			note.textContent = '';
 			render(rgb, 'hex');
 		} else {
-			note.textContent = 'HEX expects #rgb or #rrggbb.';
+			setBilingual(note, 'HEX expects #rgb or #rrggbb.', 'HEX 需要 #rgb 或 #rrggbb 格式。');
 		}
 	});
 	for (const input of rgbInputs) {
@@ -242,7 +248,7 @@ export function initColor(host: HTMLElement): void {
 				note.textContent = '';
 				render({ r, g, b }, 'rgb');
 			} else {
-				note.textContent = 'RGB channels must be 0–255.';
+				setBilingual(note, 'RGB channels must be 0–255.', 'RGB 三个通道取值需在 0–255 之间。');
 			}
 		});
 	}
@@ -255,7 +261,7 @@ export function initColor(host: HTMLElement): void {
 				note.textContent = '';
 				render(hslToRgb({ h, s, l }), 'hsl');
 			} else {
-				note.textContent = 'S and L must be 0–100 (H may be any angle).';
+				setBilingual(note, 'S and L must be 0–100 (H may be any angle).', 'S 与 L 取值需在 0–100 之间 (H 可为任意角度)。');
 			}
 		});
 	}
