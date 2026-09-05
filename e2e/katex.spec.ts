@@ -186,11 +186,14 @@ test('no KaTeX font is inlined into the stylesheet', () => {
 	expect(css[0].match(/@font-face/g)?.length).toBe(20);
 });
 
+// Matched on URL attributes rather than on the hostname anywhere in the page: a
+// post explaining why the CDN loader was removed names it in prose, and that is
+// not a regression. What would be is a src= or href= pointing off-site.
 test('no page loads KaTeX from a CDN any more', () => {
 	const offenders = distHtml()
-		.filter(([, html]) => html.includes('cdn.jsdelivr.net'))
+		.filter(([, html]) => /(?:src|href)="[^"]*(?:jsdelivr|unpkg|cdnjs)[^"]*"/i.test(html))
 		.map(([path]) => path);
-	expect(offenders, 'jsdelivr must be gone from the build output').toEqual([]);
+	expect(offenders, 'a CDN URL is being loaded by the build output').toEqual([]);
 });
 
 test('every formula in the build rendered', () => {
