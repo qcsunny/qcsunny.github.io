@@ -5,6 +5,7 @@ import GraphTab from '../../components/calculator/GraphTab.astro';
 
 <ToolShell
 	title="Function Grapher"
+	titleZh="函数图像绘制器"
 	description="Plot up to 5 functions with zoom, pan and a live value crosshair."
 	category="calculators"
 	content={{
@@ -30,8 +31,9 @@ import GraphTab from '../../components/calculator/GraphTab.astro';
 >
 	<GraphTab />
 	<p class="t-related">
-		Also available: <a href="/calculators/standard/">Scientific Calculator</a> ·
-		<a href="/calculators/average/">Average &amp; Statistics</a>
+		<span class="i18n-en">Also available:</span><span class="i18n-zh">其他工具：</span>
+		<a href="/calculators/standard/"><span class="i18n-en">Scientific Calculator</span><span class="i18n-zh">科学计算器</span></a> ·
+		<a href="/calculators/average/"><span class="i18n-en">Average &amp; Statistics</span><span class="i18n-zh">平均数与统计</span></a>
 	</p>
 	<script>
 		import '../../scripts/calculator/graph-page';

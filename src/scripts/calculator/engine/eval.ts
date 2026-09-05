@@ -11,7 +11,9 @@ export function evalNode(node: Node, scope: Scope): number {
 			return lookupVar(node.name, scope, node.pos);
 		case 'call': {
 			const def = FUNCTIONS[node.name];
-			if (!def) throw new CalcError(`Unknown function '${node.name}'`, node.pos);
+			if (!def) {
+				throw new CalcError(`Unknown function '${node.name}'`, `未知函数 '${node.name}'`, node.pos);
+			}
 			checkArity(node.name, def.arity, node.args.length, node.pos);
 			const args = node.args.map((a) => evalNode(a, scope));
 			return def.fn(args, scope);
@@ -37,9 +39,13 @@ function lookupVar(name: string, scope: Scope, pos: number): number {
 	if (c !== undefined) return c;
 	if (name in scope.vars) return scope.vars[name] as number;
 	if (name in FUNCTIONS) {
-		throw new CalcError(`'${name}' is a function — use ${name}(x)`, pos);
+		throw new CalcError(
+			`'${name}' is a function — use ${name}(x)`,
+			`'${name}' 是函数，应写成 ${name}(x)`,
+			pos,
+		);
 	}
-	throw new CalcError(`Unknown variable '${name}'`, pos);
+	throw new CalcError(`Unknown variable '${name}'`, `未定义的变量 '${name}'`, pos);
 }
 
 function checkArity(name: string, arity: number | [number, number], got: number, pos: number): void {
@@ -47,7 +53,11 @@ function checkArity(name: string, arity: number | [number, number], got: number,
 		typeof arity === 'number' ? got === arity : got >= arity[0] && got <= arity[1];
 	if (!ok) {
 		const want = typeof arity === 'number' ? `${arity}` : `${arity[0]}–${arity[1]}`;
-		throw new CalcError(`${name}() expects ${want} argument(s), got ${got}`, pos);
+		throw new CalcError(
+			`${name}() expects ${want} argument(s), got ${got}`,
+			`${name}() 需要 ${want} 个参数，实际给了 ${got} 个`,
+			pos,
+		);
 	}
 }
 
@@ -85,20 +95,32 @@ export function compileNode(node: Node): (scope: Scope) => number {
 			return (scope) => {
 				const v = scope.vars[name];
 				if (v !== undefined) return v;
-				if (name in FUNCTIONS) throw new CalcError(`'${name}' is a function — use ${name}(x)`);
-				throw new CalcError(`Unknown variable '${name}'`);
+				if (name in FUNCTIONS) {
+					throw new CalcError(
+						`'${name}' is a function — use ${name}(x)`,
+						`'${name}' 是函数，应写成 ${name}(x)`,
+					);
+				}
+				throw new CalcError(`Unknown variable '${name}'`, `未定义的变量 '${name}'`);
 			};
 		}
 		case 'call': {
 			const def = FUNCTIONS[node.name];
-			if (!def) return () => { throw new CalcError(`Unknown function '${node.name}'`); };
+			if (!def) {
+				return () => {
+					throw new CalcError(`Unknown function '${node.name}'`, `未知函数 '${node.name}'`);
+				};
+			}
 			const argFns = node.args.map((a) => compileNode(a));
 			const name = node.name;
 			const arity = def.arity;
 			return (scope) => {
 				if (typeof arity === 'number' ? argFns.length !== arity : argFns.length < arity[0]) {
 					const want = typeof arity === 'number' ? `${arity}` : `${arity[0]}–${arity[1]}`;
-					throw new CalcError(`${name}() expects ${want} argument(s)`);
+					throw new CalcError(
+						`${name}() expects ${want} argument(s)`,
+						`${name}() 需要 ${want} 个参数`,
+					);
 				}
 				return def.fn(argFns.map((f) => f(scope)), scope);
 			};

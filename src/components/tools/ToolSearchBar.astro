@@ -30,9 +30,24 @@ const allTools = getAllSearchItems();
 			autocomplete="off"
 			spellcheck="false"
 			aria-label="Search tools"
+			data-aria-en="Search tools"
+			data-aria-zh="搜索工具"
 		/>
-		<button type="button" class="t-search-clear" id="tool-search-clear" aria-label="Clear search" style="display: none;">×</button>
-		<kbd class="t-search-kbd" title="Press / or Ctrl+K to search">/</kbd>
+		<button
+			type="button"
+			class="t-search-clear"
+			id="tool-search-clear"
+			aria-label="Clear search"
+			data-aria-en="Clear search"
+			data-aria-zh="清空搜索"
+			style="display: none;">×</button
+		>
+		<kbd
+			class="t-search-kbd"
+			title="Press / or Ctrl+K to search"
+			data-title-en="Press / or Ctrl+K to search"
+			data-title-zh="按 / 或 Ctrl+K 搜索">/</kbd
+		>
 	</div>
 
 	<div class="t-search-meta" id="tool-search-meta" style="display: none;">

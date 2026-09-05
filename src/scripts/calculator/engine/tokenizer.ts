@@ -43,7 +43,7 @@ export function tokenize(src: string): Token[] {
 		const rest = src.slice(i);
 		if (ch >= '0' && ch <= '9' || ch === '.') {
 			const m = NUM_RE.exec(rest);
-			if (!m) throw new CalcError(`Malformed number at position ${i + 1}`, i);
+			if (!m) throw new CalcError(`Malformed number at position ${i + 1}`, `数字格式有误（位置 ${i + 1}）`, i);
 			tokens.push({ type: 'num', value: m[0], pos: i });
 			i += m[0].length;
 			continue;
@@ -84,7 +84,11 @@ export function tokenize(src: string): Token[] {
 			i++;
 			continue;
 		}
-		throw new CalcError(`Unexpected character '${ch}' at position ${i + 1}`, i);
+		throw new CalcError(
+			`Unexpected character '${ch}' at position ${i + 1}`,
+			`无法识别的字符 '${ch}'（位置 ${i + 1}）`,
+			i,
+		);
 	}
 	return tokens;
 }

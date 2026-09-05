@@ -255,7 +255,13 @@ import { SITE_TITLE } from '../consts';
 	}
 	.nav-left {
 		display: flex;
-		align-items: baseline;
+		/* center, not baseline: a flex container takes its baseline from its first
+		   flex item, and .site-branding's first item is the 24px <svg> logo —
+		   whose baseline is its bottom edge. So baseline alignment lined the
+		   logo's *bottom* up with the nav links' text baseline and carried the
+		   wordmark 8px up with it. Centring the two boxes instead is what the
+		   row looks like it should be doing, and matches .nav-right. */
+		align-items: center;
 		gap: 1.75em;
 		min-width: 0;
 	}
@@ -265,6 +271,14 @@ import { SITE_TITLE } from '../consts';
 		font-weight: 800;
 		letter-spacing: -0.02em;
 		white-space: nowrap;
+		/* flex, not a text line box: the 24px logo inside .site-branding rides
+		   the h2's text baseline, so its box sat 2px above .nav-links even with
+		   .nav-left's align-items: center — the descender space below the
+		   baseline is dead height that centre alignment cannot remove. Making
+		   the h2 itself the flex row lets the branding box centre against the
+		   links like any other box. */
+		display: flex;
+		align-items: center;
 	}
 	h2 a,
 	h2 a.active {
@@ -282,7 +296,9 @@ import { SITE_TITLE } from '../consts';
 	}
 	.nav-links {
 		display: flex;
-		align-items: baseline;
+		/* same row, same rule — with baseline here the links sat 3px below the
+		   search/lang/theme buttons on the other side of the bar. */
+		align-items: center;
 		gap: 1.1em;
 		overflow-x: auto;
 		scrollbar-width: none;

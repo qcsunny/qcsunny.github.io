@@ -22,6 +22,10 @@ import {
 
 interface Props {
 	title: string;
+	/** Chinese name, for the three calculator pages that have no registry entry
+	 *  (standard / graph / graph3d): a tool's name follows the language switch
+	 *  everywhere else on the site because it comes from the entry's nameZh. */
+	titleZh?: string;
 	description: string;
 	/** registry entry (tool pages); omit for index pages */
 	entry?: ToolEntry;
@@ -33,7 +37,7 @@ interface Props {
 	content?: ToolContent;
 }
 
-const { title, description, entry, category, redirectTo } = Astro.props;
+const { title, titleZh, description, entry, category, redirectTo } = Astro.props;
 const kind = entry?.kind;
 const crumbName = entry ? entry.name : title;
 // Looked up here rather than read off the entry: prose on a ToolEntry ends up in
@@ -42,7 +46,9 @@ const content =
 	Astro.props.content ?? (entry ? TOOL_CONTENT[`${entry.category}/${entry.slug}`] : undefined);
 const pageTitle = entry
 	? (entry.nameZh ? `${entry.name} (${entry.nameZh})` : entry.name)
-	: title;
+	: titleZh
+		? `${title} (${titleZh})`
+		: title;
 
 // --- related tools: same category, real pages only, never self ---
 // entry-less pages (standard/graph/graph3d) fall back to the category prop, and
@@ -67,7 +73,7 @@ const jsonLd: object[] = [];
 		// belongs, and pageTitle bundles both (it feeds <title>, which cannot hold
 		// a span pair and is deliberately bilingual for search).
 		name: entry ? entry.name : title,
-		alternateName: entry?.nameZh,
+		alternateName: entry?.nameZh ?? titleZh,
 		description: entry ? entry.description : description,
 		url: pageUrl,
 		applicationCategory: 'UtilitiesApplication',
@@ -175,13 +181,32 @@ const year = new Date().getFullYear();
 			}
 
 			/* --- top bar --- */
+			/* Sticky, and translucent over what scrolls under it, exactly like the
+			   blog side's <header> in Header.astro. These 57 pages (53 tools + 4
+			   hubs) render this bar *instead* of that one, so they were the only
+			   pages on the site where scrolling took the navigation away — worst
+			   on the long form and workbench pages, which is most of them. */
 			.t-topbar {
+				position: sticky;
+				top: 0;
+				z-index: 50;
+				background: color-mix(in srgb, var(--bg) 82%, transparent);
+				backdrop-filter: blur(12px);
+				border-bottom: 1px solid var(--gridline);
+			}
+			/* The bar bleeds full-width (so does its border); the row inside it
+			   takes the same measure and gutter as Header.astro's <nav>, which is
+			   what lands the logo on the same left edge as every other page. The
+			   bar used to *be* the flex row, full-bleed with 1em of padding: at
+			   1440px that put the wordmark at x=16 while the page frame — nav on
+			   the blog, .t-main here — started at x=200. */
+			.t-topbar-inner {
+				width: min(var(--w-max), 100% - 2.5em);
+				margin: 0 auto;
 				display: flex;
 				align-items: center;
 				gap: 1em;
 				min-height: 3.25em;
-				padding: 0 1em;
-				border-bottom: 1px solid var(--gridline);
 				flex-wrap: wrap;
 			}
 			.t-site {
@@ -1740,43 +1765,50 @@ html[data-tool-kind='html'] .t-main {
 			) : (
 				<>
 					<header class="t-topbar">
-						<a class="t-site" href="/">
-							<SiteLogo size={20} />
-							<span>{SITE_TITLE}</span>
-						</a>
-						<nav class="t-crumbs" aria-label="Breadcrumb">
-							<a href="/tools/"><span class="i18n-en">Tools</span><span class="i18n-zh">工具库</span></a>
-							{category && (
-								<>
-									<span class="t-crumb-sep" aria-hidden="true">›</span>
-									<a href={`/${category}/`}>
-										<span class="i18n-en">{categoryLabel(category)}</span>
-										<span class="i18n-zh">{categoryLabelZh(category)}</span>
-									</a>
-								</>
-							)}
-							{crumbName !== 'Tools' && (
-								<>
-									<span class="t-crumb-sep" aria-hidden="true">›</span>
-									<span aria-current="page">
-										<span class="i18n-en">{entry ? entry.name : crumbName}</span>
-										<span class="i18n-zh">{entry?.nameZh || crumbName}</span>
-									</span>
-								</>
-							)}
-						</nav>
-						<div class="t-topbar-actions">
-							<button class="t-search-nav" type="button" title="Search tools (/ or Ctrl+K)" aria-label="Search tools"
-								data-title-en="Search tools (/ or Ctrl+K)" data-title-zh="搜索工具 (快捷键 / 或 Ctrl+K)"
-								data-aria-en="Search tools" data-aria-zh="搜索工具">🔍</button>
-							<button class="t-lang" type="button" aria-label="Switch language">中 / EN</button>
-							<button class="t-theme" type="button" aria-label="Toggle light / dark theme">☾</button>
+						<div class="t-topbar-inner">
+							<a class="t-site" href="/">
+								<SiteLogo size={20} />
+								<span>{SITE_TITLE}</span>
+							</a>
+							<nav
+							class="t-crumbs"
+							aria-label="Breadcrumb"
+							data-aria-en="Breadcrumb"
+							data-aria-zh="面包屑导航"
+						>
+								<a href="/tools/"><span class="i18n-en">Tools</span><span class="i18n-zh">工具库</span></a>
+								{category && (
+									<>
+										<span class="t-crumb-sep" aria-hidden="true">›</span>
+										<a href={`/${category}/`}>
+											<span class="i18n-en">{categoryLabel(category)}</span>
+											<span class="i18n-zh">{categoryLabelZh(category)}</span>
+										</a>
+									</>
+								)}
+								{crumbName !== 'Tools' && (
+									<>
+										<span class="t-crumb-sep" aria-hidden="true">›</span>
+										<span aria-current="page">
+											<span class="i18n-en">{entry ? entry.name : crumbName}</span>
+											<span class="i18n-zh">{entry?.nameZh || titleZh || crumbName}</span>
+										</span>
+									</>
+								)}
+							</nav>
+							<div class="t-topbar-actions">
+								<button class="t-search-nav" type="button" title="Search tools (/ or Ctrl+K)" aria-label="Search tools"
+									data-title-en="Search tools (/ or Ctrl+K)" data-title-zh="搜索工具 (快捷键 / 或 Ctrl+K)"
+									data-aria-en="Search tools" data-aria-zh="搜索工具">🔍</button>
+								<button class="t-lang" type="button" aria-label="Switch language">中 / EN</button>
+								<button class="t-theme" type="button" aria-label="Toggle light / dark theme">☾</button>
+							</div>
 						</div>
 					</header>
 					<main class="t-main">
 						<h1 class="t-title">
 							<span class="i18n-en">{entry ? entry.name : crumbName}</span>
-							<span class="i18n-zh">{entry?.nameZh || crumbName}</span>
+							<span class="i18n-zh">{entry?.nameZh || titleZh || crumbName}</span>
 						</h1>
 						{entry?.kind === 'form' && entry.config.intro && (
 							<p class="t-intro">
@@ -1836,7 +1868,12 @@ html[data-tool-kind='html'] .t-main {
 							</article>
 						)}
 						{related.length ? (
-							<nav class="t-related-page" aria-label="Related tools">
+							<nav
+							class="t-related-page"
+							aria-label="Related tools"
+							data-aria-en="Related tools"
+							data-aria-zh="相关工具"
+						>
 								<h2>
 									<span class="i18n-en">Related tools</span>
 									<span class="i18n-zh">相关工具</span>
@@ -1871,7 +1908,7 @@ html[data-tool-kind='html'] .t-main {
 					</main>
 					<footer class="t-foot">
 						<span>&copy; {year} {SITE_TITLE}</span>
-						<nav aria-label="Site">
+						<nav aria-label="Site" data-aria-en="Site" data-aria-zh="站点导航">
 							<a href="/"><span class="i18n-en">Blog</span><span class="i18n-zh">博客</span></a>
 							<a href="/tools/"><span class="i18n-en">Tools</span><span class="i18n-zh">工具箱</span></a>
 							<a href="/about/"><span class="i18n-en">About</span><span class="i18n-zh">关于</span></a>

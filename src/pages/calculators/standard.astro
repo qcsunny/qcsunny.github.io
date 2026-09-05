@@ -5,6 +5,7 @@ import BasicTab from '../../components/calculator/BasicTab.astro';
 
 <ToolShell
 	title="Scientific Calculator"
+	titleZh="科学计算器"
 	description="Standard and scientific calculator with variables, history and DEG/RAD modes."
 	category="calculators"
 	content={{
@@ -30,9 +31,10 @@ import BasicTab from '../../components/calculator/BasicTab.astro';
 >
 	<BasicTab />
 	<p class="t-related">
-		Also available: <a href="/calculators/graph/">Function Grapher</a> ·
-		<a href="/converters/length/">Unit Converters</a> ·
-		<a href="/calculators/average/">Average &amp; Statistics</a>
+		<span class="i18n-en">Also available:</span><span class="i18n-zh">其他工具：</span>
+		<a href="/calculators/graph/"><span class="i18n-en">Function Grapher</span><span class="i18n-zh">函数图像绘制器</span></a> ·
+		<a href="/converters/length/"><span class="i18n-en">Unit Converters</span><span class="i18n-zh">单位换算</span></a> ·
+		<a href="/calculators/average/"><span class="i18n-en">Average &amp; Statistics</span><span class="i18n-zh">平均数与统计</span></a>
 	</p>
 	<script>
 		import '../../scripts/calculator/standard';

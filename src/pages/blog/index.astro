@@ -181,11 +181,14 @@ function getCategory(slug: string): { labelZh: string; labelEn: string; color: s
 
 <style>
 	.blog-container {
-		width: 100%;
-		box-sizing: border-box;
-		max-width: var(--w-wide);
+		/* --w-prose, the measure the articles themselves use, with the gutter
+		   folded into the width like every other container on the site. The list
+		   used to be --w-wide with 1.5rem of padding, which put its text at
+		   x=264 on a 1440px screen against x=414 for a post's — the frame moved
+		   every time a reader clicked into an article and back. */
+		width: min(var(--w-prose), 100% - 2.5em);
 		margin: 0 auto;
-		padding: 3rem 1.5rem 5rem;
+		padding: 3rem 0 5rem;
 	}
 
 	/* --- HEADER --- */
@@ -391,7 +394,10 @@ function getCategory(slug: string): { labelZh: string; labelEn: string; color: s
 
 	.articles-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+		/* 330, not the old 380: two columns have to fit the narrower container
+		   (2 × 330 + 1.4rem gap = 682 ≤ 720), or auto-fill drops the list to a
+		   single column and triples the page height. */
+		grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
 		gap: 1.4rem;
 	}
 

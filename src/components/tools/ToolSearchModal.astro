@@ -20,8 +20,23 @@ const allTools = getAllSearchItems();
 					autocomplete="off"
 					spellcheck="false"
 				/>
-				<button type="button" id="sm-clear" class="sm-clear" aria-label="Clear" style="display: none;">×</button>
-				<button type="button" id="sm-close" class="sm-close-btn" aria-label="Close modal">Esc</button>
+				<button
+					type="button"
+					id="sm-clear"
+					class="sm-clear"
+					aria-label="Clear"
+					data-aria-en="Clear"
+					data-aria-zh="清空"
+					style="display: none;">×</button
+				>
+				<button
+					type="button"
+					id="sm-close"
+					class="sm-close-btn"
+					aria-label="Close modal"
+					data-aria-en="Close modal"
+					data-aria-zh="关闭搜索框">Esc</button
+				>
 			</div>
 
 			<div class="sm-filter-row">
@@ -105,11 +120,18 @@ const allTools = getAllSearchItems();
 			tools: { en: 'Dev Tool', zh: '开发者工具', icon: '🛠️' },
 		};
 
-		// Placeholder sync with site lang
+		// Placeholder sync with site lang. The two buttons' labels use the same
+		// data-* pair as ToolShell's syncLangUI, but that helper only exists on tool
+		// pages — this modal also renders inside the blog Header — so the swap lives
+		// here, next to the observer that already watches the attribute.
 		const syncPlaceholder = () => {
 			const isZh = document.documentElement.dataset.lang === 'zh';
 			const ph = isZh ? input.dataset.placeholderZh : input.dataset.placeholderEn;
 			if (ph) input.placeholder = ph;
+			for (const el of modal.querySelectorAll('[data-aria-en]')) {
+				const v = (isZh ? el.dataset.ariaZh : el.dataset.ariaEn) || el.dataset.ariaEn;
+				if (v) el.setAttribute('aria-label', v);
+			}
 		};
 		syncPlaceholder();
 		// The result rows are built as an HTML string, so they cannot carry

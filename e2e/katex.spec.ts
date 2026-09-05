@@ -85,7 +85,7 @@ test('Chinese in a formula uses the site CJK stack, variables stay italic', asyn
 	expect(styles.style, 'maths variables stay italic').toBe('italic');
 });
 
-// A centred display formula wider than the 612px prose measure would push the
+// A centred display formula wider than the 720px prose measure would push the
 // page sideways on a phone — KaTeX gives .katex-display no overflow of its own,
 // so global.css does (grep katex-display there).
 test('a wide display formula scrolls itself instead of the page', async ({ page }) => {

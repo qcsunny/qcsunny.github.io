@@ -28,7 +28,7 @@ export type Node =
  */
 export function parse(src: string): Node {
 	const parser = new Parser(tokenize(src));
-	if (parser.tokens.length === 0) throw new CalcError('Empty expression');
+	if (parser.tokens.length === 0) throw new CalcError('Empty expression', '表达式为空');
 	const node = parser.parseExpr();
 	const extra = parser.peek();
 	if (extra) throw unexpected(extra);
@@ -37,7 +37,11 @@ export function parse(src: string): Node {
 
 function unexpected(t: Token): CalcError {
 	const shown = t.type === 'eq' ? '=' : t.value;
-	return new CalcError(`Unexpected '${shown}' at position ${t.pos + 1}`, t.pos);
+	return new CalcError(
+		`Unexpected '${shown}' at position ${t.pos + 1}`,
+		`位置 ${t.pos + 1} 处多了 '${shown}'`,
+		t.pos,
+	);
 }
 
 function startsOperand(t: Token | undefined): boolean {
@@ -62,7 +66,7 @@ class Parser {
 
 	private next(): Token {
 		const t = this.tokens[this.i];
-		if (!t) throw new CalcError('Unexpected end of expression', this.srcLength());
+		if (!t) throw new CalcError('Unexpected end of expression', '表达式意外结束', this.srcLength());
 		this.i++;
 		return t;
 	}
@@ -163,8 +167,10 @@ class Parser {
 							this.i++;
 							break;
 						}
+						const at = this.tokens[this.i];
 						throw new CalcError(
-							`Expected ',' or ')' at position ${this.tokens[this.i] ? this.tokens[this.i].pos + 1 : 'end'}`,
+							`Expected ',' or ')' at position ${at ? at.pos + 1 : 'end'}`,
+							`此处需要 ',' 或 ')'（位置 ${at ? at.pos + 1 : '末尾'}）`,
 						);
 					}
 				}
@@ -179,7 +185,7 @@ class Parser {
 				this.i++;
 				return inner;
 			}
-			throw new CalcError('Missing closing parenthesis', t.pos);
+			throw new CalcError('Missing closing parenthesis', '缺少右括号', t.pos);
 		}
 		throw unexpected(t);
 	}

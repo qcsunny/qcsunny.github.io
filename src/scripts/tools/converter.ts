@@ -160,14 +160,14 @@ export function initConverter(host: HTMLElement, config: ConverterConfig): void 
 	fromInput.inputMode = 'decimal';
 	fromInput.value = '1';
 	fromInput.className = 't-conv-val';
-	fromInput.setAttribute('aria-label', 'Value to convert from');
+	langAttr(fromInput, 'aria-label', 'Value to convert from', '待换算的数值');
 
 	const toInput = document.createElement('input');
 	toInput.type = 'number';
 	toInput.step = 'any';
 	toInput.inputMode = 'decimal';
 	toInput.className = 't-conv-val';
-	toInput.setAttribute('aria-label', 'Converted value');
+	langAttr(toInput, 'aria-label', 'Converted value', '换算结果');
 
 	function row(labelType: 'from' | 'to', pickerEl: HTMLElement, input: HTMLInputElement): HTMLElement {
 		const el = document.createElement('div');

@@ -78,7 +78,9 @@ const scientificKeys: Key[] = [
 ---
 
 <div class="calc-basic">
-	<label class="sr-only" for="calc-display">Expression</label>
+	<label class="sr-only" for="calc-display"
+		><span class="i18n-en">Expression</span><span class="i18n-zh">表达式</span></label
+	>
 	<input
 		id="calc-display"
 		class="calc-display"
@@ -91,16 +93,28 @@ const scientificKeys: Key[] = [
 
 	<div id="calc-vars" class="calc-vars"></div>
 
-	<div class="calc-mode-toggle" role="group" aria-label="Keypad mode">
+	<div
+		class="calc-mode-toggle"
+		role="group"
+		aria-label="Keypad mode"
+		data-aria-en="Keypad mode"
+		data-aria-zh="键盘模式"
+	>
 		<button type="button" id="calc-mode-standard" data-calc-mode="standard" aria-pressed="true">
-			Standard
+			<span class="i18n-en">Standard</span><span class="i18n-zh">标准</span>
 		</button>
 		<button type="button" id="calc-mode-scientific" data-calc-mode="scientific" aria-pressed="false">
-			Scientific
+			<span class="i18n-en">Scientific</span><span class="i18n-zh">科学</span>
 		</button>
 	</div>
 
-	<div class="calc-keypad calc-keypad-standard" role="group" aria-label="Calculator keys">
+	<div
+		class="calc-keypad calc-keypad-standard"
+		role="group"
+		aria-label="Calculator keys"
+		data-aria-en="Calculator keys"
+		data-aria-zh="计算器按键"
+	>
 		{
 			standardKeys.map((k) => (
 				<button type="button" class={k.cls ?? 'k-num'} data-ins={k.ins} data-action={k.action}>
@@ -110,7 +124,14 @@ const scientificKeys: Key[] = [
 		}
 	</div>
 
-	<div class="calc-keypad calc-keypad-sci" role="group" aria-label="Scientific calculator keys" hidden>
+	<div
+		class="calc-keypad calc-keypad-sci"
+		role="group"
+		aria-label="Scientific calculator keys"
+		data-aria-en="Scientific calculator keys"
+		data-aria-zh="科学计算器按键"
+		hidden
+	>
 		{
 			scientificKeys.map((k) =>
 				k.cls === 'k-blank' ? (
@@ -130,10 +151,14 @@ const scientificKeys: Key[] = [
 	</div>
 
 	<section class="calc-history">
-		<h2>History</h2>
+		<h2><span class="i18n-en">History</span><span class="i18n-zh">历史记录</span></h2>
 		<ul id="calc-history-list"></ul>
-		<p id="calc-history-empty" class="calc-history-empty">No calculations yet.</p>
-		<button id="calc-history-clear" type="button" class="k-fn">Clear history</button>
+		<p id="calc-history-empty" class="calc-history-empty">
+			<span class="i18n-en">No calculations yet.</span><span class="i18n-zh">还没有计算记录。</span>
+		</p>
+		<button id="calc-history-clear" type="button" class="k-fn"
+			><span class="i18n-en">Clear history</span><span class="i18n-zh">清空历史</span></button
+		>
 	</section>
 </div>
 

@@ -7,7 +7,7 @@ const entries = [
 	...CALCULATOR_FEATURED, ...REGISTRY.filter((e) => e.category === 'calculators')
 ].filter((e) => e.kind !== 'redirect');
 ---
-<ToolShell title="Calculators" description="Every calculator: scientific calculator, grapher, percentages, fractions, ratios, averages and statistics.">
+<ToolShell title="Calculators" titleZh="计算器" description="Every calculator: scientific calculator, grapher, percentages, fractions, ratios, averages and statistics.">
 	<ToolSearchBar category="calculators" placeholder="Search calculators (e.g. percentage, fraction, ratio, graph)..." placeholderZh="搜索计算器 (如 百分比、分数、比例、函数图像、科学计算)..." totalCount={entries.length} />
 	<div class="t-cards">
 		{

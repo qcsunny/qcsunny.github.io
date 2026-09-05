@@ -5,7 +5,8 @@
 // cached: rotating and zooming only re-project it, while editing the formula,
 // the domain or the resolution triggers a re-sample.
 
-import { CalcError, compile, type Scope } from './engine';
+import { CalcError, compile, errorText, type Scope } from './engine';
+import { langProp, setBilingual } from '../tools/i18n';
 
 const DEG = Math.PI / 180;
 const DEFAULT_DOMAIN = { xMin: -5, xMax: 5, yMin: -5, yMax: 5 };
@@ -68,8 +69,9 @@ interface Grid {
 	max: Extremum | null;
 	finite: number;
 	total: number;
-	/** First runtime error, reported only when nothing evaluated. */
-	err: string | null;
+	/** First runtime error, reported only when nothing evaluated. Both languages,
+	 *  because it is shown to the reader as-is. */
+	err: { en: string; zh: string } | null;
 }
 
 /** Per-cell colour and per-vertex height for one sampled grid. None of it
@@ -155,7 +157,7 @@ function sample(fn: (s: Scope) => number, scope: Scope, d: Domain, n: number): G
 	const vals: number[] = [];
 	let min: Extremum | null = null;
 	let max: Extremum | null = null;
-	let err: string | null = null;
+	let err: { en: string; zh: string } | null = null;
 
 	const prevX = scope.vars['x'];
 	const prevY = scope.vars['y'];
@@ -169,7 +171,7 @@ function sample(fn: (s: Scope) => number, scope: Scope, d: Domain, n: number): G
 			try {
 				v = fn(scope);
 			} catch (e) {
-				if (!err) err = e instanceof Error ? e.message : 'Cannot evaluate';
+				if (!err) err = e instanceof CalcError ? errorText(e) : { en: 'Cannot evaluate', zh: '无法求值' };
 				v = Number.NaN;
 			}
 			const k = j * (n + 1) + i;
@@ -222,6 +224,9 @@ export function initGraph3d(scope: Scope): void {
 	if (!canvas || !exprEl || !errEl || !readoutEl) return;
 	const ctx = canvas.getContext('2d');
 	if (!ctx) return;
+
+	// the one string here a span pair cannot hold
+	langProp(exprEl, 'placeholder', 'e.g. x^2 - y^2', '例如 x^2 - y^2');
 
 	const domain: Domain = { ...DEFAULT_DOMAIN };
 	const view = { ...DEFAULT_VIEW };
@@ -716,7 +721,8 @@ export function initGraph3d(scope: Scope): void {
 			grid = null;
 			shading = null;
 			setReadout(null);
-			errEl!.textContent = g.err ?? 'No finite value in this domain';
+			if (g.err) showError(g.err.en, g.err.zh);
+			else showError('No finite value in this domain', '该定义域内没有有限值');
 		} else {
 			grid = g;
 			shading = shadeGrid(g);
@@ -740,7 +746,8 @@ export function initGraph3d(scope: Scope): void {
 			fn = compile(src);
 		} catch (e) {
 			fn = null;
-			errEl!.textContent = e instanceof CalcError ? e.message : 'Invalid expression';
+			const { en, zh } = errorText(e);
+			showError(en, zh);
 			grid = null;
 			shading = null;
 			setReadout(null);
@@ -787,8 +794,10 @@ export function initGraph3d(scope: Scope): void {
 		return true;
 	}
 
+	/** Nodes, not innerHTML: an engine message quotes whatever the reader typed
+	 *  into the formula box. (The readout's bi() only ever gets literals.) */
 	function showError(en: string, zh: string): void {
-		errEl!.innerHTML = bi(en, zh);
+		setBilingual(errEl!, en, zh);
 	}
 
 	// --- interaction ---------------------------------------------------------

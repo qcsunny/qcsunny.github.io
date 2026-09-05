@@ -1,9 +1,13 @@
-import { CalcError, compile, formatNumber, type Scope } from './engine';
+import { compile, errorText, formatNumber, type Scope } from './engine';
+import { isZh, onLang, setBilingual } from '../tools/i18n';
 
 interface FnRow {
 	expr: string;
 	fn: ((scope: Scope) => number) | null;
 	visible: boolean;
+	/** Both renderings of the compile error, so the message survives the rebuild
+	 *  a language switch triggers instead of vanishing until the next keystroke. */
+	err: { en: string; zh: string } | null;
 }
 
 export interface GraphController {
@@ -61,7 +65,7 @@ export function initGraph(scope: Scope): GraphController {
 	if (!ctx) return { refresh: () => {} };
 
 	let view = { ...DEFAULT_VIEW };
-	let rows: FnRow[] = [{ expr: 'sin(x)', fn: null, visible: true }];
+	let rows: FnRow[] = [{ expr: 'sin(x)', fn: null, visible: true, err: null }];
 	let cssW = 0;
 	let cssH = 0;
 	let dpr = 1;
@@ -390,7 +394,11 @@ export function initGraph(scope: Scope): GraphController {
 		}
 	}
 
+	// A language switch re-runs this (see onLang below), so everything it writes
+	// reads the language here rather than registering a per-element swap: these
+	// rows are thrown away and rebuilt whenever one is added or removed.
 	function renderRows(): void {
+		const zh = isZh();
 		rowsHost!.innerHTML = '';
 		rows.forEach((row, i) => {
 			const div = document.createElement('div');
@@ -403,32 +411,35 @@ export function initGraph(scope: Scope): GraphController {
 			const input = document.createElement('input');
 			input.type = 'text';
 			input.value = row.expr;
-			input.placeholder = 'e.g. x^2 - 3 or a*x';
-			input.setAttribute('aria-label', `Function ${i + 1}`);
+			input.placeholder = zh ? '例如 x^2 - 3 或 a*x' : 'e.g. x^2 - 3 or a*x';
+			input.setAttribute('aria-label', zh ? `函数 ${i + 1}` : `Function ${i + 1}`);
 
 			const errorEl = document.createElement('span');
 			errorEl.className = 'row-error';
+			if (row.err) setBilingual(errorEl, row.err.en, row.err.zh);
 
 			const visible = document.createElement('input');
 			visible.type = 'checkbox';
 			visible.checked = row.visible;
-			visible.title = 'Show / hide curve';
-			visible.setAttribute('aria-label', `Show function ${i + 1}`);
+			visible.title = zh ? '显示 / 隐藏曲线' : 'Show / hide curve';
+			visible.setAttribute('aria-label', zh ? `显示函数 ${i + 1}` : `Show function ${i + 1}`);
 
 			const remove = document.createElement('button');
 			remove.type = 'button';
 			remove.className = 'row-remove';
 			remove.textContent = '×';
-			remove.title = 'Remove function';
-			remove.setAttribute('aria-label', `Remove function ${i + 1}`);
+			remove.title = zh ? '删除函数' : 'Remove function';
+			remove.setAttribute('aria-label', zh ? `删除函数 ${i + 1}` : `Remove function ${i + 1}`);
 
 			input.addEventListener('input', () => {
 				row.expr = input.value;
 				try {
 					recompile(row);
-					errorEl.textContent = '';
+					row.err = null;
+					errorEl.replaceChildren();
 				} catch (err) {
-					errorEl.textContent = err instanceof CalcError ? err.message : 'Invalid';
+					row.err = errorText(err);
+					setBilingual(errorEl, row.err.en, row.err.zh);
 				}
 				render();
 			});
@@ -450,7 +461,7 @@ export function initGraph(scope: Scope): GraphController {
 
 	addBtn.addEventListener('click', () => {
 		if (rows.length >= MAX_FNS) return;
-		rows.push({ expr: '', fn: null, visible: true });
+		rows.push({ expr: '', fn: null, visible: true, err: null });
 		renderRows();
 		const inputs = rowsHost!.querySelectorAll('input[type="text"]');
 		(inputs[inputs.length - 1] as HTMLInputElement).focus();
@@ -464,7 +475,8 @@ export function initGraph(scope: Scope): GraphController {
 			row.fn = null;
 		}
 	});
-	renderRows();
+	// runs renderRows once right here, then again on every language change
+	onLang(renderRows);
 	resize();
 
 	return {

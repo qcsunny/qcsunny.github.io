@@ -13,6 +13,8 @@
 			autocomplete="off"
 			placeholder="e.g. x^2 - y^2"
 			aria-label="Surface formula, z = f(x, y)"
+			data-aria-en="Surface formula, z = f(x, y)"
+			data-aria-zh="曲面公式，z = f(x, y)"
 		/>
 		<span id="g3-error" class="g3-error" role="status" aria-live="polite"></span>
 	</div>
@@ -40,8 +42,26 @@
 		<button type="button" data-g3-view="front">
 			<span class="i18n-en">Front</span><span class="i18n-zh">正视</span>
 		</button>
-		<button type="button" data-g3-zoom="in" title="Zoom in" aria-label="Zoom in">+</button>
-		<button type="button" data-g3-zoom="out" title="Zoom out" aria-label="Zoom out">−</button>
+		<button
+			type="button"
+			data-g3-zoom="in"
+			title="Zoom in"
+			aria-label="Zoom in"
+			data-title-en="Zoom in"
+			data-title-zh="放大"
+			data-aria-en="Zoom in"
+			data-aria-zh="放大">+</button
+		>
+		<button
+			type="button"
+			data-g3-zoom="out"
+			title="Zoom out"
+			aria-label="Zoom out"
+			data-title-en="Zoom out"
+			data-title-zh="缩小"
+			data-aria-en="Zoom out"
+			data-aria-zh="缩小">−</button
+		>
 		<label class="g3-select">
 			<span class="i18n-en">Style</span><span class="i18n-zh">样式</span>
 			<select id="g3-style">
@@ -68,6 +88,8 @@
 		tabindex="0"
 		role="img"
 		aria-label="3D surface plot; arrow keys rotate, plus and minus zoom, 0 resets the view"
+		data-aria-en="3D surface plot; arrow keys rotate, plus and minus zoom, 0 resets the view"
+		data-aria-zh="三维曲面图；方向键旋转，加减号缩放，按 0 复位视角"
 	></canvas>
 
 	<p class="g3-hint">
@@ -83,16 +105,48 @@
 		</span>
 		<span class="g3-range">
 			x ∈ [
-			<input id="g3-xmin" type="number" step="any" value="-5" aria-label="x minimum" />
+			<input
+				id="g3-xmin"
+				type="number"
+				step="any"
+				value="-5"
+				aria-label="x minimum"
+				data-aria-en="x minimum"
+				data-aria-zh="x 最小值"
+			/>
 			,
-			<input id="g3-xmax" type="number" step="any" value="5" aria-label="x maximum" />
+			<input
+				id="g3-xmax"
+				type="number"
+				step="any"
+				value="5"
+				aria-label="x maximum"
+				data-aria-en="x maximum"
+				data-aria-zh="x 最大值"
+			/>
 			]
 		</span>
 		<span class="g3-range">
 			y ∈ [
-			<input id="g3-ymin" type="number" step="any" value="-5" aria-label="y minimum" />
+			<input
+				id="g3-ymin"
+				type="number"
+				step="any"
+				value="-5"
+				aria-label="y minimum"
+				data-aria-en="y minimum"
+				data-aria-zh="y 最小值"
+			/>
 			,
-			<input id="g3-ymax" type="number" step="any" value="5" aria-label="y maximum" />
+			<input
+				id="g3-ymax"
+				type="number"
+				step="any"
+				value="5"
+				aria-label="y maximum"
+				data-aria-en="y maximum"
+				data-aria-zh="y 最大值"
+			/>
 			]
 		</span>
 	</div>

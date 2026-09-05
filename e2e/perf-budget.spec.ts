@@ -125,8 +125,10 @@ const PRELOADS: [string, string[]][] = [
 	['finance/loan-payment/index.html', ['main', 'engine', 'i18n']],
 	['converters/weight/index.html', ['main', 'engine', 'i18n']],
 	['calculators/percentage/index.html', ['main', 'engine', 'i18n']],
-	['calculators/graph3d/index.html', ['engine', 'vars']],
-	['calculators/standard/index.html', ['engine', 'vars']],
+	// graph3d and standard now also pull i18n (the bilingual error line and
+	// the language-aware placeholder/titles).
+	['calculators/graph3d/index.html', ['engine', 'i18n', 'vars']],
+	['calculators/standard/index.html', ['engine', 'i18n', 'vars']],
 	// The two pages outside the toolbox: no ToolShell, so the language helper is
 	// the only thing their own controller shares with anything else.
 	['clock/index.html', ['i18n']],

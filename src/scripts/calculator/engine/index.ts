@@ -2,7 +2,7 @@ import { compileNode, evalNode, formatNumber } from './eval';
 import { CONSTANTS, FUNCTIONS, type Scope } from './functions';
 import { parse } from './parser';
 
-export { CalcError } from './errors';
+export { CalcError, errorText } from './errors';
 export type { Scope } from './functions';
 export { formatNumber };
 

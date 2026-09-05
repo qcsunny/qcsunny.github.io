@@ -24,9 +24,9 @@ const fromRad = (v: number, s: Scope): number => (s.deg ? (v * 180) / Math.PI : 
 /** Factorial used by both the `!` postfix operator and the fact() function. */
 export function factorial(n: number): number {
 	if (!Number.isInteger(n) || n < 0) {
-		throw new CalcError('Factorial requires a non-negative integer');
+		throw new CalcError('Factorial requires a non-negative integer', '阶乘只接受非负整数');
 	}
-	if (n > 170) throw new CalcError('Factorial result too large (n ≤ 170)');
+	if (n > 170) throw new CalcError('Factorial result too large (n ≤ 170)', '阶乘结果过大（n ≤ 170）');
 	let r = 1;
 	for (let k = 2; k <= n; k++) r *= k;
 	return r;

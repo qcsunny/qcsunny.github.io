@@ -1,13 +1,34 @@
 <div class="graph-tab">
 	<div class="graph-toolbar">
-		<button type="button" data-graph-zoom="in" title="Zoom in">+</button>
-		<button type="button" data-graph-zoom="out" title="Zoom out">−</button>
-		<button type="button" data-graph-zoom="reset" title="Reset view">Reset</button>
-		<span class="graph-hint">scroll to zoom · drag to pan · pinch on touch</span>
+		<button type="button" data-graph-zoom="in" title="Zoom in" data-title-en="Zoom in" data-title-zh="放大"
+			>+</button
+		>
+		<button type="button" data-graph-zoom="out" title="Zoom out" data-title-en="Zoom out" data-title-zh="缩小"
+			>−</button
+		>
+		<button
+			type="button"
+			data-graph-zoom="reset"
+			title="Reset view"
+			data-title-en="Reset view"
+			data-title-zh="重置视图"
+			><span class="i18n-en">Reset</span><span class="i18n-zh">重置</span></button
+		>
+		<span class="graph-hint">
+			<span class="i18n-en">scroll to zoom · drag to pan · pinch on touch</span><span class="i18n-zh"
+				>滚轮缩放 · 拖动平移 · 触屏双指缩放</span
+			>
+		</span>
 	</div>
-	<canvas id="graph-canvas" aria-label="Function graph plot"></canvas>
+	<canvas
+		id="graph-canvas"
+		aria-label="Function graph plot"
+		data-aria-en="Function graph plot"
+		data-aria-zh="函数图像画布"></canvas>
 	<div id="graph-rows" class="graph-rows"></div>
-	<button id="graph-add" type="button" class="graph-add">+ Add function</button>
+	<button id="graph-add" type="button" class="graph-add"
+		><span class="i18n-en">+ Add function</span><span class="i18n-zh">+ 添加函数</span></button
+	>
 </div>
 
 <style is:global>

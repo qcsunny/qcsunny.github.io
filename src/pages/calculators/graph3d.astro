@@ -5,6 +5,7 @@ import Graph3DTab from '../../components/calculator/Graph3DTab.astro';
 
 <ToolShell
 	title="3D Surface Plotter"
+	titleZh="三维函数图像绘制器"
 	description="Plot z = f(x, y) as a shaded 3D surface you can rotate, zoom and inspect."
 	category="calculators"
 	content={{
@@ -66,8 +67,9 @@ import Graph3DTab from '../../components/calculator/Graph3DTab.astro';
 >
 	<Graph3DTab />
 	<p class="t-related">
-		Also available: <a href="/calculators/graph/">Function Grapher</a> ·
-		<a href="/calculators/standard/">Scientific Calculator</a>
+		<span class="i18n-en">Also available:</span><span class="i18n-zh">其他工具：</span>
+		<a href="/calculators/graph/"><span class="i18n-en">Function Grapher</span><span class="i18n-zh">函数图像绘制器</span></a> ·
+		<a href="/calculators/standard/"><span class="i18n-en">Scientific Calculator</span><span class="i18n-zh">科学计算器</span></a>
 	</p>
 	<script>
 		import '../../scripts/calculator/graph3d-page';
