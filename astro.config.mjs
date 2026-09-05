@@ -19,14 +19,20 @@ export default defineConfig({
 			fallbacks: ['sans-serif'],
 			options: {
 				variants: [
+					// Subsetted woff2 built by scripts/subset-fonts.py from the
+					// upstream OFL TTFs in scripts/fonts-upstream/ — 46.6 KB of
+					// full-charset woff down to 29 KB, which matters because these
+					// two files were 64% of the home page's first-visit bytes and
+					// are the only part HTTP compression cannot touch. Re-run that
+					// script after adding characters the font must cover.
 					{
-						src: ['./src/assets/fonts/atkinson-regular.woff'],
+						src: ['./src/assets/fonts/atkinson-regular.woff2'],
 						weight: 400,
 						style: 'normal',
 						display: 'swap',
 					},
 					{
-						src: ['./src/assets/fonts/atkinson-bold.woff'],
+						src: ['./src/assets/fonts/atkinson-bold.woff2'],
 						weight: 700,
 						style: 'normal',
 						display: 'swap',
