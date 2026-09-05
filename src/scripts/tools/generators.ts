@@ -11,15 +11,55 @@ import type {
 
 // --- shared helpers -----------------------------------------------------------------
 
-/** Uniform random integer in [0, maxExclusive) with rejection sampling. */
+/** Uniform random integer in [0, maxExclusive) with rejection sampling.
+ *
+ *  Two draw widths, because one 32-bit word cannot cover the whole range the
+ *  random-number tool accepts. Above 2^32 the old single-word version computed
+ *  `Math.floor(0x100000000 / maxExclusive) * maxExclusive === 0`, which turned
+ *  `while (buf[0] >= limit)` into `while (true)` — a hard tab freeze with no
+ *  allocation to hint at it. `min 0 / max 5000000000` was enough to hit it. */
 function randInt(maxExclusive: number): number {
-	if (maxExclusive <= 0) return 0;
-	const limit = Math.floor(0x100000000 / maxExclusive) * maxExclusive;
-	const buf = new Uint32Array(1);
+	if (!Number.isFinite(maxExclusive) || maxExclusive <= 1) return 0;
+	const n = Math.floor(maxExclusive);
+
+	if (n <= 0x100000000) {
+		const limit = Math.floor(0x100000000 / n) * n;
+		const buf = new Uint32Array(1);
+		do {
+			crypto.getRandomValues(buf);
+		} while (buf[0]! >= limit);
+		return buf[0]! % n;
+	}
+
+	// 21 high bits + 32 low bits = a 53-bit draw, the widest integer doubles
+	// represent exactly. floor(2^53 / n) >= 1 for every n <= MAX_SAFE_INTEGER,
+	// so `limit` can never collapse to zero here.
+	const limit = Math.floor(0x20000000000000 / n) * n;
+	const buf = new Uint32Array(2);
+	let v: number;
 	do {
 		crypto.getRandomValues(buf);
-	} while (buf[0]! >= limit);
-	return buf[0]! % maxExclusive;
+		v = (buf[0]! >>> 11) * 0x100000000 + buf[1]!;
+	} while (v >= limit);
+	return v % n;
+}
+
+/** `count` distinct values from [0, range), uniform, without materialising the
+ *  range. A partial Fisher–Yates over a *virtual* identity array: only the
+ *  positions that actually move are stored, so this is O(count) in time and
+ *  memory whether the range is 100 or 10^15. Drawing 6 winners out of a
+ *  million entrants used to allocate a million-element array and perform a
+ *  million crypto draws to throw all but six of them away. */
+function sampleWithoutReplacement(range: number, count: number): number[] {
+	const moved = new Map<number, number>();
+	const at = (i: number) => moved.get(i) ?? i;
+	const picked: number[] = [];
+	for (let i = 0; i < count; i++) {
+		const j = i + randInt(range - i);
+		picked.push(at(j));
+		moved.set(j, at(i));
+	}
+	return picked;
 }
 
 async function copyText(text: string): Promise<boolean> {
@@ -343,15 +383,17 @@ function initRandom(host: HTMLElement, cfg: RandomGenConfig): void {
 			return;
 		}
 		const range = max - min + 1;
+		// Beyond 2^53 integers are no longer exactly representable, so a draw
+		// would silently return a neighbouring value. Say so instead.
+		if (!Number.isSafeInteger(min) || !Number.isSafeInteger(max) || !Number.isSafeInteger(range)) {
+			out.value = '';
+			note.textContent = 'Keep both bounds within ±9,007,199,254,740,991 (2⁵³ − 1).';
+			return;
+		}
 		if (unique) {
 			count = Math.min(count, range);
-			const pool = Array.from({ length: range }, (_, i) => min + i);
-			// Fisher–Yates with crypto randomness
-			for (let i = pool.length - 1; i > 0; i--) {
-				const j = randInt(i + 1);
-				[pool[i], pool[j]] = [pool[j]!, pool[i]!];
-			}
-			out.value = pool.slice(0, count).join('\n');
+			const lines = sampleWithoutReplacement(range, count).map((v) => min + v);
+			out.value = lines.join('\n');
 			note.textContent = `${count} unique number${count === 1 ? '' : 's'} drawn from ${min} to ${max} (range of ${range}).`;
 		} else {
 			const lines: number[] = [];

@@ -112,3 +112,48 @@ test('sql minify keeps literals and drops comments', async ({ page }) => {
 	await expect(output).not.toHaveValue(/keep me out/);
 	await expect(output).not.toHaveValue(/\n/);
 });
+
+// The random-number generator takes an arbitrary max from a number input, so the
+// draw width has to survive ranges the SQL freeze's sibling class would trip on:
+// randInt's old `floor(2^32 / n) * n` collapses to 0 once n > 2^32, turning the
+// rejection loop into `while (true)` and freezing the tab with no allocation to
+// hint at it. `max 5000000000` is enough to hit it.
+test('random generator does not freeze on a range wider than 2^32', async ({ page }) => {
+	await page.goto('/tools/random-number/');
+
+	await page.getByLabel('Maximum (inclusive)').fill('5000000000');
+	// If the handler spins, this click never settles and the assertion below
+	// times out — which is exactly the regression we are pinning.
+	await page.getByRole('button', { name: /^(Generate|生成)$/ }).click();
+
+	const out = page.locator('[aria-label="Random numbers"]');
+	const values = (await out.inputValue()).trim().split('\n');
+	expect(values).toHaveLength(6);
+	for (const v of values) {
+		const n = Number(v);
+		expect(Number.isSafeInteger(n)).toBe(true);
+		expect(n).toBeGreaterThanOrEqual(1);
+		expect(n).toBeLessThanOrEqual(5000000000);
+	}
+});
+
+// No-duplicates over a large range used to materialise the whole range as an
+// array and shuffle it — a million-element allocation and a million crypto
+// draws to keep six. The virtual partial Fisher–Yates must stay distinct.
+test('random generator draws distinct values from a large range fast', async ({ page }) => {
+	await page.goto('/tools/random-number/');
+
+	await page.getByLabel('Maximum (inclusive)').fill('1000000');
+	await page.getByLabel('How many').fill('50');
+	await page.getByLabel('No duplicates').check();
+	await page.getByRole('button', { name: /^(Generate|生成)$/ }).click();
+
+	const values = (await page.locator('[aria-label="Random numbers"]').inputValue()).trim().split('\n');
+	expect(values).toHaveLength(50);
+	expect(new Set(values).size).toBe(50);
+	for (const v of values) {
+		const n = Number(v);
+		expect(n).toBeGreaterThanOrEqual(1);
+		expect(n).toBeLessThanOrEqual(1000000);
+	}
+});
