@@ -6,6 +6,11 @@ import { formatNumber } from '../scripts/calculator/engine';
 
 const money = (v: number): string => formatNumber(Math.round(v * 100) / 100);
 
+// Percentages and multiples read as prose here, not as calculator output.
+// formatNumber keeps 12 significant digits (right for the calculator engine,
+// which is shared), so a raw ratio prints as "利息节省 14.4415580034%".
+const percent = (v: number): string => formatNumber(Math.round(v * 100) / 100);
+
 /** Equal-payment amortization monthly payment. months > 0. */
 function monthlyPayment(principal: number, annualRatePct: number, months: number): number {
 	const i = annualRatePct / 100 / 12;
@@ -109,16 +114,16 @@ const compoundInterest: FormConfig = {
 				{ label: 'Final portfolio value', labelZh: '最终资产总值', value: money(final), emphasis: true },
 				{ label: 'Total invested (principal + contributions)', labelZh: '累计投入总本金', value: money(invested) },
 				{ label: 'Total interest / profit earned', labelZh: '累计利息与投资收益', value: money(growth) },
-				{ label: 'Total return on investment (ROI)', labelZh: '总投资回报率 (ROI)', value: `${formatNumber(returnPct)}%` },
-				{ label: 'Asset multiple (Final ÷ Invested)', labelZh: '资产增值倍数', value: `${formatNumber(multiple)}×` },
+				{ label: 'Total return on investment (ROI)', labelZh: '总投资回报率 (ROI)', value: `${percent(returnPct)}%` },
+				{ label: 'Asset multiple (Final ÷ Invested)', labelZh: '资产增值倍数', value: `${percent(multiple)}×` },
 			],
 			table: {
 				columns: ['Year', 'Total Invested', 'Portfolio Value', 'Interest Earned'],
 				columnsZh: ['年份', '累计投入本金', '资产总值', '累计利息收益'],
 				rows: tableRows,
 			},
-			note: `Over ${t} years, your ${money(invested)} total investment grew by ${money(growth)} (${formatNumber(returnPct)}%), ending at ${money(final)}.`,
-			noteZh: `在 ${t} 年内，您累计投入的 ${money(invested)} 本金共产生 ${money(growth)} 利息收益（回报率 ${formatNumber(returnPct)}%），最终资产规模达到 ${money(final)}。`,
+			note: `Over ${t} years, your ${money(invested)} total investment grew by ${money(growth)} (${percent(returnPct)}%), ending at ${money(final)}.`,
+			noteZh: `在 ${t} 年内，您累计投入的 ${money(invested)} 本金共产生 ${money(growth)} 利息收益（回报率 ${percent(returnPct)}%），最终资产规模达到 ${money(final)}。`,
 		};
 	},
 };
@@ -275,23 +280,23 @@ const inflation: FormConfig = {
 			const costY = amount * (1 + r) ** y;
 			const powerY = amount / (1 + r) ** y;
 			const lossY = (1 - powerY / amount) * 100;
-			return [String(y), money(costY), money(powerY), `${formatNumber(lossY)}%`];
+			return [String(y), money(costY), money(powerY), `${percent(lossY)}%`];
 		});
 
 		return {
 			rows: [
 				{ label: 'Future equivalent cost', labelZh: '未来购买等价商品所需金额', value: money(futureCost), emphasis: true },
 				{ label: 'Future purchasing power of current cash', labelZh: '当前现金在未来的实际购买力', value: money(futurePower) },
-				{ label: 'Total purchasing power loss', labelZh: '实际购买力缩水比例', value: `${formatNumber(lossPct)}%` },
-				{ label: 'Price level multiplier', labelZh: '物价上涨倍数', value: `${formatNumber(futureCost / amount)}×` },
+				{ label: 'Total purchasing power loss', labelZh: '实际购买力缩水比例', value: `${percent(lossPct)}%` },
+				{ label: 'Price level multiplier', labelZh: '物价上涨倍数', value: `${percent(futureCost / amount)}×` },
 			],
 			table: {
 				columns: ['Years Ahead', 'Equivalent Cost', 'Real Purchasing Power', 'Loss (%)'],
 				columnsZh: ['年数', '等价商品所需金额', '现金实际购买力', '购买力缩水率'],
 				rows: tableRows,
 			},
-			note: `At a ${rate}% annual inflation rate, what costs ${money(amount)} today will cost ${money(futureCost)} in ${years} years. Keeping cash under a mattress loses ${formatNumber(lossPct)}% of its real purchasing power.`,
-			noteZh: `在年均通胀率 ${rate}% 的影响下，今天价值 ${money(amount)} 的商品在 ${years} 年后需要花费 ${money(futureCost)} 才能买到。若将现金单纯闲置，实际购买力将大幅缩水 ${formatNumber(lossPct)}%。`,
+			note: `At a ${rate}% annual inflation rate, what costs ${money(amount)} today will cost ${money(futureCost)} in ${years} years. Keeping cash under a mattress loses ${percent(lossPct)}% of its real purchasing power.`,
+			noteZh: `在年均通胀率 ${rate}% 的影响下，今天价值 ${money(amount)} 的商品在 ${years} 年后需要花费 ${money(futureCost)} 才能买到。若将现金单纯闲置，实际购买力将大幅缩水 ${percent(lossPct)}%。`,
 		};
 	},
 };
@@ -347,7 +352,7 @@ const savingsGoal: FormConfig = {
 				{ label: 'Required monthly savings', labelZh: '每月需定投/储蓄金额', value: money(pmt), emphasis: true },
 				{ label: 'Total self-funded contributions', labelZh: '个人累计投入本金', value: money(totalSelfFunded) },
 				{ label: 'Gains / interest earned', labelZh: '复合收益 / 利息贡献', value: money(interestEarned) },
-				{ label: 'Gains share of goal', labelZh: '收益贡献占比', value: `${formatNumber(interestShare)}%` },
+				{ label: 'Gains share of goal', labelZh: '收益贡献占比', value: `${percent(interestShare)}%` },
 				{ label: 'Target goal amount', labelZh: '目标总储蓄额', value: money(target) },
 			],
 			table: {
@@ -355,8 +360,8 @@ const savingsGoal: FormConfig = {
 				columnsZh: ['年份', '累计投入本金', '预估资产总额', '目标达成度'],
 				rows: tableRows,
 			},
-			note: `To reach ${money(target)} in ${years} years, deposit ${money(pmt)} monthly. Compound interest earns ${money(interestEarned)} (${formatNumber(interestShare)}% of the goal).`,
-			noteZh: `要在 ${years} 年内达成 ${money(target)} 的储蓄目标，您只需每月存入 ${money(pmt)}。在复利作用下，利息与投资增值将为您贡献 ${money(interestEarned)}（占目标总额的 ${formatNumber(interestShare)}%）。`,
+			note: `To reach ${money(target)} in ${years} years, deposit ${money(pmt)} monthly. Compound interest earns ${money(interestEarned)} (${percent(interestShare)}% of the goal).`,
+			noteZh: `要在 ${years} 年内达成 ${money(target)} 的储蓄目标，您只需每月存入 ${money(pmt)}。在复利作用下，利息与投资增值将为您贡献 ${money(interestEarned)}（占目标总额的 ${percent(interestShare)}%）。`,
 		};
 	},
 };
@@ -1160,7 +1165,7 @@ const mortgage: FormConfig = {
 				{
 					label: 'Interest saved with Equal Principal',
 					labelZh: '等额本金比等额本息省息',
-					value: `¥${money(interestSaved)} (利息节省 ${formatNumber(interestSavedPct)}%)`,
+					value: `¥${money(interestSaved)} (利息节省 ${percent(interestSavedPct)}%)`,
 					emphasis: true,
 				},
 				{
@@ -1220,18 +1225,18 @@ const mortgage: FormConfig = {
 					['末月还款额 (Final Month)', money(totalMonthlyPmt + extras), money(prcFinalMonth + extras), `等额本金末月少还 ¥${money(totalMonthlyPmt - prcFinalMonth)}`],
 					['每月月供变动', '每月保持不变 (恒定月供)', `每月固定递减 -¥${money(prcDecrease)}`, '等额本金逐月减负，归还本金更快'],
 					['月供打平月份 (Crossover)', '基准线', crossoverMonth > 0 ? `第 ${crossoverMonth} 个月起更低 (~${(crossoverMonth / 12).toFixed(1)} 年)` : '始终更低', '此后等额本金月供将一直低于等额本息'],
-					['支付利息总额 (Total Interest)', money(totalIntPmt), money(totalIntPrc), `★ 等额本金累计省息 ¥${money(interestSaved)} (-${formatNumber(interestSavedPct)}%)`],
+					['支付利息总额 (Total Interest)', money(totalIntPmt), money(totalIntPrc), `★ 等额本金累计省息 ¥${money(interestSaved)} (-${percent(interestSavedPct)}%)`],
 					['还款本息总计 (Total Repaid)', money(totalRepayPmt + extras * months), money(totalRepayPrc + extras * months), `等额本金少支出 ¥${money(interestSaved)}`],
-					['前期月供压力', '较小，月供恒定便于家庭规划', '较大 (前期月供处于最高位)', '前 ${(crossoverMonth / 12).toFixed(1)} 年等额本息压力明显更轻'],
+					['前期月供压力', '较小，月供恒定便于家庭规划', '较大 (前期月供处于最高位)', crossoverMonth > 0 ? `前 ${(crossoverMonth / 12).toFixed(1)} 年等额本息压力明显更轻` : '等额本金月供始终更低，无前期压力差'],
 					['适合人群画像', '适合刚需刚落户、前期资金紧、收入递增者', '适合前期收入高、资金充裕、利息敏感者', '依自身当下现金流与资金成本科学决策'],
 				],
 			};
 
-			const noteZh = `【房贷双方案PK核心结论】：贷款 ${money(totalLoan)} 元（${years} 年期 / ${months} 期），选择【等额本金】相比【等额本息】全周期可累计省息 ¥${money(interestSaved)} 元（利息直降 ${formatNumber(interestSavedPct)}%）！\n\n` +
+			const noteZh = `【房贷双方案PK核心结论】：贷款 ${money(totalLoan)} 元（${years} 年期 / ${months} 期），选择【等额本金】相比【等额本息】全周期可累计省息 ¥${money(interestSaved)} 元（利息直降 ${percent(interestSavedPct)}%）！\n\n` +
 				`• 【等额本息】：每月固定还款 ¥${money(totalMonthlyPmt + extras)} 元，累计利息 ¥${money(totalIntPmt)} 元。适合刚步入职场、前期资金较紧张、月收入较稳定或预期未来收入持续增长的购房者。\n\n` +
 				`• 【等额本金】：首月还款 ¥${money(prcMonth1 + extras)} 元，随后每月固定减少 ¥${money(prcDecrease)} 元，在第 ${crossoverMonth} 个月（约 ${(crossoverMonth / 12).toFixed(1)} 年）后月供开始低于等额本息，末月降至 ¥${money(prcFinalMonth + extras)} 元。适合当前收入充裕、手头流动资金宽裕、希望尽可能节省利息支出的购房者。`;
 
-			const noteEn = `[Mortgage Repayment Comparison]: For a ${money(totalLoan)} loan over ${years} years, choosing Equal Principal saves ${money(interestSaved)} in total interest (-${formatNumber(interestSavedPct)}%) compared to Equal P&I!\n\n` +
+			const noteEn = `[Mortgage Repayment Comparison]: For a ${money(totalLoan)} loan over ${years} years, choosing Equal Principal saves ${money(interestSaved)} in total interest (-${percent(interestSavedPct)}%) compared to Equal P&I!\n\n` +
 				`• Equal P&I: Fixed monthly payment of ${money(totalMonthlyPmt + extras)}, total interest of ${money(totalIntPmt)}. Ideal for buyers wanting predictable monthly cash flows.\n\n` +
 				`• Equal Principal: Month 1 payment is ${money(prcMonth1 + extras)}, decreasing by ${money(prcDecrease)} each month. It crosses below Equal P&I at month ${crossoverMonth} (~${(crossoverMonth / 12).toFixed(1)} years), ending at ${money(prcFinalMonth + extras)}. Saves significant interest if you can afford higher initial payments.`;
 
@@ -1329,7 +1334,7 @@ const roi: FormConfig = {
 			rows: [
 				{ label: 'Return on Investment (ROI)', labelZh: '投资回报率 (ROI)', value: `${formatNumber((profit / cost) * 100)}%`, emphasis: true },
 				{ label: 'Net profit / gain', labelZh: '净收益金额', value: money(profit) },
-				{ label: 'Return multiple (Revenue ÷ Cost)', labelZh: '回报倍数 (收入 ÷ 成本)', value: `${formatNumber(revenue / cost)}×` },
+				{ label: 'Return multiple (Revenue ÷ Cost)', labelZh: '回报倍数 (收入 ÷ 成本)', value: `${percent(revenue / cost)}×` },
 			],
 			note: profit >= 0 ? `A net profit of ${money(profit)}.` : `A net loss of ${money(-profit)}.`,
 			noteZh: profit >= 0 ? `实现净盈利 ${money(profit)}。` : `净亏损 ${money(-profit)}。`,
@@ -1961,7 +1966,7 @@ const tax: FormConfig = {
 				{
 					label: 'Effective overall tax rate',
 					labelZh: '综合实际有效税率',
-					value: `${formatNumber(out.effectiveRate)}%`,
+					value: `${percent(out.effectiveRate)}%`,
 				},
 				{
 					label: 'Highest marginal tax rate',
@@ -1985,8 +1990,8 @@ const tax: FormConfig = {
 				};
 			}
 
-			const noteZh = `【税后倒推税前薪资结果】：若期望${period === 'monthly' ? '每月' : '全年'}税后实发到手 ${money(inputIncome)} 元，扣除每月五险一金 ${money(monthlyInsurance)} 元和专项附加扣除 ${money(monthlySpecialDeduction)} 元后，您需要达到税前月薪至少 ${money(annualGross / 12)} 元（折合税前年薪 ${money(annualGross)} 元${effectiveBonus > 0 ? `，年终奖 ${money(effectiveBonus)} 元` : ''}）。全年度需缴纳个税 ${money(out.totalTax)} 元，实际综合个税税率为 ${formatNumber(out.effectiveRate)}%。`;
-			const noteEn = `[Reverse Net-to-Gross Calculation]: To achieve a target net take-home pay of ${money(inputIncome)} (${period}), after insurance (${money(monthlyInsurance)}/mo) and deductions (${money(monthlySpecialDeduction)}/mo), you require a pre-tax salary of ${money(annualGross / 12)}/month (${money(annualGross)}/year${effectiveBonus > 0 ? ` + bonus ${money(effectiveBonus)}` : ''}). Total annual tax owed is ${money(out.totalTax)} (effective rate ${formatNumber(out.effectiveRate)}%).`;
+			const noteZh = `【税后倒推税前薪资结果】：若期望${period === 'monthly' ? '每月' : '全年'}税后实发到手 ${money(inputIncome)} 元，扣除每月五险一金 ${money(monthlyInsurance)} 元和专项附加扣除 ${money(monthlySpecialDeduction)} 元后，您需要达到税前月薪至少 ${money(annualGross / 12)} 元（折合税前年薪 ${money(annualGross)} 元${effectiveBonus > 0 ? `，年终奖 ${money(effectiveBonus)} 元` : ''}）。全年度需缴纳个税 ${money(out.totalTax)} 元，实际综合个税税率为 ${percent(out.effectiveRate)}%。`;
+			const noteEn = `[Reverse Net-to-Gross Calculation]: To achieve a target net take-home pay of ${money(inputIncome)} (${period}), after insurance (${money(monthlyInsurance)}/mo) and deductions (${money(monthlySpecialDeduction)}/mo), you require a pre-tax salary of ${money(annualGross / 12)}/month (${money(annualGross)}/year${effectiveBonus > 0 ? ` + bonus ${money(effectiveBonus)}` : ''}). Total annual tax owed is ${money(out.totalTax)} (effective rate ${percent(out.effectiveRate)}%).`;
 
 			return {
 				rows,
@@ -2037,7 +2042,7 @@ const tax: FormConfig = {
 				{ label: 'Five Insurances & Housing Fund (Annual)', labelZh: '全年五险一金个人承担扣除', value: money(annualInsurance) },
 				{ label: 'Special Additional Deductions (Annual)', labelZh: '全年专项附加扣除总额', value: money(annualSpecialDeduction) },
 				{ label: 'Taxable income (Annual comprehensive)', labelZh: '年度综合所得应纳税所得额', value: money(out.salaryTaxable) },
-				{ label: 'Effective overall tax rate', labelZh: '综合实际有效税率', value: `${formatNumber(out.effectiveRate)}%` },
+				{ label: 'Effective overall tax rate', labelZh: '综合实际有效税率', value: `${percent(out.effectiveRate)}%` },
 				{ label: 'Highest marginal tax rate', labelZh: '最高适用边际税率', value: `${out.marginalRate.toFixed(0)}%` },
 			);
 
@@ -2073,8 +2078,8 @@ const tax: FormConfig = {
 				};
 			}
 
-			let noteEn = `On gross income of ${money(out.totalGross)} (salary ${money(annualGross)}${effectiveBonus > 0 ? ` + bonus ${money(effectiveBonus)}` : ''}), deductions total ${money(out.totalSalaryDeductions)} (standard 60,000 + insurance ${money(annualInsurance)} + special ${money(annualSpecialDeduction)}). Total tax is ${money(out.totalTax)} (effective rate ${formatNumber(out.effectiveRate)}%), leaving ${money(out.totalNetTakeHome)} net take-home pay.`;
-			let noteZh = `总税前收入 ${money(out.totalGross)}（基本年薪 ${money(annualGross)}${effectiveBonus > 0 ? ` + 年终奖 ${money(effectiveBonus)}` : ''}），扣除项合计 ${money(out.totalSalaryDeductions)}（起征点6万 + 五险一金 ${money(annualInsurance)} + 专项附加扣除 ${money(annualSpecialDeduction)}）。全年个税为 ${money(out.totalTax)}（综合实际税率 ${formatNumber(out.effectiveRate)}%），税后综合到手 ${money(out.totalNetTakeHome)}（月均基本薪资 ${money(out.monthlySalaryNet)}${effectiveBonus > 0 ? ` + 年终奖实发 ${money(out.bonusTakeHome)}` : ''}）。`;
+			let noteEn = `On gross income of ${money(out.totalGross)} (salary ${money(annualGross)}${effectiveBonus > 0 ? ` + bonus ${money(effectiveBonus)}` : ''}), deductions total ${money(out.totalSalaryDeductions)} (standard 60,000 + insurance ${money(annualInsurance)} + special ${money(annualSpecialDeduction)}). Total tax is ${money(out.totalTax)} (effective rate ${percent(out.effectiveRate)}%), leaving ${money(out.totalNetTakeHome)} net take-home pay.`;
+			let noteZh = `总税前收入 ${money(out.totalGross)}（基本年薪 ${money(annualGross)}${effectiveBonus > 0 ? ` + 年终奖 ${money(effectiveBonus)}` : ''}），扣除项合计 ${money(out.totalSalaryDeductions)}（起征点6万 + 五险一金 ${money(annualInsurance)} + 专项附加扣除 ${money(annualSpecialDeduction)}）。全年个税为 ${money(out.totalTax)}（综合实际税率 ${percent(out.effectiveRate)}%），税后综合到手 ${money(out.totalNetTakeHome)}（月均基本薪资 ${money(out.monthlySalaryNet)}${effectiveBonus > 0 ? ` + 年终奖实发 ${money(out.bonusTakeHome)}` : ''}）。`;
 
 			if (effectiveBonus > 0) {
 				if (out.bestScheme === 'separate') {
@@ -2107,7 +2112,7 @@ const tax: FormConfig = {
 				{ label: 'Net take-home income (Monthly average)', labelZh: '税后净收入 (月均到手)', value: money(monthlyNet) },
 				{ label: 'Total tax owed (Annual)', labelZh: '应缴个人所得税 (年度总税额)', value: money(out.totalTax) },
 				{ label: 'Tax owed (Monthly average)', labelZh: '应缴个人所得税 (月均)', value: money(monthlyTax) },
-				{ label: 'Effective tax rate', labelZh: '实际综合有效税率', value: `${formatNumber(out.effectiveRate)}%` },
+				{ label: 'Effective tax rate', labelZh: '实际综合有效税率', value: `${percent(out.effectiveRate)}%` },
 				{ label: 'Marginal top tax bracket', labelZh: '最高适用边际税率', value: `${out.marginalRate.toFixed(0)}%` },
 				{ label: 'Taxable income', labelZh: '应纳税所得额', value: money(out.salaryTaxable) },
 			],
@@ -2118,8 +2123,8 @@ const tax: FormConfig = {
 						rows: out.usOrFlatRows,
 					}
 				: undefined,
-			note: `On gross income of ${money(out.totalGross)}, total tax is ${money(out.totalTax)} (effective rate of ${formatNumber(out.effectiveRate)}%), leaving ${money(out.totalNetTakeHome)} take-home.`,
-			noteZh: `在税前收入 ${money(out.totalGross)} 情况下，全年度个人所得税为 ${money(out.totalTax)}（综合实际税率 ${formatNumber(out.effectiveRate)}%），税后实际到手 ${money(out.totalNetTakeHome)}（月均 ${money(monthlyNet)}）。`,
+			note: `On gross income of ${money(out.totalGross)}, total tax is ${money(out.totalTax)} (effective rate of ${percent(out.effectiveRate)}%), leaving ${money(out.totalNetTakeHome)} take-home.`,
+			noteZh: `在税前收入 ${money(out.totalGross)} 情况下，全年度个人所得税为 ${money(out.totalTax)}（综合实际税率 ${percent(out.effectiveRate)}%），税后实际到手 ${money(out.totalNetTakeHome)}（月均 ${money(monthlyNet)}）。`,
 		};
 	},
 };
