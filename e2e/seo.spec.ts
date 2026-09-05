@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 
 // SEO / machine-readable asset checks. These run against the built site in CI,
@@ -78,4 +79,23 @@ test('blog posts get a generated 1200x630 OG card', async ({ page, request }) =>
 	const png = await res.body();
 	expect(png.readUInt32BE(16)).toBe(1200);
 	expect(png.readUInt32BE(20)).toBe(630);
+});
+
+// Caching is a deploy-time concern (Cloudflare reads dist/_headers), so the
+// preview server cannot show it — assert the shipped rules instead. Without
+// them Workers falls back to `max-age=0, must-revalidate` on the hashed
+// bundles and every navigation re-checks ~190KB over the network.
+test('_headers ships immutable caching for content-hashed assets', async () => {
+	const rules = await readFile(new URL('../dist/_headers', import.meta.url), 'utf8');
+
+	expect(rules).toMatch(/^\/_astro\/\*$/m);
+	expect(rules).toMatch(/max-age=31536000/);
+	expect(rules).toMatch(/immutable/);
+
+	// OG cards keep a stable URL across builds, so they must NOT be immutable.
+	const ogBlock = rules.slice(rules.indexOf('/og/*'));
+	expect(ogBlock).not.toContain('immutable');
+
+	// HTML must keep revalidating or a deploy stays invisible.
+	expect(rules).not.toMatch(/^\/\*$/m);
 });
