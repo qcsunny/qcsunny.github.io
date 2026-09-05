@@ -90,6 +90,20 @@ export function createWorkbench(options: WorkbenchOptions): WorkbenchHandle {
 
 	host.innerHTML = '';
 
+	// Typing schedules a debounced auto-run of onInput (see the listener near the
+	// end of this function). Any explicit toolbar action has to cancel that timer
+	// first, or a pending auto-format fires up to 300ms later and silently
+	// overwrites the result the user just asked for — clicking "Minify" right
+	// after pasting used to flash the minified SQL and then replace it with the
+	// formatted version.
+	let autoRunTimer: ReturnType<typeof setTimeout> | null = null;
+	const cancelAutoRun = (): void => {
+		if (autoRunTimer) {
+			clearTimeout(autoRunTimer);
+			autoRunTimer = null;
+		}
+	};
+
 	const wrap = document.createElement('div');
 	wrap.className = 't-json-wrap';
 
@@ -102,7 +116,11 @@ export function createWorkbench(options: WorkbenchOptions): WorkbenchHandle {
 		btn.type = 'button';
 		btn.className = isPrimary ? 't-btn t-primary' : 't-btn';
 		btn.append(makeBilingualSpan(labelEn, labelZh));
-		if (onClick) btn.addEventListener('click', onClick);
+		if (onClick)
+			btn.addEventListener('click', () => {
+				cancelAutoRun();
+				onClick();
+			});
 		return btn;
 	}
 
@@ -151,6 +169,7 @@ export function createWorkbench(options: WorkbenchOptions): WorkbenchHandle {
 		const reader = new FileReader();
 		reader.onload = () => {
 			inputArea.value = reader.result as string;
+			cancelAutoRun();
 			if (onInput) onInput(inputArea.value);
 		};
 		reader.readAsText(file);
@@ -252,10 +271,10 @@ export function createWorkbench(options: WorkbenchOptions): WorkbenchHandle {
 	}
 
 	if (onInput) {
-		let timer: ReturnType<typeof setTimeout> | null = null;
 		inputArea.addEventListener('input', () => {
-			if (timer) clearTimeout(timer);
-			timer = setTimeout(() => {
+			cancelAutoRun();
+			autoRunTimer = setTimeout(() => {
+				autoRunTimer = null;
 				onInput(inputArea.value);
 			}, 300);
 		});
