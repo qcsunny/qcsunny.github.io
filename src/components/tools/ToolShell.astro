@@ -430,6 +430,35 @@ const year = new Date().getFullYear();
 				margin-bottom: 1em;
 			}
 
+			/* --- export bar (print + PNG); shown only once results render --- */
+			.t-export-bar {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.6em;
+				margin-top: 1em;
+			}
+			.t-export-btn {
+				padding: 0.5em 1em;
+				border: 1px solid var(--gridline);
+				border-radius: 999px;
+				background: var(--bg);
+				color: var(--fg);
+				font: inherit;
+				font-size: 0.86rem;
+				font-weight: 600;
+				cursor: pointer;
+				transition: border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+			}
+			.t-export-btn:hover:not(:disabled) {
+				border-color: var(--accent);
+				color: var(--accent);
+				transform: translateY(-2px);
+			}
+			.t-export-btn:disabled {
+				opacity: 0.55;
+				cursor: progress;
+			}
+
 			/* --- results --- */
 			.t-results {
 				border: 1px solid var(--gridline);

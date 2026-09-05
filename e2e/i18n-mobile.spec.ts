@@ -1,10 +1,10 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 // Site-wide i18n: ToolShell pages use their own topbar switch (.t-lang), home
 // uses Header's .lang-toggle. Both flip html[data-lang]; CSS rules hide the
 // opposite language's spans.
 
-const langButton = page => page.locator('.t-lang, .lang-toggle').first();
+const langButton = (page: Page): Locator => page.locator('.t-lang, .lang-toggle').first();
 
 test('language toggle switches card copy on calculators index', async ({ page }) => {
 	await page.goto('/calculators/');
@@ -27,15 +27,20 @@ test('language toggle switches card copy on calculators index', async ({ page })
 	await expect(firstCard.locator('.i18n-en')).toBeVisible();
 });
 
-test('form tool export button follows the language switch', async ({ page }) => {
+test('form tool export buttons follow the language switch', async ({ page }) => {
 	await page.goto('/finance/compound-interest/');
 
 	await langButton(page).click();
 	await expect(page.locator('html')).toHaveAttribute('data-lang', 'zh');
 
-	// the print/export button carries i18n spans — Chinese should now show
-	await expect(page.locator('.t-export-btn .i18n-zh')).toBeVisible();
-	await expect(page.locator('.t-export-btn .i18n-en')).toBeHidden();
+	// both export buttons (print/PDF and PNG) carry i18n spans, so assert on
+	// every one of them rather than a single match
+	const buttons = page.locator('.t-export-btn');
+	await expect(buttons).not.toHaveCount(0);
+	for (const btn of await buttons.all()) {
+		await expect(btn.locator('.i18n-zh')).toBeVisible();
+		await expect(btn.locator('.i18n-en')).toBeHidden();
+	}
 });
 
 // Mobile smoke: no horizontal overflow (regression: global.css main{width:720px}

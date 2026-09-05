@@ -2,7 +2,10 @@
 // recomputes results live on every input. All DOM is created with
 // createElement/textContent (no HTML string building).
 
-import type { FormConfig, FormField, FormResultRow, FormTable, FormValues } from '../../tools/registry';
+import type { FormConfig, FormField, FormResult, FormResultRow, FormTable, FormValues } from '../../tools/registry';
+// Type-only import: erased at build time, so it does not pull the PNG renderer
+// into this bundle (the module itself is imported dynamically on click).
+import type { PngExportData } from './pngExport';
 
 export function initForm(host: HTMLElement, config: FormConfig): void {
 	const getters = new Map<string, () => string | boolean>();
@@ -40,7 +43,25 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 	exportZhSpan.textContent = '🖨 打印 / 导出 PDF';
 	exportBtn.append(exportEnSpan, exportZhSpan);
 	exportBtn.addEventListener('click', () => window.print());
-	exportBar.append(exportBtn);
+
+	// Second export path: a branded PNG of the same numbers, for pasting into
+	// chat. The renderer is dynamically imported on first click so its layout
+	// code stays out of the bundle every tool page already downloads.
+	const pngBtn = document.createElement('button');
+	pngBtn.className = 't-export-btn';
+	pngBtn.append(makeBilingualSpan('🖼 Save as PNG', '🖼 导出 PNG 长图'));
+	pngBtn.addEventListener('click', () => {
+		const data = collectExportData();
+		if (!data) return;
+		pngBtn.disabled = true;
+		void import('./pngExport')
+			.then((m) => m.exportResultsPng(data))
+			.finally(() => {
+				pngBtn.disabled = false;
+			});
+	});
+
+	exportBar.append(exportBtn, pngBtn);
 
 	host.append(results);
 	host.append(exportBar);
@@ -50,6 +71,10 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 		str: (id) => String(getters.get(id)?.() ?? '').trim(),
 		bool: (id) => getters.get(id)?.() === true,
 	};
+
+	// Last successful compute(), so the PNG export renders exactly what is on
+	// screen instead of recomputing and risking a different (or throwing) run.
+	let lastOut: FormResult | null = null;
 
 	function makeBilingualSpan(en: string, zh?: string): Node {
 		if (!zh) return document.createTextNode(en);
@@ -206,6 +231,53 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 		return wrap;
 	}
 
+	/** Snapshot of what the results area currently shows, in the active
+	 *  language, shaped for the PNG renderer. Null until a compute() succeeds. */
+	function collectExportData(): PngExportData | null {
+		if (!lastOut) return null;
+		const zh = document.documentElement.dataset.lang === 'zh';
+		const titleEl = document.querySelector(zh ? '.t-title .i18n-zh' : '.t-title .i18n-en');
+		const title = (titleEl?.textContent ?? document.title).trim();
+
+		const inputs: Array<{ label: string; value: string }> = [];
+		for (const f of config.fields) {
+			if (fieldWraps.get(f.id)?.style.display === 'none') continue;
+			const raw = getters.get(f.id)?.();
+			if (raw === undefined) continue;
+
+			let value: string;
+			if (typeof raw === 'boolean') {
+				value = raw ? (zh ? '是' : 'Yes') : zh ? '否' : 'No';
+			} else {
+				const text = raw.trim();
+				if (!text) continue;
+				// A select's raw value is an option id; show the human label.
+				const opt = f.type === 'select' ? f.options?.find((o) => o.value === text) : undefined;
+				value = opt ? (zh ? opt.labelZh || opt.label : opt.label) : text;
+			}
+			const suffix = zh ? f.suffixZh || f.suffix : f.suffix;
+			inputs.push({
+				label: zh ? f.labelZh || f.label : f.label,
+				value: suffix ? `${value} ${suffix}` : value,
+			});
+		}
+
+		const t = lastOut.table;
+		return {
+			title,
+			lang: zh ? 'zh' : 'en',
+			inputs,
+			results: lastOut.rows.map((r) => ({
+				label: zh ? r.labelZh || r.label : r.label,
+				value: r.value,
+				emphasis: r.emphasis,
+			})),
+			table: t ? { columns: zh && t.columnsZh ? t.columnsZh : t.columns, rows: t.rows } : undefined,
+			note: zh ? lastOut.noteZh || lastOut.note : lastOut.note,
+			filename: `${slug || 'result'}-${new Date().toISOString().slice(0, 10)}`,
+		};
+	}
+
 	function update(): void {
 		results.innerHTML = '';
 		host.querySelectorAll('.t-tablewrap, .t-note, .t-chartwrap').forEach((el) => el.remove());
@@ -273,6 +345,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 
 		// 3. Intelligent prompt if any required field is missing
 		if (missingFields.length > 0) {
+			lastOut = null;
 			exportBar.style.display = 'none';
 			const zhNames = missingFields.map((f) => f.labelZh || f.label).join('、');
 			const enNames = missingFields.map((f) => f.label).join(', ');
@@ -290,6 +363,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 		// 4. Compute and render results
 		try {
 			const out = config.compute(values);
+			lastOut = out;
 			for (const row of out.rows) results.append(resultRow(row));
 			if (out.chartSvg) {
 				const chartEl = document.createElement('div');
@@ -322,6 +396,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 				}
 			}
 		} catch (err) {
+			lastOut = null;
 			exportBar.style.display = 'none';
 			const note = document.createElement('p');
 			note.className = 't-note';
