@@ -41,11 +41,13 @@ const pageTitle = entry
 	: title;
 
 // --- related tools: same category, real pages only, never self ---
-// entry-less pages (standard/graph) fall back to the category prop.
+// entry-less pages (standard/graph/graph3d) fall back to the category prop, and
+// identify themselves by the last path segment so they stay out of their own list.
 const relatedCategory = entry?.category ?? category;
+const selfSlug = entry?.slug ?? Astro.url.pathname.replace(/\/+$/, '').split('/').pop();
 const relatedPool = relatedCategory
 	? [...CALCULATOR_FEATURED, ...REGISTRY].filter(
-			(e) => e.category === relatedCategory && e.kind !== 'redirect' && e.slug !== entry?.slug,
+			(e) => e.category === relatedCategory && e.kind !== 'redirect' && e.slug !== selfSlug,
 		)
 	: [];
 const related = relatedPool.slice(0, 4);
