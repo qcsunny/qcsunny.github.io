@@ -1292,13 +1292,35 @@ html[data-tool-kind='html'] .t-main {
 	border-radius: 5px;
 	color: var(--accent);
 }
-.t-md-preview-body .t-inline-math {
-	font-family: var(--font-mono, monospace);
+/* Formulas. markdown.ts emits `.t-math[data-tex]` holding the LaTeX source and
+   renderMathIn() replaces the contents with KaTeX output, dropping data-tex —
+   so the attribute selector is exactly the "not typeset yet" state: the moment
+   between the paint and the KaTeX chunk arriving, a formula the parser saw but
+   KaTeX rejected, and the offline case where the chunk never arrives at all.
+   Styling it as code keeps all three legible instead of looking broken. */
+.t-md-preview-body .t-math[data-tex] {
+	font-family: var(--font-mono);
 	font-size: 0.9em;
 	padding: 0.1em 0.35em;
 	background: rgba(234, 179, 8, 0.12);
 	color: #b45309;
 	border-radius: 4px;
+}
+.t-md-preview-body .t-math-error {
+	background: rgba(239, 68, 68, 0.12);
+	color: #b91c1c;
+	/* The title attribute carries KaTeX's parse error. */
+	cursor: help;
+}
+/* A display formula is a single unbreakable line, so one wider than the preview
+   pane would otherwise stretch the pane and push the editor off-screen. Same
+   remedy as the blog's .katex-display in global.css: scroll the formula. */
+.t-md-preview-body .t-math-display {
+	display: block;
+	margin: 1.3em 0;
+	overflow-x: auto;
+	overflow-y: hidden;
+	text-align: center;
 }
 .t-md-code-box {
 	background: var(--bg);

@@ -384,7 +384,7 @@ export const TOOL_KEYWORDS: Record<string, string> = {
 	'xml-formatter': 'xml 格式化 树形视图 美化 缩进 xml formatter pretty print indent',
 	'css-formatter': 'css 格式化 样式美化 压缩 展开 整理 css prettify minify beautifier',
 	'html-formatter': 'html 格式化 网页代码美化 缩进 压缩 html beautifier indent format',
-	'markdown-preview': 'markdown 渲染 markdown预览 实时渲染 实时预览 gfm 编辑器 排版 导出html 解析器 markdown viewer editor preview compiler gfm table',
+	'markdown-preview': 'markdown 渲染 markdown预览 实时渲染 实时预览 gfm 编辑器 排版 导出html 解析器 数学公式 latex 公式渲染 katex mathml markdown viewer editor preview compiler gfm table math formula latex',
 	'password-generator': '密码 强密码 随机密码 密码生成器 字符熵 安全密码 password generator random crypto secure',
 	'uuid-generator': 'uuid guid v4 v7 唯一标识符 随机uuid 时间戳uuid uuid generator random monotonic',
 	'random-number': '随机数 随机抽取 掷骰子 抽签 范围生成器 random number generator dice range lottery',

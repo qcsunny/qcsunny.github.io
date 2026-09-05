@@ -1,5 +1,6 @@
 // Interactive Markdown Live Editor & Previewer:
-// - 100% in-browser, zero dependencies, zero network requests
+// - 100% in-browser: the document is never uploaded, and nothing is fetched from
+//   a third party — KaTeX comes from this site's own bundle (see renderMathIn)
 // - Real-time GFM (GitHub Flavored Markdown) parsing:
 //   * Headings with auto-generated IDs (# to ######)
 //   * Tables with column alignments (:---, :---:, ---:)
@@ -7,15 +8,19 @@
 //   * Fenced code blocks with language tags and copy button
 //   * GitHub-style alert callouts (> [!NOTE], > [!TIP], > [!WARNING], > [!IMPORTANT], > [!CAUTION])
 //   * Inline code, bold, italic, strikethrough, autolinks, images, blockquotes, horizontal rules
-//   * Mathematical formula containers ($inline$ and $$display$$)
+//   * LaTeX maths, typeset by KaTeX loaded on demand ($inline$ and $$display$$)
 // - Toolbar with instant markdown syntax insertion and selection wrapping
 // - View mode switcher: Split Screen (双栏) / Preview Only (仅预览) / Editor Only (仅编辑)
 // - Word count, character count, CJK count, line count, and reading time estimate
-// - Export to .md and standalone .html with styles
+// - Export to .md, and to a standalone .html whose formulas are MathML so the
+//   file needs no stylesheet, no font and no script of ours to render
 // - Proportional sync scrolling between editor and preview pane
 // - Full bilingual support (Chinese & English) with reactive live switching
 
 import { formatBytes } from './workbench';
+// A string, not a stylesheet: the `?url` suffix keeps KaTeX's CSS out of this
+// chunk so a document with no formula never fetches it. See renderMathIn().
+import katexCssHref from '../../styles/katex.css?url';
 
 export const SAMPLE_MARKDOWN_ZH = `# Markdown 实时渲染与编辑工具 (QCSunny Lab)
 
@@ -99,16 +104,18 @@ console.log(\`[Ready] \${mdTool.name} initialized safely!\`);
 
 ## 6. 数学公式支持
 
-支持单行与块级 LaTeX 风格数学公式表示：
-$$E = mc^2$$
+支持行内与块级 LaTeX 数学公式。行内写作 $E = mc^2$，块级用两个美元号包裹。排版由 KaTeX 在你的浏览器里完成，且**只在文档真的出现公式时才按需加载**：
 $$A = P \\left(1 + \\frac{r}{n}\\right)^{n \\cdot t}$$
+$$\\sum_{k=1}^{n} k = \\frac{n(n+1)}{2}$$
+
+金额里的美元符号不会被误判成公式——写 $5 或 $10 都照原样显示。
 
 祝你写作愉快！`;
 
 export const SAMPLE_MARKDOWN_EN = `# Markdown Live Editor & Previewer (QCSunny Lab)
 
 > [!TIP]
-> This tool runs **entirely in your browser** with zero dependencies, zero network requests, and **100% data privacy**.
+> This tool runs **entirely in your browser** — no third-party scripts, nothing uploaded, **100% data privacy**.
 
 Welcome to the high-performance real-time Markdown editor! Type Markdown on the left and preview the formatted result instantly on the right.
 
@@ -187,10 +194,11 @@ console.log(\`[Ready] \${mdTool.name} initialized safely!\`);
 
 ## 6. Mathematical Formulas
 
-Supports inline ($E = mc^2$) and display block LaTeX-style mathematical expressions:
-$$E = mc^2$$
+Inline maths goes in single dollars — $E = mc^2$ — and display maths in double. KaTeX typesets them in your browser, and it is only fetched once a document actually contains a formula:
 $$A = P \\left(1 + \\frac{r}{n}\\right)^{n \\cdot t}$$
-$$e^{i\\pi} + 1 = 0$$
+$$\\sum_{k=1}^{n} k = \\frac{n(n+1)}{2}$$
+
+Dollar signs used as money are left alone: $5 or $10 stays text, not maths.
 
 Happy writing!`;
 
@@ -243,11 +251,14 @@ export function parseMarkdownToHtml(markdown: string, lang: 'zh' | 'en' = 'zh'):
 	// 2. Extract block math $$ ... $$
 	src = src.replace(/\$\$([\s\S]*?)\$\$/g, (_, math) => {
 		const idx = mathBlocks.length;
-		mathBlocks.push(`
-			<div class="katex-display">
-				<div class="formula-scroll">$$${escapeHtml(math.trim())}$$</div>
-			</div>
-		`);
+		const tex = math.trim();
+		// The source goes in a data attribute and is also printed as the element's
+		// text. renderMathIn() below upgrades it to typeset output once KaTeX has
+		// loaded; if that never happens — offline first visit, or a chunk that
+		// fails to fetch — the reader still sees the LaTeX rather than nothing.
+		mathBlocks.push(
+			`<div class="t-math t-math-display" data-tex="${escapeHtml(tex)}">${escapeHtml(tex)}</div>`,
+		);
 		return `%%MATHBLOCK_${idx}%%`;
 	});
 
@@ -492,6 +503,108 @@ export function parseMarkdownToHtml(markdown: string, lang: 'zh' | 'en' = 'zh'):
 	return html;
 }
 
+// --- formula typesetting ---------------------------------------------------
+//
+// The parser above leaves every formula as its LaTeX source inside a
+// `.t-math[data-tex]` element. This upgrades those to typeset output.
+//
+// KaTeX is a local dependency (see scripts/build-katex-css.py — the stylesheet
+// and its 20 woff2 faces are vendored into src/, nothing is fetched from a CDN),
+// but it is 272 KB of JavaScript, which no tool page should pay for up front.
+// So both the code and the stylesheet arrive on demand: `import('katex')` is a
+// separate Vite chunk, and the `?url` import below is only a string until a
+// <link> is built from it. A document with no `$` loads neither.
+//
+// Failure is non-fatal by construction. The source text is already in the
+// element, so a chunk that cannot be fetched — offline first visit, blocked
+// request — leaves the reader looking at `\frac{a}{b}` instead of a blank space,
+// which is exactly what this tool did before KaTeX was wired in at all.
+
+let katexLoad: Promise<typeof import('katex')> | null = null;
+
+function loadKatex() {
+	if (!katexLoad) {
+		if (!document.querySelector('link[data-katex]')) {
+			const link = document.createElement('link');
+			link.rel = 'stylesheet';
+			link.href = katexCssHref;
+			link.dataset.katex = '';
+			document.head.append(link);
+		}
+		katexLoad = import('katex');
+	}
+	return katexLoad;
+}
+
+// render() rebuilds preview.innerHTML from scratch on every keystroke, so
+// without a cache a document holding a dozen formulas re-typesets all of them
+// per character typed — including the half-written one that throws. Keyed by
+// output mode as well as source, because the export path asks for MathML and
+// must not be served the preview's HTML tree.
+const typeset = new Map<string, { html: string } | { error: string }>();
+
+// `htmlAndMathml` — KaTeX's own default — paints the HTML tree for sighted
+// readers and carries a visually-hidden <math> alongside it for screen readers.
+// `mathml` drops the HTML half, which is what the standalone export wants: the
+// MathML needs neither KaTeX's stylesheet nor its 20 font files, so the exported
+// file stays a single self-contained document that any current browser typesets
+// with its own maths font.
+type MathOutput = 'htmlAndMathml' | 'mathml';
+
+export async function renderMathIn(root: ParentNode, output: MathOutput = 'htmlAndMathml') {
+	const pending = [...root.querySelectorAll<HTMLElement>('.t-math[data-tex]')];
+	if (!pending.length) return;
+
+	let katex: typeof import('katex').default;
+	try {
+		katex = (await loadKatex()).default;
+	} catch {
+		return;
+	}
+
+	for (const el of pending) {
+		const tex = el.dataset.tex ?? '';
+		const displayMode = el.classList.contains('t-math-display');
+		const key = `${output}|${displayMode ? 'd' : 'i'}|${tex}`;
+
+		let result = typeset.get(key);
+		if (!result) {
+			try {
+				result = {
+					html: katex.renderToString(tex, {
+						displayMode,
+						output,
+						throwOnError: true,
+						// The site's own posts write `\text{ 元}`, which trips KaTeX's
+						// unicodeTextInMathMode warning per occurrence while rendering
+						// correctly; a user's document has no reason to be noisier.
+						strict: false,
+					}),
+				};
+			} catch (err) {
+				result = { error: err instanceof Error ? err.message : String(err) };
+			}
+			typeset.set(key, result);
+		}
+
+		if ('error' in result) {
+			// Keep the source visible and say why it did not render. data-tex stays,
+			// so a later pass retries — half-typed formulas fix themselves.
+			el.classList.add('t-math-error');
+			el.title = result.error;
+			continue;
+		}
+
+		el.innerHTML = result.html;
+		el.classList.remove('t-math-error');
+		el.removeAttribute('title');
+		// `.t-math[data-tex]` means "still holding source": it is both the query
+		// above and the selector that styles the untypeset state. Dropping the
+		// attribute is what marks this element done.
+		el.removeAttribute('data-tex');
+	}
+}
+
 // Inline formatting parser
 function parseInline(text: string): string {
 	let s = text;
@@ -502,8 +615,19 @@ function parseInline(text: string): string {
 	// Inline code: `code`
 	s = s.replace(/`([^`]+)`/g, '<code class="t-inline-code">$1</code>');
 
-	// Inline math: $math$
-	s = s.replace(/\$([^$]+)\$/g, '<code class="t-inline-math">$$$1$$</code>');
+	// Inline math: $math$ — but a lone `$` used as currency pairs up with the next
+	// one on the same line, so `costs $5 or $10` would become a formula reading
+	// "5 or ". Nobody writes `$ x $` deliberately, so padding whitespace is the
+	// signal that this is money and not maths.
+	//
+	// `s` was HTML-escaped at the top of this function, so `tex` is already safe
+	// to drop into an attribute and a text node — escaping it again would turn a
+	// `<` in the formula into a literal `&lt;`.
+	s = s.replace(/\$([^$]+)\$/g, (whole, tex: string) =>
+		tex !== tex.trim()
+			? whole
+			: `<span class="t-math t-math-inline" data-tex="${tex}">${tex}</span>`,
+	);
 
 	// Images: ![alt](url "title")
 	s = s.replace(/!\[([^\]]*)\]\(([^)]+?)(?:\s+"([^"]*)")?\)/g, (_, alt, url, title) => {
@@ -864,8 +988,16 @@ export function initMarkdown(host: HTMLElement): void {
 	const exportHtmlBtn = document.createElement('button');
 	exportHtmlBtn.type = 'button';
 	exportHtmlBtn.className = 't-md-tool-btn';
-	exportHtmlBtn.addEventListener('click', () => {
+	exportHtmlBtn.addEventListener('click', async () => {
 		const isEn = currentLang === 'en';
+		// The exported file has to stand on its own — it gets no stylesheet from
+		// this site and no font files — so formulas go out as MathML, which every
+		// current browser typesets with its own maths font. renderMathIn() works on
+		// a detached tree here; if KaTeX cannot be loaded at all it leaves the LaTeX
+		// source in the element, and the rules below keep that legible.
+		const body = document.createElement('div');
+		body.innerHTML = parseMarkdownToHtml(editor.value, currentLang);
+		await renderMathIn(body, 'mathml');
 		const html = `<!DOCTYPE html>
 <html lang="${isEn ? 'en' : 'zh-CN'}">
 <head>
@@ -890,11 +1022,15 @@ img { max-width: 100%; border-radius: 8px; }
 .t-md-alert-important { border-color: #8b5cf6; background: #f5f3ff; }
 .t-md-alert-warning { border-color: #f59e0b; background: #fffbeb; }
 .t-md-alert-caution { border-color: #ef4444; background: #fef2f2; }
-.formula-scroll { overflow-x: auto; padding: 0.5em 0; text-align: center; }
+.t-math-display { display: block; margin: 1.3em 0; overflow-x: auto; text-align: center; }
+.t-math-display math { font-size: 1.15em; }
+/* Only ever matches a formula KaTeX could not typeset: renderMathIn() drops the
+   attribute on success. Shows the LaTeX as code rather than as broken prose. */
+.t-math[data-tex] { font-family: monospace; font-size: 0.92em; padding: 0.1em 0.35em; background: #fef3c7; border-radius: 4px; }
 </style>
 </head>
 <body>
-${parseMarkdownToHtml(editor.value, currentLang)}
+${body.innerHTML}
 </body>
 </html>`;
 		downloadFile(html, `document-${Date.now()}.html`, 'text/html');
@@ -1045,6 +1181,12 @@ ${parseMarkdownToHtml(editor.value, currentLang)}
 		const html = parseMarkdownToHtml(raw, currentLang);
 		preview.innerHTML = html;
 		const dt = (performance.now() - t0).toFixed(1);
+
+		// Formulas typeset after the paint: the first call fetches KaTeX, the rest
+		// are synchronous. Deliberately not awaited — the preview must not wait on
+		// a network chunk to show the text around the maths, and the timing figure
+		// below is about this parser, not about KaTeX.
+		void renderMathIn(preview);
 
 		// Re-bind code copy buttons inside preview
 		const copyLabel = currentLang === 'en' ? 'Copy' : '复制';

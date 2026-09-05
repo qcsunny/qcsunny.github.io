@@ -571,27 +571,29 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		category: 'tools',
 		name: 'Markdown Live Editor & Previewer',
 		nameZh: 'Markdown 实时渲染与预览编辑器',
-		description: 'Live split-screen Markdown rendering with GitHub Flavored Markdown (GFM), tables, task lists, code syntax, math formulas, and HTML export.',
-		descriptionZh: '纯本地双栏实时 Markdown 渲染编辑器，全面支持 GFM 语法与 HTML 导出。',
+		description: 'Live split-screen Markdown rendering with GitHub Flavored Markdown (GFM), tables, task lists, code syntax, KaTeX-typeset maths, and HTML export.',
+		descriptionZh: '纯本地双栏实时 Markdown 渲染编辑器，支持 GFM 全语法、LaTeX 公式排版与 HTML 导出。',
 		kind: 'markdown',
 		content: {
 			about: [
-				'Render and edit Markdown in real-time with comprehensive GitHub Flavored Markdown (GFM) support, including multi-level headings, bold, italic, tables, checklists, code blocks, blockquotes, and math equations.',
-				'Runs 100% in your browser with zero latency and zero data transfer. Supports one-click HTML/MD copying, file downloading, and word/character statistics.'
+				'Render and edit Markdown in real-time with comprehensive GitHub Flavored Markdown (GFM) support, including multi-level headings, bold, italic, tables, checklists, code blocks, blockquotes, and LaTeX maths typeset by KaTeX.',
+				'Runs entirely in your browser: the document is never uploaded and nothing is fetched from a third party. Supports one-click HTML/MD copying, file downloading, and word/character statistics.'
 			],
 			aboutZh: [
-				'纯本地双栏实时 Markdown 渲染与编辑工具，支持 GitHub Flavored Markdown (GFM) 全特性，包括多级标题、代码块、表格、任务清单、数学公式与排版样式。',
-				'100% 浏览器本地毫秒级解析渲染，保障私密文档安全；支持一键复制渲染后 HTML、导出标准 .md 与 .html 文件，实时统计字数与预估阅读时长。'
+				'纯本地双栏实时 Markdown 渲染与编辑工具，支持 GitHub Flavored Markdown (GFM) 全特性，包括多级标题、代码块、表格、任务清单、排版样式，以及由 KaTeX 排版的 LaTeX 数学公式（行内 $x$ 与块级 $$…$$）。',
+				'100% 浏览器本地毫秒级解析渲染，文档不上传、不经过任何第三方服务；支持一键复制渲染后 HTML、导出标准 .md 与 .html 文件，实时统计字数与预估阅读时长。'
 			],
 			faq: [
 				{ q: 'Does it support GitHub Flavored Markdown (GFM)?', a: 'Yes, tables, task lists (- [x]), autolinks, and strikethrough (~~text~~) are fully supported.' },
-				{ q: 'Is my document private and safe?', a: 'Completely. All parsing and rendering happens locally in your browser with zero network requests.' },
-				{ q: 'Can I export the rendered HTML?', a: 'Yes, you can copy the HTML directly to clipboard or download it as a standalone HTML file.' },
+				{ q: 'How are formulas rendered?', a: 'By KaTeX, running locally — inline as $x^2$ and display as $$…$$. It is served from this site rather than a CDN, and only loaded once your document actually contains a formula. A dollar sign used as money, like $5 or $10, is left as text.' },
+				{ q: 'Is my document private and safe?', a: 'Completely. Parsing and rendering happen in your browser, the document is never sent anywhere, and no third-party script is involved.' },
+				{ q: 'Can I export the rendered HTML?', a: 'Yes, you can copy the HTML directly to clipboard or download it as a standalone HTML file. Formulas are exported as MathML, so the file renders on its own without needing any stylesheet or font from this site.' },
 			],
 			faqZh: [
 				{ q: '支持 GitHub Flavored Markdown (GFM) 语法吗？', a: '完全支持，包含表格语法、任务复选框 (- [x])、删除线 (~~text~~)、超链接自动识别等。' },
-				{ q: '我的文档内容安全吗？', a: '100% 安全。所有的解析渲染全部在你的浏览器本地进行，没有任何网络请求，离开页面即清空。' },
-				{ q: '支持导出为 HTML 文件吗？', a: '支持，可一键复制渲染后的 HTML 源码，或一键下载独立的 .html 文件。' },
+				{ q: '数学公式是怎么渲染的？', a: '由 KaTeX 在你的浏览器本地排版：行内写 $x^2$，块级写 $$…$$。KaTeX 由本站自托管而非 CDN，且只在文档真的出现公式时才按需加载。金额里的美元符号（如 $5 或 $10）会照原样显示，不会被误判成公式。' },
+				{ q: '我的文档内容安全吗？', a: '100% 安全。解析与渲染全部在你的浏览器本地进行，文档不会被发送到任何地方，也不加载任何第三方脚本，离开页面即清空。' },
+				{ q: '支持导出为 HTML 文件吗？', a: '支持，可一键复制渲染后的 HTML 源码，或一键下载独立的 .html 文件。文件里的公式以 MathML 形式导出，浏览器可直接排版，无需依赖本站的样式表或字体。' },
 			],
 		},
 	},
