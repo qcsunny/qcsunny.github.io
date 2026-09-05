@@ -103,3 +103,80 @@ test('the inlined search index stays small enough to justify inlining', () => {
 	const cost = brotli(html) - brotli(html.replace(block![0], ''));
 	expect(cost, `search index costs ${cost} B brotli per page`).toBeLessThan(12_000);
 });
+
+// Astro emits one hoisted entry chunk per page and puts the <script> in the
+// body, so without help the browser learns what that chunk imports only after
+// downloading and parsing it. On the 46 registry tool pages the chain was three
+// deep and 27 bytes wide — entry chunk → main.js (123 KB) → engine.js — two of
+// the three round trips spent reading the name of the next file.
+// modulepreload.mjs names the static imports in <head> instead. Pinned per route
+// by chunk-name prefix rather than recomputed from the bundles, so a chunk that
+// starts importing something new has to be looked at.
+const PRELOADS: [string, string[]][] = [
+	['tools/json-formatter/index.html', ['main', 'engine']],
+	['finance/loan-payment/index.html', ['main', 'engine']],
+	['converters/weight/index.html', ['main', 'engine']],
+	['calculators/percentage/index.html', ['main', 'engine']],
+	['calculators/graph3d/index.html', ['engine', 'vars']],
+	['calculators/standard/index.html', ['engine', 'vars']],
+	// A prose page has no module script, so nothing to preload.
+	['blog/canvas-2d-surface-plot/index.html', []],
+];
+
+const preloadsIn = (html: string): string[] =>
+	[...html.slice(0, html.indexOf('</head>')).matchAll(/<link rel="modulepreload" href="\/_astro\/([^"]+)"/g)]
+		.map((m) => m[1].split('.')[0]);
+
+test('every page preloads what its entry chunk imports', () => {
+	for (const [route, want] of PRELOADS) {
+		const html = readFileSync(join(DIST, route), 'utf-8');
+		expect(preloadsIn(html), `modulepreload links on ${route}`).toEqual(want);
+	}
+});
+
+// The workbench formatters are reached through `import()` on demand. Preloading
+// one would download a tool the visitor has not opened — eight of them on the
+// pages that offer a picker — so the integration blanks dynamic specifiers
+// before it scans. Derived from the bundles rather than listed here: a new lazy
+// tool is covered without touching this test.
+test('lazily imported chunks are never preloaded', () => {
+	const lazy = new Set<string>();
+	for (const [, js] of astroJs()) {
+		for (const m of js.matchAll(/import\s*\(\s*['"`]\.\/([\w.$-]+\.js)['"`]\s*\)/g)) lazy.add(m[1]);
+	}
+	expect(lazy.size, 'dynamically imported chunks found in the bundles').toBeGreaterThan(5);
+
+	const offenders: string[] = [];
+	for (const [route, html] of distHtml()) {
+		for (const m of html.matchAll(/<link rel="modulepreload" href="\/_astro\/([^"]+)"/g)) {
+			if (lazy.has(m[1])) offenders.push(`${route} → ${m[1]}`);
+		}
+	}
+	expect(offenders, 'a lazy chunk is being downloaded eagerly').toEqual([]);
+});
+
+// The behavioural half: the point of the link is that the shared chunk goes out
+// with the document's other subresources instead of after the entry chunk has
+// been parsed. Asserting request order rather than the tag's presence, because a
+// tag with the wrong attributes would still be present and still be useless —
+// and a preload the module loader cannot reuse shows up as a second request for
+// the same file, which is worse than no preload at all.
+test('the shared chunk is requested without waiting for the entry chunk', async ({ page }) => {
+	const order: string[] = [];
+	page.on('request', (req) => {
+		const m = /\/_astro\/([^/?]+\.js)$/.exec(new URL(req.url()).pathname);
+		if (m) order.push(m[1]);
+	});
+	await page.goto('/tools/json-formatter/');
+	await page.waitForLoadState('load');
+
+	const at = (prefix: string): number => order.findIndex((f) => f.startsWith(prefix));
+	expect(at('main.'), 'main chunk never requested').toBeGreaterThanOrEqual(0);
+	expect(at('engine.'), 'engine chunk never requested').toBeGreaterThanOrEqual(0);
+	expect(at('_slug_'), 'entry chunk never requested').toBeGreaterThanOrEqual(0);
+	expect(at('main.'), 'main.js waited for the entry chunk').toBeLessThan(at('_slug_'));
+	for (const prefix of ['main.', 'engine.']) {
+		const n = order.filter((f) => f.startsWith(prefix)).length;
+		expect(n, `${prefix}js fetched ${n} times — the preload is not being reused`).toBe(1);
+	}
+});

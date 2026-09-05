@@ -6,13 +6,14 @@ import sitemap from '@astrojs/sitemap';
 import { defineConfig, fontProviders } from 'astro/config';
 
 import llmsTxt from './llms-txt.mjs';
+import modulePreload from './modulepreload.mjs';
 import ogImages from './og-images.mjs';
 import satteriKatex from './satteri-katex.mjs';
 
 // https://astro.build/config
 export default defineConfig({
 	site: 'https://qcsunny.org',
-	integrations: [mdx(), sitemap(), llmsTxt(), ogImages()],
+	integrations: [mdx(), sitemap(), llmsTxt(), ogImages(), modulePreload()],
 	markdown: {
 		// Sätteri parses maths only when asked; satteri-katex.mjs then renders it
 		// to finished markup during the build, so the browser gets plain HTML and
