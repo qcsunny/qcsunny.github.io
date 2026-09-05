@@ -98,7 +98,7 @@ test('every computed result row exists in both languages', () => {
 // Alias pages redirect with a meta refresh; measuring them races the navigation
 // and only re-measures the canonical tool anyway.
 function toolRoutes(): string[] {
-	const out = ['/calculators/', '/finance/', '/tools/', '/converters/'];
+	const out = ['/', '/calculators/', '/finance/', '/tools/', '/converters/'];
 	for (const cat of ['calculators', 'finance', 'tools', 'converters']) {
 		for (const d of readdirSync(join(DIST, cat), { withFileTypes: true })) {
 			if (!d.isDirectory()) continue;
@@ -152,6 +152,10 @@ async function chineseInEnglishView(page: Page, maxShare: number): Promise<strin
 			if (!s) return;
 			// The switch itself names both languages; that is the whole button.
 			if (el.closest('.t-lang, .lang-toggle')) return;
+			// The blog is written in Chinese and has no English edition, so the
+			// homepage's post cards print Chinese titles in both views on purpose.
+			// The toolbox chrome around them is what this sweep is for.
+			if (el.closest('.post-card')) return;
 			if (el.closest('.t-content')) {
 				if (s >= maxShare) push(`prose is ${Math.round(s * 100)}% Chinese`, el, text);
 			} else push(why, el, text);

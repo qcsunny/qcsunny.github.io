@@ -142,11 +142,11 @@ const siteJsonLd = {
 							<a class="tool-card" href={`/${e.category}/${e.slug}/`}>
 								<div class="tool-card-head">
 									<strong class="tool-name">
-										{e.name}
+										<span class="i18n-en">{e.name}</span>
+										<span class="i18n-zh">{e.nameZh || e.name}</span>
 									</strong>
 									<span class="tool-tag">{e.category}</span>
 								</div>
-								{e.nameZh && <span class="tool-zh-sub">{e.nameZh}</span>}
 								<p class="tool-desc">
 									<span class="i18n-en">{e.description}</span>
 									{e.descriptionZh && <span class="i18n-zh">{e.descriptionZh}</span>}
@@ -484,19 +484,17 @@ const siteJsonLd = {
 		align-items: center;
 		justify-content: space-between;
 		gap: 0.5em;
-		margin-bottom: 0.2em;
+		/* Was 0.2em, with a .tool-zh-sub line below contributing another 0.6em.
+		   The card printed the English name and the Chinese one underneath it at
+		   the same time; the name is one span pair now, so the head carries the
+		   gap the subtitle used to. */
+		margin-bottom: 0.6em;
 	}
 
 	.tool-name {
 		font-size: 1.05rem;
 		font-weight: 700;
 		color: var(--fg);
-	}
-
-	.tool-zh-sub {
-		font-size: 0.85rem;
-		color: var(--dim);
-		margin-bottom: 0.6em;
 	}
 
 	.tool-tag {

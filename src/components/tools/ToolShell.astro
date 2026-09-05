@@ -63,7 +63,10 @@ const jsonLd: object[] = [];
 	jsonLd.push({
 		'@context': 'https://schema.org',
 		'@type': 'WebApplication',
-		name: pageTitle,
+		// The English name alone: alternateName below is where the Chinese one
+		// belongs, and pageTitle bundles both (it feeds <title>, which cannot hold
+		// a span pair and is deliberately bilingual for search).
+		name: entry ? entry.name : title,
 		alternateName: entry?.nameZh,
 		description: entry ? entry.description : description,
 		url: pageUrl,
