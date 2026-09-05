@@ -101,7 +101,18 @@ test('a wide display formula scrolls itself instead of the page', async ({ page 
 test('a maths page makes no third-party request', async ({ page }) => {
 	// The Cloudflare Web Analytics beacon is deliberately configured (see
 	// CF_ANALYTICS_TOKEN in consts.ts); nothing else may leave this origin.
-	const ALLOWED = new Set(['localhost:4321', 'static.cloudflareinsights.com']);
+	//
+	// The beacon uses *two* hosts: the script is fetched from
+	// static.cloudflareinsights.com, then it POSTs its payload to the apex
+	// cloudflareinsights.com/cdn-cgi/rum. Whether that POST lands inside the test
+	// window depends on the machine, so listing only the script host made this
+	// assertion pass locally and fail in CI. Both hosts are the same deliberate
+	// beacon; a real regression would show a *different* origin, which still fails.
+	const ALLOWED = new Set([
+		'localhost:4321',
+		'static.cloudflareinsights.com',
+		'cloudflareinsights.com',
+	]);
 	const external: string[] = [];
 	page.on('request', (req) => {
 		if (!ALLOWED.has(new URL(req.url()).host)) external.push(req.url());
