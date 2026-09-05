@@ -14,13 +14,13 @@ test('the four page measures are defined on :root', async ({ page }) => {
 
 	const vars = await page.evaluate(() => {
 		const s = getComputedStyle(document.documentElement);
-		return ['--w-page', '--w-prose', '--w-wide', '--w-max'].map((n) => s.getPropertyValue(n).trim());
+		return ['--w-page', '--w-prose', '--w-outer', '--w-wide', '--w-max'].map((n) => s.getPropertyValue(n).trim());
 	});
 
 	// --w-prose deliberately equals --w-page: /blog/ and the posts it links to
 	// used to be 960 and 612, so the text frame jumped 150px inward on every
 	// click into an article.
-	expect(vars).toEqual(['720px', '720px', '960px', '1040px']);
+	expect(vars).toEqual(['720px', '720px', '768px', '960px', '1040px']);
 });
 
 // [route, container selector, expected border-box width at 1440px]
@@ -29,9 +29,9 @@ const MEASURES: [string, string, number][] = [
 	['/tools/sql-formatter/', '.t-main', 1040], // --w-max, workbench kinds
 	['/about/', '.about-main', 720], // --w-prose, 40em at 18px
 	['/privacy/', '.privacy-main', 720],
-	['/blog/uuid-v4-vs-v7-database-guide/', '.prose', 720],
+	['/blog/uuid-v4-vs-v7-database-guide/', '.prose', 768], // --w-outer grid; text column 720 inside
 	['/calendar/', '.cal', 960], // --w-wide
-	['/blog/', '.blog-container', 720], // the list reads at the articles' measure
+	['/blog/', '.blog-container', 768], // the list shares the articles' page grid
 	['/', '.home-container', 1040],
 	['/', 'nav', 1040], // frame matches the widest page container
 ];
@@ -58,17 +58,28 @@ test('code blocks and tables break out of the prose measure, centred', async ({ 
 	await page.goto('/blog/uuid-v4-vs-v7-database-guide/');
 
 	const prose = (await page.locator('.prose').first().boundingBox())!;
-	expect(Math.round(prose.width)).toBe(720);
+	expect(Math.round(prose.width)).toBe(768);
+	// the text column inside the grid: .prose's horizontal padding is the
+	// (outer − prose)/2 centring, so a paragraph shares the article's 720 measure
+	const textCol = await page.evaluate(() => {
+		const p = document.querySelector('.prose p') as HTMLElement;
+		const r = p.getBoundingClientRect();
+		return { x: r.x, w: r.width };
+	});
+	expect(Math.round(textCol.w)).toBe(720);
+	expect(Math.round(textCol.x - prose.x)).toBe(24); // (768 − 720) / 2
 
 	for (const selector of ['.prose pre', '.prose table']) {
 		const box = await page.locator(selector).first().boundingBox();
 		expect(box, `${selector} not found`).not.toBeNull();
 		expect(Math.round(box!.width), `${selector} width`).toBe(960);
-		// same overhang on both sides
-		const left = prose.x - box!.x;
-		const right = box!.x + box!.width - (prose.x + prose.width);
-		expect(Math.round(left), `${selector} left overhang`).toBe(120);
-		expect(Math.round(right), `${selector} right overhang`).toBe(120);
+		// The prose box is centred in main's content box, and the breakout's
+		// margin box is (by construction, margins -(w-wide − w-outer)/2) centred
+		// on the prose box. Assert the centre rather than the edges: a margin or
+		// box-sizing drift moves the centre, while sub-pixel rounding does not.
+		const proseCentre = prose.x + prose.width / 2;
+		const boxCentre = box!.x + box!.width / 2;
+		expect(Math.abs(boxCentre - proseCentre), `${selector} is not centred on the prose column`).toBeLessThanOrEqual(1);
 	}
 });
 

@@ -181,12 +181,12 @@ function getCategory(slug: string): { labelZh: string; labelEn: string; color: s
 
 <style>
 	.blog-container {
-		/* --w-prose, the measure the articles themselves use, with the gutter
-		   folded into the width like every other container on the site. The list
-		   used to be --w-wide with 1.5rem of padding, which put its text at
-		   x=264 on a 1440px screen against x=414 for a post's — the frame moved
-		   every time a reader clicked into an article and back. */
-		width: min(var(--w-prose), 100% - 2.5em);
+		/* --w-outer, the page grid the articles themselves are laid out on (a
+		   post's text column is 720px inside it — see --w-outer in global.css).
+		   The list used to be --w-wide with 1.5rem of padding, which put its
+		   text at x=264 on a 1440px screen against x=414 for a post's — the
+		   frame moved every time a reader clicked into an article and back. */
+		width: min(var(--w-outer), 100% - 2.5em);
 		margin: 0 auto;
 		padding: 3rem 0 5rem;
 	}

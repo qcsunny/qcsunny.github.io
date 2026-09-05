@@ -43,9 +43,26 @@
 	                     the text frame jumped 150px inward on every click into
 	                     an article and back out. The names stay separate because
 	                     they are separate knobs — a change to the tool-page
-	                     measure has no business moving the reading measure. */
+	                     measure has no business moving the reading measure.
+
+	                     (768px in practice: tables and code blocks in prose
+	                     break out to a wider measure and pull the page grid to
+	                     768 when they do — see --w-outer below. The prose text
+	                     itself stays at 720.) */
 	--w-wide: 960px; /* listings and grids: calendar; also what code blocks and
 	                    tables break out to inside prose */
+	--w-outer: 768px; /* the prose PAGE grid — .prose and /blog/ are laid out
+	                    on this measure, while the text column inside .prose
+	                    stays --w-prose. A markdown table is display:block with
+	                    overflow-x:auto, so at a 720 grid a wide one shows a
+	                    scrollbar inside a frame that could have held it whole:
+	                    the natural width of the worst real table is ~1014px,
+	                    960 of box + 54px of cell borders and padding that the
+	                    negative-margin breakout rule does not widen with. Widening
+	                    the grid to 768 lets the same 960 box sit whole on a
+	                    1366px laptop; on narrower screens the breakout is
+	                    proportional (calc between two vars) and this token rides
+	                    along with it. */
 	--w-max: 1040px; /* widest layout: home page, nav bar, workbench tools */
 
 	/* Atkinson carries no CJK glyph at all, so every Chinese character on the
@@ -185,11 +202,15 @@ p {
    and a table narrower than its content just grows a scrollbar. So prose keeps
    its 40em measure while these two get --w-wide.
 
-   Gated on a viewport that can actually hold --w-wide plus main's gutter, so
-   narrow screens keep the same-width behaviour and nothing needs 100vw (which
-   counts the scrollbar and would overflow). box-sizing is explicit because pre
-   carries padding and --w-wide here means the *outer* edge — without it the
-   padding extends past the negative margin and the block sits off-centre.
+   The measure the breakout is anchored to is --w-outer (the page grid, 768px),
+   not --w-prose (the text column, 720px): .prose is itself width:var(--w-outer)
+   with the text padded inside, so margins computed from --w-prose would be
+   24px too wide on each side and push the box off-centre. Gated on a viewport
+   that can actually hold --w-wide plus main's gutter, so narrow screens keep
+   the same-width behaviour and nothing needs 100vw (which counts the scrollbar
+   and would overflow). box-sizing is explicit because pre carries padding and
+   --w-wide here means the *outer* edge — without it the padding extends past
+   the negative margin and the block sits off-centre.
 
    This has to be global, not BlogPost.astro's scoped <style>: these elements
    come from rendered markdown and carry no scope attribute, which is why
@@ -198,7 +219,13 @@ p {
 	.prose :is(pre, table) {
 		box-sizing: border-box;
 		width: var(--w-wide);
-		margin-inline: calc((var(--w-prose) - var(--w-wide)) / 2);
+		/* A margin on a child of a padded block resolves from the *content*
+		   box, so the breakout has to subtract .prose's own centring padding
+		   ((w-outer − w-prose)/2) or it comes out 24px short on the left and
+		   24px proud on the right — asymmetric, and drifting off the grid. */
+		margin-inline: calc(
+			(var(--w-outer) - var(--w-wide)) / 2 - (var(--w-outer) - var(--w-prose)) / 2
+		);
 	}
 }
 

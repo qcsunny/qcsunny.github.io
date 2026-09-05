@@ -105,9 +105,20 @@ const jsonLd = {
 				box-shadow: var(--box-shadow);
 			}
 			.prose {
-				width: min(var(--w-prose), calc(100% - 2.5em));
+				/* the PAGE grid is --w-outer (768px), wider than the text column:
+				 * a markdown table is display:block with overflow-x:auto, so on a
+				 * 720px grid a wide table clips inside a scrollbar even when the
+				 * viewport could hold it whole. Tables and code blocks break out
+				 * to --w-wide from this outer box (see global.css), while the
+				 * readable text below stays 720px via the inner padding. */
+				box-sizing: border-box; /* without it the 48px of centring padding
+				 * adds to the 768 and the grid comes out 816, un-centring
+				 * every breakout below */
+				width: min(var(--w-outer), calc(100% - 2.5em));
 				margin: auto;
-				padding: 2rem 0 4rem;
+				/* (768 - 720) / 2: centres the text column inside the grid. The
+				 * 2.5em fallback window scales with the same vars. */
+				padding: 2rem calc((var(--w-outer) - var(--w-prose)) / 2) 4rem;
 				color: var(--fg);
 				/* 18px, matching body. The old 1.05rem resolved against the 16px
 				   root font size, not body's 18px, so the article text was the
