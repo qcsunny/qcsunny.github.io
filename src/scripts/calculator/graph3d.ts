@@ -72,6 +72,24 @@ interface Grid {
 	err: string | null;
 }
 
+/** Per-cell colour and per-vertex height for one sampled grid. None of it
+ *  depends on the camera — LIGHT is fixed in world space and a quad's normal
+ *  comes from the height field — so a rotation must not recompute any of it. */
+interface Shading {
+	n: number;
+	/** 1 where all four corners of the cell are finite, one entry per cell. */
+	ok: Uint8Array;
+	/** Height in normalised world space per lattice vertex, 0 inside a hole. */
+	w: Float64Array;
+	/** Position on the colour ramp per cell, for rebuilding colours on demand. */
+	tone: Float64Array;
+	/** `rgb(...)` for the shaded surface, empty string inside a hole. */
+	fill: string[];
+	/** `rgba(...)` for the wireframe: unshaded and translucent, built on demand
+	 *  because most visitors never switch style. */
+	wire: string[] | null;
+}
+
 interface Palette {
 	fg: string;
 	dim: string;
@@ -211,6 +229,7 @@ export function initGraph3d(scope: Scope): void {
 	let style: Style = 'surface';
 	let fn: ((s: Scope) => number) | null = null;
 	let grid: Grid | null = null;
+	let shading: Shading | null = null;
 	let cssW = 0;
 	let cssH = 0;
 	let dpr = 1;
@@ -279,17 +298,23 @@ export function initGraph3d(scope: Scope): void {
 		if (cssW < 2 || cssH < 2) return;
 		ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
 		ctx!.clearRect(0, 0, cssW, cssH);
-		if (!grid) return;
+		if (!grid || !shading) return;
 		const p = projector();
 		drawFloor(p);
 		drawBox(p, 0.5);
-		drawSurface(p, grid);
+		drawSurface(grid, shading);
 		drawTicks(p, grid);
 		drawColorbar(grid);
 	}
 
 	const uMax = (): number => (domain.xMax - cxDom()) / spanUV();
 	const vMax = (): number => (domain.yMax - cyDom()) / spanUV();
+
+	/** Normalised coordinates of lattice column i / row j on an N-cell grid. */
+	const uOf = (i: number, N: number): number =>
+		toU(domain.xMin + ((domain.xMax - domain.xMin) * i) / N);
+	const vOf = (j: number, N: number): number =>
+		toV(domain.yMin + ((domain.yMax - domain.yMin) * j) / N);
 
 	type Proj = (u: number, v: number, w: number) => Projected;
 
@@ -346,98 +371,165 @@ export function initGraph3d(scope: Scope): void {
 		ctx!.restore();
 	}
 
-	/** Depth-sorted quads. Each vertex is projected once and shared by the four
-	 *  quads around it; only quads whose four corners are all finite are drawn,
-	 *  which is what puts clean holes in surfaces like ln(x*y). */
-	function drawSurface(p: Proj, g: Grid): void {
+	/** Cell colours and vertex heights for one grid. Called from resample(), never
+	 *  from render(): a rotation reuses every string this builds. */
+	function shadeGrid(g: Grid): Shading {
 		const N = g.n;
 		const stride = N + 1;
-		const px = new Float64Array(stride * stride);
-		const py = new Float64Array(stride * stride);
-		const dep = new Float64Array(stride * stride);
-		const wv = new Float64Array(stride * stride);
-		const uOf = (i: number): number => toU(domain.xMin + ((domain.xMax - domain.xMin) * i) / N);
-		const vOf = (j: number): number => toV(domain.yMin + ((domain.yMax - domain.yMin) * j) / N);
+		const w = new Float64Array(stride * stride);
+		for (let k = 0; k < w.length; k++) w[k] = g.ok[k] ? toW(g.z[k] as number, g) : 0;
 
-		for (let j = 0; j < stride; j++) {
-			const v = vOf(j);
-			for (let i = 0; i < stride; i++) {
-				const k = j * stride + i;
-				const w = g.ok[k] ? toW(g.z[k] as number, g) : 0;
-				wv[k] = w;
-				const q = p(uOf(i), v, w);
-				px[k] = q.px;
-				py[k] = q.py;
-				dep[k] = q.depth;
-			}
-		}
+		const du = uOf(1, N) - uOf(0, N);
+		const dv = vOf(1, N) - vOf(0, N);
+		const nzc = 2 * du * dv;
+		const half = (g.zHi - g.zLo) / 2 || 1;
 
-		const base: number[] = [];
-		const qd: number[] = [];
+		const ok = new Uint8Array(N * N);
+		const tone = new Float64Array(N * N);
+		const fill: string[] = new Array(N * N).fill('');
 		for (let j = 0; j < N; j++) {
 			for (let i = 0; i < N; i++) {
 				const k = j * stride + i;
 				if (!(g.ok[k] && g.ok[k + 1] && g.ok[k + stride] && g.ok[k + stride + 1])) continue;
-				base.push(k);
-				qd.push((dep[k] + dep[k + 1] + dep[k + stride] + dep[k + stride + 1]) / 4);
+				const cell = j * N + i;
+				ok[cell] = 1;
+				const w00 = w[k] as number;
+				const w10 = w[k + 1] as number;
+				const w11 = w[k + stride + 1] as number;
+				const w01 = w[k + stride] as number;
+
+				// Quad normal from the two diagonals, in normalised world space.
+				const nx = dv * (w01 - w10 - (w11 - w00));
+				const ny = -du * (w11 - w00 + (w01 - w10));
+				const len = Math.hypot(nx, ny, nzc) || 1;
+				const dot = (nx * LIGHT[0] + ny * LIGHT[1] + nzc * LIGHT[2]) / len;
+				const lit = 0.52 + 0.48 * Math.abs(dot);
+
+				const meanZ =
+					((g.z[k] as number) +
+						(g.z[k + 1] as number) +
+						(g.z[k + stride + 1] as number) +
+						(g.z[k + stride] as number)) /
+					4;
+				const t = (Math.min(g.zHi, Math.max(g.zLo, meanZ)) - g.zLo) / (half * 2);
+				tone[cell] = t;
+				const [r, gg, b] = colorAt(t);
+				fill[cell] = `rgb(${(r * lit) | 0}, ${(gg * lit) | 0}, ${(b * lit) | 0})`;
 			}
 		}
-		// Painter's algorithm: farthest first.
-		const order = base.map((_, idx) => idx).sort((a, b) => (qd[b] as number) - (qd[a] as number));
+		return { n: N, ok, w, tone, fill, wire: null };
+	}
 
-		const du = uOf(1) - uOf(0);
-		const dv = vOf(1) - vOf(0);
-		const nzc = 2 * du * dv;
-		const half = (g.zHi - g.zLo) / 2 || 1;
+	/** Wireframe colours: the ramp without the shading, so the lines read as
+	 *  height alone. Built on the first frame that asks for them. */
+	function wireColours(sh: Shading): string[] {
+		if (!sh.wire) {
+			const out: string[] = new Array(sh.n * sh.n).fill('');
+			for (let cell = 0; cell < out.length; cell++) {
+				if (!sh.ok[cell]) continue;
+				const [r, gg, b] = colorAt(sh.tone[cell] as number);
+				out[cell] = `rgba(${r | 0}, ${gg | 0}, ${b | 0}, 0.6)`;
+			}
+			sh.wire = out;
+		}
+		return sh.wire;
+	}
+
+	/** The quads, painted back to front. Each vertex is projected once and shared
+	 *  by the four quads around it; only quads whose four corners are all finite
+	 *  are drawn, which is what puts clean holes in surfaces like ln(x*y).
+	 *
+	 *  No depth sort: a height field on a lattice under an orthographic camera has
+	 *  an exact back-to-front order that costs nothing to find. A view ray keeps a
+	 *  fixed direction, so it crosses the lattice columns in the order set by the
+	 *  signs of sin(yaw) and cos(yaw) — and because the surface is single-valued
+	 *  over each cell, the order the ray meets the quads is the order it enters
+	 *  their columns. Walking i and j inwards from the far side therefore paints
+	 *  every quad before anything that can occlude it. Sorting by each quad's mean
+	 *  depth, which is what this used to do, only approximates that order (the
+	 *  mean is one number for a quad whose depth spans a range) and cost an
+	 *  O(n² log n) comparison sort on every frame. */
+	function drawSurface(g: Grid, sh: Shading): void {
+		const N = g.n;
+		const stride = N + 1;
+		const cy = Math.cos(view.yaw);
+		const sy = Math.sin(view.yaw);
+		const cp = Math.cos(view.pitch);
+		const sp = Math.sin(view.pitch);
+		const scale = Math.min(cssW, cssH) * 0.36 * view.zoom;
+		const ox = cssW / 2;
+		const oy = cssH / 2;
+		const px = new Float64Array(stride * stride);
+		const py = new Float64Array(stride * stride);
+		for (let j = 0; j < stride; j++) {
+			const v = vOf(j, N);
+			for (let i = 0; i < stride; i++) {
+				const k = j * stride + i;
+				const u = uOf(i, N);
+				px[k] = ox + (u * cy - v * sy) * scale;
+				py[k] = oy - ((u * sy + v * cy) * sp + (sh.w[k] as number) * cp) * scale;
+			}
+		}
+
+		// Depth grows with u where sin(yaw) > 0 and with v where cos(yaw) > 0, so
+		// the far corner of the lattice is the high end of each of those axes.
+		const iFrom = sy > 0 ? N - 1 : 0;
+		const iStep = sy > 0 ? -1 : 1;
+		const jFrom = cy > 0 ? N - 1 : 0;
+		const jStep = cy > 0 ? -1 : 1;
+
+		const colours = style === 'wire' ? wireColours(sh) : sh.fill;
 		ctx!.lineWidth = style === 'wire' ? 1 : 0.7;
 		ctx!.lineJoin = 'round';
+		// Hidden-line look: opaque background fill, coloured edges. One assignment
+		// for the whole surface rather than one per quad.
+		if (style === 'mesh') ctx!.fillStyle = palette.bg;
 
-		for (const idx of order) {
-			const k = base[idx] as number;
-			const k1 = k + 1;
-			const k2 = k + stride + 1;
-			const k3 = k + stride;
-			const w00 = wv[k] as number;
-			const w10 = wv[k1] as number;
-			const w11 = wv[k2] as number;
-			const w01 = wv[k3] as number;
+		// Each `ctx.fillStyle = …` reparses a CSS colour, which at 7,744 quads
+		// costs more than the rasterising does; neighbouring cells routinely round
+		// to the same 8-bit triple, so skipping the repeats is free speed.
+		let last = '';
+		for (let jj = 0; jj < N; jj++) {
+			const j = jFrom + jj * jStep;
+			for (let ii = 0; ii < N; ii++) {
+				const i = iFrom + ii * iStep;
+				const cell = j * N + i;
+				if (!sh.ok[cell]) continue;
+				const k = j * stride + i;
+				const k1 = k + 1;
+				const k2 = k + stride + 1;
+				const k3 = k + stride;
+				const colour = colours[cell] as string;
 
-			// Quad normal from the two diagonals, in normalised world space.
-			const nx = dv * (w01 - w10 - (w11 - w00));
-			const ny = -du * (w11 - w00 + (w01 - w10));
-			const len = Math.hypot(nx, ny, nzc) || 1;
-			const dot = (nx * LIGHT[0] + ny * LIGHT[1] + nzc * LIGHT[2]) / len;
-			const shade = 0.52 + 0.48 * Math.abs(dot);
+				ctx!.beginPath();
+				ctx!.moveTo(px[k] as number, py[k] as number);
+				ctx!.lineTo(px[k1] as number, py[k1] as number);
+				ctx!.lineTo(px[k2] as number, py[k2] as number);
+				ctx!.lineTo(px[k3] as number, py[k3] as number);
+				ctx!.closePath();
 
-			const meanZ = ((g.z[k] as number) + (g.z[k1] as number) + (g.z[k2] as number) + (g.z[k3] as number)) / 4;
-			const t = (Math.min(g.zHi, Math.max(g.zLo, meanZ)) - g.zLo) / (half * 2);
-			const [r, gg, b] = colorAt(t);
-
-			ctx!.beginPath();
-			ctx!.moveTo(px[k] as number, py[k] as number);
-			ctx!.lineTo(px[k1] as number, py[k1] as number);
-			ctx!.lineTo(px[k2] as number, py[k2] as number);
-			ctx!.lineTo(px[k3] as number, py[k3] as number);
-			ctx!.closePath();
-
-			if (style === 'wire') {
-				ctx!.strokeStyle = `rgba(${r | 0}, ${gg | 0}, ${b | 0}, 0.6)`;
+				if (style === 'surface') {
+					if (colour !== last) {
+						ctx!.fillStyle = colour;
+						// Hairline seam hides the sub-pixel gaps canvas leaves
+						// between fills. Assigned from the same string rather than
+						// from ctx.fillStyle: reading that getter serialises the
+						// colour back into a new string, and paying for it 7,744
+						// times a frame was 40% of the frame.
+						ctx!.strokeStyle = colour;
+						last = colour;
+					}
+					ctx!.fill();
+					ctx!.stroke();
+					continue;
+				}
+				if (colour !== last) {
+					ctx!.strokeStyle = colour;
+					last = colour;
+				}
+				if (style === 'mesh') ctx!.fill();
 				ctx!.stroke();
-				continue;
 			}
-			if (style === 'mesh') {
-				// Hidden-line look: opaque background fill, coloured edges.
-				ctx!.fillStyle = palette.bg;
-				ctx!.fill();
-				ctx!.strokeStyle = `rgb(${(r * shade) | 0}, ${(gg * shade) | 0}, ${(b * shade) | 0})`;
-				ctx!.stroke();
-				continue;
-			}
-			ctx!.fillStyle = `rgb(${(r * shade) | 0}, ${(gg * shade) | 0}, ${(b * shade) | 0})`;
-			ctx!.fill();
-			// Hairline seam hides the sub-pixel gaps canvas leaves between fills.
-			ctx!.strokeStyle = ctx!.fillStyle;
-			ctx!.stroke();
 		}
 	}
 
@@ -614,6 +706,7 @@ export function initGraph3d(scope: Scope): void {
 	function resample(): void {
 		if (!fn) {
 			grid = null;
+			shading = null;
 			setReadout(null);
 			render();
 			return;
@@ -621,10 +714,12 @@ export function initGraph3d(scope: Scope): void {
 		const g = sample(fn, scope, domain, n);
 		if (g.finite === 0) {
 			grid = null;
+			shading = null;
 			setReadout(null);
 			errEl!.textContent = g.err ?? 'No finite value in this domain';
 		} else {
 			grid = g;
+			shading = shadeGrid(g);
 			setReadout(g);
 			errEl!.textContent = '';
 		}
@@ -647,6 +742,7 @@ export function initGraph3d(scope: Scope): void {
 			fn = null;
 			errEl!.textContent = e instanceof CalcError ? e.message : 'Invalid expression';
 			grid = null;
+			shading = null;
 			setReadout(null);
 			render();
 			return;
