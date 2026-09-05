@@ -1,8 +1,12 @@
 // Place any global data in this file. You can import this data from anywhere in your site with the `import` keyword.
 
 export const SITE_TITLE = 'QCSunny Lab';
+/** The tool count here is hand-written but not free-floating: e2e/seo.spec.ts
+ *  asserts it against the number llms-txt.mjs derives from REGISTRY, so adding a
+ *  tool without touching this line fails the build gate. It has drifted twice
+ *  already (34, then 48). */
 export const SITE_DESCRIPTION =
-	'个人博客与免费在线工具集：科学计算器、单位换算、复利与房贷计算、二维码生成器等 48 个纯浏览器端工具。Free browser-based tools: calculators, converters, finance helpers and more.';
+	'个人博客与免费在线工具集：科学计算器、单位换算、复利与房贷计算、二维码生成器等 49 个纯浏览器端工具。Free browser-based tools: calculators, converters, finance helpers and more.';
 
 /** GitHub Sponsors (or any donation) page for the "support this site" block on
  *  the About page and post footers. Empty = the sponsor button is not rendered;

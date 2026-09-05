@@ -62,6 +62,15 @@ test('llms.txt is generated and its stated tool count matches its listing', asyn
 	const postLinks = (body.match(/\/blog\//g) ?? []).length;
 	expect(claimed).toBe(toolLinks - postLinks);
 	expect(postLinks).toBeGreaterThan(0);
+
+	// SITE_DESCRIPTION states the same count in prose, and it is the site's meta
+	// description on every page — the one number here that nothing derives. It
+	// has drifted twice (34 while the registry held 48, then 48 while it held
+	// 49), each time shipping a wrong number to every search result. llms.txt
+	// counts REGISTRY at build time, so pin one to the other.
+	const meta = await (await request.get('/')).text();
+	const stated = Number(meta.match(/等 (\d+) 个纯浏览器端工具/)?.[1]);
+	expect(stated, 'SITE_DESCRIPTION must state the registry tool count').toBe(claimed);
 });
 
 test('blog posts get a generated 1200x630 OG card', async ({ page, request }) => {
