@@ -5,11 +5,12 @@ import sitemap from '@astrojs/sitemap';
 import { defineConfig, fontProviders } from 'astro/config';
 
 import llmsTxt from './llms-txt.mjs';
+import ogImages from './og-images.mjs';
 
 // https://astro.build/config
 export default defineConfig({
 	site: 'https://qcsunny.org',
-	integrations: [mdx(), sitemap(), llmsTxt()],
+	integrations: [mdx(), sitemap(), llmsTxt(), ogImages()],
 	fonts: [
 		{
 			provider: fontProviders.local(),

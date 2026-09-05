@@ -7,17 +7,24 @@ import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
 import { ADSENSE_CLIENT, AD_SLOTS, SITE_TITLE } from '../consts';
 
-type Props = CollectionEntry<'blog'>['data'] & { minutes?: number };
+type Props = CollectionEntry<'blog'>['data'] & { minutes?: number; slug?: string };
 
-const { title, description, pubDate, updatedDate, heroImage, minutes } = Astro.props;
+const { title, description, pubDate, updatedDate, heroImage, minutes, slug } = Astro.props;
 
 const isZh = /[\p{Script=Han}]/u.test(title);
 const pageLang = isZh ? 'zh-CN' : 'en';
 
 const pageUrl = new URL(Astro.url.pathname, Astro.site).href;
-const imageUrl = heroImage
-	? new URL(typeof heroImage === 'string' ? heroImage : heroImage.src, Astro.site).href
-	: new URL('/og.png', Astro.site).href;
+// Social card: an authored heroImage wins, otherwise the per-post card that
+// og-images.mjs rasterizes into dist/og/<slug>.png at build time.
+const socialImage = heroImage
+	? typeof heroImage === 'string'
+		? heroImage
+		: heroImage.src
+	: slug
+		? `/og/${slug}.png`
+		: '/og.png';
+const imageUrl = new URL(socialImage, Astro.site).href;
 
 const jsonLd = {
 	'@context': 'https://schema.org',
@@ -51,7 +58,7 @@ const jsonLd = {
 
 <html lang={pageLang}>
 	<head>
-		<BaseHead title={title} description={description} image={heroImage} />
+		<BaseHead title={title} description={description} image={socialImage} />
 		{ADSENSE_CLIENT && (
 			<script
 				async

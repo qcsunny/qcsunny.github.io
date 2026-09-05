@@ -364,7 +364,7 @@ const savingsGoal: FormConfig = {
 // --- auto loan & out-of-pocket calculator ---------------------------------------
 
 const autoLoan: FormConfig = {
-	intro: 'Estimate monthly car payments, interest, taxes, insurance and total out-of-pocket落地 cost.',
+	intro: 'Estimate monthly car payments, interest, taxes, insurance and total out-of-pocket cost.',
 	fields: [
 		{ id: 'carPrice', label: 'Vehicle price', labelZh: '车辆裸车指导价', suffix: '($ / ¥)', type: 'number', def: '150000', step: 'any', min: '0', required: true },
 		{ id: 'downPct', label: 'Down payment percentage', labelZh: '首付比例', suffix: '(%)', type: 'number', def: '20', step: 'any', min: '0', max: '100', required: true },
@@ -2353,7 +2353,7 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		category: 'finance',
 		name: 'Auto Loan & Out-of-Pocket Calculator',
 		nameZh: '汽车贷款与购车落地成本计算器',
-		description: 'Monthly car loan payments, interest, down payment, purchase tax, insurance, and total out-of-pocket落地 cost.',
+		description: 'Monthly car loan payments, interest, down payment, purchase tax, insurance, and total out-of-pocket cost.',
 		descriptionZh: '测算汽车贷款月供利息，综合购置税、车险、上牌费等全套提车落地总成本。',
 		kind: 'form',
 		config: autoLoan,

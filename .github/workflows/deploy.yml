@@ -16,6 +16,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      # og-images.mjs rasterizes Chinese post titles through libvips/fontconfig,
+      # which needs a CJK face on the runner or the cards come out as tofu.
+      - name: Install CJK font for OG cards
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq fonts-droid-fallback
       - name: Install, build, and upload site
         uses: withastro/action@v3
         with:

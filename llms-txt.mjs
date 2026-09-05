@@ -87,8 +87,9 @@ export default function llmsTxt() {
 			'astro:build:done': ({ logger, dir }) => {
 				const text = render();
 				fs.writeFileSync(path.join(dir.pathname, 'llms.txt'), text);
-				const toolCount = (text.match(/^- \[/gm) ?? []).length;
-				logger.info(`llms.txt generated (${toolCount} entries)`);
+				const tools = (text.match(/^- \[/gm) ?? []).length;
+				const posts = (text.match(/\/blog\//g) ?? []).length;
+				logger.info(`llms.txt generated (${tools - posts} tools, ${posts} posts)`);
 			},
 		},
 	};

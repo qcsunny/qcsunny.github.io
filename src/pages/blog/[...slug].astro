@@ -19,6 +19,6 @@ const cjk = body.match(/[\p{Script=Han}]/gu)?.length ?? 0;
 const minutes = Math.max(1, Math.round((words - cjk) / 220 + cjk / 400));
 ---
 
-<BlogPost {...post.data} minutes={minutes}>
+<BlogPost {...post.data} minutes={minutes} slug={post.id}>
 	<Content />
 </BlogPost>
