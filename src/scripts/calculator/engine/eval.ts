@@ -129,6 +129,13 @@ export function compileNode(node: Node): (scope: Scope) => number {
 export function formatNumber(n: number): string {
 	if (Number.isNaN(n)) return 'undefined';
 	if (!Number.isFinite(n)) return n > 0 ? '∞' : '-∞';
+	// An exact integer inside the safe range already has a short, lossless
+	// decimal form, so falling through to the 1e12 exponential cutoff would
+	// throw away digits the double is holding perfectly: 1 TiB rendered as
+	// `1.099512e+12` instead of `1099511627776`, when the exact byte count is
+	// the entire reason someone opens a data-size converter. Above 2^53 the
+	// double genuinely cannot hold the digits, so exponential stays honest.
+	if (Number.isSafeInteger(n)) return String(n);
 	const abs = Math.abs(n);
 	if (abs !== 0 && (abs >= 1e12 || abs < 1e-9)) {
 		return trimExp(n.toExponential(6));
