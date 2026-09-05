@@ -131,11 +131,17 @@ const jsonLd = {
 				margin: auto;
 				padding: 2rem 0 4rem;
 				color: var(--fg);
-				font-size: 1.05rem;
+				/* 18px, matching body. The old 1.05rem resolved against the 16px
+				   root font size, not body's 18px, so the article text was the
+				   smallest on the site — almost certainly a slip. */
+				font-size: 1.125rem;
 				line-height: 1.85;
 				overflow-wrap: break-word;
 				word-break: break-word;
 			}
+			/* Code blocks and tables break out of the prose measure — the rule
+			   lives in global.css, because this <style> is scoped and a
+			   descendant selector cannot reach markdown-rendered elements. */
 			.back-nav {
 				margin-bottom: 2rem;
 			}

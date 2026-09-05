@@ -29,9 +29,16 @@
 	   than in `padding`, so the box-sizing of the container never matters and
 	   the same rule works on a 320px phone and a 4K monitor. */
 	--w-page: 720px; /* default single-column page, tool pages */
-	--w-prose: 780px; /* long-form reading: blog posts, about, privacy */
-	--w-wide: 960px; /* listings and grids: blog index, calendar */
-	--w-max: 1040px; /* widest layout: home page, workbench tools */
+	--w-prose: 612px; /* long-form reading: blog posts, about, privacy.
+	                     34em at the 18px these three pages share — about 34
+	                     Chinese characters or 65 Latin characters per line,
+	                     the middle of the comfortable range. Widening this
+	                     without also cutting the font size pushes the line
+	                     past the point where the eye reliably finds the next
+	                     one on the return sweep. */
+	--w-wide: 960px; /* listings and grids: blog index, calendar; also what
+	                    code blocks and tables break out to inside prose */
+	--w-max: 1040px; /* widest layout: home page, nav bar, workbench tools */
 
 	/* legacy aliases used by the original template */
 	--black: 24, 24, 27;
@@ -147,6 +154,28 @@ p {
 }
 .prose h3 {
 	margin-top: 1.8em;
+}
+/* Code blocks and tables break out of the prose measure. Line-length limits
+   exist for text the eye reads left-to-right and sweeps back on; neither of
+   these is that — a code line scanned by indentation is fine at 84 columns,
+   and a table narrower than its content just grows a scrollbar. So prose keeps
+   its 34em measure while these two get --w-wide.
+
+   Gated on a viewport that can actually hold --w-wide plus main's gutter, so
+   narrow screens keep the same-width behaviour and nothing needs 100vw (which
+   counts the scrollbar and would overflow). box-sizing is explicit because pre
+   carries padding and --w-wide here means the *outer* edge — without it the
+   padding extends past the negative margin and the block sits off-centre.
+
+   This has to be global, not BlogPost.astro's scoped <style>: these elements
+   come from rendered markdown and carry no scope attribute, which is why
+   .prose p / h2 / h3 above live here too. */
+@media (min-width: 1010px) {
+	.prose :is(pre, table) {
+		box-sizing: border-box;
+		width: var(--w-wide);
+		margin-inline: calc((var(--w-prose) - var(--w-wide)) / 2);
+	}
 }
 
 textarea {
