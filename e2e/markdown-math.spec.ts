@@ -66,6 +66,21 @@ test('dollar signs used as money stay text', async ({ page }) => {
 	await expect(preview.locator('.t-math-inline .katex')).toBeVisible();
 });
 
+// `$PATH` is a dollar the maths rule must not see. It cannot, because parseInline()
+// lifts code spans out before that rule runs — otherwise the two dollars pair
+// across the closing </code> and swallow the markup between them.
+test('a dollar inside inline code does not pair with a real formula', async ({ page }) => {
+	await page.goto(TOOL);
+	const preview = page.locator('.t-md-preview-body');
+
+	await page.locator('.t-md-textarea').fill('Read `$PATH`, then compute $x^2$.\n');
+
+	await expect(preview.locator('code.t-inline-code')).toHaveText('$PATH');
+	await expect(preview.locator('.t-math-inline')).toHaveCount(1);
+	await expect(preview.locator('.t-math-inline .katex')).toBeVisible();
+	await expect(preview.locator('code .katex, code .t-math')).toHaveCount(0);
+});
+
 test('a formula KaTeX cannot parse keeps its source visible', async ({ page }) => {
 	await page.goto(TOOL);
 	const editor = page.locator('.t-md-textarea');

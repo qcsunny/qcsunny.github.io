@@ -609,20 +609,41 @@ export async function renderMathIn(root: ParentNode, output: MathOutput = 'htmlA
 function parseInline(text: string): string {
 	let s = text;
 
+	// Inline code comes out first, replaced by a placeholder, and goes back in at
+	// the very end. Every rule below is a regex over the whole line, and none of
+	// them can see structure — so with `code` left in place they happily reach
+	// inside it, and into the markup it emits:
+	//
+	//   `snake_case_name`   the italic rule matches _case_ → snake<em>case</em>name
+	//   `**literal**`       the bold rule strips the asterisks
+	//   `$PATH` and $x$     the maths rule pairs the two dollars across the </code>
+	//   `https://a.test`    the autolinker nests an <a> inside the <code>
+	//
+	// This is the same lift-and-restore trick parseMarkdownToHtml() uses for fenced
+	// blocks, one level down. Escaping happens per-part: the code content here, the
+	// rest of the line below, so the placeholder itself passes through untouched.
+	//
+	// The placeholder also has to be inert to every rule it passes: `%%ICODE_0%%`
+	// was the first attempt, and the italic rule paired the underscores of two
+	// adjacent placeholders — `_0%%, %%ICODE_` became an <em> and both code spans
+	// were lost. Hence digits only, no `_`, `*`, `~` or `$` in the token.
+	const codeSpans: string[] = [];
+	s = s.replace(/`([^`]+)`/g, (_, code: string) => {
+		codeSpans.push(`<code class="t-inline-code">${escapeHtml(code)}</code>`);
+		return `%%ICODE${codeSpans.length - 1}%%`;
+	});
+
 	// Escape raw HTML inside inline text
 	s = escapeHtml(s);
-
-	// Inline code: `code`
-	s = s.replace(/`([^`]+)`/g, '<code class="t-inline-code">$1</code>');
 
 	// Inline math: $math$ — but a lone `$` used as currency pairs up with the next
 	// one on the same line, so `costs $5 or $10` would become a formula reading
 	// "5 or ". Nobody writes `$ x $` deliberately, so padding whitespace is the
 	// signal that this is money and not maths.
 	//
-	// `s` was HTML-escaped at the top of this function, so `tex` is already safe
-	// to drop into an attribute and a text node — escaping it again would turn a
-	// `<` in the formula into a literal `&lt;`.
+	// `s` was HTML-escaped just above, so `tex` is already safe to drop into an
+	// attribute and a text node — escaping it again would turn a `<` in the formula
+	// into a literal `&lt;`.
 	s = s.replace(/\$([^$]+)\$/g, (whole, tex: string) =>
 		tex !== tex.trim()
 			? whole
@@ -658,6 +679,9 @@ function parseInline(text: string): string {
 
 	// Keyboard keys: <kbd>key</kbd>
 	s = s.replace(/&lt;kbd&gt;(.*?)&lt;\/kbd&gt;/gi, '<kbd class="t-md-kbd">$1</kbd>');
+
+	// Code spans back in, now that no rule can reach into them.
+	s = s.replace(/%%ICODE(\d+)%%/g, (_, idx) => codeSpans[Number(idx)] ?? '');
 
 	return s;
 }

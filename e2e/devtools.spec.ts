@@ -51,6 +51,29 @@ test('markdown preview renders live HTML', async ({ page }) => {
 	await expect(preview.locator('code')).toHaveText('code');
 });
 
+// Every rule in parseInline() is a regex over the whole line and none of them can
+// see structure, so inline code has to be lifted out before they run and put back
+// after. With it left in place they reached inside it: the italic rule turned
+// `snake_case_name` into snake<em>case</em>name, the bold rule ate the asterisks
+// of `**literal**`, and the autolinker nested an <a> inside the <code>.
+test('inline code is opaque to the other inline rules', async ({ page }) => {
+	await page.goto('/tools/markdown-preview/');
+
+	const preview = page.locator('.t-md-preview-body');
+	await page
+		.locator('.t-md-textarea')
+		.fill('`snake_case_name`, `**literal**`, `https://a.test`, `<b>tag</b>`\n');
+
+	const codes = preview.locator('code.t-inline-code');
+	await expect(codes).toHaveCount(4);
+	await expect(codes.nth(0)).toHaveText('snake_case_name');
+	await expect(codes.nth(1)).toHaveText('**literal**');
+	await expect(codes.nth(2)).toHaveText('https://a.test');
+	await expect(codes.nth(3)).toHaveText('<b>tag</b>');
+	// Nothing was injected inside any of them.
+	await expect(preview.locator('code em, code strong, code a')).toHaveCount(0);
+});
+
 // The SQL tokenizer used to have no branch for a bare '-' or '/': the word scan
 // stopped on them without advancing, so `a - b` spun forever and froze the tab.
 // These three specs pin the fix and the two literal-safety properties that a
