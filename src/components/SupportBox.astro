@@ -1,0 +1,110 @@
+---
+// "Support this site" block, shared by the About page and post footers.
+// Deliberately links only to things that always exist (repo, issues, email);
+// the sponsor button appears only once SPONSOR_URL is filled in, the same
+// empty-means-off convention used for ADSENSE_CLIENT.
+import { SPONSOR_URL } from '../consts';
+
+const REPO = 'https://github.com/qcsunny/qcsunny.github.io';
+---
+
+<aside class="support-box">
+	<h3>
+		<span class="i18n-zh">💛 支持本站</span>
+		<span class="i18n-en">💛 Support This Site</span>
+	</h3>
+	<p>
+		<span class="i18n-zh"
+			>本站所有工具永久免费、无需注册、不含任何追踪脚本，由我在业余时间维护。如果它帮你省下了时间，可以用下面任一方式支持：</span
+		>
+		<span class="i18n-en"
+			>Everything here is free, login-free and tracker-free, built and maintained in my spare time. If it
+			saves you time, any of these helps:</span
+		>
+	</p>
+	<div class="support-links">
+		<a class="support-chip" href={REPO} target="_blank" rel="noopener">
+			<span class="i18n-zh">⭐ 给仓库点个 Star</span>
+			<span class="i18n-en">⭐ Star the repo</span>
+		</a>
+		<a class="support-chip" href={`${REPO}/issues`} target="_blank" rel="noopener">
+			<span class="i18n-zh">💬 反馈问题或提需求</span>
+			<span class="i18n-en">💬 Report a bug / request a tool</span>
+		</a>
+		<a class="support-chip" href="mailto:admin@qcsunny.org">
+			<span class="i18n-zh">📧 邮件联系</span>
+			<span class="i18n-en">📧 Email me</span>
+		</a>
+		{
+			SPONSOR_URL && (
+				<a class="support-chip primary" href={SPONSOR_URL} target="_blank" rel="noopener">
+					<span class="i18n-zh">💖 赞助支持</span>
+					<span class="i18n-en">💖 Sponsor</span>
+				</a>
+			)
+		}
+	</div>
+</aside>
+
+<style>
+	.support-box {
+		margin: 3rem 0 0;
+		padding: 1.6rem 1.8rem;
+		background: var(--card);
+		border: 1px solid var(--gridline);
+		border-radius: 14px;
+		box-shadow: var(--box-shadow);
+	}
+
+	.support-box h3 {
+		font-size: 1.15rem;
+		font-weight: 700;
+		color: var(--fg);
+		margin: 0 0 0.5em;
+	}
+
+	.support-box p {
+		font-size: 0.92rem;
+		color: var(--dim);
+		line-height: 1.7;
+		margin: 0 0 1.1rem;
+	}
+
+	.support-links {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.6rem;
+	}
+
+	.support-chip {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.5em 0.95em;
+		border: 1px solid var(--gridline);
+		border-radius: 999px;
+		background: var(--bg);
+		color: var(--fg);
+		font-size: 0.88rem;
+		font-weight: 600;
+		text-decoration: none;
+		transition: border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+	}
+
+	.support-chip:hover {
+		border-color: var(--accent);
+		color: var(--accent);
+		transform: translateY(-2px);
+		text-decoration: none;
+	}
+
+	.support-chip.primary {
+		background: var(--accent);
+		border-color: var(--accent);
+		color: var(--on-accent);
+	}
+
+	.support-chip.primary:hover {
+		color: var(--on-accent);
+		opacity: 0.92;
+	}
+</style>

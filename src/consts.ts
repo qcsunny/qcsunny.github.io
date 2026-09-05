@@ -2,7 +2,12 @@
 
 export const SITE_TITLE = 'QCSunny Lab';
 export const SITE_DESCRIPTION =
-	'个人博客与免费在线工具集：科学计算器、单位换算、复利与房贷计算、二维码生成器等 34 个纯浏览器端工具。Free browser-based tools: calculators, converters, finance helpers and more.';
+	'个人博客与免费在线工具集：科学计算器、单位换算、复利与房贷计算、二维码生成器等 48 个纯浏览器端工具。Free browser-based tools: calculators, converters, finance helpers and more.';
+
+/** GitHub Sponsors (or any donation) page for the "support this site" block on
+ *  the About page and post footers. Empty = the sponsor button is not rendered;
+ *  the star / issue / email links show on their own. */
+export const SPONSOR_URL = '';
 
 /** Cloudflare Web Analytics beacon token — create a free account at
  *  dash.cloudflare.com, add the site, then paste the token here. Empty = off. */

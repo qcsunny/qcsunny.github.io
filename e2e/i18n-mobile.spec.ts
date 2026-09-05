@@ -65,3 +65,17 @@ test('mobile viewport: blog index has no horizontal overflow', async ({ page }) 
 	);
 	expect(overflow).toBeLessThanOrEqual(0);
 });
+
+// The About page and post pages carry the widest fixed-width content (support
+// chips, tool chips, code blocks), so they get the same 375px guard.
+for (const route of ['/about/', '/blog/uuid-v4-vs-v7-database-guide/']) {
+	test(`mobile viewport: ${route} has no horizontal overflow`, async ({ page }) => {
+		await page.setViewportSize({ width: 375, height: 667 });
+		await page.goto(route);
+
+		const overflow = await page.evaluate(
+			() => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+		);
+		expect(overflow).toBeLessThanOrEqual(0);
+	});
+}
