@@ -72,3 +72,47 @@ test('every real @font-face uses font-display: swap', async ({ page }) => {
 		expect(face.status, `${face.family} did not load`).toBe('loaded');
 	}
 });
+
+// Both font stacks are custom properties, and a `var()` naming one that does not
+// exist takes the whole declaration with it rather than falling back — which is
+// exactly what happened while --font-cjk was defined only under
+// html[data-theme='dark']: in light mode body's `var(--font-atkinson),
+// var(--font-cjk)` was invalid at computed-value time, so the site rendered
+// without Atkinson at all. The `real.length === 2` check above was what caught
+// it, but only indirectly. Assert the resolved values.
+test('the font stacks resolve in both themes', async ({ page }) => {
+	await page.goto('/');
+
+	for (const theme of ['light', 'dark'] as const) {
+		await page.evaluate((t) => {
+			if (t === 'dark') document.documentElement.dataset.theme = 'dark';
+			else document.documentElement.removeAttribute('data-theme');
+		}, theme);
+
+		const body = await page.evaluate(() => getComputedStyle(document.body).fontFamily);
+		expect(body, `body font-family in ${theme} theme`).toContain('Atkinson');
+		expect(body, `CJK fallback in ${theme} theme`).toContain('PingFang SC');
+	}
+});
+
+// --font-mono was referenced in 14 places under src/components/tools/ before
+// anything defined it, so `var(--font-mono, monospace)` quietly served the
+// browser default. Pin one representative surface per side of the site.
+test('monospace surfaces resolve to the shared stack', async ({ page }) => {
+	await page.goto('/tools/json-formatter/');
+	// The formatter's panes are built by workbench.ts at runtime, so this only
+	// exists once its script has run — the locator waits.
+	const out = await page
+		.locator('.t-json-editor')
+		.first()
+		.evaluate((el) => getComputedStyle(el).fontFamily);
+	expect(out, 'formatter editor pane').toContain('ui-monospace');
+	expect(out, 'formatter must also cover Chinese in JSON values').toContain('PingFang SC');
+
+	await page.goto('/blog/glm-5-3-vs-hy4-preview/');
+	const code = await page
+		.locator('.prose code')
+		.first()
+		.evaluate((el) => getComputedStyle(el).fontFamily);
+	expect(code, 'prose inline code').toContain('ui-monospace');
+});

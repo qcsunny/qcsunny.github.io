@@ -143,7 +143,7 @@ const scientificKeys: Key[] = [
 	.calc-display {
 		width: 100%;
 		box-sizing: border-box;
-		font-family: ui-monospace, 'SFMono-Regular', Consolas, Menlo, monospace;
+		font-family: var(--font-mono);
 		font-size: clamp(1.15rem, 3.5vw, 1.5rem);
 		text-align: right;
 		padding: 0.65em 0.75em;
@@ -160,7 +160,7 @@ const scientificKeys: Key[] = [
 		min-height: 1.6em;
 		margin: 0.35em 0.5em 0.75em;
 		text-align: right;
-		font-family: ui-monospace, 'SFMono-Regular', Consolas, Menlo, monospace;
+		font-family: var(--font-mono);
 		font-size: 0.95rem;
 		color: var(--dim);
 	}
@@ -189,7 +189,7 @@ const scientificKeys: Key[] = [
 		background: none;
 		font: inherit;
 		font-size: 0.85rem;
-		font-family: ui-monospace, 'SFMono-Regular', Consolas, Menlo, monospace;
+		font-family: var(--font-mono);
 		padding: 0.25em 0.3em 0.25em 0.75em;
 		cursor: pointer;
 		color: var(--fg);
@@ -333,12 +333,12 @@ const scientificKeys: Key[] = [
 		border-radius: 6px;
 	}
 	.calc-history .h-expr {
-		font-family: ui-monospace, 'SFMono-Regular', Consolas, Menlo, monospace;
+		font-family: var(--font-mono);
 		color: var(--fg);
 		overflow-wrap: anywhere;
 	}
 	.calc-history .h-res {
-		font-family: ui-monospace, 'SFMono-Regular', Consolas, Menlo, monospace;
+		font-family: var(--font-mono);
 		color: var(--dim);
 		white-space: nowrap;
 	}

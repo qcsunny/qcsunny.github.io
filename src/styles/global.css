@@ -54,6 +54,16 @@
 		-apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC',
 		'Source Han Sans SC', sans-serif;
 
+	/* Every monospace surface on the site: prose code blocks, the tool output
+	   panes, the date/meta lines. ui-monospace first picks up SF Mono / Cascadia
+	   Code where the platform has one, and the named faces cover the rest.
+
+	   This variable is referenced in 14 places under src/components/tools/ that
+	   were written as `var(--font-mono, monospace)` before anything defined it,
+	   so twelve of them silently rendered in the browser default — Courier New on
+	   Windows — next to code blocks in the stack above. */
+	--font-mono: ui-monospace, 'SFMono-Regular', Consolas, Menlo, monospace;
+
 	/* legacy aliases used by the original template */
 	--black: 24, 24, 27;
 	--gray: 113, 113, 122;
@@ -235,12 +245,7 @@ img {
 }
 
 code {
-	font-family:
-		ui-monospace,
-		'SFMono-Regular',
-		Consolas,
-		Menlo,
-		monospace;
+	font-family: var(--font-mono);
 	font-size: 0.88em;
 	padding: 0.15em 0.4em;
 	background-color: var(--accent-soft);
@@ -255,12 +260,7 @@ pre {
 }
 pre > code {
 	all: unset;
-	font-family:
-		ui-monospace,
-		'SFMono-Regular',
-		Consolas,
-		Menlo,
-		monospace;
+	font-family: var(--font-mono);
 	color: var(--code-fg);
 }
 
@@ -287,7 +287,7 @@ blockquote {
 	background: color-mix(in srgb, var(--accent) 6%, var(--card));
 	border-left: 4px solid var(--accent);
 	border-radius: 0 10px 10px 0;
-	font-family: var(--font-mono, ui-monospace, monospace);
+	font-family: var(--font-mono);
 	font-size: 0.94rem;
 	font-weight: 500;
 	color: var(--fg);
