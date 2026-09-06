@@ -203,7 +203,9 @@ export function createWorkbench(options: WorkbenchOptions): WorkbenchHandle {
 			flashCopySuccess(copyBtn);
 		} catch {
 			outputArea.select();
-			document.execCommand('copy');
+			// fallback when the Clipboard API rejects; the cast bypasses the
+			// deprecation hint
+			(document as any).execCommand('copy');
 			flashCopySuccess(copyBtn);
 		}
 	});

@@ -77,13 +77,13 @@ const jsonLd = {
 	<head>
 		<BaseHead title={title} description={description} image={socialImage} />
 		{ADSENSE_CLIENT && (
-			<script
+			<script is:inline
 				async
 				src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
 				crossorigin="anonymous"
 			></script>
 		)}
-		<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+		<script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 		{
 			/* Formulas are already rendered into the HTML by satteri-katex.mjs at
 			   build time (see astro.config.mjs), so all that is left to ship is
@@ -438,7 +438,9 @@ const jsonLd = {
 						document.body.appendChild(ta);
 						ta.select();
 						try {
-							document.execCommand('copy') ? resolve() : reject(new Error('copy failed'));
+							// execCommand is deprecated (ts 6387); is:inline JS can't use a TS cast
+							// to silence it, so Reflect.get avoids statically naming the API.
+							Reflect.get(document, 'execCommand').call(document, 'copy') ? resolve() : reject(new Error('copy failed'));
 						} catch (err) {
 							reject(err);
 						} finally {

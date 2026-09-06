@@ -53,7 +53,7 @@ const siteJsonLd = {
 <html lang="en">
 	<head>
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-		<script type="application/ld+json" set:html={JSON.stringify(siteJsonLd)} />
+		<script is:inline type="application/ld+json" set:html={JSON.stringify(siteJsonLd)} />
 	</head>
 	<body>
 		<Header />

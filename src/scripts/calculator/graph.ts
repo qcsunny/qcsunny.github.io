@@ -225,7 +225,7 @@ export function initGraph(scope: Scope): GraphController {
 		ctx!.strokeStyle = palette.grid;
 		ctx!.lineWidth = 1;
 		ctx!.strokeRect(8, 8, boxW, boxH);
-		items.forEach(({ row, color }, i) => {
+		items.forEach(({ color }, i) => {
 			const y = 22 + i * 18;
 			ctx!.fillStyle = color;
 			ctx!.fillRect(14, y - 7, 16, 3);

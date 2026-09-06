@@ -27,7 +27,7 @@ test('C and backspace actions work from the keypad', async ({ page }) => {
 	const display = page.locator('#calc-display');
 	const keypad = page.locator('.calc-keypad-standard');
 
-	for (const key of ['1', '2', '3']) {
+	for (let i = 0; i < 3; i++) {
 		await keypad.locator('button', { hasText: '1' }).first().click();
 	}
 	await expect(display).toHaveValue('111');

@@ -322,7 +322,9 @@ export function initJson(host: HTMLElement): void {
 			}, 1500);
 		} catch {
 			outputArea.select();
-			document.execCommand('copy');
+			// fallback when the Clipboard API rejects (denied permission,
+			// non-secure context); the cast bypasses the deprecation hint
+			(document as any).execCommand('copy');
 		}
 	}
 

@@ -35,7 +35,6 @@ test('compound-interest renders the year-by-year table', async ({ page }) => {
 test('loan-payment shows required-field prompt when emptied', async ({ page }) => {
 	await page.goto('/finance/loan-payment/');
 
-	const principal = page.locator('#t-f-principal, #t-f-P').first();
 	// generic: first required numeric field
 	const anyField = page.locator('.t-form input[type="number"]').first();
 	await anyField.fill('');
