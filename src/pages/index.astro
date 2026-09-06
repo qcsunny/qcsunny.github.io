@@ -9,7 +9,12 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 import { CALCULATOR_FEATURED, REGISTRY } from '../tools/registry';
 
 const all = [...CALCULATOR_FEATURED, ...REGISTRY];
-const bySlug = (slug: string) => all.find((e) => e.slug === slug);
+// Two entries share the slug `compound-interest`: the real /finance/ tool and a
+// /calculators/ redirect that points at it. find() returns the first match and
+// REGISTRY lists calculators before finance, so this used to hand the featured
+// card a redirect page. A featured card has to land on a real page — the whole
+// point of picking it by hand is that it is somewhere a reader actually goes.
+const bySlug = (slug: string) => all.find((e) => e.slug === slug && e.kind !== 'redirect');
 
 // Hand-picked high-frequency tools across developer, finance and utility categories
 const featuredSlugs = [
