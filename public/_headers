@@ -10,4 +10,11 @@
 /og/*
   Cache-Control: public, max-age=86400
 
+# 三个图标 URL 固定但内容会随 `npm run icons` 重新生成，所以给一天缓存而不是
+# immutable：换了一套图标后不该等浏览器自己过期才生效。
+/favicon.svg
+/favicon.ico
+/apple-touch-icon.png
+  Cache-Control: public, max-age=86400
+
 # HTML 保持默认的 must-revalidate：部署后要立刻可见，不在此覆盖。

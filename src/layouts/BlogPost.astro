@@ -104,7 +104,14 @@ const jsonLd = {
 				width: min(var(--w-shell), 100% - 2em);
 				max-width: var(--w-shell);
 				margin: 0 auto;
-				padding: 3em 0;
+				/* 2.5em = 45px above the back-to-blog link, down from 86px of
+				   dead space. A post carries no hero image by design (the OG card
+				   is the only place that asset is used), so .hero-image below is
+				   an empty box and the old 3em here stacked on .prose's 2rem top padding —
+				   two layers of top spacing with nothing to separate them from. .prose's is
+				   now 0, so this one owns the rhythm on its own. The bottom stays 3em: the
+				   article's end spacing and the ad slot below are untouched. */
+				padding: 2.5em 0 3em;
 				box-sizing: border-box;
 			}
 			/* reading column + TOC column. At ≥1200px: article left, TOC right
@@ -170,7 +177,12 @@ const jsonLd = {
 				 * to the grid width and every breakout below comes out
 				 * un-centred */
 				width: 100%;
-				padding: 2rem calc((var(--w-outer) - var(--w-prose)) / 2) 4rem;
+				/* 0 on top: this 2rem used to sit between the hero image and the
+				   text, and the hero image is never rendered, so it stacked on
+				   main's own top padding into 86px above a single back link. main
+				   owns that rhythm now (2.5em). The horizontal centrer padding and the
+				   4rem bottom are unchanged. */
+				padding: 0 calc((var(--w-outer) - var(--w-prose)) / 2) 4rem;
 				color: var(--fg);
 				/* 16px / 1.7 — the GitHub-docs body figure. The old value was
 				   18px, which at the requested 800–860px column put ~47 CJK

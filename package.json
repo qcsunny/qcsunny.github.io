@@ -7,7 +7,8 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "icons": "node scripts/make-icons.mjs",
+    "build": "node scripts/make-icons.mjs && astro build",
     "preview": "astro preview",
     "check": "astro check",
     "test": "playwright test",

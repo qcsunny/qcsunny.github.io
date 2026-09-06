@@ -267,6 +267,45 @@ for (const [route, en, zh] of [
 // article) and its fold-out list once sat inside a display:none wrapper.
 const POST = '/blog/canvas-2d-surface-plot/';
 
+test('the space above the back-to-blog link is one padding, not a stack', async ({ page }) => {
+	// A post carries no hero image by design (the OG card is the only place the
+	// asset is used), so .hero-image renders as an empty box. main reserved 3em
+	// of top padding and .prose reserved 2rem of its own to separate the text
+	// from that image, and with nothing between the two the stack read as 88px
+	// of dead space above a single back link. .prose's share is now 0 and main
+	// owns the whole gap — this pins the total so the stack cannot come back.
+	const gap = () =>
+		page.evaluate(() => {
+			const bottom = document.querySelector('header')!.getBoundingClientRect().bottom;
+			const back = document.querySelector('.back-link')!.getBoundingClientRect();
+			return {
+				aboveBack: Math.round((back.top - bottom) * 10) / 10,
+				heroHeight: Math.round(document.querySelector('.hero-image')!.getBoundingClientRect().height * 10) / 10,
+				mainPadTop: getComputedStyle(document.querySelector('main')!).paddingTop,
+				prosePadTop: getComputedStyle(document.querySelector('.prose')!).paddingTop,
+				titleTop: Math.round(document.querySelector('.title')!.getBoundingClientRect().top * 10) / 10,
+			};
+		});
+
+	for (const size of [WIDE, { width: 375, height: 740 }]) {
+		await page.setViewportSize(size);
+		if (size.width === 1440) await page.goto(POST);
+		await page.waitForTimeout(150);
+
+		const g = await gap();
+		// neither of the two paddings is allowed back, and the empty hero image
+		// is not allowed to hold a slot in the stack
+		expect(g.prosePadTop, `${size.width} — .prose top padding`).toBe('0px');
+		expect(g.heroHeight, `${size.width} — .hero-image height`).toBe(0);
+		// the gap is main's padding plus a couple of px of line-box leading;
+		// 88px is the regression this test exists to catch
+		expect(g.aboveBack, `${size.width} — gap above the back link`).toBeGreaterThanOrEqual(35);
+		expect(g.aboveBack, `${size.width} — gap above the back link`).toBeLessThanOrEqual(56);
+		// tightening it did not push the article title below the fold
+		expect(g.titleTop, `${size.width} — title`).toBeLessThan(240);
+	}
+});
+
 test('at 1440 the post page is a shell with a sticky TOC beside the reading column', async ({ page }) => {
 	await page.setViewportSize(WIDE);
 	await page.goto(POST);
