@@ -56,7 +56,9 @@ class Parser {
 		this.tokens = tokens;
 	}
 
-	private peek(): Token | undefined {
+	/** Public so the module-level `parse()` can peek for a trailing token after
+	 *  a full expression without consuming it. Read-only: never advances `i`. */
+	peek(): Token | undefined {
 		return this.tokens[this.i];
 	}
 

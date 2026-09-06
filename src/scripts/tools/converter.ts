@@ -7,9 +7,19 @@ import { bilingual, langAttr, langProp, onLang } from './i18n';
 import { getCategory, type UnitCategory, type UnitDef } from '../../tools/units';
 import type { ConverterConfig } from '../../tools/registry';
 
+/** Assert a value is defined, returning it narrowed. A plain `if (!cat) throw`
+ *  at the top of initConverter would narrow `cat` only along the straight code
+ *  after it; the nested closures below (labelOptions, populate, convert, …)
+ *  re-read `cat`, and TypeScript drops the narrowing across a function boundary
+ *  — so `cat.units[x]` inside them reverts to "possibly undefined". Giving `cat`
+ *  a non-optional declared type up front keeps every closure honest. */
+function need<T>(v: T | undefined, where: string): T {
+	if (v === undefined) throw new Error(`converter: missing ${where}`);
+	return v;
+}
+
 export function initConverter(host: HTMLElement, config: ConverterConfig): void {
-	const cat = getCategory(config.categoryId);
-	if (!cat) throw new Error(`converter: unknown category ${config.categoryId}`);
+	const cat = need(getCategory(config.categoryId), `category ${config.categoryId}`);
 
 	const names = Object.keys(cat.units);
 

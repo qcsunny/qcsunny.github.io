@@ -16,7 +16,7 @@ interface Heading {
 	depth: 2 | 3;
 }
 
-const { headings } = Astro.props;
+const { headings } = Astro.props as { headings: Heading[] };
 ---
 
 {
