@@ -16,6 +16,21 @@ header.site-header { position: sticky; top: 0; z-index: 100; background: #ffffff
 .nav-links { display: none; }
 }`;
 
+// At-rules whose block holds nested rules (selectors + declaration blocks) rather
+// than bare `prop: value` pairs. Inside them a `:` in selector position is a
+// pseudo-class (`a:hover`), not a declaration separator — only the latter takes a
+// trailing space (`color: red` vs the invalid `a: hover`).
+const RULE_CONTAINER_AT_RULES = new Set([
+	'media',
+	'supports',
+	'layer',
+	'container',
+	'scope',
+	'document',
+	'starting-style',
+	'keyframes',
+]);
+
 function formatCss(css: string, indentSize = 2): string {
 	const indentStr = ' '.repeat(indentSize);
 	let clean = css
@@ -26,6 +41,13 @@ function formatCss(css: string, indentSize = 2): string {
 	let result = '';
 	let indentLevel = 0;
 	let inComment = false;
+	// Stack of open `{`s: true when that block holds bare `prop: value` pairs
+	// (its `:` is a declaration colon), false when it holds nested rules (its `:`
+	// is a pseudo-class colon). Only declaration colons get a trailing space.
+	const blockIsDecl: boolean[] = [];
+	// Set after reading an at-rule keyword until its block opens, so `{` can be
+	// classified as a rule container (media/supports/…) vs a declaration block.
+	let nextBlockIsContainer = false;
 
 	for (let i = 0; i < clean.length; i++) {
 		const c = clean[i];
@@ -47,9 +69,19 @@ function formatCss(css: string, indentSize = 2): string {
 			continue;
 		}
 
+		if (c === '@') {
+			let j = i + 1;
+			while (j < clean.length && /[a-zA-Z-]/.test(clean[j])) j++;
+			nextBlockIsContainer = RULE_CONTAINER_AT_RULES.has(clean.slice(i + 1, j).toLowerCase());
+			result += '@';
+			continue;
+		}
+
 		if (c === '{') {
 			result = result.trimEnd() + ' {\n';
 			indentLevel++;
+			blockIsDecl.push(!nextBlockIsContainer);
+			nextBlockIsContainer = false;
 			result += indentStr.repeat(indentLevel);
 			continue;
 		}
@@ -61,15 +93,20 @@ function formatCss(css: string, indentSize = 2): string {
 
 		if (c === '}') {
 			indentLevel = Math.max(0, indentLevel - 1);
+			blockIsDecl.pop();
 			result = result.trimEnd() + '\n' + indentStr.repeat(indentLevel) + '}\n\n';
 			result += indentStr.repeat(indentLevel);
 			continue;
 		}
 
 		if (c === ':') {
-			result += ': ';
-			// skip extra spaces after colon
-			while (clean[i + 1] === ' ') i++;
+			if (blockIsDecl.length > 0 && blockIsDecl[blockIsDecl.length - 1]) {
+				result += ': ';
+				// skip extra spaces after colon
+				while (clean[i + 1] === ' ') i++;
+			} else {
+				result += ':';
+			}
 			continue;
 		}
 

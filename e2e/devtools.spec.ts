@@ -158,3 +158,58 @@ test('random generator draws distinct values from a large range fast', async ({ 
 		expect(n).toBeLessThanOrEqual(1000000);
 	}
 });
+
+// formatCss used to append a space after every ':', turning the pseudo-class in
+// `a:hover` / `::before` into the invalid `a: hover` / `: : before`. The colon
+// only takes a trailing space when it sits inside a declaration block.
+test('css formatter leaves pseudo-class colons alone', async ({ page }) => {
+	await page.goto('/tools/css-formatter/');
+
+	await page.locator('[data-role="input"]').fill('a:hover { color:red } .btn::before { content:"" }');
+	await page.getByRole('button', { name: /Format \(2 spaces\)|格式化 \(2 空格\)/ }).click();
+
+	const output = page.locator('[data-role="output"]');
+	await expect(output).toHaveValue(/a:hover/);
+	await expect(output).toHaveValue(/::before/);
+	await expect(output).toHaveValue(/color: red/);
+	await expect(output).not.toHaveValue(/a: hover/);
+	await expect(output).not.toHaveValue(/: : before/);
+});
+
+// searchParams already percent-decodes each value, so a second decodeURIComponent
+// throws on a literal '%' and would leave the breakdown stale.
+test('url parser survives a literal percent in a query value', async ({ page }) => {
+	await page.goto('/tools/url-parser/');
+
+	await page.locator('[data-role="input"]').fill('https://example.com/?q=100%25');
+	await page.getByRole('button', { name: /Parse URL|结构化解析/ }).click();
+
+	await expect(page.locator('[data-role="output"]')).toHaveValue(/q = 100%/);
+	await expect(page.locator('.t-json-status')).toContainText(/Parsed successfully|解析完成/);
+});
+
+// json.ts built its own debounce and never cancelled it from the toolbar, so
+// clicking Minify within 300ms of typing got overwritten by the auto-format.
+test('json minify is not overwritten by the pending auto-format', async ({ page }) => {
+	await page.goto('/tools/json-formatter/');
+
+	await page.locator('[data-role="input"]').fill('{"a":1,"b":[1,2,3]}');
+	await page.getByRole('button', { name: /^Minify$/ }).click();
+	// Give any lingering debounced auto-format a chance to fire and clobber.
+	await page.waitForTimeout(450);
+
+	await expect(page.locator('[data-role="output"]')).toHaveValue('{"a":1,"b":[1,2,3]}');
+});
+
+// Dropping a comment must still leave a gap between the tokens it used to
+// separate, or `SELECT/*c*/1` collapses to the executable-but-different SELECT1.
+test('sql minify does not glue tokens across a dropped comment', async ({ page }) => {
+	await page.goto('/tools/sql-formatter/');
+
+	await page.locator('[data-role="input"]').fill('SELECT/*c*/1');
+	await page.getByRole('button', { name: /^(Minify|单行压缩)$/ }).click();
+
+	const output = page.locator('[data-role="output"]');
+	await expect(output).not.toHaveValue(/SELECT1/);
+	await expect(output).toHaveValue(/SELECT 1/);
+});

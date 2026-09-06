@@ -285,9 +285,9 @@ export function minifySql(sql: string): string {
 	for (const token of tokenizeSql(sql.trim())) {
 		switch (token.type) {
 			case 'comment':
-				skipWs = false;
-				break;
 			case 'ws':
+				// A comment separates the tokens on either side, so dropping it must
+				// still leave a gap — `SELECT/*c*/1` must not become `SELECT1`.
 				if (!skipWs && out && !out.endsWith(' ')) out += ' ';
 				skipWs = false;
 				break;
