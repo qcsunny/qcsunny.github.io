@@ -59,7 +59,7 @@ function branches(fields: { id: string; type?: string; def?: unknown; options?: 
 test('every computed result row exists in both languages', () => {
 	const leaks: string[] = [];
 	for (const tool of REGISTRY) {
-		const cfg = tool.config as {
+		const cfg = (tool as { config?: unknown }).config as {
 			fields?: Parameters<typeof branches>[0];
 			compute?: (v: unknown) => Record<string, unknown>;
 		};

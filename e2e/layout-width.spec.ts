@@ -593,7 +593,7 @@ test('code blocks follow the site theme — light palette in light, dark in dark
 			const cs = getComputedStyle(pre);
 			// a token whose light and dark colours genuinely differ (a keyword,
 			// not the grey that both github themes share for comments)
-			const token = [...pre.querySelectorAll('span[style]')].find((s) => {
+			const token = [...pre.querySelectorAll<HTMLElement>('span[style]')].find((s) => {
 				const l = s.style.getPropertyValue('--shiki-light');
 				const d = s.style.getPropertyValue('--shiki-dark');
 				return l && d && l.toLowerCase() !== d.toLowerCase();

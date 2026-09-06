@@ -207,7 +207,7 @@ export function initColor(host: HTMLElement): void {
 	host.append(groups, swatchRow, css, note);
 
 	// --- sync logic: one source of truth (RGB), fields update it ---------------------
-	function render(rgb: Rgb, source: 'hex' | 'rgb' | 'hsl'): void {
+	function render(rgb: Rgb, source: 'hex' | 'rgb' | 'hsl' | 'none'): void {
 		const hex = rgbToHex(rgb);
 		const hsl = rgbToHsl(rgb);
 		base.style.background = hex;

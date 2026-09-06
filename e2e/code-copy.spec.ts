@@ -35,7 +35,7 @@ test('every fenced block gets a copy button as a sibling of the pre', async ({ p
 test('clicking copies the block verbatim, confirms, then reverts', async ({ page }) => {
 	await page.goto(POST);
 
-	const preText = await page.locator('.prose pre').first().evaluate((p) => p.innerText);
+	const preText = await page.locator('.prose pre').first().evaluate((p) => (p as HTMLElement).innerText);
 	const btn = page.locator('.code-copy').first();
 
 	await btn.click();
