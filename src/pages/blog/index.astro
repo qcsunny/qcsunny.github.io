@@ -19,7 +19,7 @@ const readMinutes = (body: string): number => {
 	return Math.max(1, Math.round(minutes));
 };
 
-function getCategory(slug: string): { labelZh: string; labelEn: string; color: string } {
+function getCategory(slug: string): { key: string; labelZh: string; labelEn: string; color: string } {
 	if (
 		slug.includes('compound') ||
 		slug.includes('mortgage') ||
@@ -30,16 +30,29 @@ function getCategory(slug: string): { labelZh: string; labelEn: string; color: s
 		slug.includes('fire') ||
 		slug.includes('finance')
 	) {
-		return { labelZh: '金融与数学', labelEn: 'Finance & Math', color: '#10b981' };
+		return { key: 'finance', labelZh: '金融与数学', labelEn: 'Finance & Math', color: '#10b981' };
 	}
 	if (slug.includes('uuid') || slug.includes('database')) {
-		return { labelZh: '架构与数据库', labelEn: 'Architecture', color: '#6366f1' };
+		return { key: 'architecture', labelZh: '架构与数据库', labelEn: 'Architecture', color: '#6366f1' };
 	}
 	if (slug.includes('glm') || slug.includes('ai')) {
-		return { labelZh: 'AI 与大模型', labelEn: 'AI & LLM', color: '#ec4899' };
+		return { key: 'ai', labelZh: 'AI 与大模型', labelEn: 'AI & LLM', color: '#ec4899' };
 	}
-	return { labelZh: '前端与工具研发', labelEn: 'Web Craft', color: '#f59e0b' };
+	return { key: 'web', labelZh: '前端与工具研发', labelEn: 'Web Craft', color: '#f59e0b' };
 }
+
+// The four category keys, in pill order. Used both to render the filter row
+// and (via getCategory().key) as the data-cat on every card, so the client-side
+// filter matches by stable key rather than localized label. The pill labels are
+// shorter than getCategory()'s full labels (Finance vs Finance & Math) — they
+// sit in a tight pill row.
+const CATEGORIES = ['finance', 'architecture', 'ai', 'web'] as const;
+const CAT_LABELS: Record<string, { en: string; zh: string }> = {
+	finance: { en: 'Finance', zh: '金融' },
+	architecture: { en: 'Architecture', zh: '架构' },
+	ai: { en: 'AI', zh: 'AI' },
+	web: { en: 'Web', zh: '前端' },
+};
 ---
 
 <!doctype html>
@@ -76,7 +89,7 @@ function getCategory(slug: string): { labelZh: string; labelEn: string; color: s
 			{
 				featured && (
 					<section class="featured-section">
-						<a class="featured-card" href={`/blog/${featured.id}/`}>
+						<a class="featured-card" href={`/blog/${featured.id}/`} data-cat={getCategory(featured.id).key} data-search={`${featured.data.title} ${featured.data.description} ${getCategory(featured.id).labelEn} ${getCategory(featured.id).labelZh} ${featured.id}`}>
 							<div class="featured-badge-row">
 								<span class="featured-tag">
 									⭐ <span class="i18n-zh">最新精选</span><span class="i18n-en">Featured</span>
@@ -120,12 +133,63 @@ function getCategory(slug: string): { labelZh: string; labelEn: string; color: s
 					</h2>
 				</div>
 
+				<!-- Article search + category filter. is:inline so the prose-
+				     pages-ship-no-JS guard (which only blocks module scripts
+				     carrying a /_astro/ src) still holds — same pattern as
+				     ToolSearchModal's inlined toolsData. -->
+				<div class="blog-search" id="blog-search">
+					<div class="blog-search-row">
+						<span class="blog-search-icon" aria-hidden="true">🔍</span>
+						<input
+							type="text"
+							id="blog-search-input"
+							class="blog-search-input"
+							placeholder="Search articles (title, topic)..."
+							data-placeholder-en="Search articles (title, topic)..."
+							data-placeholder-zh="搜索文章（标题、主题）..."
+							aria-label="Search articles"
+							data-aria-en="Search articles"
+							data-aria-zh="搜索文章"
+							autocomplete="off"
+							spellcheck="false"
+						/>
+						<button
+							type="button"
+							id="blog-search-clear"
+							class="blog-search-clear"
+							aria-label="Clear"
+							data-aria-en="Clear"
+							data-aria-zh="清空"
+							style="display: none;"
+							>×</button
+						>
+						<span class="blog-search-count" id="blog-search-count"></span>
+					</div>
+					<div class="blog-filter-row">
+						<button type="button" class="blog-filter-pill blog-filter-active" data-cat="all">
+							<span class="i18n-en">All</span>
+							<span class="i18n-zh">全部</span>
+						</button>
+						{CATEGORIES.map((key) => (
+							<button type="button" class="blog-filter-pill" data-cat={key}>
+								<span class="i18n-en">{CAT_LABELS[key].en}</span>
+								<span class="i18n-zh">{CAT_LABELS[key].zh}</span>
+							</button>
+						))}
+					</div>
+				</div>
+
+				<!-- Empty-state text is rebuilt via textContent (not innerHTML):
+				     it echoes the reader's query, so like the calculator error
+				     rows it must not parse as HTML. -->
+				<p class="blog-search-empty" id="blog-search-empty" style="display: none;"></p>
+
 				<div class="articles-grid">
 					{
 						rest.map((post) => {
 							const cat = getCategory(post.id);
 							return (
-								<article class="article-card">
+								<article class="article-card" data-cat={cat.key} data-search={`${post.data.title} ${post.data.description} ${cat.labelEn} ${cat.labelZh} ${post.id}`}>
 									<a href={`/blog/${post.id}/`} class="article-card-link">
 										<div class="article-meta-row">
 											<span class="cat-pill" style={`--cat-color: ${cat.color};`}>
@@ -175,6 +239,115 @@ function getCategory(slug: string): { labelZh: string; labelEn: string; color: s
 				</a>
 			</section>
 		</main>
+		<script is:inline>
+			(function () {
+				var root = document.getElementById('blog-search');
+				if (!root) return;
+				var input = document.getElementById('blog-search-input');
+				var clearBtn = document.getElementById('blog-search-clear');
+				var count = document.getElementById('blog-search-count');
+				var empty = document.getElementById('blog-search-empty');
+				var pills = Array.prototype.slice.call(root.querySelectorAll('.blog-filter-pill'));
+				var cards = Array.prototype.slice.call(document.querySelectorAll('.featured-card, .article-card'));
+				var featuredSection = document.querySelector('.featured-section');
+				var activeCat = 'all';
+				var query = '';
+
+				function isZh() {
+					return document.documentElement.dataset.lang === 'zh';
+				}
+
+				// textContent (not innerHTML) — the empty-state message echoes
+				// the reader's query, same XSS-safe rule as CalcError rows.
+				function setEmpty(none) {
+					if (!none) {
+						empty.style.display = 'none';
+						empty.textContent = '';
+						return;
+					}
+					var q = query.trim();
+					var zh = isZh();
+					empty.textContent = q
+						? (zh ? '未找到与"' + q + '"相关的文章' : 'No articles matching "' + q + '"')
+						: (zh ? '该分类暂无文章' : 'No articles in this category');
+					empty.style.display = '';
+				}
+
+				function applyFilter() {
+					var q = query.trim().toLowerCase();
+					var visible = 0;
+					cards.forEach(function (card) {
+						var catOk = activeCat === 'all' || card.getAttribute('data-cat') === activeCat;
+						var text = (card.getAttribute('data-search') || '').toLowerCase();
+						var qOk = !q || text.indexOf(q) !== -1;
+						var show = catOk && qOk;
+						card.style.display = show ? '' : 'none';
+						if (show) visible++;
+					});
+					// Hide the featured hero when it falls out of the filter so
+					// an empty featured-section doesn't leave a padded shell.
+					if (featuredSection) {
+						var fc = featuredSection.querySelector('.featured-card');
+						featuredSection.style.display = (fc && fc.style.display !== 'none') ? '' : 'none';
+					}
+					setEmpty(visible === 0);
+					clearBtn.style.display = query ? '' : 'none';
+					if (count) {
+						var filtering = q || activeCat !== 'all';
+						count.textContent = filtering
+							? (isZh() ? visible + ' 篇' : visible + (visible === 1 ? ' result' : ' results'))
+							: '';
+					}
+				}
+
+				input.addEventListener('input', function () {
+					query = input.value;
+					applyFilter();
+				});
+				clearBtn.addEventListener('click', function () {
+					input.value = '';
+					query = '';
+					applyFilter();
+					input.focus();
+				});
+				pills.forEach(function (pill) {
+					pill.addEventListener('click', function () {
+						pills.forEach(function (p) { p.classList.remove('blog-filter-active'); });
+						pill.classList.add('blog-filter-active');
+						activeCat = pill.getAttribute('data-cat');
+						applyFilter();
+					});
+				});
+				input.addEventListener('keydown', function (e) {
+					if (e.key === 'Escape') {
+						input.value = '';
+						query = '';
+						applyFilter();
+						input.blur();
+					}
+				});
+
+				function syncLang() {
+					var zh = isZh();
+					input.placeholder = zh ? input.getAttribute('data-placeholder-zh') : input.getAttribute('data-placeholder-en');
+					input.setAttribute('aria-label', zh ? input.getAttribute('data-aria-zh') : input.getAttribute('data-aria-en'));
+					clearBtn.setAttribute('aria-label', zh ? clearBtn.getAttribute('data-aria-zh') : clearBtn.getAttribute('data-aria-en'));
+					applyFilter();
+				}
+				syncLang();
+
+				// Catch every writer of data-lang: the head blocking script
+				// (first paint), another tab's sync (MutationObserver), and the
+				// site:lang-change event from wireLangToggle on standalone pages.
+				var observer = new MutationObserver(function (mutations) {
+					for (var i = 0; i < mutations.length; i++) {
+						if (mutations[i].attributeName === 'data-lang') { syncLang(); break; }
+					}
+				});
+				observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-lang'] });
+				document.addEventListener('site:lang-change', syncLang);
+			})();
+		</script>
 		<Footer />
 	</body>
 </html>
@@ -390,6 +563,134 @@ function getCategory(slug: string): { labelZh: string; labelEn: string; color: s
 		font-weight: 400;
 		color: var(--dim);
 		margin-left: 0.4em;
+	}
+
+	/* --- BLOG SEARCH --- */
+	.blog-search {
+		margin-bottom: 1.6rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.8rem;
+	}
+
+	.blog-search-row {
+		position: relative;
+		display: flex;
+		align-items: center;
+		gap: 0.6em;
+		padding: 0.55em 0.9em;
+		background: var(--card);
+		border: 1px solid var(--gridline);
+		border-radius: 10px;
+		transition: border-color 0.15s ease, box-shadow 0.15s ease;
+	}
+
+	.blog-search-row:focus-within {
+		border-color: var(--accent);
+		box-shadow: 0 0 0 3px var(--accent-soft);
+	}
+
+	.blog-search-icon {
+		font-size: 0.95rem;
+		opacity: 0.6;
+		flex-shrink: 0;
+	}
+
+	.blog-search-input {
+		flex: 1;
+		border: none;
+		background: transparent;
+		outline: none;
+		font-size: 0.95rem;
+		color: var(--fg);
+		font-family: inherit;
+		min-width: 0;
+	}
+
+	.blog-search-input::placeholder {
+		color: var(--dim);
+	}
+
+	.blog-search-clear {
+		flex-shrink: 0;
+		border: none;
+		background: var(--gridline);
+		color: var(--dim);
+		width: 1.6em;
+		height: 1.6em;
+		border-radius: 50%;
+		font-size: 0.85rem;
+		line-height: 1;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0;
+		transition: background 0.15s ease, color 0.15s ease;
+	}
+
+	.blog-search-clear:hover {
+		background: var(--accent);
+		color: var(--on-accent);
+	}
+
+	.blog-search-count {
+		flex-shrink: 0;
+		font-size: 0.78rem;
+		color: var(--dim);
+		font-family: var(--font-mono);
+		white-space: nowrap;
+	}
+
+	.blog-filter-row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5em;
+	}
+
+	.blog-filter-pill {
+		border: 1px solid var(--gridline);
+		background: var(--card);
+		color: var(--dim);
+		font-size: 0.8rem;
+		font-weight: 600;
+		padding: 0.35em 0.85em;
+		border-radius: 999px;
+		cursor: pointer;
+		font-family: inherit;
+		transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+	}
+
+	.blog-filter-pill:hover {
+		border-color: var(--accent);
+		color: var(--accent);
+	}
+
+	.blog-filter-pill.blog-filter-active {
+		background: var(--accent);
+		border-color: var(--accent);
+		color: var(--on-accent);
+	}
+
+	.blog-search-empty {
+		text-align: center;
+		color: var(--dim);
+		font-size: 0.92rem;
+		padding: 2rem 1rem;
+		margin: 0;
+	}
+
+	@media (max-width: 640px) {
+		.blog-search-row {
+			padding: 0.5em 0.8em;
+		}
+		.blog-search-input {
+			font-size: 0.9rem;
+		}
+		.blog-filter-pill {
+			font-size: 0.75rem;
+			padding: 0.3em 0.7em;
+		}
 	}
 
 	.articles-grid {
