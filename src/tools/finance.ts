@@ -2409,15 +2409,25 @@ const tax: FormConfig = {
 //
 // Ordered by the life-stage of the question the visitor asks, highest-traffic
 // group first: borrowing (a mortgage is the largest single loan most readers
-// will ever arrange, and prepayment, amortization, auto financing and "is this
-// installment rate really what it says" all hang off it), then income
-// (tax and take-home pay), then growing money (compound interest and its
-// siblings), then money over time and the everyday discount. The `redirect`
-// entries stay beside the page they point at so the alias reads next to its
-// target. /finance/, the search modal, the related-tools strip and the
-// inlined search index all read this declaration order — the search modal has
-// no relevance score, it substring-filters and keeps index position, so this
-// list *is* the ranking.
+// will ever arrange, and prepayment and amortization hang straight off it),
+// then income (tax and take-home pay), then reading an installment rate
+// critically, then growing money (compound interest and its siblings), then
+// money over time and the everyday discount. The `redirect` entries stay beside
+// the page they point at so the alias reads next to its target. /finance/, the
+// search modal, the related-tools strip and the inlined search index all read
+// this declaration order — the search modal has no relevance score, it
+// substring-filters and keeps index position, so this list *is* the ranking.
+//
+// Income sits at rank 4–5 rather than below the loan cluster on purpose.
+// ToolShell's related strip keeps the first 4 non-redirect tools of a category,
+// so ranks 1–4 each link in from all 12 other finance pages while rank 5
+// onwards link in from almost none — 13 in-links versus 4 for a 13-tool
+// category. 个税 is the site's second-highest-demand finance tool and was
+// already backlinked by the income-tax guide, so it belongs inside the strip.
+// The cost is that the loan cluster is split: 借款核心 → 收入与税负 → 分期与车贷.
+// That ordering deliberately serves both goals, and the top of the list still
+// reads mortgage → prepayment → loan payment → tax, the four highest-demand
+// finance pages.
 
 export const FINANCE_TOOLS: ToolEntry[] = [
 	{
@@ -2451,26 +2461,6 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		config: loanPayment,
 	},
 	{
-		slug: 'auto-loan',
-		category: 'finance',
-		name: 'Auto Loan & Out-of-Pocket Calculator',
-		nameZh: '汽车贷款与购车落地成本计算器',
-		description: 'Monthly car loan payments, interest, down payment, purchase tax, insurance, and total out-of-pocket cost.',
-		descriptionZh: '测算汽车贷款月供利息，综合购置税、车险、上牌费等全套提车落地总成本。',
-		kind: 'form',
-		config: autoLoan,
-	},
-	{
-		slug: 'irr-calculator',
-		category: 'finance',
-		name: 'True APR & Installment IRR Calculator',
-		nameZh: '分期真实年化利率 / 实际利率 IRR 计算器',
-		description: 'Convert advertised monthly installment fees or credit card flat rates to real APR and IRR.',
-		descriptionZh: '基于牛顿迭代法求解真实年化利率 IRR 与 APR，揭秘信用卡分期等名义手续费陷阱。',
-		kind: 'form',
-		config: irrCalculator,
-	},
-	{
 		slug: 'tax',
 		category: 'finance',
 		name: 'Income Tax & Take-Home Salary Calculator',
@@ -2489,6 +2479,26 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		descriptionZh: '年薪、月薪、周薪、日薪与时薪之间快速多维互转换算。',
 		kind: 'form',
 		config: salary,
+	},
+	{
+		slug: 'irr-calculator',
+		category: 'finance',
+		name: 'True APR & Installment IRR Calculator',
+		nameZh: '分期真实年化利率 / 实际利率 IRR 计算器',
+		description: 'Convert advertised monthly installment fees or credit card flat rates to real APR and IRR.',
+		descriptionZh: '基于牛顿迭代法求解真实年化利率 IRR 与 APR，揭秘信用卡分期等名义手续费陷阱。',
+		kind: 'form',
+		config: irrCalculator,
+	},
+	{
+		slug: 'auto-loan',
+		category: 'finance',
+		name: 'Auto Loan & Out-of-Pocket Calculator',
+		nameZh: '汽车贷款与购车落地成本计算器',
+		description: 'Monthly car loan payments, interest, down payment, purchase tax, insurance, and total out-of-pocket cost.',
+		descriptionZh: '测算汽车贷款月供利息，综合购置税、车险、上牌费等全套提车落地总成本。',
+		kind: 'form',
+		config: autoLoan,
 	},
 	{
 		slug: 'compound-interest',

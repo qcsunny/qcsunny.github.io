@@ -2,12 +2,18 @@
 //
 // Ordered by how often a general visitor actually reaches for a category, not by
 // any alphabetical or subject order: the everyday human-scale measurements
-// (temperature, length, weight, speed, time) first, then the one every developer
-// hits (data size), then the engineering-grade ones that only show up in
-// physics, HVAC or machine specs. Every index page, the search modal, the
+// (temperature, length, weight, area, speed, time) first, then the one every
+// developer hits (data size), then the engineering-grade ones that only show up
+// in physics, HVAC or machine specs. Every index page, the search modal, the
 // related-tools strip and the inlined search index read this declaration order —
 // the search modal has no relevance score, it substring-filters and keeps index
 // position, so this list *is* the ranking.
+//
+// Ranking also serves the related-tools strip: ToolShell keeps the first 4 tools
+// of a category, so ranks 1–4 each link in from all 10 other converter pages
+// while rank 5 onwards link in from almost none. 面积 sits at rank 4 rather than
+// 8 on purpose — 亩/平方米/公顷 is one of the highest-volume Chinese unit queries,
+// and it deserves the internal links, not just a logical position.
 
 import type { ToolEntry } from './registry';
 
@@ -55,12 +61,12 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'支持千克、克、市斤、两、金衡盎司、克拉、磅、盎司等多维度重量单位换算。',
 	),
 	converter(
-		'speed',
-		'speed',
-		'Speed & Velocity Converter',
-		'速度单位换算器 (米/秒 · 公里/小时 · mph · 节 · 马赫)',
-		'Convert between m/s, km/h, mph, knots, Mach and the speed of light.',
-		'支持米/秒、公里/小时 (km/h)、英里/小时 (mph)、航速节 (knots) 与马赫 (Mach) 换算。',
+		'area',
+		'area',
+		'Area & Land Measure Converter',
+		'面积与土地单位换算器',
+		'Convert between square meters, hectares, Chinese mu and qing, acres, square feet, square yards and square miles.',
+		'支持平方米、公顷、中国市亩、顷、英亩、平方英尺、平方英里等多尺度土地面积换算。',
 	),
 	converter(
 		'time',
@@ -87,12 +93,12 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'支持升、毫升、立方米、美制/英制加仑、原油标准桶、美制量杯与立方英尺容量换算。',
 	),
 	converter(
-		'area',
-		'area',
-		'Area & Land Measure Converter',
-		'面积与土地单位换算器',
-		'Convert between square meters, hectares, Chinese mu and qing, acres, square feet, square yards and square miles.',
-		'支持平方米、公顷、中国市亩、顷、英亩、平方英尺、平方英里等多尺度土地面积换算。',
+		'speed',
+		'speed',
+		'Speed & Velocity Converter',
+		'速度单位换算器 (米/秒 · 公里/小时 · mph · 节 · 马赫)',
+		'Convert between m/s, km/h, mph, knots, Mach and the speed of light.',
+		'支持米/秒、公里/小时 (km/h)、英里/小时 (mph)、航速节 (knots) 与马赫 (Mach) 换算。',
 	),
 	converter(
 		'energy',
