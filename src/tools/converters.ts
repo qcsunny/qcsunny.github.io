@@ -1,4 +1,13 @@
 // Registry entries for /converters/* — one page per unit category in ./units.
+//
+// Ordered by how often a general visitor actually reaches for a category, not by
+// any alphabetical or subject order: the everyday human-scale measurements
+// (temperature, length, weight, speed, time) first, then the one every developer
+// hits (data size), then the engineering-grade ones that only show up in
+// physics, HVAC or machine specs. Every index page, the search modal, the
+// related-tools strip and the inlined search index read this declaration order —
+// the search modal has no relevance score, it substring-filters and keeps index
+// position, so this list *is* the ranking.
 
 import type { ToolEntry } from './registry';
 
@@ -22,12 +31,12 @@ const converter = (
 
 export const CONVERTER_TOOLS: ToolEntry[] = [
 	converter(
-		'weight',
-		'weight',
-		'Weight & Mass Converter',
-		'重量与质量单位换算器',
-		'Convert between kg, g, mg, tonnes, Chinese jin (catty), liang (tael), troy ounces, carats, pounds, ounces and stone.',
-		'支持千克、克、市斤、两、金衡盎司、克拉、磅、盎司等多维度重量单位换算。',
+		'temperature',
+		'temperature',
+		'Temperature Converter',
+		'温度单位换算器',
+		'Convert between Celsius (°C), Fahrenheit (°F), Kelvin (K), Rankine (°R) and Réaumur (°Re).',
+		'支持摄氏度 (°C)、华氏度 (°F)、开尔文 (K)、兰氏度 (°R) 与列氏度 (°Re) 精确换算。',
 	),
 	converter(
 		'length',
@@ -38,52 +47,12 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'支持毫米、厘米、米、公里、中国市尺/市寸/华里、海里、英寸、英尺、英里换算。',
 	),
 	converter(
-		'area',
-		'area',
-		'Area & Land Measure Converter',
-		'面积与土地单位换算器',
-		'Convert between square meters, hectares, Chinese mu and qing, acres, square feet, square yards and square miles.',
-		'支持平方米、公顷、中国市亩、顷、英亩、平方英尺、平方英里等多尺度土地面积换算。',
-	),
-	converter(
-		'volume',
-		'volume',
-		'Volume & Capacity Converter',
-		'体积与容量单位换算器',
-		'Convert between liters, mL, cubic meters, US gallons, UK gallons, barrels (bbl), cups, tablespoons and cubic feet.',
-		'支持升、毫升、立方米、美制/英制加仑、原油标准桶、美制量杯与立方英尺容量换算。',
-	),
-	converter(
-		'pressure',
-		'pressure',
-		'Pressure Converter',
-		'压力与压强单位换算器',
-		'Convert between pascals (Pa), kPa, MPa, bar, psi, standard atmospheres (atm), mmHg/Torr, and kgf/cm².',
-		'支持帕斯卡 (Pa)、千帕、巴 (bar)、磅力/平方英寸 (psi)、标准大气压、托及公斤力换算。',
-	),
-	converter(
-		'power',
-		'power',
-		'Power & Horsepower Converter',
-		'功率与马力单位换算器',
-		'Convert between watts (W), kilowatts (kW), megawatts (MW), metric horsepower (PS), mechanical horsepower (hp) and BTU/h.',
-		'支持瓦特 (W)、千瓦、兆瓦、米制公制马力 (ps/匹)、英制马力 (hp) 与 BTU/h 功率换算。',
-	),
-	converter(
-		'energy',
-		'energy',
-		'Energy & Heat Converter',
-		'能量热量与功换算器',
-		'Convert between joules (J), kilojoules (kJ), calories, kilocalories (kcal), watt-hours (Wh), kilowatt-hours (kWh) and BTU.',
-		'支持焦耳 (J)、千焦、卡路里、大卡 (kcal)、度电 (kWh) 与英热单位 (BTU) 能量热量换算。',
-	),
-	converter(
-		'temperature',
-		'temperature',
-		'Temperature Converter',
-		'温度单位换算器',
-		'Convert between Celsius (°C), Fahrenheit (°F), Kelvin (K), Rankine (°R) and Réaumur (°Re).',
-		'支持摄氏度 (°C)、华氏度 (°F)、开尔文 (K)、兰氏度 (°R) 与列氏度 (°Re) 精确换算。',
+		'weight',
+		'weight',
+		'Weight & Mass Converter',
+		'重量与质量单位换算器',
+		'Convert between kg, g, mg, tonnes, Chinese jin (catty), liang (tael), troy ounces, carats, pounds, ounces and stone.',
+		'支持千克、克、市斤、两、金衡盎司、克拉、磅、盎司等多维度重量单位换算。',
 	),
 	converter(
 		'speed',
@@ -108,5 +77,45 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'数据存储与带宽换算器',
 		'Convert between bits (b, Mb, Gb), bytes (B, KB, MB, GB, TB, PB) and binary kibibytes (KiB, MiB, GiB, TiB).',
 		'支持比特 (b)、字节 (B)、KB/MB/GB/TB 与二进制 KiB/MiB/GiB/TiB 存储与带宽换算。',
+	),
+	converter(
+		'volume',
+		'volume',
+		'Volume & Capacity Converter',
+		'体积与容量单位换算器',
+		'Convert between liters, mL, cubic meters, US gallons, UK gallons, barrels (bbl), cups, tablespoons and cubic feet.',
+		'支持升、毫升、立方米、美制/英制加仑、原油标准桶、美制量杯与立方英尺容量换算。',
+	),
+	converter(
+		'area',
+		'area',
+		'Area & Land Measure Converter',
+		'面积与土地单位换算器',
+		'Convert between square meters, hectares, Chinese mu and qing, acres, square feet, square yards and square miles.',
+		'支持平方米、公顷、中国市亩、顷、英亩、平方英尺、平方英里等多尺度土地面积换算。',
+	),
+	converter(
+		'energy',
+		'energy',
+		'Energy & Heat Converter',
+		'能量热量与功换算器',
+		'Convert between joules (J), kilojoules (kJ), calories, kilocalories (kcal), watt-hours (Wh), kilowatt-hours (kWh) and BTU.',
+		'支持焦耳 (J)、千焦、卡路里、大卡 (kcal)、度电 (kWh) 与英热单位 (BTU) 能量热量换算。',
+	),
+	converter(
+		'power',
+		'power',
+		'Power & Horsepower Converter',
+		'功率与马力单位换算器',
+		'Convert between watts (W), kilowatts (kW), megawatts (MW), metric horsepower (PS), mechanical horsepower (hp) and BTU/h.',
+		'支持瓦特 (W)、千瓦、兆瓦、米制公制马力 (ps/匹)、英制马力 (hp) 与 BTU/h 功率换算。',
+	),
+	converter(
+		'pressure',
+		'pressure',
+		'Pressure Converter',
+		'压力与压强单位换算器',
+		'Convert between pascals (Pa), kPa, MPa, bar, psi, standard atmospheres (atm), mmHg/Torr, and kgf/cm².',
+		'支持帕斯卡 (Pa)、千帕、巴 (bar)、磅力/平方英寸 (psi)、标准大气压、托及公斤力换算。',
 	),
 ];

@@ -1,6 +1,14 @@
 // Registry entries for /tools/* (text utilities + generators + QR + color).
 // Password/UUID/random share the 'generator' kind with dedicated renderers in
 // src/scripts/tools/generators.ts; color and QR have their own modules.
+//
+// The array below is grouped by the job the visitor came to do, highest-traffic
+// group first: code/document formatters (plus the Markdown editor, the other
+// "I'm writing code" tool), then the codecs and token decoders, then the small
+// text counters. This list is the display order on /tools/, on the search
+// modal and on every page's related-tools strip — the search modal has no
+// relevance score, it substring-filters and keeps index position, so the
+// declaration order *is* the ranking.
 
 import type { TextConfig, ToolEntry } from './registry';
 
@@ -46,7 +54,7 @@ function charStats(text: string) {
 	let symbols = 0;
 	for (const ch of text) {
 		if (/\s/.test(ch)) spaces++;
-		else if (/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(ch)) cjk++;
+		else if (/\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}/u.test(ch)) cjk++;
 		else if (/[a-zA-Z]/u.test(ch)) latin++;
 		else if (/\p{N}/u.test(ch)) digits++;
 		else symbols++;
@@ -90,34 +98,6 @@ function b64url(text: string): string {
 
 export const TEXT_TOOLS: ToolEntry[] = [
 	{
-		slug: 'word-counter',
-		category: 'tools',
-		name: 'Word Counter',
-		nameZh: '在线字数统计',
-		description: 'Live word, character, sentence and paragraph counts plus reading time.',
-		descriptionZh: '实时统计词数、字符数、句子数、段落数与预估阅读时长。',
-		kind: 'text',
-		config: {
-			placeholder: 'Type or paste text…',
-			placeholderZh: '在此输入或粘贴文本…',
-			stats: wordStats,
-		} satisfies TextConfig,
-	},
-	{
-		slug: 'character-counter',
-		category: 'tools',
-		name: 'Character Counter',
-		nameZh: '字符计数器',
-		description: 'Count characters, letters, digits, spaces, symbols and UTF-8 bytes.',
-		descriptionZh: '实时细分统计字符、字母、数字、空格、符号与 UTF-8 字节数。',
-		kind: 'text',
-		config: {
-			placeholder: 'Type or paste text…',
-			placeholderZh: '在此输入或粘贴文本…',
-			stats: charStats,
-		} satisfies TextConfig,
-	},
-	{
 		slug: 'json-formatter',
 		category: 'tools',
 		name: 'JSON Formatter & Validator',
@@ -125,6 +105,51 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		description: 'Format, validate, minify, escape, and inspect JSON with exact error positions, one-click copy, and file download.',
 		descriptionZh: '格式化、校验、压缩与转义 JSON，精准定位语法错误行号与列号。',
 		kind: 'json',
+	},
+	{
+		slug: 'sql-formatter',
+		category: 'tools',
+		name: 'SQL Formatter & Beautifier',
+		nameZh: 'SQL 格式化与美化工具',
+		description: 'Format, beautify, indent, and minify SQL queries with keyword auto-capitalization and 100% browser-side privacy.',
+		descriptionZh: 'SQL 查询格式化美化与压缩工具，支持关键字自动大写与本地隐私安全。',
+		kind: 'sql',
+	},
+	{
+		slug: 'html-formatter',
+		category: 'tools',
+		name: 'HTML Formatter & Minifier',
+		nameZh: 'HTML 格式化与压缩工具',
+		description: 'Format messy HTML with proper indentation and self-closing element awareness, or minify HTML to optimize web page delivery.',
+		descriptionZh: 'HTML 网页代码规范缩进排版与单行 Minify 压缩工具。',
+		kind: 'html',
+	},
+	{
+		slug: 'css-formatter',
+		category: 'tools',
+		name: 'CSS Formatter & Minifier',
+		nameZh: 'CSS 格式化与压缩工具',
+		description: 'Beautify CSS stylesheets with clean rules and property indentation, or minify CSS to a single line for production performance.',
+		descriptionZh: 'CSS 样式表格式化排版与单行 Minify 压缩工具。',
+		kind: 'css',
+	},
+	{
+		slug: 'xml-formatter',
+		category: 'tools',
+		name: 'XML / SVG Formatter & Validator',
+		nameZh: 'XML / SVG 格式化与校验工具',
+		description: 'Validate XML syntax, format with customizable 2/4-space indentation, and minify XML/SVG documents in your browser.',
+		descriptionZh: 'XML 与 SVG 矢量代码格式化、层级缩进与语法校验工具。',
+		kind: 'xml',
+	},
+	{
+		slug: 'markdown-preview',
+		category: 'tools',
+		name: 'Markdown Live Editor & Previewer',
+		nameZh: 'Markdown 实时渲染与预览编辑器',
+		description: 'Live split-screen Markdown rendering with GitHub Flavored Markdown (GFM), tables, task lists, code syntax, KaTeX-typeset maths, and HTML export.',
+		descriptionZh: '纯本地双栏实时 Markdown 渲染编辑器，支持 GFM 全语法、LaTeX 公式排版与 HTML 导出。',
+		kind: 'markdown',
 	},
 	{
 		slug: 'base64',
@@ -177,15 +202,6 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		} satisfies TextConfig,
 	},
 	{
-		slug: 'sql-formatter',
-		category: 'tools',
-		name: 'SQL Formatter & Beautifier',
-		nameZh: 'SQL 格式化与美化工具',
-		description: 'Format, beautify, indent, and minify SQL queries with keyword auto-capitalization and 100% browser-side privacy.',
-		descriptionZh: 'SQL 查询格式化美化与压缩工具，支持关键字自动大写与本地隐私安全。',
-		kind: 'sql',
-	},
-	{
 		slug: 'jwt-decoder',
 		category: 'tools',
 		name: 'JWT Decoder & Formatter',
@@ -204,40 +220,31 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		kind: 'url',
 	},
 	{
-		slug: 'xml-formatter',
+		slug: 'word-counter',
 		category: 'tools',
-		name: 'XML / SVG Formatter & Validator',
-		nameZh: 'XML / SVG 格式化与校验工具',
-		description: 'Validate XML syntax, format with customizable 2/4-space indentation, and minify XML/SVG documents in your browser.',
-		descriptionZh: 'XML 与 SVG 矢量代码格式化、层级缩进与语法校验工具。',
-		kind: 'xml',
+		name: 'Word Counter',
+		nameZh: '在线字数统计',
+		description: 'Live word, character, sentence and paragraph counts plus reading time.',
+		descriptionZh: '实时统计词数、字符数、句子数、段落数与预估阅读时长。',
+		kind: 'text',
+		config: {
+			placeholder: 'Type or paste text…',
+			placeholderZh: '在此输入或粘贴文本…',
+			stats: wordStats,
+		} satisfies TextConfig,
 	},
 	{
-		slug: 'css-formatter',
+		slug: 'character-counter',
 		category: 'tools',
-		name: 'CSS Formatter & Minifier',
-		nameZh: 'CSS 格式化与压缩工具',
-		description: 'Beautify CSS stylesheets with clean rules and property indentation, or minify CSS to a single line for production performance.',
-		descriptionZh: 'CSS 样式表格式化排版与单行 Minify 压缩工具。',
-		kind: 'css',
-	},
-	{
-		slug: 'html-formatter',
-		category: 'tools',
-		name: 'HTML Formatter & Minifier',
-		nameZh: 'HTML 格式化与压缩工具',
-		description: 'Format messy HTML with proper indentation and self-closing element awareness, or minify HTML to optimize web page delivery.',
-		descriptionZh: 'HTML 网页代码规范缩进排版与单行 Minify 压缩工具。',
-		kind: 'html',
-	},
-	{
-		slug: 'markdown-preview',
-		category: 'tools',
-		name: 'Markdown Live Editor & Previewer',
-		nameZh: 'Markdown 实时渲染与预览编辑器',
-		description: 'Live split-screen Markdown rendering with GitHub Flavored Markdown (GFM), tables, task lists, code syntax, KaTeX-typeset maths, and HTML export.',
-		descriptionZh: '纯本地双栏实时 Markdown 渲染编辑器，支持 GFM 全语法、LaTeX 公式排版与 HTML 导出。',
-		kind: 'markdown',
+		name: 'Character Counter',
+		nameZh: '字符计数器',
+		description: 'Count characters, letters, digits, spaces, symbols and UTF-8 bytes.',
+		descriptionZh: '实时细分统计字符、字母、数字、空格、符号与 UTF-8 字节数。',
+		kind: 'text',
+		config: {
+			placeholder: 'Type or paste text…',
+			placeholderZh: '在此输入或粘贴文本…',
+			stats: charStats,
+		} satisfies TextConfig,
 	},
 ];
-
