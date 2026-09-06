@@ -206,35 +206,6 @@ const ratio: FormConfig = {
 	},
 };
 
-// --- proportion ---------------------------------------------------------------------
-
-const proportion: FormConfig = {
-	intro: 'Solves a : b = c : x for x (equivalently a/b = c/x).',
-	introZh: '求解比例方程 a : b = c : x 中的未知数 x。',
-	fields: [
-		{ id: 'a', label: 'a', labelZh: '比例项 a', type: 'number', def: '2', step: 'any', required: true },
-		{ id: 'b', label: 'b', labelZh: '比例项 b', type: 'number', def: '4', step: 'any', required: true },
-		{ id: 'c', label: 'c', labelZh: '比例项 c', type: 'number', def: '8', step: 'any', required: true },
-	],
-	compute: (v) => {
-		const a = v.num('a');
-		const b = v.num('b');
-		const c = v.num('c');
-		if (a === 0)
-			return {
-				rows: [{ label: 'x', labelZh: '未知数 x', value: '— (a cannot be 0)', valueZh: '— (a 不能为 0)' }],
-			};
-		const x = (b * c) / a;
-		return {
-			rows: [
-				{ label: 'x', labelZh: '未知数 x', value: formatNumber(x), emphasis: true },
-				{ label: 'Check: a ÷ b', labelZh: '验证 a ÷ b', value: b === 0 ? '—' : formatNumber(a / b) },
-				{ label: 'Check: c ÷ x', labelZh: '验证 c ÷ x', value: formatNumber(c / x) },
-			],
-		};
-	},
-};
-
 // --- simple interest ------------------------------------------------------------------
 
 const simpleInterest: FormConfig = {

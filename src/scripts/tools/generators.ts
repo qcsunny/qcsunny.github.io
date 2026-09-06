@@ -33,9 +33,9 @@ function randInt(maxExclusive: number): number {
 	}
 
 	// 21 high bits + 32 low bits = a 53-bit draw, the widest integer doubles
-	// represent exactly. floor(2^53 / n) >= 1 for every n <= MAX_SAFE_INTEGER,
-	// so `limit` can never collapse to zero here.
-	const limit = Math.floor(0x20000000000000 / n) * n;
+	// represent exactly. floor(MAX_SAFE_INTEGER / n) >= 1 for every n, so
+	// `limit` can never collapse to zero here.
+	const limit = Math.floor(Number.MAX_SAFE_INTEGER / n) * n;
 	const buf = new Uint32Array(2);
 	let v: number;
 	do {

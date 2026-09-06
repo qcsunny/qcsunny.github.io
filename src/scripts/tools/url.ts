@@ -7,7 +7,7 @@
 // - 100% in-browser, native URL & URLSearchParams APIs, zero dependencies.
 
 import { isZh, onLang } from './i18n';
-import { createWorkbench, formatBytes } from './workbench';
+import { createWorkbench } from './workbench';
 
 const SAMPLE_URL =
 	'https://qcsunny.org/blog/guide?utm_source=google&utm_medium=cpc&utm_campaign=summer_promo&category=%E6%8A%80%E6%9C%AF%E5%8D%9A%E5%AE%A2&sort=desc&page=1&ref=developer_tools#section-faq';

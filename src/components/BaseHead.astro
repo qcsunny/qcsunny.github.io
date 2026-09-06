@@ -95,6 +95,7 @@ const ogImageURL = new URL(typeof image === 'string' ? image : image.src, Astro.
 
 {CF_ANALYTICS_TOKEN && (
 	<script
+		is:inline
 		type="module"
 		src="https://static.cloudflareinsights.com/beacon.min.js"
 		data-cf-beacon={JSON.stringify({ token: CF_ANALYTICS_TOKEN })}

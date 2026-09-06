@@ -126,13 +126,13 @@ const year = new Date().getFullYear();
 		/>
 		{redirectTo && <meta http-equiv="refresh" content={`0;url=${redirectTo}`} />}
 		{ADSENSE_CLIENT && (
-			<script
+			<script is:inline
 				async
 				src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
 				crossorigin="anonymous"
 			></script>
 		)}
-		{jsonLd.map((obj) => <script type="application/ld+json" set:html={JSON.stringify(obj)} />)}
+		{jsonLd.map((obj) => <script is:inline type="application/ld+json" set:html={JSON.stringify(obj)} />)}
 		<script is:inline>
 			// Apply theme before first paint to avoid a flash.
 			// Shared across all tool pages via one preference key.
