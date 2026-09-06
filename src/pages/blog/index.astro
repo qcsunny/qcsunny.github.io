@@ -182,10 +182,10 @@ function getCategory(slug: string): { labelZh: string; labelEn: string; color: s
 <style>
 	.blog-container {
 		/* --w-outer, the page grid the articles themselves are laid out on (a
-		   post's text column is 720px inside it — see --w-outer in global.css).
-		   The list used to be --w-wide with 1.5rem of padding, which put its
-		   text at x=264 on a 1440px screen against x=414 for a post's — the
-		   frame moved every time a reader clicked into an article and back. */
+		   post's reading column is --w-prose inside it — see --w-outer in
+		   global.css). The list used to be --w-wide with 1.5rem of padding,
+		   which put its text at a different x than a post's — the frame moved
+		   every time a reader clicked into an article and back. */
 		width: min(var(--w-outer), 100% - 2.5em);
 		margin: 0 auto;
 		padding: 3rem 0 5rem;
@@ -394,9 +394,9 @@ function getCategory(slug: string): { labelZh: string; labelEn: string; color: s
 
 	.articles-grid {
 		display: grid;
-		/* 330, not the old 380: two columns have to fit the narrower container
-		   (2 × 330 + 1.4rem gap = 682 ≤ 720), or auto-fill drops the list to a
-		   single column and triples the page height. */
+		/* two columns comfortably: 2 × 390 + 1.4rem gap = 809 ≤ 832. minmax
+		   keeps the count fluid — one column on phones, three never (832 is
+		   not wide enough and 260px cards would be all padding). */
 		grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
 		gap: 1.4rem;
 	}

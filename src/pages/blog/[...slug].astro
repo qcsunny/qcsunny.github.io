@@ -15,7 +15,7 @@ const post = Astro.props;
 // hasMath is set by satteri-katex.mjs, which flips it on the frontmatter the
 // first time it renders a formula; it gates the KaTeX stylesheet so the posts
 // without formulas do not load it.
-const { Content, remarkPluginFrontmatter } = await render(post);
+const { Content, headings, remarkPluginFrontmatter } = await render(post);
 const body = post.body ?? '';
 const words = body.match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu)?.length ?? 0;
 const cjk = body.match(/[\p{Script=Han}]/gu)?.length ?? 0;
@@ -27,6 +27,7 @@ const minutes = Math.max(1, Math.round((words - cjk) / 220 + cjk / 400));
 	minutes={minutes}
 	slug={post.id}
 	hasMath={remarkPluginFrontmatter.hasMath ?? false}
+	headings={headings}
 >
 	<Content />
 </BlogPost>

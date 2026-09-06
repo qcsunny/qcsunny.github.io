@@ -176,8 +176,9 @@ import { SITE_TITLE } from '../consts';
 		width: min(var(--w-prose), 100% - 2.5rem);
 		margin: 0 auto;
 		padding: 2.5rem 0 4rem;
-		/* 18px, same as body and blog posts — --w-prose is sized as 40em at this
-		   font size, so the three long-form pages have to agree on it. */
+		/* 18px: this page is its own reading size (blog posts moved to 16px with
+		   their 820px column). --w-prose is shared, so the measure agrees across
+		   the long-form pages even where the type does not. */
 		font-size: 1.125rem;
 		line-height: 1.8;
 		color: var(--fg);

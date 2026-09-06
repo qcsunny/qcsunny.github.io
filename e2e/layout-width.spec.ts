@@ -14,24 +14,24 @@ test('the four page measures are defined on :root', async ({ page }) => {
 
 	const vars = await page.evaluate(() => {
 		const s = getComputedStyle(document.documentElement);
-		return ['--w-page', '--w-prose', '--w-outer', '--w-wide', '--w-max'].map((n) => s.getPropertyValue(n).trim());
+		return ['--w-page', '--w-prose', '--w-outer', '--w-wide', '--w-max', '--w-shell'].map((n) => s.getPropertyValue(n).trim());
 	});
 
 	// --w-prose deliberately equals --w-page: /blog/ and the posts it links to
 	// used to be 960 and 612, so the text frame jumped 150px inward on every
 	// click into an article.
-	expect(vars).toEqual(['720px', '720px', '768px', '960px', '1040px']);
+	expect(vars).toEqual(['720px', '820px', '832px', '1000px', '1040px', '1140px']);
 });
 
 // [route, container selector, expected border-box width at 1440px]
 const MEASURES: [string, string, number][] = [
 	['/tools/word-counter/', '.t-main', 720], // --w-page
 	['/tools/sql-formatter/', '.t-main', 1040], // --w-max, workbench kinds
-	['/about/', '.about-main', 720], // --w-prose, 40em at 18px
-	['/privacy/', '.privacy-main', 720],
-	['/blog/uuid-v4-vs-v7-database-guide/', '.prose', 768], // --w-outer grid; text column 720 inside
-	['/calendar/', '.cal', 960], // --w-wide
-	['/blog/', '.blog-container', 768], // the list shares the articles' page grid
+	['/about/', '.about-main', 820], // --w-prose
+	['/privacy/', '.privacy-main', 820],
+	['/blog/uuid-v4-vs-v7-database-guide/', '.prose', 832], // --w-outer grid; text column 820 inside
+	['/calendar/', '.cal', 1000], // --w-wide
+	['/blog/', '.blog-container', 832], // the list shares the articles' page grid
 	['/', '.home-container', 1040],
 	['/', 'nav', 1040], // frame matches the widest page container
 ];
@@ -58,21 +58,21 @@ test('code blocks and tables break out of the prose measure, centred', async ({ 
 	await page.goto('/blog/uuid-v4-vs-v7-database-guide/');
 
 	const prose = (await page.locator('.prose').first().boundingBox())!;
-	expect(Math.round(prose.width)).toBe(768);
+	expect(Math.round(prose.width)).toBe(832);
 	// the text column inside the grid: .prose's horizontal padding is the
-	// (outer − prose)/2 centring, so a paragraph shares the article's 720 measure
+	// (outer − prose)/2 centring, so a paragraph shares the article's 820 measure
 	const textCol = await page.evaluate(() => {
 		const p = document.querySelector('.prose p') as HTMLElement;
 		const r = p.getBoundingClientRect();
 		return { x: r.x, w: r.width };
 	});
-	expect(Math.round(textCol.w)).toBe(720);
-	expect(Math.round(textCol.x - prose.x)).toBe(24); // (768 − 720) / 2
+	expect(Math.round(textCol.w)).toBe(820);
+	expect(Math.round(textCol.x - prose.x)).toBe(6); // (832 − 820) / 2
 
 	for (const selector of ['.prose pre', '.prose table']) {
 		const box = await page.locator(selector).first().boundingBox();
 		expect(box, `${selector} not found`).not.toBeNull();
-		expect(Math.round(box!.width), `${selector} width`).toBe(960);
+		expect(Math.round(box!.width), `${selector} width`).toBe(1000);
 		// The prose box is centred in main's content box, and the breakout's
 		// margin box is (by construction, margins -(w-wide − w-outer)/2) centred
 		// on the prose box. Assert the centre rather than the edges: a margin or
@@ -83,10 +83,10 @@ test('code blocks and tables break out of the prose measure, centred', async ({ 
 	}
 });
 
-// Below the 1010px gate the breakout must be off entirely, or the negative
+// Below the 1070px gate the breakout must be off entirely, or the negative
 // margin pulls the block past the viewport edge.
-test('below 1010px code blocks stay inside the prose measure', async ({ page }) => {
-	await page.setViewportSize({ width: 900, height: 900 });
+test('below 1070px code blocks stay inside the prose measure', async ({ page }) => {
+	await page.setViewportSize({ width: 1000, height: 900 });
 	await page.goto('/blog/uuid-v4-vs-v7-database-guide/');
 
 	const prose = (await page.locator('.prose').first().boundingBox())!;
@@ -210,3 +210,105 @@ for (const [route, en, zh] of [
 		await ctx.close();
 	});
 }
+
+// --- the blog post reading layout (shell + TOC column) ----------------------
+//
+// The post page is a GitHub-code-page shape: a 1140px centred shell holding an
+// 832px article grid and a 250px sticky TOC. All of this is invisible in the
+// built HTML, and each piece has broken independently at least once — the
+// collapsed TOC once rendered 9700px down the page (a grid row *after* the
+// article) and its fold-out list once sat inside a display:none wrapper.
+const POST = '/blog/canvas-2d-surface-plot/';
+
+test('at 1440 the post page is a shell with a sticky TOC beside the reading column', async ({ page }) => {
+	await page.setViewportSize(WIDE);
+	await page.goto(POST);
+
+	const geo = await page.evaluate(() => {
+		const box = (sel: string) => {
+			const r = document.querySelector(sel)!.getBoundingClientRect();
+			return { x: Math.round(r.x), w: Math.round(r.width), y: Math.round(r.y) };
+		};
+		return {
+			shell: box('main'),
+			article: box('article'),
+			text: box('.prose p'),
+			toc: box('.toc'),
+			tocPos: getComputedStyle(document.querySelector('.toc')!).position,
+			tocLinks: document.querySelectorAll('.toc [data-toc-target]').length,
+		};
+	});
+	expect(geo.shell.w).toBe(1140); // the requested total container
+	expect(geo.article.w).toBe(832); // --w-outer grid
+	expect(geo.text.w).toBe(820); // the requested 800–860 reading column
+	expect(geo.tocPos).toBe('sticky'); // pinned while the article scrolls
+	// 250px column + borders + a scrollbar when the list is long enough to
+	// need one — the requested 240–260 band either way
+	expect(geo.toc.w).toBeGreaterThanOrEqual(240);
+	expect(geo.toc.w).toBeLessThanOrEqual(262);
+	expect(geo.tocLinks).toBeGreaterThanOrEqual(3);
+	// side by side, top-aligned, inside the shell
+	expect(geo.toc.x).toBeGreaterThan(geo.article.x + geo.article.w);
+	// the whole assembly fits in the shell with 5px to spare (the TOC's
+	// scrollbar and borders ride on top of its column)
+	expect(geo.toc.x + geo.toc.w - (geo.shell.x + geo.shell.w)).toBeLessThanOrEqual(6);
+	expect(Math.abs(geo.toc.y - geo.article.y)).toBeLessThanOrEqual(1);
+});
+
+test('scrolling pins the TOC and moves the highlight', async ({ page }) => {
+	await page.setViewportSize({ width: 1440, height: 800 });
+	await page.goto(POST);
+
+	await page.evaluate(() => window.scrollTo(0, 2000));
+	await page.waitForTimeout(200);
+	const active = page.locator('.toc a.toc-active');
+	await expect(active).toHaveCount(1);
+	const first = await active.evaluate((el) => el.textContent);
+
+	await page.evaluate(() => window.scrollTo(0, 6000));
+	await page.waitForTimeout(200);
+	const second = await active.evaluate((el) => el.textContent);
+	expect(second).not.toBe(first); // the spy follows the reading position
+
+	// pinned: while 6000px in, the TOC sits at the CSS top value (~82px =
+	// 4.5em + 1px) rather than anywhere down the page
+	const tocY = (await page.locator('.toc').boundingBox())!.y;
+	expect(tocY).toBeLessThan(120);
+});
+
+test('below 1200px the TOC collapses into a fold-out above the article', async ({ page }) => {
+	await page.setViewportSize({ width: 900, height: 800 });
+	await page.goto(POST);
+
+	const geo = await page.evaluate(() => {
+		const toc = document.querySelector('.toc') as HTMLElement;
+		const prose = document.querySelector('.prose') as HTMLElement;
+		return {
+			tocY: Math.round(toc.getBoundingClientRect().y),
+			proseY: Math.round(prose.getBoundingClientRect().y),
+			toggleVisible: getComputedStyle(toc.querySelector('.toc-toggle')!).display !== 'none',
+			rows: getComputedStyle(toc.querySelector('.toc-list')!).gridTemplateRows,
+		};
+	});
+	// the collapsed nav sits ABOVE the article, within the first screen
+	expect(geo.toggleVisible).toBe(true);
+	expect(geo.tocY).toBeLessThan(300);
+	expect(geo.tocY).toBeLessThan(geo.proseY);
+
+	// fold out, follow a link: the list opens and clicking an entry both
+	// navigates and folds the list back up
+	await page.locator('.toc-toggle').click();
+	await expect
+		.poll(() => page.locator('.toc-list').evaluate((el) => el.getBoundingClientRect().height))
+		.toBeGreaterThan(100);
+	await page.locator('.toc-list a').nth(2).click();
+	await page.waitForTimeout(400);
+	expect(await page.evaluate(() => decodeURIComponent(location.hash))).not.toBe('');
+	await expect
+		.poll(() => page.locator('.toc-list').evaluate((el) => el.getBoundingClientRect().height))
+		.toBeLessThan(10);
+
+	// the reading column itself at this width: 832 grid, 820 text
+	const prose = (await page.locator('.prose').boundingBox())!;
+	expect(Math.round(prose.width)).toBe(832);
+});

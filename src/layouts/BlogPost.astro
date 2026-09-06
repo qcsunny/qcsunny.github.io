@@ -5,6 +5,7 @@ import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
+import TableOfContents from '../components/blog/TableOfContents.astro';
 import SupportBox from '../components/SupportBox.astro';
 import { ADSENSE_CLIENT, AD_SLOTS, SITE_TITLE } from '../consts';
 import katexHref from '../styles/katex.css?url';
@@ -13,12 +14,22 @@ type Props = CollectionEntry<'blog'>['data'] & {
 	minutes?: number;
 	slug?: string;
 	hasMath?: boolean;
+	/** render()'s markdown headings, for the TOC (h2/h3 with id attributes). */
+	headings?: { depth: number; slug: string; text: string }[];
 };
 
-const { title, description, pubDate, updatedDate, heroImage, minutes, slug, hasMath } = Astro.props;
+const { title, description, pubDate, updatedDate, heroImage, minutes, slug, hasMath, headings = [] } =
+	Astro.props;
 
 const isZh = /[\p{Script=Han}]/u.test(title);
 const pageLang = isZh ? 'zh-CN' : 'en';
+
+// h2/h3 only: every h1 on the page is the article title itself, and h4+
+// entries are noise in a 250px column. Three entries minimum — a two-entry
+// TOC is a pair of links, not navigation.
+const tocHeadings = headings
+	.filter((h) => h.depth === 2 || h.depth === 3)
+	.map((h) => ({ id: h.slug, text: h.text, depth: h.depth as 2 | 3 }));
 
 const pageUrl = new URL(Astro.url.pathname, Astro.site).href;
 // Social card: an authored heroImage wins, otherwise the per-post card that
@@ -84,18 +95,60 @@ const jsonLd = {
 		{hasMath && <link rel="stylesheet" href={katexHref} />}
 		<style>
 			main {
-				/* full-width so the hero image can go wider than the prose
-				   measure; the 1em gutter keeps it off the viewport edge on
-				   phones, where global.css's own gutter no longer applies. */
-				width: 100%;
-				max-width: 100%;
-				margin: 0;
-				padding: 3em 1em;
+				/* 1140px total container, centred — the GitHub-code-page shape:
+				   a fixed reading column plus a utility column beside it, inside
+				   one bounded frame, instead of the reading column floating alone
+				   in a full-bleed main. The 2em gutter keeps it off the viewport
+				   edge on narrow screens, where the frame gracefully loses width
+				   before the grid below ever has to re-flow. */
+				width: min(var(--w-shell), 100% - 2em);
+				max-width: var(--w-shell);
+				margin: 0 auto;
+				padding: 3em 0;
 				box-sizing: border-box;
+			}
+			/* reading column + TOC column. At ≥1200px: article left, TOC right
+			   (820 text + 48 gap + 250 TOC = 1118 ≤ 1140). Below that the TOC
+			   collapses into a disclosure button and, because it is written
+			   after the article in the markup, the grid places it in a second
+			   row — the areas swap it to the top, where a reader can reach it
+			   without scrolling a full article first. */
+			.article-grid {
+				display: grid;
+				grid-template-areas:
+					'toc'
+					'article';
+				grid-template-columns: minmax(0, 1fr);
+				gap: 0;
+			}
+			.article-grid > article {
+				grid-area: article;
+			}
+			.article-grid > :global(.toc) {
+				grid-area: toc;
+			}
+			@media (min-width: 1200px) {
+				.article-grid {
+					grid-template-areas: 'article toc';
+					grid-template-columns: minmax(0, 1fr) 250px;
+					column-gap: 3em;
+				}
+			}
+			/* the reading column at ≥1200: 820px is the middle of the requested
+			   800–860 band and the figure the 1140 frame actually affords beside
+			   a 250px TOC. Below that, the responsive single column —
+			   min(840px, 100% − 32px), which is also the post-TOC-collapse
+			   width the breakpoint calls for. */
+			article {
+				/* --w-outer at desk sizes; below the 1200px grid the column is
+				   simply as wide as the shell, which is already ≤ the requested
+				   min(840px, 100% − 32px) on laptops and phones. */
+				width: min(var(--w-outer), 100%);
+				margin: 0 auto;
 			}
 			.hero-image {
 				width: 100%;
-				max-width: var(--w-wide);
+				max-width: var(--w-shell);
 				margin: 0 auto;
 			}
 			.hero-image img {
@@ -105,26 +158,26 @@ const jsonLd = {
 				box-shadow: var(--box-shadow);
 			}
 			.prose {
-				/* the PAGE grid is --w-outer (768px), wider than the text column:
-				 * a markdown table is display:block with overflow-x:auto, so on a
-				 * 720px grid a wide table clips inside a scrollbar even when the
-				 * viewport could hold it whole. Tables and code blocks break out
-				 * to --w-wide from this outer box (see global.css), while the
-				 * readable text below stays 720px via the inner padding. */
-				box-sizing: border-box; /* without it the 48px of centring padding
-				 * adds to the 768 and the grid comes out 816, un-centring
-				 * every breakout below */
-				width: min(var(--w-outer), calc(100% - 2.5em));
-				margin: auto;
-				/* (768 - 720) / 2: centres the text column inside the grid. The
-				 * 2.5em fallback window scales with the same vars. */
+				/* .prose fills the article's content box (the --w-outer grid) and
+				 * centres the text column inside it with padding: (w-outer −
+				 * w-prose)/2 per side. The grid is a touch wider than the text
+				 * because a markdown table is display:block + overflow-x:auto —
+				 * a grid exactly the text width would clip wide tables inside a
+				 * scrollbar even when the viewport could hold them whole. Tables
+				 * and code blocks break out to --w-wide from this box (see
+				 * global.css). */
+				box-sizing: border-box; /* without it the centring padding adds
+				 * to the grid width and every breakout below comes out
+				 * un-centred */
+				width: 100%;
 				padding: 2rem calc((var(--w-outer) - var(--w-prose)) / 2) 4rem;
 				color: var(--fg);
-				/* 18px, matching body. The old 1.05rem resolved against the 16px
-				   root font size, not body's 18px, so the article text was the
-				   smallest on the site — almost certainly a slip. */
-				font-size: 1.125rem;
-				line-height: 1.85;
+				/* 16px / 1.7 — the GitHub-docs body figure. The old value was
+				   18px, which at the requested 800–860px column put ~47 CJK
+				   glyphs on a line; 16px brings that back to ~52 while the wider
+				   column keeps the Latin line near the comfortable maximum. */
+				font-size: 1rem;
+				line-height: 1.7;
 				overflow-wrap: break-word;
 				word-break: break-word;
 			}
@@ -271,6 +324,7 @@ const jsonLd = {
 	<body>
 		<Header />
 		<main>
+			<div class="article-grid">
 			<article>
 				<div class="hero-image">
 					{heroImage && <Image width={1020} height={510} src={heroImage} alt="" />}
@@ -343,6 +397,8 @@ const jsonLd = {
 					)}
 				</div>
 			</article>
+			<TableOfContents headings={tocHeadings} />
+			</div>
 		</main>
 		<Footer />
 	</body>

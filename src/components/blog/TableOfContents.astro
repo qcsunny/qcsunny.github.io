@@ -1,0 +1,244 @@
+---
+// Right-hand table of contents for blog posts.
+//
+// Built from the headings the markdown already emits with `id` attributes
+// (satteri slugifies h2/h3), so no rehype plugin is needed: the list is
+// generated at build time by scanning the rendered article HTML with a regex —
+// h2/h3 only, because every h1 on the page is the article title itself and an
+// h4+ entry is noise in a 260px column.
+//
+// The list is bilingual by the same span-pair CSS the rest of the site uses.
+// Scroll-spy (which entry is "current") is a tiny IntersectionObserver in this
+// component's own <script>; there is deliberately no library behind it.
+interface Heading {
+	id: string;
+	text: string;
+	depth: 2 | 3;
+}
+
+const { headings } = Astro.props;
+---
+
+{
+	headings.length >= 3 && (
+		<nav class="toc" aria-label="Table of contents">
+			<p class="toc-title">
+				<span class="i18n-en">On this page</span>
+				<span class="i18n-zh">本文目录</span>
+			</p>
+			<div class="toc-fold">
+			<ul class="toc-list">
+					{headings.map((h) => (
+					<li class:list={['toc-item', { 'toc-sub': h.depth === 3 }]}>
+						<a href={`#${h.id}`} data-toc-target={h.id}>
+							{h.text}
+						</a>
+					</li>
+					))}
+			</ul>
+			</div>
+			<button class="toc-toggle" type="button" aria-expanded="false">
+				<span class="toc-toggle-label">
+					<span class="i18n-en">Contents</span>
+					<span class="i18n-zh">目录</span>
+				</span>
+				<span class="toc-toggle-caret" aria-hidden="true">▾</span>
+			</button>
+		</nav>
+	)
+}
+
+<style>
+	/* Desktop: a sticky side column next to the article, 250px wide (in the
+	   240–260 band), top-aligned with the text and capped at the viewport so
+	   a post with 30 headings scrolls inside its own list. */
+	.toc {
+		display: block;
+	}
+	.toc-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+	@media (min-width: 1200px) {
+		.toc {
+			display: block;
+			width: 250px;
+			flex-shrink: 0;
+			/* sticky from just below the nav bar; the extra 1.5em keeps it clear
+			   of the translucency gradient at the bar's bottom edge */
+			position: sticky;
+			top: calc(4.5em + 1px);
+			align-self: flex-start;
+			max-height: calc(100dvh - 6em);
+			font-size: 0.85rem;
+			line-height: 1.5;
+			border: 1px solid var(--gridline);
+			border-radius: 10px;
+			background: var(--bg);
+			padding: 0.9em 0.2em 0.9em 0;
+			overflow-y: auto;
+		}
+		/* the toggle only exists for the collapsed layout below 1200px */
+		.toc-toggle {
+			display: none;
+		}
+
+		.toc-title {
+			font-weight: 700;
+			font-size: 0.78rem;
+			letter-spacing: 0.06em;
+			text-transform: uppercase;
+			color: var(--dim);
+			padding: 0 1em 0.5em;
+			margin: 0;
+		}
+		.toc-item {
+			margin: 0;
+		}
+		.toc-item a {
+			display: block;
+			padding: 0.32em 1em 0.32em 1.75em;
+			color: var(--dim);
+			text-decoration: none;
+			border-left: 2px solid transparent;
+			overflow-wrap: break-word;
+		}
+		.toc-sub a {
+			padding-left: 2.6em;
+			font-size: 0.92em;
+		}
+		.toc-item a:hover {
+			color: var(--fg);
+		}
+		/* scroll-spy highlight: also driven by the .toc-active class the script
+		   below toggles, so a keyboard-focused link lights up identically */
+		.toc-item a:hover,
+		.toc-item a:focus-visible,
+		.toc-item a.toc-active {
+			color: var(--fg);
+			border-left-color: var(--accent);
+		}
+		.toc-item a.toc-active {
+			font-weight: 600;
+		}
+	}
+
+	/* Below 1200px there is no room for a side column: the same nav collapses
+	   into a disclosure under the article header. CSS-only via the toggle
+	   button and :has — no drawer state in JS, and browsers without :has
+	   simply show the collapsed button that does nothing (the list stays
+	   hidden), which is still navigable via Ctrl+F and the URL hash. */
+	@media (max-width: 1199.98px) {
+		/* the side panel's title does not render in the collapsed layout —
+		   the toggle button carries the label instead */
+		.toc-title {
+			display: none;
+		}
+		.toc-toggle {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 0.6em;
+			width: 100%;
+			margin: 0 0 1.2em;
+			padding: 0.55em 0.9em;
+			font: inherit;
+			font-size: 0.88rem;
+			font-weight: 600;
+			color: var(--fg);
+			background: var(--bg);
+			border: 1px solid var(--gridline);
+			border-radius: 10px;
+			cursor: pointer;
+		}
+		.toc-toggle-caret {
+			transition: transform 0.18s ease;
+			color: var(--dim);
+		}
+		.toc-toggle[aria-expanded='true'] .toc-toggle-caret {
+			transform: rotate(180deg);
+		}
+		/* Height animates via the classic one-child grid fold: the single
+		   0fr/1fr track constrains .toc-fold, whose only child (the <ul>) is
+		   overflow:hidden with min-height:0 so it can actually squash to 0.
+		   (Putting the track on the <ul> itself would leave the other sixteen
+		   <li>s in implicit auto rows, which never collapse.) */
+		.toc-fold {
+			display: grid;
+			grid-template-rows: 0fr;
+			transition: grid-template-rows 0.22s ease;
+		}
+		.toc:has(.toc-toggle[aria-expanded='true']) .toc-fold {
+			grid-template-rows: 1fr;
+		}
+		.toc-fold > ul {
+			overflow: hidden;
+			min-height: 0;
+			margin: 0;
+			padding: 0 0.4em;
+		}
+		.toc-item a {
+			display: block;
+			padding: 0.4em 0.6em 0.4em 1.1em;
+			color: var(--dim);
+			text-decoration: none;
+			border-left: 2px solid var(--gridline);
+		}
+		.toc-sub a {
+			padding-left: 1.9em;
+			font-size: 0.92em;
+		}
+		.toc-item a:hover,
+		.toc-item a:focus-visible,
+		.toc-item a.toc-active {
+			color: var(--fg);
+			border-left-color: var(--accent);
+		}
+	}
+</style>
+
+<script>
+	// Scroll-spy: mark the entry whose heading is the last one above the
+	// reading line. One IntersectionObserver with a rootMargin band near the
+	// top third of the viewport — the classic trick — plus a fallback scroll
+	// listener for the case where every heading is taller than the band.
+	const nav = document.querySelector('.toc');
+	if (nav) {
+		const links = new Map<string, HTMLElement>();
+		for (const a of nav.querySelectorAll<HTMLAnchorElement>('[data-toc-target]')) {
+			const id = a.dataset.tocTarget as string;
+			links.set(id, a);
+			// clicking an entry folds the collapsed list back up on a phone
+			a.addEventListener('click', () => {
+				const toggle = nav.querySelector<HTMLButtonElement>('.toc-toggle');
+				if (toggle) toggle.setAttribute('aria-expanded', 'false');
+			});
+		}
+
+		const setActive = (id: string): void => {
+			for (const [key, el] of links) el.classList.toggle('toc-active', key === id);
+		};
+
+		const pick = (): void => {
+			let current = '';
+			for (const [id] of links) {
+				const h = document.getElementById(id);
+				if (h && h.getBoundingClientRect().top < window.innerHeight / 3) current = id;
+			}
+			setActive(current);
+		};
+
+		const toggle = nav.querySelector<HTMLButtonElement>('.toc-toggle');
+		toggle?.addEventListener('click', () => {
+			toggle.setAttribute(
+				'aria-expanded',
+				toggle.getAttribute('aria-expanded') === 'true' ? 'false' : 'true',
+			);
+		});
+
+		pick();
+		window.addEventListener('scroll', () => pick(), { passive: true });
+		window.addEventListener('resize', () => pick(), { passive: true });
+	}
+</script>
