@@ -97,11 +97,24 @@ test('the inlined search index stays small enough to justify inlining', () => {
 	const withIndex = distHtml().filter(([, html]) => html.includes('const toolsData'));
 	expect(withIndex.length, 'pages carrying the search modal').toBeGreaterThan(50);
 
-	const [, html] = withIndex[0];
-	const block = html.match(/<script>\(function\(\)\{const toolsData[\s\S]*?<\/script>/);
-	expect(block, 'inline search index block').not.toBeNull();
-	const cost = brotli(html) - brotli(html.replace(block![0], ''));
-	expect(cost, `search index costs ${cost} B brotli per page`).toBeLessThan(12_000);
+	// The block carries the same payload on every page, but its brotli *cost* is
+	// the marginal bytes it adds to that page's HTML — and brotli is stateful,
+	// so the same block costs more on a page whose surrounding HTML compresses
+	// worse. Sampling one page (the old withIndex[0]) could miss the worst:
+	// 404.html, which inherits the modal through Header, ran ~9.8 KB while a
+	// tool list page ran ~1.4 KB. Pin the worst page so an index that grows
+	// past the budget is caught regardless of which page the sort hits first.
+	const costs = withIndex.map(([route, html]) => {
+		const block = html.match(/<script>\(function\(\)\{const toolsData[\s\S]*?<\/script>/);
+		if (!block) return [route, -1] as const;
+		return [route, brotli(html) - brotli(html.replace(block[0], ''))] as const;
+	});
+	const worst = costs.filter(([, c]) => c >= 0).sort((a, b) => b[1] - a[1])[0];
+	expect(worst, 'no page carried an inline search index block').toBeDefined();
+	expect(
+		worst[1],
+		`search index costs ${worst[1]} B brotli on worst page (${worst[0]})`,
+	).toBeLessThan(12_000);
 });
 
 // Astro emits one hoisted entry chunk per page and puts the <script> in the
