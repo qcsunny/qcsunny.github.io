@@ -413,5 +413,93 @@ const jsonLd = {
 			</div>
 		</main>
 		<Footer />
+
+		<!-- Copy button per fenced block. Inline, like the AdSense script
+		     below, so it stays out of the bundle: no prose page ships a module
+		     script (perf-budget.spec.ts pins that), and a dependency here would
+		     mean one more third party between a reader and their clipboard.
+		     Styles live in global.css — the wrapper is built at runtime and so
+		     carries no scope attribute. -->
+		<script is:inline>
+			(() => {
+				const copyText = (text) => {
+					if (navigator.clipboard && window.isSecureContext) {
+						return navigator.clipboard.writeText(text);
+					}
+					// http:// and older engines: the fallback path, which a
+					// revoked clipboard permission also lands on.
+					return new Promise((resolve, reject) => {
+						const ta = document.createElement('textarea');
+						ta.value = text;
+						ta.setAttribute('readonly', '');
+						ta.style.cssText = 'position:fixed;top:0;left:-9999px;opacity:0';
+						document.body.appendChild(ta);
+						ta.select();
+						try {
+							document.execCommand('copy') ? resolve() : reject(new Error('copy failed'));
+						} catch (err) {
+							reject(err);
+						} finally {
+							ta.remove();
+						}
+					});
+				};
+
+				// Both labels ride the same .i18n-* span pairs the rest of the
+				// site does, so CSS alone follows the switch — no language check
+				// to get backwards, and no aria-label, which would be static and
+				// override the visible text a screen reader already gets.
+				const span = (cls, text) => {
+					const el = document.createElement('span');
+					el.className = cls;
+					el.textContent = text;
+					return el;
+				};
+				const pair = (cls, en, zh) => {
+					const el = document.createElement('span');
+					el.className = cls;
+					el.append(span('i18n-en', en), span('i18n-zh', zh));
+					return el;
+				};
+
+				document.querySelectorAll('.prose pre').forEach((pre) => {
+					if (pre.parentElement && pre.parentElement.classList.contains('code-block')) return;
+
+					const wrap = document.createElement('div');
+					wrap.className = 'code-block';
+					pre.replaceWith(wrap);
+					wrap.appendChild(pre);
+
+					const label = pair('code-copy-label', 'Copy', '复制');
+					const done = pair('code-copy-done', 'Copied ✓', '已复制 ✓');
+					done.hidden = true;
+
+					const btn = document.createElement('button');
+					btn.type = 'button';
+					btn.className = 'code-copy';
+					btn.append(label, done);
+					wrap.appendChild(btn);
+
+					let timer = 0;
+					btn.addEventListener('click', async () => {
+						try {
+							await copyText(pre.innerText);
+							label.hidden = true;
+							done.hidden = false;
+							btn.classList.add('is-copied');
+						} catch {
+							// clipboard denied or blocked: leave the button alone
+							return;
+						}
+						clearTimeout(timer);
+						timer = setTimeout(() => {
+							label.hidden = false;
+							done.hidden = true;
+							btn.classList.remove('is-copied');
+						}, 1800);
+					});
+				});
+			})();
+		</script>
 	</body>
 </html>
