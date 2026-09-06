@@ -53,14 +53,14 @@ for (const [route, selector, expected] of MEASURES) {
 // carries no Astro scope attribute) and gated at 1010px, so this asserts the
 // symmetry rather than just the width: an outer edge that drifts means the
 // negative margin and box-sizing disagree.
-// Code blocks and tables fill the reading column, left-aligned with the text,
-// like GitHub fills the container with a code block. Earlier drafts stretched
-// every element to a fixed breakout measure and centred it on the article — but
-// the TOC column pushes that article left of the page centre, so even a modest
-// 4-column table was flung out of the reading frame to the left (this shipped,
-// on /blog/china-income-tax-and-bonus-guide/). A column-filling box can never
-// do that.
-test('code blocks and tables fill the reading column, left-aligned', async ({ page }) => {
+// Code blocks fill the reading column, left-aligned with the text, like GitHub
+// fills the container with a code block. Earlier drafts stretched every element
+// to a fixed breakout measure and centred it on the article — but the TOC column
+// pushes that article left of the page centre, so even a modest 4-column table
+// was flung out of the reading frame to the left (this shipped, on
+// /blog/china-income-tax-and-bonus-guide/). A column-filling box can never do
+// that.
+test('code blocks fill the reading column, left-aligned', async ({ page }) => {
 	await page.setViewportSize(WIDE);
 	await page.goto('/blog/uuid-v4-vs-v7-database-guide/');
 
@@ -73,27 +73,65 @@ test('code blocks and tables fill the reading column, left-aligned', async ({ pa
 	});
 	expect(Math.round(textCol.w)).toBe(820);
 
-	for (const selector of ['.prose pre', '.prose table']) {
-		const box = await page.locator(selector).first().boundingBox();
-		expect(box, `${selector} not found`).not.toBeNull();
-		// the box shares the reading column's frame and its left edge
-		expect(Math.round(box!.width), `${selector} width`).toBe(820);
-		expect(Math.abs(box!.x - textCol.x), `${selector} left edge`).toBeLessThanOrEqual(1);
-		// and nothing it contains overflows it (wide content wraps, or scrolls
-		// inside the box — either way the frame holds)
-		const overflow = await page.locator(selector).first().evaluate((el) => el.scrollWidth - el.clientWidth);
-		expect(overflow, `${selector} internal overflow`).toBeLessThanOrEqual(1);
-	}
+	const box = await page.locator('.prose pre').first().boundingBox();
+	expect(box, '.prose pre not found').not.toBeNull();
+	// the block shares the reading column's frame and its left edge
+	expect(Math.round(box!.width), 'width').toBe(820);
+	expect(Math.abs(box!.x - textCol.x), 'left edge').toBeLessThanOrEqual(1);
+	// and nothing it contains overflows it (wide content wraps, or scrolls
+	// inside the box — either way the frame holds)
+	const overflow = await page.locator('.prose pre').first().evaluate((el) => el.scrollWidth - el.clientWidth);
+	expect(overflow, 'internal overflow').toBeLessThanOrEqual(1);
 
-	// the whole page never grows a horizontal scrollbar from a table
+	// the whole page never grows a horizontal scrollbar
 	const pageOverflow = await page.evaluate(
 		() => document.documentElement.scrollWidth - document.documentElement.clientWidth,
 	);
 	expect(pageOverflow).toBeLessThanOrEqual(0);
 });
 
-// The widest real table (a 1440px-max-content FIRE table) still must not break
-// the frame — it compresses into the column, or scrolls inside it.
+// Tables centre in the reading column and shrink to their own content, so a
+// modest 3-column table no longer stretches to the full 820px with the leftover
+// space dumped in a gap to its right. A table whose natural width exceeds the
+// column still fills it whole, and scrolls inside its own box if it truly
+// cannot fit — neither case breaks the page frame. Probed across posts whose
+// tables span 311px–820px.
+test('tables centre in the reading column and never break the page frame', async ({ page }) => {
+	await page.setViewportSize(WIDE);
+	for (const route of [
+		'/blog/qr-code-reed-solomon-encoder/',
+		'/blog/static-site-byte-ledger/',
+		'/blog/si-units-and-conversion-precision/',
+	]) {
+		await page.goto(route);
+		const data = await page.evaluate(() => {
+			const p = document.querySelector('.prose p') as HTMLElement;
+			const r = p.getBoundingClientRect();
+			return {
+				center: r.x + r.width / 2,
+				w: r.width,
+				tables: [...document.querySelectorAll('.prose table')].map((t) => {
+					const tr = t.getBoundingClientRect();
+					return { x: tr.x, w: tr.width, ovf: t.scrollWidth - t.clientWidth };
+				}),
+				pageOvf: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+			};
+		});
+		expect(Math.round(data.w), 'text column').toBe(820);
+		expect(data.tables.length, `${route} has tables`).toBeGreaterThan(0);
+		for (const t of data.tables) {
+			expect(t.w, 'fits the column').toBeLessThanOrEqual(data.w + 1);
+			// centred on the column — a table filling it whole is also centred
+			expect(Math.abs(t.x + t.w / 2 - data.center), 'centred').toBeLessThanOrEqual(1);
+			expect(t.ovf, 'internal overflow').toBeLessThanOrEqual(1);
+		}
+		expect(data.pageOvf, 'no page scrollbar').toBeLessThanOrEqual(0);
+	}
+});
+
+// The widest real table fills the reading column without escaping it — its
+// content compresses to fit, or it scrolls inside its own box. Either way the
+// page frame holds.
 test('even a very wide table never moves the page frame', async ({ page }) => {
 	await page.setViewportSize(WIDE);
 	await page.goto('/blog/fire-movement-and-4-percent-rule-guide/');
@@ -316,39 +354,105 @@ test('clicking a TOC entry lands the heading clear of the sticky header', async 
 	expect(geo.headingTop).toBeLessThan(geo.headerBottom + 60);
 });
 
-test('below 1200px the TOC collapses into a fold-out above the article', async ({ page }) => {
+test('below 1200px the TOC is a floating pill that folds out a panel', async ({ page }) => {
 	await page.setViewportSize({ width: 900, height: 800 });
 	await page.goto(POST);
 
 	const geo = await page.evaluate(() => {
-		const toc = document.querySelector('.toc') as HTMLElement;
-		const prose = document.querySelector('.prose') as HTMLElement;
+		const toc = document.querySelector('.toc')!;
+		const toggle = toc.querySelector('.toc-toggle')!;
+		const fold = toc.querySelector('.toc-fold')!;
+		const list = toc.querySelector('.toc-list')!;
+		const cs = (el: Element) => getComputedStyle(el);
+		const box = (el: Element) => {
+			const r = el.getBoundingClientRect();
+			return {
+				x: Math.round(r.x),
+				y: Math.round(r.y),
+				w: Math.round(r.width),
+				h: Math.round(r.height),
+			};
+		};
 		return {
-			tocY: Math.round(toc.getBoundingClientRect().y),
-			proseY: Math.round(prose.getBoundingClientRect().y),
-			toggleVisible: getComputedStyle(toc.querySelector('.toc-toggle')!).display !== 'none',
-			rows: getComputedStyle(toc.querySelector('.toc-list')!).gridTemplateRows,
+			pos: cs(toc).position,
+			toggleVisible: cs(toggle).display !== 'none',
+			toggle: box(toggle),
+			listHeight: Math.round(list.getBoundingClientRect().height),
+			listVisible: cs(fold).visibility,
+			proseY: Math.round(document.querySelector('.prose')!.getBoundingClientRect().y),
 		};
 	});
-	// the collapsed nav sits ABOVE the article, within the first screen
+	// pinned to the viewport, not in the page flow
+	expect(geo.pos).toBe('fixed');
 	expect(geo.toggleVisible).toBe(true);
-	expect(geo.tocY).toBeLessThan(300);
-	expect(geo.tocY).toBeLessThan(geo.proseY);
+	expect(geo.toggle.x + geo.toggle.w).toBeLessThanOrEqual(900);
+	expect(geo.toggle.y + geo.toggle.h).toBeLessThanOrEqual(800);
+	// the panel starts folded — zero height, and its links are out of the tab
+	// order via the visibility flip, not just clipped
+	expect(geo.listHeight).toBe(0);
+	expect(geo.listVisible).toBe('hidden');
+	// the article is no longer pushed down by an in-flow disclosure
+	expect(geo.proseY).toBeLessThan(400);
 
-	// fold out, follow a link: the list opens and clicking an entry both
-	// navigates and folds the list back up
+	// the pill survives scrolling far down the post and does not move — that was
+	// the whole point of floating it off the page flow
+	await page.evaluate(() => window.scrollTo(0, 4000));
+	await page.waitForTimeout(200);
+	const pill = (await page.locator('.toc-toggle').boundingBox())!;
+	expect(Math.round(pill.y)).toBe(geo.toggle.y);
+	expect(pill.x + pill.width).toBeLessThanOrEqual(900);
+
+	// fold out: the panel opens above the pill and stays inside the viewport
 	await page.locator('.toc-toggle').click();
+	expect(await page.locator('.toc-toggle').getAttribute('aria-expanded')).toBe('true');
 	await expect
 		.poll(() => page.locator('.toc-list').evaluate((el) => el.getBoundingClientRect().height))
 		.toBeGreaterThan(100);
+	const open = await page.evaluate(() => {
+		const fold = document.querySelector('.toc-fold')!;
+		const list = fold.querySelector('.toc-list')!;
+		return {
+			foldTop: Math.round(fold.getBoundingClientRect().y),
+			foldBottom: Math.round(fold.getBoundingClientRect().bottom),
+			listScrollable: list.scrollHeight - list.clientHeight,
+		};
+	});
+	expect(open.foldTop).toBeGreaterThanOrEqual(0);
+	expect(open.foldBottom).toBeLessThanOrEqual(800);
+	// every entry is reachable by scrolling the list, not clipped away
+	expect(open.listScrollable).toBeGreaterThan(0);
+	const lastReachable = await page.evaluate(() => {
+		const list = document.querySelector('.toc-list')!;
+		list.scrollTop = list.scrollHeight;
+		const a = list.querySelector('.toc-item:last-child a')!;
+		const l = list.getBoundingClientRect();
+		const r = a.getBoundingClientRect();
+		return r.top >= l.top - 1 && r.bottom <= l.bottom + 1;
+	});
+	expect(lastReachable).toBe(true);
+
+	// a link jump folds the panel back behind the heading
+	await page.evaluate(() => (document.querySelector('.toc-list') as HTMLElement).scrollTop = 0);
 	await page.locator('.toc-list a').nth(2).click();
 	await page.waitForTimeout(400);
 	expect(await page.evaluate(() => decodeURIComponent(location.hash))).not.toBe('');
+	expect(await page.locator('.toc-toggle').getAttribute('aria-expanded')).toBe('false');
 	await expect
 		.poll(() => page.locator('.toc-list').evaluate((el) => el.getBoundingClientRect().height))
-		.toBeLessThan(10);
+		.toBeLessThan(1);
 
-	// the reading column itself at this width: 832 grid, 820 text
+	// Escape and a tap outside the nav each close it
+	await page.locator('.toc-toggle').click();
+	await page.keyboard.press('Escape');
+	expect(await page.locator('.toc-toggle').getAttribute('aria-expanded')).toBe('false');
+
+	await page.locator('.toc-toggle').click();
+	await page.evaluate(() =>
+		document.body.dispatchEvent(new MouseEvent('click', { bubbles: true })),
+	);
+	expect(await page.locator('.toc-toggle').getAttribute('aria-expanded')).toBe('false');
+
+	// the reading column itself at this width: 832 box
 	const prose = (await page.locator('.prose').boundingBox())!;
 	expect(Math.round(prose.width)).toBe(832);
 });

@@ -27,7 +27,7 @@ const { headings } = Astro.props;
 				<span class="i18n-zh">本文目录</span>
 			</p>
 			<div class="toc-fold">
-			<ul class="toc-list">
+			<ul class="toc-list" id="toc-list">
 					{headings.map((h) => (
 					<li class:list={['toc-item', { 'toc-sub': h.depth === 3 }]}>
 						<a href={`#${h.id}`} data-toc-target={h.id}>
@@ -37,7 +37,7 @@ const { headings } = Astro.props;
 					))}
 			</ul>
 			</div>
-			<button class="toc-toggle" type="button" aria-expanded="false">
+			<button class="toc-toggle" type="button" aria-expanded="false" aria-controls="toc-list">
 				<span class="toc-toggle-label">
 					<span class="i18n-en">Contents</span>
 					<span class="i18n-zh">目录</span>
@@ -124,12 +124,25 @@ const { headings } = Astro.props;
 		}
 	}
 
-	/* Below 1200px there is no room for a side column: the same nav collapses
-	   into a disclosure under the article header. CSS-only via the toggle
-	   button and :has — no drawer state in JS, and browsers without :has
-	   simply show the collapsed button that does nothing (the list stays
-	   hidden), which is still navigable via Ctrl+F and the URL hash. */
+	/* Below 1200px there is no room for a side column, so the nav becomes a
+	   floating pill pinned to the bottom-right corner: reachable no matter how
+	   far the reader has scrolled (the old in-flow disclosure scrolled off with
+	   the page). The pill is the same .toc-toggle button; tapping it folds the
+	   list open above it in a bordered panel. Still CSS-only via :has — no
+	   drawer state in JS — and browsers without :has still get a pill whose tap
+	   just does nothing (headings stay reachable via the URL hash and Ctrl+F). */
 	@media (max-width: 1199.98px) {
+		.toc {
+			position: fixed;
+			right: max(16px, env(safe-area-inset-right));
+			bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+			z-index: 60;
+			display: flex;
+			flex-direction: column;
+			align-items: flex-end;
+			gap: 0.6em;
+			width: auto;
+		}
 		/* the side panel's title does not render in the collapsed layout —
 		   the toggle button carries the label instead */
 		.toc-title {
@@ -138,52 +151,80 @@ const { headings } = Astro.props;
 		.toc-toggle {
 			display: flex;
 			align-items: center;
-			justify-content: space-between;
-			gap: 0.6em;
-			width: 100%;
-			margin: 0 0 1.2em;
-			padding: 0.55em 0.9em;
+			justify-content: center;
+			gap: 0.45em;
+			width: auto;
+			padding: 0.62em 1.1em;
 			font: inherit;
-			font-size: 0.88rem;
+			font-size: 0.9rem;
 			font-weight: 600;
-			color: var(--fg);
-			background: var(--bg);
-			border: 1px solid var(--gridline);
-			border-radius: 10px;
+			color: var(--on-accent);
+			background: var(--accent);
+			border: none;
+			border-radius: 999px;
+			box-shadow: var(--box-shadow);
 			cursor: pointer;
 		}
 		.toc-toggle-caret {
 			transition: transform 0.18s ease;
-			color: var(--dim);
+			color: inherit;
 		}
 		.toc-toggle[aria-expanded='true'] .toc-toggle-caret {
 			transform: rotate(180deg);
 		}
-		/* Height animates via the classic one-child grid fold: the single
-		   0fr/1fr track constrains .toc-fold, whose only child (the <ul>) is
-		   overflow:hidden with min-height:0 so it can actually squash to 0.
+		/* The panel sits above the pill (order:-1 in the column) and folds via
+		   the classic one-child grid track: 0fr collapses, 1fr opens, and the
+		   <ul> is overflow:hidden + min-height:0 so it actually squashes.
 		   (Putting the track on the <ul> itself would leave the other sixteen
-		   <li>s in implicit auto rows, which never collapse.) */
+		   <li>s in implicit auto rows, which never collapse.) visibility flips
+		   with the transition so the collapsed panel's links drop out of the
+		   tab order; the discrete 0.22s delay keeps them focusable until the
+		   close animation finishes. */
 		.toc-fold {
+			order: -1;
 			display: grid;
 			grid-template-rows: 0fr;
-			transition: grid-template-rows 0.22s ease;
+			width: min(78vw, 320px);
+			overflow: hidden;
+			background: var(--bg);
+			border: 1px solid var(--gridline);
+			border-radius: 12px;
+			box-shadow: var(--box-shadow);
+			visibility: hidden;
+			transition: grid-template-rows 0.22s ease, visibility 0s 0.22s;
 		}
 		.toc:has(.toc-toggle[aria-expanded='true']) .toc-fold {
 			grid-template-rows: 1fr;
+			visibility: visible;
+			transition: grid-template-rows 0.22s ease;
 		}
+		/* The <ul> is the scroller, not the fold. Padding or a max-height on the
+		   fold would survive a 0fr track and leave a strip above the pill, so the
+		   cap lives here on the item instead: an item with overflow:auto + a
+		   definite max-height contributes that cap to its track, the track grows
+		   to it, and the overflow beyond scrolls inside the <ul>. Without the
+		   cap the 17-entry list would push the panel past the top of the screen. */
 		.toc-fold > ul {
-			overflow: hidden;
+			overflow-y: auto;
+			overflow-x: hidden;
 			min-height: 0;
+			max-height: min(70dvh, 480px);
 			margin: 0;
-			padding: 0 0.4em;
+			padding: 0;
 		}
 		.toc-item a {
 			display: block;
-			padding: 0.4em 0.6em 0.4em 1.1em;
+			padding: 0.42em 0.6em 0.42em 1.1em;
 			color: var(--dim);
 			text-decoration: none;
 			border-left: 2px solid var(--gridline);
+			overflow-wrap: break-word;
+		}
+		.toc-item:first-child a {
+			padding-top: 0.5em;
+		}
+		.toc-item:last-child a {
+			padding-bottom: 0.5em;
 		}
 		.toc-sub a {
 			padding-left: 1.9em;
@@ -209,7 +250,7 @@ const { headings } = Astro.props;
 		for (const a of nav.querySelectorAll<HTMLAnchorElement>('[data-toc-target]')) {
 			const id = a.dataset.tocTarget as string;
 			links.set(id, a);
-			// clicking an entry folds the collapsed list back up on a phone
+			// clicking an entry closes the floating panel behind the heading jump
 			a.addEventListener('click', () => {
 				const toggle = nav.querySelector<HTMLButtonElement>('.toc-toggle');
 				if (toggle) toggle.setAttribute('aria-expanded', 'false');
@@ -236,6 +277,17 @@ const { headings } = Astro.props;
 				toggle.getAttribute('aria-expanded') === 'true' ? 'false' : 'true',
 			);
 		});
+
+		// The floating panel closes on Escape and on a tap anywhere outside the
+		// nav. Both are no-ops on desktop, where the button is display:none.
+		if (toggle) {
+			window.addEventListener('keydown', (e) => {
+				if (e.key === 'Escape') toggle.setAttribute('aria-expanded', 'false');
+			});
+			document.addEventListener('click', (e) => {
+				if (!nav.contains(e.target as Node)) toggle.setAttribute('aria-expanded', 'false');
+			});
+		}
 
 		pick();
 		window.addEventListener('scroll', () => pick(), { passive: true });

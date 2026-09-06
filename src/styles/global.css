@@ -195,23 +195,34 @@ p {
 .prose :is(h1, h2, h3, h4, h5, h6) {
 	scroll-margin-top: 5rem;
 }
-/* Code blocks and tables fill the reading column, like GitHub fills the
-   container with a code block: as block-level boxes they take the whole
-   --w-prose width and stay left-aligned with the text, and content wider than
-   the column scrolls inside the box (the box carries overflow-x:auto from the
-   table/pre rules below). Earlier drafts stretched everything to a fixed
-   breakout measure and centred it on the article column — but the TOC column
-   pushes that column left of the page centre, so even a modest table was flung
-   out of the reading frame to the left. Filling the column can never do that,
-   and a genuinely wide table (rare) scrolls instead of breaking the frame.
+/* Code blocks fill the reading column, like GitHub fills the container with a
+   code block: they take the whole --w-prose width and stay left-aligned with
+   the text, and content wider than the column scrolls inside the box (the box
+   carries overflow-x:auto from the pre rule below).
+
+   Tables behave differently — they centre in the column and shrink to their own
+   content (width: fit-content + margin-inline: auto), so a modest 3-column
+   table no longer stretches to the full 820px with the leftover space dumped
+   in a gap to its right. A table whose natural width exceeds the column still
+   fills it whole and scrolls inside the box instead of breaking the frame. An
+   earlier draft centred tables on the *article* at a fixed breakout measure,
+   but the TOC column pushes that article left of the page centre, so it flung
+   even a modest table out of the reading frame — centring inside the prose
+   column itself can never do that.
 
    This rule has to be global, not BlogPost's scoped <style>: markdown-rendered
    elements carry no scope attribute, which is why .prose p / h2 / h3 above
    live here too. */
-.prose :is(pre, table) {
+.prose pre {
 	box-sizing: border-box;
 	width: 100%;
 	margin-inline: 0;
+}
+.prose table {
+	box-sizing: border-box;
+	width: fit-content;
+	max-width: 100%;
+	margin-inline: auto;
 }
 
 /* Chinese inside a formula. `\text{ 元}` is how it gets there, and no KaTeX face
