@@ -352,3 +352,73 @@ test('below 1200px the TOC collapses into a fold-out above the article', async (
 	const prose = (await page.locator('.prose').boundingBox())!;
 	expect(Math.round(prose.width)).toBe(832);
 });
+
+// --- code blocks follow the site theme -------------------------------------
+//
+// Shiki used to ship a single github-dark theme: every <pre> carried an inline
+// background-color:#24292e and inline token colours, so a code block was dark
+// in BOTH light and dark site mode and the theme toggle did nothing to it. The
+// fix is dual themes (github-light + github-dark) with defaultColor:false, so
+// the blocks emit --shiki-light / --shiki-dark custom properties only, and
+// global.css routes them through html[data-theme]. This locks the two palettes
+// and the token colours that ride them.
+test('code blocks follow the site theme — light palette in light, dark in dark', async ({ page }) => {
+	await page.setViewportSize(WIDE);
+
+	const measure = async (theme: 'light' | 'dark') => {
+		// set the preference, then navigate so the head anti-flash script reads it
+		await page.goto(POST);
+		await page.evaluate((m) => localStorage.setItem('site:theme', m), theme);
+		await page.goto(POST);
+
+		return page.evaluate(() => {
+			const pre = document.querySelector('pre.astro-code') as HTMLElement;
+			const cs = getComputedStyle(pre);
+			// a token whose light and dark colours genuinely differ (a keyword,
+			// not the grey that both github themes share for comments)
+			const token = [...pre.querySelectorAll('span[style]')].find((s) => {
+				const l = s.style.getPropertyValue('--shiki-light');
+				const d = s.style.getPropertyValue('--shiki-dark');
+				return l && d && l.toLowerCase() !== d.toLowerCase();
+			}) as HTMLElement | undefined;
+			// hex → rgb, so a token's rendered colour can be compared to the
+			// --shiki-* hex it is supposed to be reading
+			const toRgb = (hex: string) => {
+				const probe = document.createElement('span');
+				probe.style.color = hex;
+				document.body.appendChild(probe);
+				const rgb = getComputedStyle(probe).color;
+				probe.remove();
+				return rgb;
+			};
+			return {
+				dataTheme: document.documentElement.dataset.theme || '',
+				bg: cs.backgroundColor,
+				border: cs.borderStyle,
+				tokenRendered: token ? getComputedStyle(token).color : '',
+				lightRgb: token ? toRgb(token.style.getPropertyValue('--shiki-light')) : '',
+				darkRgb: token ? toRgb(token.style.getPropertyValue('--shiki-dark')) : '',
+			};
+		});
+	};
+
+	const light = await measure('light');
+	expect(light.dataTheme).toBe(''); // light = attribute absent → :root
+	expect(light.bg).toBe('rgb(255, 255, 255)');
+	// a white block needs a visible edge on the #fafafa page, so the border is
+	// present in both modes; only its colour changes
+	expect(light.border).not.toBe('none');
+	// the token reads its --shiki-light variable in light mode
+	expect(light.tokenRendered).toBe(light.lightRgb);
+
+	const dark = await measure('dark');
+	expect(dark.dataTheme).toBe('dark');
+	expect(dark.bg).toBe('rgb(36, 41, 46)'); // github-dark #24292e
+	expect(dark.border).not.toBe('none');
+	// and its --shiki-dark variable in dark mode
+	expect(dark.tokenRendered).toBe(dark.darkRgb);
+
+	// the two modes are not the same palette — the regression this guards
+	expect(dark.bg).not.toBe(light.bg);
+	expect(dark.tokenRendered).not.toBe(light.tokenRendered);
+});

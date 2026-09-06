@@ -16,8 +16,8 @@
 	--accent-soft: rgba(35, 55, 255, 0.08);
 	--on-accent: #ffffff;
 	--card: #ffffff;
-	--code-bg: #18181b;
-	--code-fg: #e4e4e7;
+	--code-bg: #ffffff;
+	--code-fg: #24292e;
 	--box-shadow:
 		0 1px 2px rgba(0, 0, 0, 0.04),
 		0 8px 24px rgba(0, 0, 0, 0.07);
@@ -287,6 +287,31 @@ pre > code {
 	all: unset;
 	font-family: var(--font-mono);
 	color: var(--code-fg);
+}
+/* Shiki dual themes: astro.config.mjs's shikiConfig.themes emits
+   --shiki-light / --shiki-dark custom properties on every token, and
+   defaultColor: false keeps them to variables only — an inline color: would
+   outrank these rules and the dark palette could never take over. Light mode
+   (html carrying no data-theme attribute → :root) reads the light variable,
+   dark mode reads the dark one. Without these the blocks fell back to the
+   base `pre` rule's single --code-bg, i.e. one dark palette ignoring the site
+   theme. A hairline border is what makes a white block read as a block on the
+   #fafafa page; the dark border on #24292e is nearly invisible, so it costs
+   nothing in dark mode. */
+.astro-code {
+	background-color: var(--shiki-light-bg);
+	color: var(--shiki-light);
+	border: 1px solid var(--gridline);
+}
+.astro-code span {
+	color: var(--shiki-light);
+}
+html[data-theme='dark'] .astro-code {
+	background-color: var(--shiki-dark-bg);
+	color: var(--shiki-dark);
+}
+html[data-theme='dark'] .astro-code span {
+	color: var(--shiki-dark);
 }
 
 blockquote {

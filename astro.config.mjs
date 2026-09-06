@@ -15,6 +15,19 @@ export default defineConfig({
 	site: 'https://qcsunny.org',
 	integrations: [mdx(), sitemap(), llmsTxt(), ogImages(), modulePreload()],
 	markdown: {
+		// Dual Shiki themes so a code block follows the site theme instead of
+		// being permanently dark: light mode renders github-light (light bg,
+		// dark text, light-tuned token colours), dark mode renders github-dark.
+		// Shiki then emits --shiki-light / --shiki-dark CSS variables on every
+		// token and the <pre>, and global.css routes them through html[data-theme]
+		// (dark = data-theme='dark', light = attribute absent → :root). Astro's
+		// default inline color is left on so a no-JS / no-CSS fall-through still
+		// shows readable code.
+		shikiConfig: {
+			themes: { light: 'github-light', dark: 'github-dark' },
+			wrap: false,
+			defaultColor: false,
+		},
 		// Sätteri parses maths only when asked; satteri-katex.mjs then renders it
 		// to finished markup during the build, so the browser gets plain HTML and
 		// no KaTeX JavaScript at all. This replaced a runtime loader that pulled
