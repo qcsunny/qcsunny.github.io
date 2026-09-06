@@ -185,57 +185,23 @@ p {
 .prose h3 {
 	margin-top: 1.8em;
 }
-/* Code blocks, tables and wide figures break out of the prose measure.
-   Line-length limits exist for text the eye reads left-to-right and sweeps
-   back on; none of these is that — a code line scanned by indentation is fine
-   at 84 columns, a table narrower than its content just grows a scrollbar, and
-   an architecture diagram squashed into a text column is unreadable. So prose
-   keeps its measure while these get --w-wide (1000px).
+/* Code blocks and tables fill the reading column, like GitHub fills the
+   container with a code block: as block-level boxes they take the whole
+   --w-prose width and stay left-aligned with the text, and content wider than
+   the column scrolls inside the box (the box carries overflow-x:auto from the
+   table/pre rules below). Earlier drafts stretched everything to a fixed
+   breakout measure and centred it on the article column — but the TOC column
+   pushes that column left of the page centre, so even a modest table was flung
+   out of the reading frame to the left. Filling the column can never do that,
+   and a genuinely wide table (rare) scrolls instead of breaking the frame.
 
-   The measure the breakout is anchored to is --w-outer (the page grid), not
-   --w-prose (the text column): .prose is itself width:var(--w-outer) with the
-   text padded inside, and a margin on a child of a padded block resolves from
-   the *content* box — so the breakout has to subtract .prose's own centring
-   padding ((w-outer − w-prose)/2) or it comes out asymmetric and drifting off
-   the grid. Gated on a viewport that can actually hold --w-wide plus main's
-   gutter, so narrow screens keep the same-width behaviour and nothing needs
-   100vw (which counts the scrollbar and would overflow). box-sizing is
-   explicit because pre carries padding and --w-wide here means the *outer*
-   edge — without it the padding extends past the negative margin and the
-   block sits off-centre.
-
-   This has to be global, not BlogPost.astro's scoped <style>: these elements
-   come from rendered markdown and carry no scope attribute, which is why
-   .prose p / h2 / h3 above live here too. */
-@media (min-width: 1070px) {
-	/* pre/table: the margin on a child of a padded block resolves from the
-	   *content* box, so subtract .prose's centring padding ((w-outer −
-	   w-prose)/2) or the box sits 6px off-centre to the right. */
-	.prose :is(pre, table) {
-		box-sizing: border-box;
-		width: var(--w-wide);
-		margin-inline: calc(
-			(var(--w-outer) - var(--w-wide)) / 2 - (var(--w-outer) - var(--w-prose)) / 2
-		);
-	}
-	/* opt-in wide blocks (::: wide / class="wide-figure") anchor on the grid
-	   edge, not the text column — their content is centred by their own rules */
-	.prose .wide-figure {
-		box-sizing: border-box;
-		width: var(--w-wide);
-		margin-inline: calc((var(--w-outer) - var(--w-wide)) / 2);
-	}
-}
-
-/* ::: wide / class="wide-figure" blocks (architecture diagrams, comparison
-   charts): fill the breakout measure rather than the text column. Used with a
-   width in the markdown, e.g. an <img> that should be seen whole. */
-.prose .wide-figure {
-	max-width: 100%;
-}
-.prose .wide-figure img {
+   This rule has to be global, not BlogPost's scoped <style>: markdown-rendered
+   elements carry no scope attribute, which is why .prose p / h2 / h3 above
+   live here too. */
+.prose :is(pre, table) {
+	box-sizing: border-box;
 	width: 100%;
-	height: auto;
+	margin-inline: 0;
 }
 
 /* Chinese inside a formula. `\text{ 元}` is how it gets there, and no KaTeX face

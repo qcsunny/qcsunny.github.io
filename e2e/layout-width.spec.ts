@@ -53,45 +53,54 @@ for (const [route, selector, expected] of MEASURES) {
 // carries no Astro scope attribute) and gated at 1010px, so this asserts the
 // symmetry rather than just the width: an outer edge that drifts means the
 // negative margin and box-sizing disagree.
-test('code blocks and tables break out of the prose measure, centred', async ({ page }) => {
+// Code blocks and tables fill the reading column, left-aligned with the text,
+// like GitHub fills the container with a code block. Earlier drafts stretched
+// every element to a fixed breakout measure and centred it on the article — but
+// the TOC column pushes that article left of the page centre, so even a modest
+// 4-column table was flung out of the reading frame to the left (this shipped,
+// on /blog/china-income-tax-and-bonus-guide/). A column-filling box can never
+// do that.
+test('code blocks and tables fill the reading column, left-aligned', async ({ page }) => {
 	await page.setViewportSize(WIDE);
 	await page.goto('/blog/uuid-v4-vs-v7-database-guide/');
 
 	const prose = (await page.locator('.prose').first().boundingBox())!;
 	expect(Math.round(prose.width)).toBe(832);
-	// the text column inside the grid: .prose's horizontal padding is the
-	// (outer − prose)/2 centring, so a paragraph shares the article's 820 measure
 	const textCol = await page.evaluate(() => {
 		const p = document.querySelector('.prose p') as HTMLElement;
 		const r = p.getBoundingClientRect();
 		return { x: r.x, w: r.width };
 	});
 	expect(Math.round(textCol.w)).toBe(820);
-	expect(Math.round(textCol.x - prose.x)).toBe(6); // (832 − 820) / 2
 
 	for (const selector of ['.prose pre', '.prose table']) {
 		const box = await page.locator(selector).first().boundingBox();
 		expect(box, `${selector} not found`).not.toBeNull();
-		expect(Math.round(box!.width), `${selector} width`).toBe(1000);
-		// The prose box is centred in main's content box, and the breakout's
-		// margin box is (by construction, margins -(w-wide − w-outer)/2) centred
-		// on the prose box. Assert the centre rather than the edges: a margin or
-		// box-sizing drift moves the centre, while sub-pixel rounding does not.
-		const proseCentre = prose.x + prose.width / 2;
-		const boxCentre = box!.x + box!.width / 2;
-		expect(Math.abs(boxCentre - proseCentre), `${selector} is not centred on the prose column`).toBeLessThanOrEqual(1);
+		// the box shares the reading column's frame and its left edge
+		expect(Math.round(box!.width), `${selector} width`).toBe(820);
+		expect(Math.abs(box!.x - textCol.x), `${selector} left edge`).toBeLessThanOrEqual(1);
+		// and nothing it contains overflows it (wide content wraps, or scrolls
+		// inside the box — either way the frame holds)
+		const overflow = await page.locator(selector).first().evaluate((el) => el.scrollWidth - el.clientWidth);
+		expect(overflow, `${selector} internal overflow`).toBeLessThanOrEqual(1);
 	}
+
+	// the whole page never grows a horizontal scrollbar from a table
+	const pageOverflow = await page.evaluate(
+		() => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+	);
+	expect(pageOverflow).toBeLessThanOrEqual(0);
 });
 
-// Below the 1070px gate the breakout must be off entirely, or the negative
-// margin pulls the block past the viewport edge.
-test('below 1070px code blocks stay inside the prose measure', async ({ page }) => {
-	await page.setViewportSize({ width: 1000, height: 900 });
-	await page.goto('/blog/uuid-v4-vs-v7-database-guide/');
+// The widest real table (a 1440px-max-content FIRE table) still must not break
+// the frame — it compresses into the column, or scrolls inside it.
+test('even a very wide table never moves the page frame', async ({ page }) => {
+	await page.setViewportSize(WIDE);
+	await page.goto('/blog/fire-movement-and-4-percent-rule-guide/');
 
 	const prose = (await page.locator('.prose').first().boundingBox())!;
-	const pre = (await page.locator('.prose pre').first().boundingBox())!;
-	expect(pre.width).toBeLessThanOrEqual(prose.width + 1);
+	const table = (await page.locator('.prose table').first().boundingBox())!;
+	expect(Math.abs(table.x - prose.x)).toBeLessThanOrEqual(8);
 
 	const overflow = await page.evaluate(
 		() => document.documentElement.scrollWidth - document.documentElement.clientWidth,
