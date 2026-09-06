@@ -285,6 +285,37 @@ test('scrolling pins the TOC and moves the highlight', async ({ page }) => {
 	expect(tocY).toBeLessThan(120);
 });
 
+test('clicking a TOC entry lands the heading clear of the sticky header', async ({ page }) => {
+	await page.setViewportSize(WIDE);
+	await page.goto(POST);
+
+	// pick a TOC link well down the page so the scroll actually moves
+	const link = page.locator('.toc [data-toc-target]').nth(3);
+	const id = await link.getAttribute('data-toc-target');
+	expect(id).toBeTruthy();
+
+	await link.click();
+	await page.waitForTimeout(400); // native anchor jump + scroll settle
+
+	const geo = await page.evaluate((targetId) => {
+		const header = document.querySelector('header') as HTMLElement;
+		const heading = document.getElementById(targetId!) as HTMLElement;
+		return {
+			headerBottom: Math.round(header.getBoundingClientRect().bottom),
+			headingTop: Math.round(heading.getBoundingClientRect().top),
+		};
+	}, id);
+
+	// the heading's top must sit at or below the sticky header's bottom edge —
+	// not under it. Before scroll-margin-top the jump landed the heading at
+	// y=0 and ~48px of it hid behind the nav. A 2px tolerance absorbs sub-pixel
+	// rounding from the color-mix backdrop.
+	expect(geo.headingTop).toBeGreaterThanOrEqual(geo.headerBottom - 2);
+	// and it should be in the comfortable band just below the nav (5rem
+	// scroll-margin ≈ 80px), not stranded half a viewport down
+	expect(geo.headingTop).toBeLessThan(geo.headerBottom + 60);
+});
+
 test('below 1200px the TOC collapses into a fold-out above the article', async ({ page }) => {
 	await page.setViewportSize({ width: 900, height: 800 });
 	await page.goto(POST);

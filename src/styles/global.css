@@ -185,6 +185,16 @@ p {
 .prose h3 {
 	margin-top: 1.8em;
 }
+/* Anchor jumps (TOC clicks, #fragment links) land the heading below the
+   sticky header instead of under it. Without this the browser scrolls the
+   target to y=0 and the ~48px nav covers the first couple of lines. 5rem
+   = 80px clears that nav with about a line of breathing room. Global, not
+   BlogPost's scoped <style>, for the same reason as .prose h2/h3 above:
+   markdown-rendered elements carry no scope attribute. The TOC's own sticky
+   top: calc(4.5em + 1px) is the matching "just below the nav" offset. */
+.prose :is(h1, h2, h3, h4, h5, h6) {
+	scroll-margin-top: 5rem;
+}
 /* Code blocks and tables fill the reading column, like GitHub fills the
    container with a code block: as block-level boxes they take the whole
    --w-prose width and stay left-aligned with the text, and content wider than
