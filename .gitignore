@@ -35,3 +35,6 @@ test-results/
 
 # Python bytecode from scripts/ (build-katex-css.py, subset-fonts.py)
 __pycache__/
+
+# Claude Code local settings (atomic-write temp files land here)
+.claude/settings.local.json.tmp.*
