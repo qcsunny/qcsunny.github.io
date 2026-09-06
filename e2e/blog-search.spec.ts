@@ -12,7 +12,7 @@ test('blog search filters by query and category and follows the language switch'
 	const ctx = await browser.newContext();
 	await ctx.addInitScript(`try { localStorage.setItem('site:lang', 'en'); } catch {}`);
 	const page = await ctx.newPage();
-	await page.goto('http://127.0.0.1:4321/blog/');
+	await page.goto('/blog/');
 	await expect(page.locator('html')).toHaveAttribute('data-lang', 'en');
 
 	const input = page.locator('#blog-search-input');
