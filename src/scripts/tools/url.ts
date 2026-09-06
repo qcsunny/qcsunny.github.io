@@ -104,7 +104,10 @@ export function initUrl(host: HTMLElement): void {
 		} else {
 			let i = 1;
 			parsed.searchParams.forEach((val, key) => {
-				out += `${i++}. ${key} = ${decodeURIComponent(val)}\n`;
+				// searchParams already percent-decodes the value; decoding again
+				// throws on a literal '%' (e.g. `?q=100%25`) and rewrites a value
+				// like `%41` into `A`. Use it as-is, matching paramsObj above.
+				out += `${i++}. ${key} = ${val}\n`;
 			});
 		}
 
@@ -123,11 +126,9 @@ export function initUrl(host: HTMLElement): void {
 
 		const paramsObj: Record<string, string> = {};
 		parsed.searchParams.forEach((val, key) => {
-			try {
-				paramsObj[key] = decodeURIComponent(val);
-			} catch {
-				paramsObj[key] = val;
-			}
+			// Already percent-decoded by URLSearchParams; a second decode corrupts
+			// a literal '%' (see doParse) and was only masked by the try/catch.
+			paramsObj[key] = val;
 		});
 
 		wb.outputArea.value = JSON.stringify(paramsObj, null, 2);

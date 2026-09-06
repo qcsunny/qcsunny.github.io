@@ -62,12 +62,28 @@ export function initJson(host: HTMLElement): void {
 	const toolbar = document.createElement('div');
 	toolbar.className = 't-json-toolbar';
 
+	// Explicit toolbar actions must cancel the pending debounced auto-format (see
+	// the listener at the bottom), or it fires up to 300ms later and silently
+	// overwrites the result the user just asked for. json.ts builds its own
+	// workbench instead of using createWorkbench, so it needs its own guard.
+	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+	const cancelAutoRun = (): void => {
+		if (debounceTimer) {
+			clearTimeout(debounceTimer);
+			debounceTimer = null;
+		}
+	};
+
 	function createBtn(labelEn: string, labelZh: string, isPrimary = false, onClick?: () => void): HTMLButtonElement {
 		const btn = document.createElement('button');
 		btn.type = 'button';
 		btn.className = isPrimary ? 't-btn t-primary' : 't-btn';
 		btn.append(bilingual(labelEn, labelZh));
-		if (onClick) btn.addEventListener('click', onClick);
+		if (onClick)
+			btn.addEventListener('click', () => {
+				cancelAutoRun();
+				onClick();
+			});
 		return btn;
 	}
 
@@ -323,10 +339,10 @@ export function initJson(host: HTMLElement): void {
 	}
 
 	// Live debounced auto-validation on typing
-	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 	inputArea.addEventListener('input', () => {
-		if (debounceTimer) clearTimeout(debounceTimer);
+		cancelAutoRun();
 		debounceTimer = setTimeout(() => {
+			debounceTimer = null;
 			doFormat(2);
 		}, 300);
 	});
