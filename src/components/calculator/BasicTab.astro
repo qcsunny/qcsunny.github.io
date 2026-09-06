@@ -259,6 +259,15 @@ const scientificKeys: Key[] = [
 		outline: 2px solid var(--accent);
 		outline-offset: -2px;
 	}
+	/* The keypad is a hand-width widget: .t-main is the site-wide 1140 frame now,
+	   and a 4-column keypad stretched across it would put the = key a forearm's
+	   reach from the digits. 40em is the 720px measure the calculator was laid
+	   out for; centred so the widget reads as a focused tool, not a ragged
+	   left-aligned strip. */
+	.calc-basic {
+		max-width: 40em;
+		margin: 0 auto;
+	}
 	.calc-keypad[hidden] {
 		display: none;
 	}

@@ -13,6 +13,7 @@ import { TOOL_CONTENT } from '../../tools/content';
 import {
 	CALCULATOR_FEATURED,
 	REGISTRY,
+	categoryHref,
 	categoryLabel,
 	categoryLabelZh,
 	type ToolCategory,
@@ -93,7 +94,7 @@ const jsonLd: object[] = [];
 							'@type': 'ListItem',
 							position: 2,
 							name: categoryLabel(category),
-							item: new URL(`/${category}/`, Astro.site).href,
+							item: new URL(categoryHref(category), Astro.site).href,
 						},
 					]
 				: []),
@@ -201,7 +202,7 @@ const year = new Date().getFullYear();
 			   1440px that put the wordmark at x=16 while the page frame — nav on
 			   the blog, .t-main here — started at x=200. */
 			.t-topbar-inner {
-				width: min(var(--w-max), 100% - 2.5em);
+				width: min(var(--w-shell), 100% - 2.5em);
 				margin: 0 auto;
 				display: flex;
 				align-items: center;
@@ -334,7 +335,7 @@ const year = new Date().getFullYear();
 
 			/* --- content --- */
 			.t-main {
-				width: min(var(--w-page), 100% - 2em);
+				width: min(var(--w-shell), 100% - 2em);
 				margin: 0 auto;
 				padding: 1.75em 0 3.5em;
 			}
@@ -355,6 +356,9 @@ const year = new Date().getFullYear();
 				color: var(--dim);
 				font-size: 0.92rem;
 				margin-bottom: 1.25em;
+				/* the frame is 1140 now; the one-liner still takes the reading
+				   measure or it stretches to ~150 characters a line */
+				max-width: var(--w-prose);
 			}
 
 			/* --- forms --- */
@@ -1082,15 +1086,9 @@ const year = new Date().getFullYear();
 }
 
 /* --- Workbench layout (JSON, SQL, JWT, URL, XML, CSS, HTML) --- */
-html[data-tool-kind='json'] .t-main,
-html[data-tool-kind='sql'] .t-main,
-html[data-tool-kind='jwt'] .t-main,
-html[data-tool-kind='url'] .t-main,
-html[data-tool-kind='xml'] .t-main,
-html[data-tool-kind='css'] .t-main,
-html[data-tool-kind='html'] .t-main {
-	width: min(var(--w-max), 100% - 2em);
-}
+/* The workbench kinds used to widen .t-main from --w-page to --w-max here;
+   both measures are gone and every tool page now takes the site-wide
+   --w-shell, so no per-kind override remains. */
 .t-json-wrap {
 	display: flex;
 	flex-direction: column;
@@ -1619,6 +1617,10 @@ html[data-tool-kind='html'] .t-main {
 				margin-top: 2.5em;
 				font-size: 0.95rem;
 				line-height: 1.65;
+				/* prose, not tool UI: keep the reading measure inside the 1140
+				   frame (same shape as about/privacy and a post's text column).
+				   The tool itself — form, workbench, canvas — stays full width. */
+				max-width: var(--w-prose);
 			}
 			.t-content > p {
 				margin-bottom: 0.9em;
@@ -1780,7 +1782,7 @@ html[data-tool-kind='html'] .t-main {
 								{category && (
 									<>
 										<span class="t-crumb-sep" aria-hidden="true">›</span>
-										<a href={`/${category}/`}>
+										<a href={categoryHref(category)}>
 											<span class="i18n-en">{categoryLabel(category)}</span>
 											<span class="i18n-zh">{categoryLabelZh(category)}</span>
 										</a>

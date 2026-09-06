@@ -211,15 +211,18 @@ import { SITE_TITLE } from '../consts';
 
 <style>
 	.privacy-main {
-		/* same fix as about.astro: the old `max-width: min(46rem, …)` sat above
-		   global.css's `main { width: 720px }` and so never applied. */
-		width: min(var(--w-prose), 100% - 2.5rem);
+		/* same shape as about.astro: the site-wide 1140 frame outside, the 820
+		   reading column inside, hanging off the frame's left edge. */
+		width: min(var(--w-shell), 100% - 2.5rem);
 		margin: 0 auto;
 		padding: 2.5rem 0 4rem;
 		/* 18px, matching about.astro; see --w-prose in global.css */
 		font-size: 1.125rem;
 		line-height: 1.8;
 		color: var(--fg);
+	}
+	.privacy-main :where(.i18n-en, .i18n-zh) > * {
+		max-width: var(--w-prose);
 	}
 	h1 {
 		color: var(--fg);

@@ -170,10 +170,12 @@ import { SITE_TITLE } from '../consts';
 
 <style>
 	.about-main {
-		/* was `max-width: min(46rem, …)`, which never took effect: global.css
-		   already pins `main` to width 720px, below the 736px cap. Setting
-		   `width` gives this page the same reading measure as blog posts. */
-		width: min(var(--w-prose), 100% - 2.5rem);
+		/* --w-shell, the site-wide 1140 frame the nav, home, /blog/ and the tool
+		   pages all take. The prose inside keeps the --w-prose reading measure,
+		   hanging off the frame's left edge like a blog post's text column —
+		   18px prose stretched across 1140px would put ~63 CJK glyphs on a line,
+		   past the comfortable range the measure exists to protect. */
+		width: min(var(--w-shell), 100% - 2.5rem);
 		margin: 0 auto;
 		padding: 2.5rem 0 4rem;
 		/* 18px: this page is its own reading size (blog posts moved to 16px with
@@ -182,6 +184,20 @@ import { SITE_TITLE } from '../consts';
 		font-size: 1.125rem;
 		line-height: 1.8;
 		color: var(--fg);
+	}
+	/* prose children keep the 820 reading column inside the 1140 frame; the
+	   feature-card grid is the one element that uses the full frame, since
+	   three cards side by side no longer fit in 820. */
+	.about-main :where(.i18n-en, .i18n-zh) > * {
+		max-width: var(--w-prose);
+	}
+	.about-main .about-features {
+		max-width: none;
+	}
+	/* SupportBox renders its own component root, so the scope attribute never
+	   reaches it — match it globally. It rides the reading column. */
+	.about-main > :global(.support-box) {
+		max-width: var(--w-prose);
 	}
 	h1 {
 		color: var(--fg);
@@ -213,7 +229,9 @@ import { SITE_TITLE } from '../consts';
 	}
 	.about-features {
 		display: grid;
-		grid-template-columns: 1fr;
+		/* auto-fit: three cards across the 1140 frame, two across a laptop-width
+		   viewport, one on a phone */
+		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 		gap: 1rem;
 		margin: 1.2em 0 1.8em;
 	}

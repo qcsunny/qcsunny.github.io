@@ -23,36 +23,34 @@
 		0 8px 24px rgba(0, 0, 0, 0.07);
 	color-scheme: light;
 
-	/* page measures — every page container picks one of these four instead of
+	/* page measures — every page container picks one of these instead of
 	   hard-coding a pixel width. Each is a *content* width; horizontal gutters
 	   live inside the width expression (`min(var(--w-x), 100% - 2em)`) rather
 	   than in `padding`, so the box-sizing of the container never matters and
 	   the same rule works on a 320px phone and a 4K monitor. */
-	--w-page: 720px; /* default single-column page, tool pages */
 	--w-prose: 820px; /* long-form reading: blog posts. 820px is the middle of
 	                     the 800–860 band the reading column was moved to (GitHub
 	                     docs territory), paired with the 16px body type: ~51 CJK
 	                     glyphs or ~95 Latin ones per line — at the top of the
 	                     comfortable range for a page that is half CJK and
 	                     carries code, chosen deliberately over the old 720/18px
-	                     pairing.
-
-	                     /blog/'s list rides the same measure through --w-outer
-	                     so the frame never jumps between list and article. */
+	                     pairing. */
 	--w-wide: 1000px; /* what code blocks, tables and architecture figures
 	                    break out to inside prose — "don't box a wide diagram into
 	                    the text column". Also the calendar's own measure. */
-	--w-outer: 832px; /* the prose PAGE grid — .prose and /blog/ are laid out on
+	--w-outer: 832px; /* the prose PAGE grid — a post's .prose is laid out on
 	                    this measure, while the text column inside .prose stays
 	                    --w-prose (820). The 12px of head-room exists because a
 	                    markdown table is display:block with overflow-x:auto: a
 	                    grid exactly the text width would clip a wide table inside
 	                    a scrollbar even when the viewport could hold it whole. */
-	--w-max: 1040px; /* widest layout: home page, nav bar, workbench tools */
-	--w-shell: 1140px; /* blog posts: the bounded 1140 frame that centres the
+	--w-shell: 1140px; /* the site-wide outer frame: nav, home, /blog/ list,
+	                    every tool page, and the blog-post shell that centres the
 	                    reading column and the TOC column as one unit (GitHub's
-	                    code-page shape). Below 1200px the TOC folds away and the
-	                    reading column stands alone. */
+	                    code-page shape). It used to exist only on posts while the
+	                    rest of the site split across 720/832/1040 — the frame
+	                    jumped on every navigation. Below 1200px a post's TOC
+	                    folds away and the reading column stands alone. */
 
 	/* Atkinson carries no CJK glyph at all, so every Chinese character on the
 	   site is drawn by one of these. Named as a variable because KaTeX's \text{}
@@ -124,7 +122,7 @@ body {
 }
 
 main {
-	width: min(var(--w-page), 100% - 2em);
+	width: min(var(--w-shell), 100% - 2em);
 	margin: auto;
 	padding: 3em 0;
 }

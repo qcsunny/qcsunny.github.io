@@ -14,27 +14,68 @@ test('the four page measures are defined on :root', async ({ page }) => {
 
 	const vars = await page.evaluate(() => {
 		const s = getComputedStyle(document.documentElement);
-		return ['--w-page', '--w-prose', '--w-outer', '--w-wide', '--w-max', '--w-shell'].map((n) => s.getPropertyValue(n).trim());
+		return ['--w-prose', '--w-outer', '--w-wide', '--w-shell'].map((n) => s.getPropertyValue(n).trim());
 	});
 
-	// --w-prose deliberately equals --w-page: /blog/ and the posts it links to
-	// used to be 960 and 612, so the text frame jumped 150px inward on every
-	// click into an article.
-	expect(vars).toEqual(['720px', '820px', '832px', '1000px', '1040px', '1140px']);
+	// --w-shell is the one outer frame for the whole site — nav, home, /blog/,
+	// every tool page and the post shell. It used to be split across 720
+	// (--w-page), 832 (--w-outer on the list) and 1040 (--w-max), so the frame
+	// jumped on every navigation; those three variables are gone.
+	expect(vars).toEqual(['820px', '832px', '1000px', '1140px']);
 });
 
 // [route, container selector, expected border-box width at 1440px]
 const MEASURES: [string, string, number][] = [
-	['/tools/word-counter/', '.t-main', 720], // --w-page
-	['/tools/sql-formatter/', '.t-main', 1040], // --w-max, workbench kinds
-	['/about/', '.about-main', 820], // --w-prose
-	['/privacy/', '.privacy-main', 820],
+	['/tools/word-counter/', '.t-main', 1140], // --w-shell
+	['/tools/sql-formatter/', '.t-main', 1140], // workbench kinds take the same frame
+	['/about/', '.about-main', 1140], // frame; the reading column inside stays 820
+	['/privacy/', '.privacy-main', 1140],
 	['/blog/uuid-v4-vs-v7-database-guide/', '.prose', 832], // --w-outer grid; text column 820 inside
 	['/calendar/', '.cal', 1000], // --w-wide
-	['/blog/', '.blog-container', 832], // the list shares the articles' page grid
-	['/', '.home-container', 1040],
-	['/', 'nav', 1040], // frame matches the widest page container
+	['/blog/', '.blog-container', 1140],
+	['/', '.home-container', 1140],
+	['/', 'nav', 1140], // frame matches the widest page container
 ];
+
+// The 1140 frame must not stretch long-form prose: about/privacy keep the
+// 820px reading column inside it, hung on the frame's left edge like a blog
+// post's text column. Pin one paragraph and the shared left edge.
+for (const [route, sel] of [
+	['/about/', '.about-main .i18n-en p'],
+	['/privacy/', '.privacy-main .i18n-en p'],
+] as [string, string][]) {
+	test(`${route} — prose inside the 1140 frame keeps the 820 reading column`, async ({ page }) => {
+		await page.setViewportSize(WIDE);
+		await page.goto(route);
+
+		const geo = await page.evaluate((pSel) => {
+			const p = document.querySelector(pSel) as HTMLElement;
+			const main = document.querySelector('main') as HTMLElement;
+			const r = p.getBoundingClientRect();
+			const m = main.getBoundingClientRect();
+			return { textW: r.width, textX: r.x, frameX: m.x };
+		}, sel);
+		expect(Math.round(geo.textW)).toBe(820);
+		expect(Math.abs(geo.textX - geo.frameX), 'prose hangs off the frame’s left edge').toBeLessThanOrEqual(1);
+	});
+}
+
+// The 'tools' category's hub IS /tools/, which the first breadcrumb segment
+// already links — the middle crumb used to point at /tools/ again and just
+// reload the same page. It now anchors the category section; the categories
+// with their own hub route keep it.
+test('the category breadcrumb never duplicates the Tools crumb’s destination', async ({ page }) => {
+	await page.goto('/tools/word-counter/');
+	const crumbs = page.locator('.t-crumbs a');
+	await expect(crumbs.nth(0)).toHaveAttribute('href', '/tools/');
+	await expect(crumbs.nth(1)).toHaveAttribute('href', '/tools/#cat-tools');
+	// and the anchor actually exists on the hub
+	await page.goto('/tools/');
+	await expect(page.locator('#cat-tools')).toHaveCount(1);
+
+	await page.goto('/finance/mortgage/');
+	await expect(page.locator('.t-crumbs a').nth(1)).toHaveAttribute('href', '/finance/');
+});
 
 for (const [route, selector, expected] of MEASURES) {
 	test(`${route} — ${selector} measures ${expected}px`, async ({ page }) => {

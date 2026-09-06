@@ -250,11 +250,12 @@ const siteJsonLd = {
 
 <style>
 	.home-container {
-		width: 100%;
-		box-sizing: border-box;
-		max-width: var(--w-max);
+		/* the min() pattern every other container uses: the gutter lives in the
+		   width expression, so the content edge lands exactly on the nav's
+		   content edge instead of 1.5rem inside it. */
+		width: min(var(--w-shell), 100% - 2.5em);
 		margin: 0 auto;
-		padding: 3rem 1.5rem 5rem;
+		padding: 3rem 0 5rem;
 	}
 
 	/* --- HERO SECTION --- */

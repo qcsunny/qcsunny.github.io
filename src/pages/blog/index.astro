@@ -181,12 +181,12 @@ function getCategory(slug: string): { labelZh: string; labelEn: string; color: s
 
 <style>
 	.blog-container {
-		/* --w-outer, the page grid the articles themselves are laid out on (a
-		   post's reading column is --w-prose inside it — see --w-outer in
-		   global.css). The list used to be --w-wide with 1.5rem of padding,
-		   which put its text at a different x than a post's — the frame moved
-		   every time a reader clicked into an article and back. */
-		width: min(var(--w-outer), 100% - 2.5em);
+		/* --w-shell, the site-wide frame the nav, the home page and the post
+		   shell all take — the list used to ride --w-outer (832), so the frame
+		   jumped inward on the way from the nav to the list and back out into
+		   an article. A post's reading column stays --w-prose inside its own
+		   grid; this is only the list's outer frame. */
+		width: min(var(--w-shell), 100% - 2.5em);
 		margin: 0 auto;
 		padding: 3rem 0 5rem;
 	}

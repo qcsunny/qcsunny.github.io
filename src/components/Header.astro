@@ -239,13 +239,12 @@ import { SITE_TITLE } from '../consts';
 		border-bottom: 1px solid var(--gridline);
 	}
 	nav {
-		/* --w-max, not --w-wide: the home page container is --w-max, so at 960px
-		   the nav's content edge sat 40px inside the page's own edge — a step
-		   that is invisible at 1440px and obvious on an ultrawide, where it also
-		   made the page frame jump between routes. The gutter is folded into the
-		   width expression like every other container, so box-sizing stays
+		/* --w-shell, the site-wide frame the home page and every other page
+		   container also take: the nav's content edge lands on the page's own
+		   edge at any viewport width. The gutter is folded into the width
+		   expression like every other container, so box-sizing stays
 		   irrelevant. */
-		width: min(var(--w-max), 100% - 2.5em);
+		width: min(var(--w-shell), 100% - 2.5em);
 		margin: 0 auto;
 		padding: 0.7em 0;
 		display: flex;
@@ -562,7 +561,7 @@ import { SITE_TITLE } from '../consts';
 
 	@media (max-width: 768px) {
 		nav {
-			width: min(var(--w-max), 100% - 2em);
+			width: min(var(--w-shell), 100% - 2em);
 			padding: 0.6em 0;
 		}
 		.nav-left {
