@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git commit -m 'chore: 移除误提交的 settings.local.json 临时文件 *)"
+    ]
+  },
+  "prefersReducedMotion": true
+}
