@@ -50,6 +50,13 @@ import { SITE_TITLE } from '../consts';
 							<p>No paywalls, no mandatory logins, and no usage caps. Built for developers, students, researchers, and everyday users who appreciate clean, distraction-free tools.</p>
 						</div>
 					</div>
+					<div class="about-feature-card">
+						<div class="feature-icon">🌍</div>
+						<div class="feature-content">
+							<strong>Bilingual by Construction</strong>
+							<p>Every page is authored in both English and Simplified Chinese at writing time — never translated after publication — and switched by a single attribute. Form labels, calculator errors, chart legends, and search results all flip together; language and theme preferences persist in local storage across sessions.</p>
+						</div>
+					</div>
 				</div>
 
 				<h2>What You Will Find Here</h2>
@@ -111,6 +118,13 @@ import { SITE_TITLE } from '../consts';
 						<div class="feature-content">
 							<strong>完全免费 · 开放免登</strong>
 							<p>无需注册账户、无付费门槛、无频次限制，为开发者、科研学生、职场人士提供纯净、无打扰的高效工具环境。</p>
+						</div>
+					</div>
+					<div class="about-feature-card">
+						<div class="feature-icon">🌍</div>
+						<div class="feature-content">
+							<strong>双语原生 · 非事后翻译</strong>
+							<p>全站中英文均在撰写时同时创作，而非发布后翻译，由单一属性一键切换。表单标签、计算器报错、图表图例与搜索结果同步联动；语言与主题偏好存入本地存储，跨会话持久记忆。</p>
 						</div>
 					</div>
 				</div>
@@ -185,14 +199,13 @@ import { SITE_TITLE } from '../consts';
 		line-height: 1.8;
 		color: var(--fg);
 	}
-	/* prose children keep the 820 reading column inside the 1140 frame; the
-	   feature-card grid is the one element that uses the full frame, since
-	   three cards side by side no longer fit in 820. */
+	/* prose children keep the 820 reading column inside the 1140 frame. The
+	   feature-card grid now does too — four cards in a 2×2 grid fill that same
+	   column, so the section sits inside the measure the text above and below it
+	   uses, instead of stretching across the whole 1140 frame like the old
+	   three-across did. */
 	.about-main :where(.i18n-en, .i18n-zh) > * {
 		max-width: var(--w-prose);
-	}
-	.about-main .about-features {
-		max-width: none;
 	}
 	/* SupportBox renders its own component root, so the scope attribute never
 	   reaches it — match it globally. It rides the reading column. */
@@ -229,11 +242,18 @@ import { SITE_TITLE } from '../consts';
 	}
 	.about-features {
 		display: grid;
-		/* auto-fit: three cards across the 1140 frame, two across a laptop-width
-		   viewport, one on a phone */
-		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+		/* 2×2: four cards across the 820 reading column, two per row. Each card
+		   lands near 397px — wide enough for the icon-plus-prose layout, narrow
+		   enough to read as a card rather than a stretched panel. Below 640px
+		   even one card no longer fits the column, so it collapses to one row. */
+		grid-template-columns: repeat(2, 1fr);
 		gap: 1rem;
 		margin: 1.2em 0 1.8em;
+	}
+	@media (max-width: 640px) {
+		.about-features {
+			grid-template-columns: 1fr;
+		}
 	}
 	.about-feature-card {
 		display: flex;

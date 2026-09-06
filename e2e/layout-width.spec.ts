@@ -60,6 +60,39 @@ for (const [route, sel] of [
 	});
 }
 
+// The feature cards used to stretch across the whole 1140 frame (three across
+// at 300px min each), reading as wider than the 820 column of text beside them.
+// They now fill that column as a 2×2 grid — four cards, two per row — so the
+// section stays inside the reading measure the prose above and below it uses.
+test('/about/ — feature cards fill the 820 reading column as a 2×2 grid', async ({ page }) => {
+	await page.setViewportSize(WIDE);
+	await page.goto('/about/');
+
+	// Scope to main: the header's language labels carry .i18n-en/.i18n-zh too,
+	// and querySelector returns the first one in document order — the nav span,
+	// not the page's content wrapper.
+	const geo = await page.evaluate(() => {
+		const main = document.querySelector('main')!;
+		const counts = ['.i18n-en', '.i18n-zh'].map(
+			(sel) => main.querySelectorAll(`${sel} .about-feature-card`).length,
+		);
+		const visible = main.querySelector('.i18n-en')!.checkVisibility() ? '.i18n-en' : '.i18n-zh';
+		const grid = main.querySelector(`${visible} .about-features`) as HTMLElement;
+		const g = grid.getBoundingClientRect();
+		return {
+			counts,
+			cols: getComputedStyle(grid).gridTemplateColumns.split(' ').length,
+			gridW: Math.round(g.width),
+			gridX: g.x,
+			frameX: main.getBoundingClientRect().x,
+		};
+	});
+	expect(geo.counts, 'four cards in both languages').toEqual([4, 4]);
+	expect(geo.cols, 'two columns').toBe(2);
+	expect(geo.gridW, 'fills the 820 reading column').toBe(820);
+	expect(Math.abs(geo.gridX - geo.frameX), 'hung off the frame’s left edge').toBeLessThanOrEqual(1);
+});
+
 // The 'tools' category's hub IS /tools/, which the first breadcrumb segment
 // already links — the middle crumb used to point at /tools/ again and just
 // reload the same page. It now anchors the category section; the categories
