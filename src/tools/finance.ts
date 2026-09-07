@@ -640,6 +640,7 @@ const fireCalculator: FormConfig = {
 	introZh: '按 4% 法则测算 FIRE 财务自由所需资产，以及预计可退休的年龄。',
 	fields: [
 		{ id: 'age', label: 'Current age', labelZh: '当前年龄', suffix: '(years)', suffixZh: '(岁)', type: 'number', def: '30', step: '1', min: '18', max: '80', required: true },
+			{ id: 'coastAge', label: 'Retirement age for Coast FIRE', labelZh: 'Coast FIRE 计划退休年龄', suffix: '(years)', suffixZh: '(岁)', type: 'number', def: '60', step: '1', min: '18', max: '90', required: true, hint: 'Age at which you stop saving and let compounding reach your FIRE target.', hintZh: '从该年龄起停止追加投入、仅靠复利滚到 FIRE 目标的年龄' },
 		{ id: 'annualExp', label: 'Expected annual living expenses in retirement', labelZh: '退休后预期年生活支出', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '100000', step: 'any', min: '0', required: true },
 		{ id: 'currentAssets', label: 'Current net investment assets', labelZh: '当前已有可投资生息净资产', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '300000', step: 'any', min: '0', required: true },
 		{ id: 'annualSave', label: 'Annual savings added to investments', labelZh: '每年新增投资结余 (年储蓄额)', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '80000', step: 'any', min: '0', required: true },
@@ -660,6 +661,18 @@ const fireCalculator: FormConfig = {
 		const targetFire = exp / swr;
 		const leanFire = targetFire * 0.75;
 		const fatFire = targetFire * 1.25;
+
+		// Coast FIRE is a different question from Lean/Standard/Fat above: instead
+		// of "how much must I keep saving toward 25×", it asks "once I hold C, I can
+		// stop saving — compounding from now to coastAge will reach the target on its
+		// own". So C is the target discounted back over the years left until coastAge,
+		// not a spending multiple. Rejected (guard row below) when coastAge is not
+		// after the current age — compounding backward is meaningless.
+		const coastAge = v.num('coastAge');
+		const coastYears = coastAge - age;
+		const coastNest = coastYears > 0 ? targetFire / (1 + r) ** coastYears : null;
+		const coastReached = coastNest !== null && cur >= coastNest;
+		const coastGap = coastNest !== null && !coastReached ? coastNest - cur : 0;
 
 		let balance = cur;
 		let yearsToFire = -1;
@@ -707,6 +720,22 @@ const fireCalculator: FormConfig = {
 				{ label: 'Projected Retirement Age', labelZh: '预估可退休年龄', value: String(retAge) },
 				{ label: 'Lean FIRE Goal (75% expenses)', labelZh: '极简 Lean FIRE 目标 (75% 支出)', ...cash(leanFire) },
 				{ label: 'Fat FIRE Goal (125% expenses)', labelZh: '宽裕 Fat FIRE 目标 (125% 支出)', ...cash(fatFire) },
+				{
+					label: 'Coast FIRE Nest Egg (hold this to stop saving)',
+					labelZh: 'Coast FIRE 本金门槛（持有至此即可停止追加投入）',
+					...(coastNest === null
+						? { value: '— (Coast age must be later than current age)', valueZh: '— (计划退休年龄需晚于当前年龄)' }
+						: cash(coastNest)),
+				},
+				{
+					label: 'Coast status',
+					labelZh: '当前距 Coast 状态',
+					...(coastNest === null
+						? { value: '—', valueZh: '—' }
+						: coastReached
+							? { value: 'Reached — compounding alone is enough ✓', valueZh: '已达成——仅靠复利即可滚到目标 ✓' }
+							: { value: `Short by ${money(coastGap)}`, valueZh: `还差 ${money(coastGap)}` }),
+				},
 				{ label: 'Annual Safe Withdrawal (at 4% SWR)', labelZh: '退休后每年安全提现额度', ...cash(targetFire * swr) },
 			],
 			table: {
