@@ -1,7 +1,7 @@
 // @ts-check
 
 import mdx from '@astrojs/mdx';
-import { satteri } from '@astrojs/markdown-satteri';
+import { createGfmMarkdownProcessor } from './markdown-processor.mjs';
 import sitemap from '@astrojs/sitemap';
 import { defineConfig, fontProviders } from 'astro/config';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -69,9 +69,10 @@ export default defineConfig({
 		// three files from cdn.jsdelivr.net on every post containing a `$`, which
 		// left every formula on the site dependent on a third party staying up.
 		//
-		// Passing satteri() explicitly keeps Astro's own defaults (gfm and smart
-		// punctuation on) — only the `math` feature is added.
-		processor: satteri({
+		// createGfmMarkdownProcessor wraps satteri to enforce strict GFM (double-tilde
+		// only for strikethrough, preserving numeric ranges like 0~59 in blog source)
+		// and sanitizes LaTeX macros in headings for clean TOC rendering.
+		processor: createGfmMarkdownProcessor({
 			features: { math: true },
 			mdastPlugins: [satteriKatex()],
 		}),

@@ -253,11 +253,11 @@ export const TOOL_RELATED_ARTICLES: Record<string, RelatedArticle[]> = {
 	],
 	'devtools/markdown-preview': [
 		{
-			slug: 'markdown-parser-and-katex-math',
-			title: 'Handcrafted Markdown Engine and KaTeX: Parsing Boundaries and Formula Isolation',
-			titleZh: '手写 Markdown 解析器与 KaTeX 公式集成：规则边界隔离实战',
-			summary: 'Designing a boundary-safe Markdown parser that protects LaTeX math blocks from markdown syntax collision.',
-			summaryZh: '从零设计边界安全的轻量 Markdown 解析管线，有效隔离数学公式与强调/下划线排版冲突。',
+			slug: 'static-site-byte-ledger',
+			title: 'Building a Zero-Third-Party High-Performance Static Web Application',
+			titleZh: '纯自建零第三方依赖：高性能前端静态站架构设计与字节账本',
+			summary: 'Eliminating external runtime assets and shaving bundle weights for near-instant cold loads.',
+			summaryZh: '拆解全站零外部 CDN、零第三方脚本依赖的高性能静态架构与首屏字节控制实践。',
 		},
 	],
 	'converters/length': [
