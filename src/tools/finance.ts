@@ -324,8 +324,19 @@ const inflation: FormConfig = {
 		const amount = v.num('amount');
 		const rate = v.num('rate');
 		const years = v.num('years');
-		if (!(amount > 0) || !(years > 0)) {
-			return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (amount and years must be > 0)', valueZh: '— (金额与年数需大于 0)' }] };
+		// rate ≤ −100% makes (1+r) ≤ 0: purchasing power divides by it
+		// (Infinity) and fractional years go NaN. Guard on the same dash-row.
+		if (!(amount > 0) || !(years > 0) || !(rate > -100)) {
+			return {
+				rows: [
+					{
+						label: 'Result',
+						labelZh: '计算结果',
+						value: '— (amount and years must be > 0; rate must be > −100%)',
+						valueZh: '— (金额与年数需大于 0；年通胀率需大于 −100%)',
+					},
+				],
+			};
 		}
 		const r = rate / 100;
 		const futureCost = amount * (1 + r) ** years;
@@ -1616,13 +1627,22 @@ const roi: FormConfig = {
 const discount: FormConfig = {
 	fields: [
 		{ id: 'price', label: 'Original price', labelZh: '商品原价', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '100', step: 'any', min: '0', required: true },
-		{ id: 'pct', label: 'Discount percentage off', labelZh: '折扣率', suffix: '(%)', type: 'number', def: '20', step: 'any', required: true },
+		{ id: 'pct', label: 'Discount percentage off', labelZh: '折扣率', suffix: '(%)', type: 'number', def: '20', step: 'any', min: '0', max: '100', required: true },
 		{ id: 'qty', label: 'Quantity', labelZh: '购买件数', type: 'number', def: '1', step: '1', min: '1', required: true },
 	],
 	compute: (v) => {
 		const price = v.num('price');
 		const pctOff = v.num('pct');
 		const qty = Math.max(1, Math.round(v.num('qty')) || 1);
+		// A discount outside 0–100% flips the maths: >100% gives a negative
+		// price, <0% marks the item up. Reject it instead of showing $- signs.
+		if (!(pctOff >= 0) || pctOff > 100) {
+			return {
+				rows: [
+					{ label: 'Result', labelZh: '计算结果', value: '— (discount must be 0–100%)', valueZh: '— (折扣率需在 0–100% 之间)' },
+				],
+			};
+		}
 		const unit = price * (1 - pctOff / 100);
 		return {
 			rows: [
