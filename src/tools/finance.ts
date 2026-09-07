@@ -2544,16 +2544,6 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		config: compoundInterest,
 	},
 	{
-		slug: 'investment-return',
-		category: 'finance',
-		name: 'Investment Return Calculator',
-		nameZh: '投资回报与复利计算器',
-		description: 'Redirects to the unified Compound Interest & Investment Return Calculator.',
-		descriptionZh: '跳转至复利投资与定投收益计算器。',
-		kind: 'redirect',
-		config: { target: '/finance/compound-interest/' },
-	},
-	{
 		slug: 'roi',
 		category: 'finance',
 		name: 'ROI Calculator',
