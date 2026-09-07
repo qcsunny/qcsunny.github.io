@@ -6,11 +6,19 @@ import FormattedDate from '../../components/FormattedDate.astro';
 import Header from '../../components/Header.astro';
 import { buildBlogSearchConfig, getBlogCategory } from '../../components/tools/blogSearchConfig';
 import { SITE_TITLE } from '../../consts';
+import { CALCULATOR_FEATURED, REGISTRY } from '../../tools/registry';
 
 const posts = (await getCollection('blog')).sort(
 	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
 );
 const [featured, ...rest] = posts;
+
+// The bottom CTA used to say "40+"; a hardcoded number ages into a lie as tools
+// ship. Count what the registry actually holds — minus the redirect stubs that
+// only carry legacy URLs — so the copy shows this build's real total.
+const toolTotal = [...CALCULATOR_FEATURED, ...REGISTRY].filter(
+	(e) => e.kind !== 'redirect',
+).length;
 
 // Feeds the Header's search overlay: on the blog the button searches these
 // articles instead of the tool registry.
@@ -40,18 +48,18 @@ const readMinutes = (body: string): number => {
 			<div class="blog-header">
 				<div class="blog-badge">
 					<span class="badge-dot"></span>
-					<span class="i18n-zh">深度工程实战 · 算法原理解析 · 知识沉淀</span>
-					<span class="i18n-en">Technical Engineering & Math Insights</span>
+					<span class="i18n-zh">手写代码 · 实测数据 · 一次讲透原理</span>
+					<span class="i18n-en">Hand-rolled Code · Measured Numbers</span>
 				</div>
 				<h1 class="blog-title">
 					<span class="i18n-zh">技术博客与工程手记</span>
 					<span class="i18n-en">Writing About the Craft</span>
 				</h1>
 				<p class="blog-subtitle i18n-zh">
-					记录从零手写算法、纯浏览器端零依赖架构、UUID 数据库索引性能对比、金融复利数学与高并发前端的最佳实践。
+					{posts.length} 篇从零手写、实测驱动的手记：二维码纠错码、SQL 词法、Markdown 解析、不用 WebGL 的三维曲面、房贷摊销与 FIRE 数学——讲清代码怎么写，数字从哪来。
 				</p>
 				<p class="blog-subtitle i18n-en">
-					In-depth notes on hand-rolled algorithms, zero-dependency client-side architecture, database index benchmarks, and mathematical utilities.
+					{posts.length} hand-written, measurement-driven notes: QR error correction, an SQL tokenizer, Markdown parsing, a WebGL-free 3-D plotter, mortgage amortization and FIRE math — how the code works and where the numbers come from.
 				</p>
 			</div>
 
@@ -148,8 +156,8 @@ const readMinutes = (body: string): number => {
 						<span class="i18n-en">Explore Matching Developer Tools</span>
 					</h3>
 					<p>
-						<span class="i18n-zh">本站提供 JSON 格式化、SQL 美化、JWT 本地解码、URL 解析与科学计算器等 40+ 款免费纯前端工具，零隐私上传、极速秒开。</span>
-						<span class="i18n-en">Zero data upload, instant execution in your browser. 40+ free calculators, formatters, and generators.</span>
+						<span class="i18n-zh">JSON / SQL 格式化、JWT 解码、复利与房贷测算…… {toolTotal} 款纯浏览器工具全部免费、数据不出页面。</span>
+						<span class="i18n-en">JSON/SQL formatting, JWT decoding, mortgage and compound-interest math — {toolTotal} free tools that run entirely in your browser, nothing uploaded.</span>
 					</p>
 				</div>
 				<a href="/tools/" class="tools-cta-btn">
