@@ -1,0 +1,11 @@
+---
+interface Props {
+	minutes: number;
+}
+
+const { minutes } = Astro.props;
+---
+
+<time class="reading-time" datetime={`PT${minutes}M`}>
+	{minutes}<span class="i18n-zh"> 分钟</span><span class="i18n-en"> min read</span>
+</time>

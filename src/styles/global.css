@@ -331,6 +331,13 @@ html[data-theme='dark'] .astro-code span {
    the code. Moving the block's vertical rhythm onto the wrapper keeps the
    spacing identical: 1em + 1em between neighbours, the same collapsed pair the
    bare <pre>'s UA margin produced. */
+/* Keyboard focus baseline. Component-specific rings may refine this, but no
+   interactive control should become invisible after suppressing UA styles. */
+:is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 3px;
+}
+
 .code-block {
 	position: relative;
 	margin: 1em 0;

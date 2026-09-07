@@ -61,6 +61,13 @@ test('the blog list searches articles, and the button says so', async ({ browser
 		page.locator('#sm-results-list .sm-item').nth(1),
 	).toHaveAttribute('href', '/blog/password-entropy-and-secure-random/');
 
+	// Authored terms are searchable even when absent from title, slug and description.
+	await page.locator('#sm-input').fill('B-tree');
+	await expect(page.locator('#sm-results-list .sm-item').first()).toHaveAttribute(
+		'href',
+		'/blog/uuid-v4-vs-v7-database-guide/',
+	);
+
 	// A Chinese query hits from English mode too — the haystack is bilingual.
 	await page.locator('#sm-input').fill('复利');
 	await expect(page.locator('#sm-results-list .sm-item').first()).toBeVisible();
@@ -109,6 +116,19 @@ test('the blog list searches articles, and the button says so', async ({ browser
 	await expect(page).toHaveURL(new RegExp(firstHref.replace(/\//g, '\\/') + '$'));
 
 	await ctx.close();
+});
+
+test('blog category filter has a shareable URL and restores all cards', async ({ page }) => {
+	await page.goto('/blog/?category=finance');
+	const cards = page.locator('[data-blog-card]');
+	const visible = cards.filter({ visible: true });
+	expect(await visible.count()).toBeGreaterThan(0);
+	for (const card of await visible.all()) await expect(card).toHaveAttribute('data-cat', 'finance');
+	await expect(page.locator('[data-blog-category="finance"]')).toHaveAttribute('aria-pressed', 'true');
+
+	await page.locator('[data-blog-category="all"]').click();
+	await expect(page).toHaveURL(/\/blog\/$/);
+	await expect(cards.filter({ visible: true })).toHaveCount(await cards.count());
 });
 
 test('an article page searches articles as well, and Esc closes it', async ({ browser }) => {
