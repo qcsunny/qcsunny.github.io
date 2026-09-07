@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { CALCULATOR_FEATURED, CATEGORIES, REGISTRY } from './src/tools/registry.ts';
+import { CATEGORIES, REAL_TOOLS } from './src/tools/registry.ts';
 
 const SITE = 'https://qcsunny.org';
 
@@ -28,10 +28,8 @@ function frontmatter(file) {
 }
 
 function render() {
-	const tools = [
-		...CALCULATOR_FEATURED,
-		...REGISTRY.filter((e) => e.kind !== 'redirect'),
-	];
+	// REAL_TOOLS = CALCULATOR_FEATURED + REGISTRY minus the redirect stubs.
+	const tools = REAL_TOOLS;
 	const count = tools.length;
 
 	const lines = [];

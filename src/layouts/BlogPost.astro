@@ -9,15 +9,14 @@ import { buildBlogSearchConfig } from '../components/tools/blogSearchConfig';
 import TableOfContents from '../components/blog/TableOfContents.astro';
 import SupportBox from '../components/SupportBox.astro';
 import { ADSENSE_CLIENT, AD_SLOTS, SITE_TITLE } from '../consts';
-import { CALCULATOR_FEATURED, REGISTRY } from '../tools/registry';
+import { TOOL_COUNT } from '../tools/registry';
 import katexHref from '../styles/katex.css?url';
 
 // The tools card used to say "40+"; a hardcoded count ages into a lie as tools
-// ship, so every page that quotes a total computes it from the registry —
-// minus the redirect stubs that only carry legacy URLs.
-const toolTotal = [...CALCULATOR_FEATURED, ...REGISTRY].filter(
-	(e) => e.kind !== 'redirect',
-).length;
+// ship, so every page that quotes a total takes it from TOOL_COUNT — the single
+// registry-derived number (REAL_TOOLS minus the redirect stubs that carry no
+// page).
+const toolTotal = TOOL_COUNT;
 
 // Astro auto-binds props typing to `interface Props` but not to a `type`
 // alias, so headings silently stayed never[] and the TOC filter's `h` was

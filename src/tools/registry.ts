@@ -336,15 +336,21 @@ export const REGISTRY: ToolEntry[] = [
 	...TOOL_WIDGETS,
 ];
 
-/** How many real tool pages the site has: the calculators CALCULATOR_FEATURED
+/** Every real tool page the site has: the calculators CALCULATOR_FEATURED
  *  lists (they are static pages, not registry entries) plus every registry
- *  entry, minus the legacy redirect stubs that carry no page. One source of
- *  truth for "how many tools" — llms-txt.mjs, the SITE_DESCRIPTION meta, the
- *  homepage/about/blog counts and ToolShell all count the same union, so
- *  adding a tool needs no hand-edited number anywhere. */
-export const TOOL_COUNT = [...CALCULATOR_FEATURED, ...REGISTRY].filter(
+ *  entry, minus the legacy redirect stubs that carry no page. The canonical
+ *  list — the homepage's featured picks, the category pages, the search index
+ *  and llms.txt all derive their rows and counts from it, so adding a tool
+ *  needs no hand-edited number or list anywhere. */
+export const REAL_TOOLS = [...CALCULATOR_FEATURED, ...REGISTRY].filter(
 	(e) => e.kind !== 'redirect',
-).length;
+);
+
+/** How many tool pages the site has. Derive from REAL_TOOLS rather than
+ *  re-filtering CALCULATOR_FEATURED + REGISTRY yourself: this is the one
+ *  source for "how many tools" (SITE_DESCRIPTION's meta, the homepage/about/
+ *  blog counts), so the number can never drift from what the registry holds. */
+export const TOOL_COUNT = REAL_TOOLS.length;
 
 export function findEntry(category: string, slug: string): ToolEntry | undefined {
 	return REGISTRY.find((e) => e.category === category && e.slug === slug);
@@ -417,8 +423,7 @@ export interface SearchItem {
 }
 
 export function getAllSearchItems(): SearchItem[] {
-	const all = [...CALCULATOR_FEATURED, ...REGISTRY.filter((e) => e.kind !== 'redirect')];
-	return all.map((e) => ({
+	return REAL_TOOLS.map((e) => ({
 		slug: e.slug,
 		category: e.category,
 		name: e.name,
