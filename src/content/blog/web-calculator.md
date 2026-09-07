@@ -9,7 +9,7 @@ pubDate: 'Sep 01 2026'
 - **Calculator** → [/calculators/standard/](/calculators/standard/)（科学计算器）
 - **Graph** → [/calculators/graph/](/calculators/graph/)（函数绘图），另有 [/calculators/graph3d/](/calculators/graph3d/)（三维曲面，同样只用 Canvas 2D）
 - **Units** → 独立成 11 个换算页 [/converters/length/](/converters/length/) 等（长度、重量、温度、面积、体积、速度、时间、数据大小、压强、功率、能量）
-- **Stats** → 并入 [/calculators/average/](/calculators/average/)（平均数与统计）
+- **Stats** → 并入 [/calculators/descriptive-statistics/](/calculators/descriptive-statistics/)（描述统计与线性回归）
 
 拆分前的旧地址 `/calculator/` 现已下线。
 
@@ -19,7 +19,7 @@ pubDate: 'Sep 01 2026'
 
 | 分类 | 内容 |
 | --- | --- |
-| [Calculators](/calculators/)（9） | 科学计算器、函数绘图、三维曲面、百分比、百分比变化、分数、平均数与统计、比例、单利 |
+| [Calculators](/calculators/)（9） | 科学计算器、函数绘图、三维曲面、百分比、百分比变化、分数、描述统计与线性回归、比例、单利 |
 | [Converters](/converters/)（11） | 长度、重量、温度、面积、体积、速度、时间、数据大小、压强、功率、能量——双向换算、一键交换 |
 | [Finance](/finance/)（13） | 复利（含月定投、逐年明细）、等额本息月供与摊销表、房贷（含税险 HOA）、提前还款、真实年化与分期 IRR、通胀购买力、储蓄目标、车贷、FIRE、个税、年薪换算、ROI、折扣 |
 | [Tools](/tools/)（16） | 密码/UUID/随机数生成器、二维码生成器、字数与字符统计、JSON/SQL/XML/CSS/HTML 格式化、JWT 解码、URL 解析、Markdown 预览、Base64、颜色转换 |

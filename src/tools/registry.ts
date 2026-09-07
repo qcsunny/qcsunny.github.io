@@ -409,7 +409,7 @@ export const TOOL_KEYWORDS: Record<string, string> = {
 	'proportion': '比例式 方程求解 a:b=c:x 内项外项 proportion solve equation cross multiply',
 	'simple-interest': '单利 利息计算 本息和 simple interest p r t principal',
 	'fraction': '分数 约分 化简 最简分数 小数转分数 分数转小数 fraction simplify decimal continued',
-	'average': '平均数 平均值 中位数 众数 统计 标准差 方差 mean median mode average statistics variance',
+	'descriptive-statistics': '平均数 平均值 中位数 众数 统计 标准差 方差 求和 线性回归 最小二乘 mean median mode average statistics variance sum regression least squares',
 	'standard': '科学计算器 计算器 算术函数 根号 三角函数 次方 scientific calculator standard math sqrt sin cos',
 	'graph': '函数图像 曲线绘制 坐标系 绘图 函数可视化 function grapher plotting curves calculus',
 	'graph3d': '三维函数 3d函数图像 空间曲面 曲面绘制 双变量函数 马鞍面 等高线 立体绘图 二元函数 偏导 3d surface plotter mesh wireframe two variable saddle contour',

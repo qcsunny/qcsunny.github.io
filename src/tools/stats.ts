@@ -1,5 +1,6 @@
-// Descriptive statistics for the /calculators/average page.
-// Extracted from the old calculator Stats tab.
+// Descriptive statistics for the /calculators/descriptive-statistics page
+// (it absorbed the retired /calculators/average tool) and for the average
+// calculator's regression tool.
 
 export interface StatsResult {
 	count: number;
