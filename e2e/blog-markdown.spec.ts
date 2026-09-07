@@ -1,0 +1,38 @@
+import { expect, test } from "@playwright/test";
+
+const MARKDOWN_POST = "/blog/markdown-parser-and-katex-math/";
+
+// The processor normalizes maths in headings before Sätteri creates heading
+// metadata. Code spans must be opaque during that pass: their dollar signs,
+// backslashes and tildes are source text, not formula or prose delimiters.
+test("heading code spans survive normalization in the heading and TOC", async ({
+  page,
+}) => {
+  await page.goto(MARKDOWN_POST);
+
+  const heading = page
+    .locator("h2")
+    .filter({ hasText: "这个美元号是钱还是数学" });
+  await expect(heading).toHaveCount(1);
+  await expect(heading).toHaveText("5. $5 或 $10：这个美元号是钱还是数学");
+  await expect(heading.locator("code")).toHaveText("$5 或 $10");
+  await expect(heading.locator(".katex")).toHaveCount(0);
+
+  const id = await heading.getAttribute("id");
+  expect(id).toBeTruthy();
+  await expect(page.locator(`.toc [data-toc-target="${id}"]`)).toHaveText(
+    "5. $5 或 $10：这个美元号是钱还是数学",
+  );
+});
+
+test("math heading fallbacks remain readable plain text", async ({ page }) => {
+  await page.goto("/blog/prime-factorization-and-pollard-brent/");
+
+  const complexity = page.locator("h3").filter({ hasText: "生日悖论与" });
+  await expect(complexity).toContainText("O(n¹/⁴)");
+  await expect(complexity.locator(".katex")).toHaveCount(0);
+
+  const distinction = page.locator("h3").filter({ hasText: "知道至少有" });
+  await expect(distinction).toContainText("≠");
+  await expect(distinction.locator(".katex")).toHaveCount(0);
+});
