@@ -63,11 +63,13 @@ test('llms.txt is generated and its stated tool count matches its listing', asyn
 	expect(claimed).toBe(toolLinks - postLinks);
 	expect(postLinks).toBeGreaterThan(0);
 
-	// SITE_DESCRIPTION states the same count in prose, and it is the site's meta
-	// description on every page — the one number here that nothing derives. It
-	// has drifted twice (34 while the registry held 48, then 48 while it held
-	// 49), each time shipping a wrong number to every search result. llms.txt
-	// counts REGISTRY at build time, so pin one to the other.
+	// SITE_DESCRIPTION states the same count in prose on every page's meta
+	// description. Both sides now derive from REGISTRY (the description
+	// interpolates TOOL_COUNT at build time; llms.txt counts REGISTRY itself),
+	// so the two can no longer drift apart — but the count clause could still be
+	// deleted or reworded out of the description by a copy edit, and that is the
+	// one number a reader sees in every search result. Pin that it survives, in
+	// the exact clause shape the description uses.
 	const meta = await (await request.get('/')).text();
 	const stated = Number(meta.match(/等 (\d+) 个纯浏览器端工具/)?.[1]);
 	expect(stated, 'SITE_DESCRIPTION must state the registry tool count').toBe(claimed);

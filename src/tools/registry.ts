@@ -336,6 +336,16 @@ export const REGISTRY: ToolEntry[] = [
 	...TOOL_WIDGETS,
 ];
 
+/** How many real tool pages the site has: the calculators CALCULATOR_FEATURED
+ *  lists (they are static pages, not registry entries) plus every registry
+ *  entry, minus the legacy redirect stubs that carry no page. One source of
+ *  truth for "how many tools" — llms-txt.mjs, the SITE_DESCRIPTION meta, the
+ *  homepage/about/blog counts and ToolShell all count the same union, so
+ *  adding a tool needs no hand-edited number anywhere. */
+export const TOOL_COUNT = [...CALCULATOR_FEATURED, ...REGISTRY].filter(
+	(e) => e.kind !== 'redirect',
+).length;
+
 export function findEntry(category: string, slug: string): ToolEntry | undefined {
 	return REGISTRY.find((e) => e.category === category && e.slug === slug);
 }
