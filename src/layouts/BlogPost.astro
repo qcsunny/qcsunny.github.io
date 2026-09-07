@@ -9,7 +9,15 @@ import { buildBlogSearchConfig } from '../components/tools/blogSearchConfig';
 import TableOfContents from '../components/blog/TableOfContents.astro';
 import SupportBox from '../components/SupportBox.astro';
 import { ADSENSE_CLIENT, AD_SLOTS, SITE_TITLE } from '../consts';
+import { CALCULATOR_FEATURED, REGISTRY } from '../tools/registry';
 import katexHref from '../styles/katex.css?url';
+
+// The tools card used to say "40+"; a hardcoded count ages into a lie as tools
+// ship, so every page that quotes a total computes it from the registry —
+// minus the redirect stubs that only carry legacy URLs.
+const toolTotal = [...CALCULATOR_FEATURED, ...REGISTRY].filter(
+	(e) => e.kind !== 'redirect',
+).length;
 
 type Props = CollectionEntry<'blog'>['data'] & {
 	minutes?: number;
@@ -378,7 +386,7 @@ const jsonLd = {
 					<aside class="blog-tools-card">
 						<h3>🛠️ 探索在线免注册小工具库</h3>
 						<p>
-							本站提供 40+ 款纯浏览器端运行的免登录免费工具，数据仅在本地运算，绝不上传任何服务器：
+							本站提供 {toolTotal} 款纯浏览器端运行、免登录的免费工具——格式化、编解码、金融测算与生成器都有，数据仅在本地运算，绝不上传任何服务器：
 						</p>
 						<div class="tool-links">
 							<a class="tool-chip" href="/tools/json-formatter/">JSON 格式化</a>
@@ -393,8 +401,8 @@ const jsonLd = {
 							<a class="tool-chip" href="/calculators/percentage/">百分比计算器</a>
 						</div>
 						<a class="all-tools-link" href="/tools/">
-							<span class="i18n-zh">浏览全部 40+ 个在线工具 →</span>
-							<span class="i18n-en">Browse all 40+ tools →</span>
+							<span class="i18n-zh">浏览全部 {toolTotal} 款工具 →</span>
+							<span class="i18n-en">Browse all {toolTotal} tools →</span>
 						</a>
 					</aside>
 

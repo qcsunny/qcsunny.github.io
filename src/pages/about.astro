@@ -19,7 +19,7 @@ const postTotal = (await getCollection('blog')).length;
 	<head>
 		<BaseHead
 			title={`About / 关于本站 — ${SITE_TITLE}`}
-			description="About QCSunny Lab: an engineering blog and a collection of 40+ free, client-side, zero-telemetry browser tools."
+			description={`About QCSunny Lab: an engineering blog and a collection of ${toolTotal} free, client-side, zero-telemetry browser tools.`}
 		/>
 	</head>
 	<body>
