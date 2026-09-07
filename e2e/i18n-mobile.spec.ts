@@ -98,7 +98,7 @@ test('mobile viewport: blog index has no horizontal overflow', async ({ page }) 
 for (const route of [
 	'/about/',
 	'/privacy/',
-	'/tools/sql-formatter/',
+	'/devtools/sql-formatter/',
 	'/blog/uuid-v4-vs-v7-database-guide/',
 ]) {
 	test(`mobile viewport: ${route} has no horizontal overflow`, async ({ page }) => {

@@ -4,7 +4,7 @@ description: '拆解手写 SQL 格式化器的六类 token 分词器与括号深
 pubDate: 'Sep 05 2026'
 ---
 
-本站有两个格式化工具：[JSON 格式化校验](/tools/json-formatter/)和 [SQL 格式化美化](/tools/sql-formatter/)。它们看起来是同一类东西，实现却几乎没有共同点——一个把活全交给宿主环境，另一个从字符开始手写。这篇文章讲清楚为什么，顺便记录一个把浏览器标签页直接冻结的死循环 bug。
+本站有两个格式化工具：[JSON 格式化校验](/devtools/json-formatter/)和 [SQL 格式化美化](/devtools/sql-formatter/)。它们看起来是同一类东西，实现却几乎没有共同点——一个把活全交给宿主环境，另一个从字符开始手写。这篇文章讲清楚为什么，顺便记录一个把浏览器标签页直接冻结的死循环 bug。
 
 ---
 
@@ -304,10 +304,10 @@ JSON 侧对应的边界已经在第 1 节说了：数字与转义会被规范化
 
 ## 8. 在线试试
 
-- **[SQL 格式化美化](/tools/sql-formatter/)**：本文拆解的这份实现，2/4 空格缩进、关键字自动大写、单行压缩；
-- **[JSON 格式化校验](/tools/json-formatter/)**：复用宿主解析器 + 手写错误定位，报到具体行列；
-- **[XML 格式化](/tools/xml-formatter/)** 与 **[CSS 格式化](/tools/css-formatter/)**：同一套分词思路在另外两种语法上的应用；
-- **[JWT 解码](/tools/jwt-decoder/)**：解出的 header 与 payload 正是用 JSON 那条路径重新排版的。
+- **[SQL 格式化美化](/devtools/sql-formatter/)**：本文拆解的这份实现，2/4 空格缩进、关键字自动大写、单行压缩；
+- **[JSON 格式化校验](/devtools/json-formatter/)**：复用宿主解析器 + 手写错误定位，报到具体行列；
+- **[XML 格式化](/devtools/xml-formatter/)** 与 **[CSS 格式化](/devtools/css-formatter/)**：同一套分词思路在另外两种语法上的应用；
+- **[JWT 解码](/devtools/jwt-decoder/)**：解出的 header 与 payload 正是用 JSON 那条路径重新排版的。
 
 所有工具 100% 在你的浏览器本地完成，没有任何数据会发送给外部服务器——格式化 SQL 时这一点尤其重要，生产库的表结构和查询条件不该经过第三方服务器。
 

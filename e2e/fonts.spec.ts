@@ -99,7 +99,7 @@ test('the font stacks resolve in both themes', async ({ page }) => {
 // anything defined it, so `var(--font-mono, monospace)` quietly served the
 // browser default. Pin one representative surface per side of the site.
 test('monospace surfaces resolve to the shared stack', async ({ page }) => {
-	await page.goto('/tools/json-formatter/');
+	await page.goto('/devtools/json-formatter/');
 	// The formatter's panes are built by workbench.ts at runtime, so this only
 	// exists once its script has run — the locator waits.
 	const out = await page

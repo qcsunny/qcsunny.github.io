@@ -1,11 +1,11 @@
-// Registry entries for /tools/* (text utilities + generators + QR + color).
+// Registry entries for /devtools/* (text utilities + generators + QR + color).
 // Password/UUID/random share the 'generator' kind with dedicated renderers in
 // src/scripts/tools/generators.ts; color and QR have their own modules.
 //
 // The array below is grouped by the job the visitor came to do, highest-traffic
 // group first: code/document formatters (plus the Markdown editor, the other
 // "I'm writing code" tool), then the codecs and token decoders, then the small
-// text counters. This list is the display order on /tools/, on the search
+// text counters. This list is the display order on /devtools/, on the search
 // modal and on every page's related-tools strip — the search modal has no
 // relevance score, it substring-filters and keeps index position, so the
 // declaration order *is* the ranking.
@@ -99,7 +99,7 @@ function b64url(text: string): string {
 export const TEXT_TOOLS: ToolEntry[] = [
 	{
 		slug: 'json-formatter',
-		category: 'tools',
+		category: 'devtools',
 		name: 'JSON Formatter & Validator',
 		nameZh: 'JSON 格式化与校验工具',
 		description: 'Format, validate, minify, escape, and inspect JSON with exact error positions, one-click copy, and file download.',
@@ -108,7 +108,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 	},
 	{
 		slug: 'sql-formatter',
-		category: 'tools',
+		category: 'devtools',
 		name: 'SQL Formatter & Beautifier',
 		nameZh: 'SQL 格式化与美化工具',
 		description: 'Format, beautify, indent, and minify SQL queries with keyword auto-capitalization and 100% browser-side privacy.',
@@ -117,7 +117,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 	},
 	{
 		slug: 'html-formatter',
-		category: 'tools',
+		category: 'devtools',
 		name: 'HTML Formatter & Minifier',
 		nameZh: 'HTML 格式化与压缩工具',
 		description: 'Format messy HTML with proper indentation and self-closing element awareness, or minify HTML to optimize web page delivery.',
@@ -126,7 +126,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 	},
 	{
 		slug: 'css-formatter',
-		category: 'tools',
+		category: 'devtools',
 		name: 'CSS Formatter & Minifier',
 		nameZh: 'CSS 格式化与压缩工具',
 		description: 'Beautify CSS stylesheets with clean rules and property indentation, or minify CSS to a single line for production performance.',
@@ -135,7 +135,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 	},
 	{
 		slug: 'xml-formatter',
-		category: 'tools',
+		category: 'devtools',
 		name: 'XML / SVG Formatter & Validator',
 		nameZh: 'XML / SVG 格式化与校验工具',
 		description: 'Validate XML syntax, format with customizable 2/4-space indentation, and minify XML/SVG documents in your browser.',
@@ -144,7 +144,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 	},
 	{
 		slug: 'markdown-preview',
-		category: 'tools',
+		category: 'devtools',
 		name: 'Markdown Live Editor & Previewer',
 		nameZh: 'Markdown 实时渲染与预览编辑器',
 		description: 'Live split-screen Markdown rendering with GitHub Flavored Markdown (GFM), tables, task lists, code syntax, KaTeX-typeset maths, and HTML export.',
@@ -153,7 +153,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 	},
 	{
 		slug: 'base64',
-		category: 'tools',
+		category: 'devtools',
 		name: 'Base64 Encoder / Decoder',
 		nameZh: 'Base64 编码解码',
 		description: 'Encode text to Base64 or decode it back, with Unicode and URL-safe support.',
@@ -203,7 +203,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 	},
 	{
 		slug: 'jwt-decoder',
-		category: 'tools',
+		category: 'devtools',
 		name: 'JWT Decoder & Formatter',
 		nameZh: 'JWT 令牌解码与格式化',
 		description: 'Decode JSON Web Tokens (JWT) into Header and Payload, inspect expiration timestamps, and verify claims safely with zero data upload.',
@@ -212,7 +212,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 	},
 	{
 		slug: 'url-parser',
-		category: 'tools',
+		category: 'devtools',
 		name: 'URL Parser & Query Formatter',
 		nameZh: 'URL 网址与参数格式化',
 		description: 'Parse URLs into protocol, hostname, path, and query strings. Decode, sort params, remove tracking tags, and export to JSON.',
@@ -221,7 +221,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 	},
 	{
 		slug: 'word-counter',
-		category: 'tools',
+		category: 'devtools',
 		name: 'Word Counter',
 		nameZh: '在线字数统计',
 		description: 'Live word, character, sentence and paragraph counts plus reading time.',
@@ -235,7 +235,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 	},
 	{
 		slug: 'character-counter',
-		category: 'tools',
+		category: 'devtools',
 		name: 'Character Counter',
 		nameZh: '字符计数器',
 		description: 'Count characters, letters, digits, spaces, symbols and UTF-8 bytes.',

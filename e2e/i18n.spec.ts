@@ -107,8 +107,8 @@ test('every computed result row exists in both languages', () => {
 // Alias pages redirect with a meta refresh; measuring them races the navigation
 // and only re-measures the canonical tool anyway.
 function toolRoutes(): string[] {
-	const out = ['/', '/calculators/', '/finance/', '/tools/', '/converters/'];
-	for (const cat of ['calculators', 'finance', 'tools', 'converters']) {
+	const out = ['/', '/calculators/', '/finance/', '/tools/', '/converters/', '/devtools/'];
+	for (const cat of ['calculators', 'finance', 'tools', 'converters', 'devtools']) {
 		for (const d of readdirSync(join(DIST, cat), { withFileTypes: true })) {
 			if (!d.isDirectory()) continue;
 			const html = readFileSync(join(DIST, cat, d.name, 'index.html'), 'utf-8');
@@ -276,7 +276,7 @@ const PROBES: {
 	read: (page: Page) => Promise<string>;
 }[] = [
 	{
-		route: '/tools/jwt-decoder/',
+		route: '/devtools/jwt-decoder/',
 		what: 'the decoded report in the output <textarea>',
 		prepare: async (page) => {
 			await page.fill('textarea[data-role="input"]', SAMPLE_JWT);
@@ -287,7 +287,7 @@ const PROBES: {
 		read: (page) => page.inputValue('textarea[data-role="output"]'),
 	},
 	{
-		route: '/tools/url-parser/',
+		route: '/devtools/url-parser/',
 		what: 'the URL breakdown in the output <textarea>',
 		prepare: async (page) => {
 			await page.fill('textarea[data-role="input"]', 'https://example.com/a/b?utm_source=x&id=7#frag');
@@ -298,7 +298,7 @@ const PROBES: {
 		read: (page) => page.inputValue('textarea[data-role="output"]'),
 	},
 	{
-		route: '/tools/markdown-preview/',
+		route: '/devtools/markdown-preview/',
 		what: 'the untouched sample document in the editor',
 		read: (page) => page.inputValue('textarea[data-role="input"]'),
 	},
@@ -324,12 +324,12 @@ const PROBES: {
 		// The theme button's tooltip printed "Auto theme (follows browser) / 跟随系统"
 		// on all 53 shell pages. aria-label and title hold plain text, so a span
 		// pair cannot help: the MutationObserver on data-lang re-runs syncThemeUI.
-		route: '/tools/json-formatter/',
+		route: '/devtools/json-formatter/',
 		what: 'the theme button tooltip (an attribute, so no span pair can hold it)',
 		read: (page) => page.getAttribute('.t-theme', 'title').then((v) => v ?? ''),
 	},
 	{
-		route: '/tools/word-counter/',
+		route: '/devtools/word-counter/',
 		what: "the input placeholder (TextConfig.placeholderZh, which nothing read until 2026-09)",
 		read: (page) => page.getAttribute('textarea[data-role="input"]', 'placeholder').then((v) => v ?? ''),
 	},

@@ -13,7 +13,7 @@ import { FINANCE_TOOLS } from './finance';
 import { GENERATOR_TOOLS } from './generators';
 import { TEXT_TOOLS } from './textTools';
 
-export type ToolCategory = 'calculators' | 'converters' | 'finance' | 'tools';
+export type ToolCategory = 'calculators' | 'converters' | 'finance' | 'tools' | 'devtools';
 export type ToolKind =
 	| 'form'
 	| 'converter'
@@ -238,7 +238,7 @@ export const CATEGORIES: {
 		blurbZh: '科学计算器、函数图像绘制、百分比增减、比例方程、最简分数与统计分析。',
 	},
 	{
-		id: 'tools',
+		id: 'devtools',
 		label: 'Developer & Security Tools',
 		labelZh: '开发调试与安全工具',
 		blurb: 'JSON, SQL, JWT, URL, XML, CSS, HTML formatters, UUID v4/v7, QR code, and passwords.',
@@ -293,13 +293,14 @@ export function categoryLabelZh(id: ToolCategory): string {
 }
 
 /** Breadcrumb href for a category — each category has its own hub page, so a
- *  category link always lands on a page whose title is that category's name:
- *  /finance/, /calculators/, /converters/ and, for `tools`, /tools/devtools/.
- *  (Linking `tools` to /tools/ itself used to make the middle crumb reload the
- *  very page the first crumb leads to; the anchor variant was a stopgap until
- *  the category got its own small hub.) */
+ *  category link always lands on a page whose title is that category's name.
+ *  Three map 1:1 onto their route segment (/finance/, /calculators/,
+ *  /converters/); `tools` is the odd one — its route segment is taken by the
+ *  aggregated /tools/ hub (which hosts every category), and the tool pages
+ *  themselves live under /tools/<slug> — so its category hub is a top-level
+ *  /devtools/ page instead, keeping every category hub at the site root. */
 export function categoryHref(id: ToolCategory): string {
-	return id === 'tools' ? '/tools/devtools/' : `/${id}/`;
+	return id === 'tools' ? '/devtools/' : `/${id}/`;
 }
 
 /** Registry entries for /tools/qr-code-generator and /tools/color-converter.
@@ -308,7 +309,7 @@ export function categoryHref(id: ToolCategory): string {
 export const TOOL_WIDGETS: ToolEntry[] = [
 	{
 		slug: 'qr-code-generator',
-		category: 'tools',
+		category: 'devtools',
 		name: 'QR Code Generator',
 		nameZh: '二维码生成器',
 		description: 'Turn text or URLs into downloadable QR codes, generated entirely in your browser.',
@@ -317,7 +318,7 @@ export const TOOL_WIDGETS: ToolEntry[] = [
 	},
 	{
 		slug: 'color-converter',
-		category: 'tools',
+		category: 'devtools',
 		name: 'Color Converter',
 		nameZh: '颜色换算工具',
 		description: 'Convert colors between HEX, RGB and HSL with a live swatch and complement.',
@@ -327,6 +328,26 @@ export const TOOL_WIDGETS: ToolEntry[] = [
 ];
 
 /** Every registry-driven tool page, all four categories. */
+/** Legacy redirects: every developer tool used to live at /tools/<slug> until the
+ *  category grew its own hub. Moving it to /devtools/<slug> (same content, category
+ *  renamed) left those URLs linked and indexed, so each old path keeps working by
+ *  meta-refresh + rel=canonical to the new page. Cloned from the real entries and
+ *  pinned to the END of REGISTRY so a find()-by-slug (homepage featured cards, the
+ *  related strip) never mistakes a stub for the real tool. */
+export const LEGACY_DEVTOOLS_REDIRECTS: ToolEntry[] = [
+	...TEXT_TOOLS,
+	...GENERATOR_TOOLS,
+	...TOOL_WIDGETS,
+].map(
+	(e) =>
+		({
+			...e,
+			category: 'tools',
+			kind: 'redirect',
+			config: { target: `/devtools/${e.slug}/` },
+		}) as ToolEntry,
+);
+
 export const REGISTRY: ToolEntry[] = [
 	...CALCULATOR_TOOLS,
 	...CONVERTER_TOOLS,
@@ -334,6 +355,7 @@ export const REGISTRY: ToolEntry[] = [
 	...TEXT_TOOLS,
 	...GENERATOR_TOOLS,
 	...TOOL_WIDGETS,
+	...LEGACY_DEVTOOLS_REDIRECTS,
 ];
 
 export function findEntry(category: string, slug: string): ToolEntry | undefined {

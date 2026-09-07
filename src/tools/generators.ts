@@ -8,7 +8,7 @@ import type { ToolEntry } from './registry';
 export const GENERATOR_TOOLS: ToolEntry[] = [
 	{
 		slug: 'password-generator',
-		category: 'tools',
+		category: 'devtools',
 		name: 'Password Generator',
 		nameZh: '强密码生成器',
 		description: 'Generate strong random passwords with crypto randomness and ambiguous character filtering.',
@@ -18,7 +18,7 @@ export const GENERATOR_TOOLS: ToolEntry[] = [
 	},
 	{
 		slug: 'uuid-generator',
-		category: 'tools',
+		category: 'devtools',
 		name: 'UUID Generator (v4 & v7)',
 		nameZh: 'UUID 生成器 (v4 / v7)',
 		description: 'Generate random UUID v4 and time-ordered UUID v7 identifiers in bulk.',
@@ -28,7 +28,7 @@ export const GENERATOR_TOOLS: ToolEntry[] = [
 	},
 	{
 		slug: 'random-number',
-		category: 'tools',
+		category: 'devtools',
 		name: 'Random Number Generator',
 		nameZh: '随机数生成器',
 		description: 'Draw random integers in any range, with or without duplicates.',

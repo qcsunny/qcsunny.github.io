@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 
-// /tools/markdown-preview/ used to *say* it supported maths and then print the
+// /devtools/markdown-preview/ used to *say* it supported maths and then print the
 // LaTeX source: `$$E = mc^2$$` came out as the characters `$$E = mc^2$$` inside a
 // centred box. It now typesets with KaTeX, which is a local dependency (vendored
 // stylesheet + woff2 under src/, nothing from a CDN) pulled in as its own chunk
@@ -12,7 +12,7 @@ import { expect, test } from '@playwright/test';
 // surviving is the signal that typesetting did not happen — which these specs
 // use in both directions.
 
-const TOOL = '/tools/markdown-preview/';
+const TOOL = '/devtools/markdown-preview/';
 
 test('inline and display formulas typeset, CJK inside them included', async ({ page }) => {
 	await page.goto(TOOL);
@@ -160,7 +160,7 @@ test('KaTeX is not in any tool page as served', async ({ page }) => {
 	);
 
 	// A tool with no maths at all never fetches it, even after interacting.
-	await page.goto('/tools/json-formatter/');
+	await page.goto('/devtools/json-formatter/');
 	await page.locator('.t-json-editor').first().click();
 	await expect(page.locator('.t-json-editor').first()).toBeVisible();
 	expect(requested, 'json-formatter pulled KaTeX').toEqual([]);

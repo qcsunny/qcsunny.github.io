@@ -8,7 +8,7 @@ pubDate: 'Sep 03 2026'
 
 多年来，开发者习惯使用 **UUID v4**（完全随机）作为数据库表的主键（Primary Key）——它简单、客户端生成、不依赖中心化自增发号器。然而，随着数据量突破数百万、数千万级别，使用 UUID v4 作为聚簇索引（Clustered Index）主键的系统往往会遭遇**灾难性的写入性能雪崩（B-Tree 页分裂与大量随机 I/O）**。
 
-2024 年 5 月，IETF 正式发布了 **RFC 9562**（替代了旧版 RFC 4122），正式引入了 **UUID v7**。本文将拆解 UUID 的演进历程，分析为什么现代数据库主键应当全面转向 UUID v7，并介绍如何在日常开发中使用我们的[纯本地 UUID 生成器](/tools/uuid-generator/)。
+2024 年 5 月，IETF 正式发布了 **RFC 9562**（替代了旧版 RFC 4122），正式引入了 **UUID v7**。本文将拆解 UUID 的演进历程，分析为什么现代数据库主键应当全面转向 UUID v7，并介绍如何在日常开发中使用我们的[纯本地 UUID 生成器](/devtools/uuid-generator/)。
 
 ---
 
@@ -91,8 +91,8 @@ UUID（Universally Unique Identifier）是一个 128 位（16 字节）的标识
 在日常测试、API 调试、数据迁移或生成 Mock 数据时，经常需要批量生成唯一的 UUID。
 
 你可以直接使用我们网站提供的免费纯本地工具：
-- **[UUID 生成器](/tools/uuid-generator/)**：基于浏览器原生的 `crypto.getRandomValues()` 密码学随机安全源，支持单次批量生成 1 到 100 个 UUID，一键极速复制整列；
-- **[JSON 格式化工具](/tools/json-formatter/)**：本地秒级格式化、排版与校验含大量 UUID 记录的复杂 JSON 数据；
-- **[Base64 编码解码器](/tools/base64/)**：对二进制 UUID 或字符串做编解码。
+- **[UUID 生成器](/devtools/uuid-generator/)**：基于浏览器原生的 `crypto.getRandomValues()` 密码学随机安全源，支持单次批量生成 1 到 100 个 UUID，一键极速复制整列；
+- **[JSON 格式化工具](/devtools/json-formatter/)**：本地秒级格式化、排版与校验含大量 UUID 记录的复杂 JSON 数据；
+- **[Base64 编码解码器](/devtools/base64/)**：对二进制 UUID 或字符串做编解码。
 
 所有工具均 100% 在你的浏览器本地完成，没有任何数据会发送给外部服务器，安全、私密且支持离线使用。

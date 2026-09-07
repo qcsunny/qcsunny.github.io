@@ -29,7 +29,7 @@ src/
 ├── components/        # Header, Footer, BaseHead, tool shell, calculator widgets
 ├── content/blog/      # Markdown posts (Astro Content Collections)
 ├── layouts/           # BlogPost layout
-├── pages/             # routes: index, about, blog/, tools/, calculators/, converters/, finance/
+├── pages/             # routes: index, about, blog/, tools/ (hub + legacy), devtools/, calculators/, converters/, finance/
 ├── scripts/           # client TS: calculator engine + per-tool logic
 ├── styles/            # global.css (incl. i18n display rules)
 ├── tools/             # tool registry (pure data) — adding a tool here auto-generates its route

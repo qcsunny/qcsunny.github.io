@@ -4,7 +4,7 @@ description: '拆解零依赖 Markdown 解析器的三层占位符抬出-还原�
 pubDate: 'Sep 05 2026'
 ---
 
-[Markdown 实时预览](/tools/markdown-preview/)这个工具里有两套完全不同的东西：Markdown 解析是从零手写的，一行第三方代码都没有；数学公式排版则是把 KaTeX 打包进了自己的产物。这篇文章讲清楚这条界线划在哪里、为什么划在那里，以及手写解析器里最容易写错的那一类 bug——**规则之间互相钻进对方的领地**。写这篇文章的过程中又抓到一个同源的、已经上线的实例，也一并记在下面。
+[Markdown 实时预览](/devtools/markdown-preview/)这个工具里有两套完全不同的东西：Markdown 解析是从零手写的，一行第三方代码都没有；数学公式排版则是把 KaTeX 打包进了自己的产物。这篇文章讲清楚这条界线划在哪里、为什么划在那里，以及手写解析器里最容易写错的那一类 bug——**规则之间互相钻进对方的领地**。写这篇文章的过程中又抓到一个同源的、已经上线的实例，也一并记在下面。
 
 ---
 
@@ -277,7 +277,7 @@ expect(served, 'the served page must not link or preload katex').not.toMatch(
 );
 ```
 
-另一半断言是反向的：打开 `/tools/json-formatter/` 并交互，`katex` 相关请求数必须是 0；打开 Markdown 工具（示例文档里带公式），`katex.*.js` 必须被请求到。
+另一半断言是反向的：打开 `/devtools/json-formatter/` 并交互，`katex` 相关请求数必须是 0；打开 Markdown 工具（示例文档里带公式），`katex.*.js` 必须被请求到。
 
 ---
 
@@ -357,8 +357,8 @@ vite: {
 
 ## 12. 在线试试
 
-- **[Markdown 实时预览](/tools/markdown-preview/)**：本文拆解的这份实现，双栏实时预览、`$inline$` 与 `$$display$$` 公式、导出 .md 与自包含 .html；
-- **[JSON 格式化校验](/tools/json-formatter/)** 与 **[SQL 格式化美化](/tools/sql-formatter/)**：[另一篇](/blog/sql-tokenizer-and-code-formatter/)讲的"代码与数据只分离一次"在别的语法上的样子；
-- **[二维码生成器](/tools/qr-code-generator/)**：另一个[从零手写](/blog/qr-code-reed-solomon-encoder/)的例子，那边连纠错码都没有借外力。
+- **[Markdown 实时预览](/devtools/markdown-preview/)**：本文拆解的这份实现，双栏实时预览、`$inline$` 与 `$$display$$` 公式、导出 .md 与自包含 .html；
+- **[JSON 格式化校验](/devtools/json-formatter/)** 与 **[SQL 格式化美化](/devtools/sql-formatter/)**：[另一篇](/blog/sql-tokenizer-and-code-formatter/)讲的"代码与数据只分离一次"在别的语法上的样子；
+- **[二维码生成器](/devtools/qr-code-generator/)**：另一个[从零手写](/blog/qr-code-reed-solomon-encoder/)的例子，那边连纠错码都没有借外力。
 
 文档全程留在你的浏览器里，不会上传到任何地方；KaTeX 也来自本站自己的产物，不经过任何第三方 CDN。

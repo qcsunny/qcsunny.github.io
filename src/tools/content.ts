@@ -373,7 +373,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '多重折扣叠加如何计算？', a: '叠加折扣是相乘而非相加：例如打 8 折再打 8 折，总折扣是 6.4 折（0.8 × 0.8 = 0.64），省 36% 而非 40%。' },
 		],
 	},
-	'tools/word-counter': {
+	'devtools/word-counter': {
 		about: [
 			'Count words, characters, sentences, paragraphs and lines in real time as you type or paste — plus average word length and an estimated reading time based on a 220-words-per-minute pace.',
 			'Words are matched with Unicode rules, so it works for English, mixed-language and CJK text (a run of Chinese characters counts as one word). Reading time is a rough guide for blog posts and speeches.',
@@ -393,7 +393,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '统计结果能用于投稿字数要求吗？', a: '可以，本页的计数方式与常见的字数统计规则一致。' },
 		],
 	},
-	'tools/character-counter': {
+	'devtools/character-counter': {
 		about: [
 			'Break a text down by character type: total characters, characters without spaces, words, letters, digits, spaces, symbols and the exact UTF-8 byte size — the number that matters for SMS, tweets and database fields.',
 			'Each counter is live. The UTF-8 byte count uses a real encoder, so Chinese characters count as 3 bytes and emoji as 4, matching what servers and length-limited APIs actually see.',
@@ -413,7 +413,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '换行算字符吗？', a: '算——"空格与换行"一栏统计所有空白字符。' },
 		],
 	},
-	'tools/json-formatter': {
+	'devtools/json-formatter': {
 		about: [
 			'Format messy JSON with consistent indentation, minify it back to one line, and get exact error positions when something is broken — "line 3, column 14" instead of a vague parse failure.',
 			'Formatting and validation both go through the browser\'s own JSON.parse, so what this page accepts is exactly what your code will accept — there is no second implementation here to disagree with the standard. What the page adds is the position: the engine reports a byte offset, and that is converted into the line and column you can actually go and look at.',
@@ -433,7 +433,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '格式化用几个空格缩进？', a: '两个空格，这是配置文件和 API 响应最常见的约定。' },
 		],
 	},
-	'tools/base64': {
+	'devtools/base64': {
 		about: [
 			'Encode text to Base64 or decode it back, with full Unicode support — Chinese, emoji and other multi-byte characters are converted correctly via UTF-8, and a URL-safe variant (no +, / or =) is one click away.',
 			'Base64 represents any bytes with 64 safe characters, making it a common way to pass binary-ish data in URLs, JSON, data URIs and HTTP Basic authentication headers.',
@@ -453,7 +453,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '什么是 URL 安全的 Base64？', a: '一种变体，把 + 和 / 换成 - 和 _ 并去掉填充符，使结果可以直接放进 URL 查询串而无需转义。' },
 		],
 	},
-	'tools/sql-formatter': {
+	'devtools/sql-formatter': {
 		about: [
 			'Beautify messy SQL queries with clean multi-level indentation and automated keyword capitalization (SELECT, FROM, WHERE, JOIN, GROUP BY, etc.).',
 			'Runs 100% client-side in your browser — your private database queries, table structures, and sensitive filters are never uploaded to any remote server.',
@@ -473,7 +473,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '可以压缩为单行吗？', a: '可以，点击"单行压缩 (Minify)"即可去除所有注释与冗余空白，生成适合嵌入代码字面量的紧凑语句。' },
 		],
 	},
-	'tools/jwt-decoder': {
+	'devtools/jwt-decoder': {
 		about: [
 			'Inspect and format JSON Web Tokens (JWT) instantly in your browser. Splits the token into Header, Payload, and Signature, and decodes Base64URL data with UTF-8 character support.',
 			'Automatically parses expiration (exp), issued-at (iat), and not-before (nbf) timestamps into human-readable local time, displaying live validity countdowns and status indicators.',
@@ -491,7 +491,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '本工具可以验签吗？', a: '出于安全考量，前端不应持有或输入服务端的私钥/密钥。本工具主要用于查看 Payload 数据、排查鉴权 Bug 及校验过期时间。' },
 		],
 	},
-	'tools/url-parser': {
+	'devtools/url-parser': {
 		about: [
 			'Break down complex URLs into protocol, hostname, port, pathname, hash, and structured query parameters.',
 			'Provides one-click URL Decode/Encode, parameter alphabetical sorting (essential for API HMAC signatures), and removal of marketing tracking tags (utm_*, spm, gclid, fbclid).',
@@ -509,7 +509,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '去除追踪参数有什么用？', a: '去除复制链接时附带的各类营销埋点（如 utm_source、spm 等），生成干净纯粹、便于分享的原始链接。' },
 		],
 	},
-	'tools/xml-formatter': {
+	'devtools/xml-formatter': {
 		about: [
 			'Format and validate XML and SVG documents in your browser. Uses native DOMParser to pinpoint exact syntax error locations.',
 			'Offers customizable 2-space and 4-space hierarchical indentation, as well as single-line minification to reduce payload size.'
@@ -527,7 +527,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '可以用来格式化 SVG 吗？', a: '完全可以，SVG 本质上就是合法的 XML 格式，你可以随时用来美化或压缩 SVG 矢量图标代码。' },
 		],
 	},
-	'tools/css-formatter': {
+	'devtools/css-formatter': {
 		about: [
 			'Format messy or compressed CSS into clean, readable code with consistent rules, braces, and property spacing.',
 			'Supports 2-space or 4-space indentation, and one-click minification to eliminate whitespace and comments for optimal web loading speeds.'
@@ -545,7 +545,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '压缩后能节省多少体积？', a: '通常能够减少 20% 到 50% 的文件大小，大幅加快网页首屏样式的加载速度。' },
 		],
 	},
-	'tools/html-formatter': {
+	'devtools/html-formatter': {
 		about: [
 			'Indent and organize unformatted HTML markup with awareness of self-closing void elements (meta, img, input, link, br, etc.).',
 			'Minify HTML by stripping comments and inter-tag whitespace, reducing download weight for end users.'
@@ -563,7 +563,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '完全是在本地运行吗？', a: '是的，全部在你的浏览器本地 JavaScript 中执行，速度极快且零网络传输。' },
 		],
 	},
-	'tools/markdown-preview': {
+	'devtools/markdown-preview': {
 		about: [
 			'Render and edit Markdown in real-time with comprehensive GitHub Flavored Markdown (GFM) support, including multi-level headings, bold, italic, tables, checklists, code blocks, blockquotes, and LaTeX maths typeset by KaTeX.',
 			'Runs entirely in your browser: the document is never uploaded and nothing is fetched from a third party. Supports one-click HTML/MD copying, file downloading, and word/character statistics.'
@@ -585,7 +585,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '支持导出为 HTML 文件吗？', a: '支持，可一键复制渲染后的 HTML 源码，或一键下载独立的 .html 文件。文件里的公式以 MathML 形式导出，浏览器可直接排版，无需依赖本站的样式表或字体。' },
 		],
 	},
-	'tools/password-generator': {
+	'devtools/password-generator': {
 		about: [
 			'Generate strong passwords with true cryptographic randomness — every character comes from the browser\'s crypto.getRandomValues, not Math.random. Choose the length (8–64), toggle lowercase, uppercase, digits and symbols, and optionally exclude easily confused ambiguous characters (0, O, o, 1, l, I).',
 			'The strength label estimates entropy from the character pool and length: for example, 16 characters from a 62-symbol alphabet is about 95 bits, far beyond what brute-force attacks can reach.',
@@ -607,7 +607,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '为什么用 crypto 而不是 Math.random？', a: 'Math.random 是可预测的，并非为安全设计；getRandomValues 是均匀采样的密码学随机源。' },
 		],
 	},
-	'tools/uuid-generator': {
+	'devtools/uuid-generator': {
 		about: [
 			'Generate UUID v4 (cryptographically random) and modern UUID v7 (timestamp-ordered, RFC 9562) identifiers in bulk — up to 100 at a time — with custom uppercase and hyphen formatting.',
 			'UUID v4 provides 122 bits of pure randomness, ideal for secure stateless tokens. UUID v7 combines a 48-bit millisecond Unix timestamp with 74 random bits, giving monotonic time ordering that drastically improves database B-tree index performance and cache locality.',
@@ -627,7 +627,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '两个 UUID 可能发生碰撞重复吗？', a: '概率微乎其微——即使在同一毫秒内也拥有 74 位的随机熵，需要每毫秒生成数十亿个才可能碰撞。' },
 		],
 	},
-	'tools/random-number': {
+	'devtools/random-number': {
 		about: [
 			'Draw random integers in any range — for giveaways, sampling, games or picking who goes first. Choose the count, the minimum and maximum, and whether repeats are allowed.',
 			'Numbers come from the browser\'s cryptographic random source with rejection sampling, so every value in the range is exactly equally likely. With "no duplicates" the page uses a Fisher–Yates shuffle, like drawing cards from a deck.',
@@ -647,7 +647,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '为什么数量上限和范围有关？', a: '在不允许重复的模式下，去重抽取的数量不可能超过范围内的数字个数。' },
 		],
 	},
-	'tools/qr-code-generator': {
+	'devtools/qr-code-generator': {
 		about: [
 			'Turn any text or URL into a QR code and download it as a PNG. Pick the error-correction level (L/M/Q/H) — higher levels survive more damage and are better for printing; the size and QR version adapt automatically to your input.',
 			'The encoder is written from scratch and runs entirely in your browser: no QR text ever leaves your device, which matters if you encode payment addresses, Wi-Fi credentials or private links.',
@@ -667,7 +667,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '二维码可以印多大？', a: '大致按扫描距离的十分之一取边长即可——10 厘米的码在约 1 米外可稳定扫描。' },
 		],
 	},
-	'tools/color-converter': {
+	'devtools/color-converter': {
 		about: [
 			'Convert any color between HEX, RGB and HSL. Edit any of the three representations and the others follow instantly, with a live swatch and the complementary color (the hue 180° around the wheel) shown beside it.',
 			'HEX and RGB describe exactly which red, green and blue light to mix; HSL is human-friendly — hue (position on the color wheel), saturation (intensity) and lightness — which makes it the natural way to build palettes.',

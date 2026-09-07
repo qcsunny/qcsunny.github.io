@@ -26,8 +26,8 @@ test('the four page measures are defined on :root', async ({ page }) => {
 
 // [route, container selector, expected border-box width at 1440px]
 const MEASURES: [string, string, number][] = [
-	['/tools/word-counter/', '.t-main', 1140], // --w-shell
-	['/tools/sql-formatter/', '.t-main', 1140], // workbench kinds take the same frame
+	['/devtools/word-counter/', '.t-main', 1140], // --w-shell
+	['/devtools/sql-formatter/', '.t-main', 1140], // workbench kinds take the same frame
 	['/about/', '.about-main', 1140], // frame; the reading column inside stays 820
 	['/privacy/', '.privacy-main', 1140],
 	['/blog/uuid-v4-vs-v7-database-guide/', '.prose', 832], // --w-outer grid; text column 820 inside
@@ -94,17 +94,17 @@ test('/about/ — feature cards fill the 820 reading column as a 2×2 grid', asy
 });
 
 // Every category has its own hub route (/finance/, /calculators/, /converters/
-// and /tools/devtools/ for the developer tools), so a category breadcrumb always
+// and /devtools/ for the developer tools), so a category breadcrumb always
 // lands on a page whose title is the category's name — never on /tools/ itself,
 // which the first crumb already links and which used to make the middle crumb
 // reload the same page (the pre-hub /tools/#cat-tools anchor was the stopgap).
 test('the category breadcrumb lands on each category’s own hub, never /tools/ itself', async ({ page }) => {
-	await page.goto('/tools/word-counter/');
+	await page.goto('/devtools/word-counter/');
 	const crumbs = page.locator('.t-crumbs a');
 	await expect(crumbs.nth(0)).toHaveAttribute('href', '/tools/');
-	await expect(crumbs.nth(1)).toHaveAttribute('href', '/tools/devtools/');
+	await expect(crumbs.nth(1)).toHaveAttribute('href', '/devtools/');
 	// and that hub page really exists, titled by the category
-	await page.goto('/tools/devtools/');
+	await page.goto('/devtools/');
 	await expect(page.locator('h1')).toContainText('Developer');
 
 	await page.goto('/finance/mortgage/');
@@ -253,7 +253,7 @@ test('the brand and the nav links share one horizontal axis', async ({ page }) =
 //    bar meant scrolling took the navigation away. Assert the computed style
 //    (invisible in HTML) and the geometry after scrolling, on a tool page and a
 //    hub page, which go through the same component.
-for (const route of ['/tools/json-formatter/', '/calculators/']) {
+for (const route of ['/devtools/json-formatter/', '/calculators/']) {
 	test(`${route} — the tool top bar sticks to the top while scrolling`, async ({ page }) => {
 		await page.setViewportSize({ width: 900, height: 600 });
 		await page.goto(route);
@@ -277,7 +277,7 @@ test('the tool top bar aligns with the blog nav frame', async ({ page }) => {
 	await page.goto('/');
 	const blogNav = (await page.locator('nav').first().boundingBox())!;
 
-	await page.goto('/tools/json-formatter/');
+	await page.goto('/devtools/json-formatter/');
 	const toolBar = (await page.locator('.t-topbar-inner').boundingBox())!;
 
 	// the two pages may not agree to the sub-pixel, but not to a visible offset

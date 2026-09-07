@@ -58,7 +58,7 @@ test('prose pages ship no first-party JavaScript', () => {
 const PROSE_SAMPLES: [string, string][] = [
 	['calculators/percentage/index.html', 'Percent means'],
 	['converters/weight/index.html', 'Comprehensive mass and weight converter'],
-	['tools/json-formatter/index.html', '把杂乱的 JSON 排版成统一缩进'],
+	['devtools/json-formatter/index.html', '把杂乱的 JSON 排版成统一缩进'],
 ];
 
 test('build-time prose stays out of the client bundle', () => {
@@ -135,7 +135,7 @@ test('the inlined search index stays small enough to justify inlining', () => {
 // tool pages one more request, and because it is named in <head> beside main and
 // engine that request goes out in parallel rather than lengthening the chain.
 const PRELOADS: [string, string[]][] = [
-	['tools/json-formatter/index.html', ['main', 'engine', 'i18n']],
+	['devtools/json-formatter/index.html', ['main', 'engine', 'i18n']],
 	['finance/loan-payment/index.html', ['main', 'engine', 'i18n']],
 	['converters/weight/index.html', ['main', 'engine', 'i18n']],
 	['calculators/percentage/index.html', ['main', 'engine', 'i18n']],
@@ -195,7 +195,7 @@ test('the shared chunk is requested without waiting for the entry chunk', async 
 		const m = /\/_astro\/([^/?]+\.js)$/.exec(new URL(req.url()).pathname);
 		if (m) order.push(m[1]);
 	});
-	await page.goto('/tools/json-formatter/');
+	await page.goto('/devtools/json-formatter/');
 	await page.waitForLoadState('load');
 
 	const at = (prefix: string): number => order.findIndex((f) => f.startsWith(prefix));

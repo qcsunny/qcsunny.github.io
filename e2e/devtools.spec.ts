@@ -5,7 +5,7 @@ import { expect, test } from '@playwright/test';
 // selector is the language-independent data-role hook the workbench sets.
 
 test('json formatter formats and reports validity', async ({ page }) => {
-	await page.goto('/tools/json-formatter/');
+	await page.goto('/devtools/json-formatter/');
 
 	const input = page.locator('[data-role="input"]');
 	const output = page.locator('[data-role="output"]');
@@ -18,7 +18,7 @@ test('json formatter formats and reports validity', async ({ page }) => {
 });
 
 test('json formatter flags invalid JSON with error position', async ({ page }) => {
-	await page.goto('/tools/json-formatter/');
+	await page.goto('/devtools/json-formatter/');
 
 	await page.locator('[data-role="input"]').fill('{bad json}');
 	await page.getByRole('button', { name: /Format \(2 spaces\)|格式化 \(2 空格\)/ }).click();
@@ -27,7 +27,7 @@ test('json formatter flags invalid JSON with error position', async ({ page }) =
 });
 
 test('jwt decoder decodes header and payload', async ({ page }) => {
-	await page.goto('/tools/jwt-decoder/');
+	await page.goto('/devtools/jwt-decoder/');
 
 	// header {"alg":"HS256","typ":"JWT"} · payload {"sub":"1"} · dummy sig
 	const token =
@@ -41,7 +41,7 @@ test('jwt decoder decodes header and payload', async ({ page }) => {
 });
 
 test('markdown preview renders live HTML', async ({ page }) => {
-	await page.goto('/tools/markdown-preview/');
+	await page.goto('/devtools/markdown-preview/');
 
 	const editor = page.locator('.t-md-textarea');
 	const preview = page.locator('.t-md-preview-body');
@@ -58,7 +58,7 @@ test('markdown preview renders live HTML', async ({ page }) => {
 // `snake_case_name` into snake<em>case</em>name, the bold rule ate the asterisks
 // of `**literal**`, and the autolinker nested an <a> inside the <code>.
 test('inline code is opaque to the other inline rules', async ({ page }) => {
-	await page.goto('/tools/markdown-preview/');
+	await page.goto('/devtools/markdown-preview/');
 
 	const preview = page.locator('.t-md-preview-body');
 	await page
@@ -80,7 +80,7 @@ test('inline code is opaque to the other inline rules', async ({ page }) => {
 // These three specs pin the fix and the two literal-safety properties that a
 // regex-based formatter cannot give.
 test('sql formatter handles bare operators without hanging', async ({ page }) => {
-	await page.goto('/tools/sql-formatter/');
+	await page.goto('/devtools/sql-formatter/');
 
 	await page.locator('[data-role="input"]').fill('select price - discount as net, a/b from items where qty > -1');
 	await page.getByRole('button', { name: /Format \(2 spaces\)|格式化 \(2 空格\)/ }).click();
@@ -92,7 +92,7 @@ test('sql formatter handles bare operators without hanging', async ({ page }) =>
 });
 
 test('sql formatter leaves string literals untouched', async ({ page }) => {
-	await page.goto('/tools/sql-formatter/');
+	await page.goto('/devtools/sql-formatter/');
 
 	// 'a,b--c' contains both a comma and a line-comment marker: a formatter that
 	// normalises spacing or strips comments by regex would corrupt it.
@@ -103,7 +103,7 @@ test('sql formatter leaves string literals untouched', async ({ page }) => {
 });
 
 test('sql minify keeps literals and drops comments', async ({ page }) => {
-	await page.goto('/tools/sql-formatter/');
+	await page.goto('/devtools/sql-formatter/');
 
 	await page.locator('[data-role="input"]').fill("select id -- keep me out\nfrom t where tag = 'a,b--c';");
 	await page.getByRole('button', { name: /^(Minify|单行压缩)$/ }).click();
@@ -120,7 +120,7 @@ test('sql minify keeps literals and drops comments', async ({ page }) => {
 // rejection loop into `while (true)` and freezing the tab with no allocation to
 // hint at it. `max 5000000000` is enough to hit it.
 test('random generator does not freeze on a range wider than 2^32', async ({ page }) => {
-	await page.goto('/tools/random-number/');
+	await page.goto('/devtools/random-number/');
 
 	await page.getByLabel('Maximum (inclusive)').fill('5000000000');
 	// If the handler spins, this click never settles and the assertion below
@@ -142,7 +142,7 @@ test('random generator does not freeze on a range wider than 2^32', async ({ pag
 // array and shuffle it — a million-element allocation and a million crypto
 // draws to keep six. The virtual partial Fisher–Yates must stay distinct.
 test('random generator draws distinct values from a large range fast', async ({ page }) => {
-	await page.goto('/tools/random-number/');
+	await page.goto('/devtools/random-number/');
 
 	await page.getByLabel('Maximum (inclusive)').fill('1000000');
 	await page.getByLabel('How many').fill('50');
@@ -163,7 +163,7 @@ test('random generator draws distinct values from a large range fast', async ({ 
 // `a:hover` / `::before` into the invalid `a: hover` / `: : before`. The colon
 // only takes a trailing space when it sits inside a declaration block.
 test('css formatter leaves pseudo-class colons alone', async ({ page }) => {
-	await page.goto('/tools/css-formatter/');
+	await page.goto('/devtools/css-formatter/');
 
 	await page.locator('[data-role="input"]').fill('a:hover { color:red } .btn::before { content:"" }');
 	await page.getByRole('button', { name: /Format \(2 spaces\)|格式化 \(2 空格\)/ }).click();
@@ -179,7 +179,7 @@ test('css formatter leaves pseudo-class colons alone', async ({ page }) => {
 // searchParams already percent-decodes each value, so a second decodeURIComponent
 // throws on a literal '%' and would leave the breakdown stale.
 test('url parser survives a literal percent in a query value', async ({ page }) => {
-	await page.goto('/tools/url-parser/');
+	await page.goto('/devtools/url-parser/');
 
 	await page.locator('[data-role="input"]').fill('https://example.com/?q=100%25');
 	await page.getByRole('button', { name: /Parse URL|结构化解析/ }).click();
@@ -191,7 +191,7 @@ test('url parser survives a literal percent in a query value', async ({ page }) 
 // json.ts built its own debounce and never cancelled it from the toolbar, so
 // clicking Minify within 300ms of typing got overwritten by the auto-format.
 test('json minify is not overwritten by the pending auto-format', async ({ page }) => {
-	await page.goto('/tools/json-formatter/');
+	await page.goto('/devtools/json-formatter/');
 
 	await page.locator('[data-role="input"]').fill('{"a":1,"b":[1,2,3]}');
 	await page.getByRole('button', { name: /^Minify$/ }).click();
@@ -204,7 +204,7 @@ test('json minify is not overwritten by the pending auto-format', async ({ page 
 // Dropping a comment must still leave a gap between the tokens it used to
 // separate, or `SELECT/*c*/1` collapses to the executable-but-different SELECT1.
 test('sql minify does not glue tokens across a dropped comment', async ({ page }) => {
-	await page.goto('/tools/sql-formatter/');
+	await page.goto('/devtools/sql-formatter/');
 
 	await page.locator('[data-role="input"]').fill('SELECT/*c*/1');
 	await page.getByRole('button', { name: /^(Minify|单行压缩)$/ }).click();
