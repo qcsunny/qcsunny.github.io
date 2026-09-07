@@ -10,6 +10,7 @@ import SiteLogo from '../SiteLogo.astro';
 import ToolSearchModal from './ToolSearchModal.astro';
 import { ADSENSE_CLIENT, AD_SLOTS, SITE_TITLE } from '../../consts';
 import { TOOL_CONTENT } from '../../tools/content';
+import { TOOL_RELATED_ARTICLES } from '../../tools/relatedArticles';
 import {
 	CALCULATOR_FEATURED,
 	REGISTRY,
@@ -66,6 +67,14 @@ const relatedPool = relatedCategory
 		)
 	: [];
 const related = relatedPool.slice(0, 4);
+
+// --- related blog articles: internal linking network ---
+const articleKey = entry
+	? `${entry.category}/${entry.slug}`
+	: relatedCategory && selfSlug
+		? `${relatedCategory}/${selfSlug}`
+		: '';
+const relatedArticles = articleKey ? (TOOL_RELATED_ARTICLES[articleKey] ?? []) : [];
 
 // --- JSON-LD structured data ---
 const pageUrl = new URL(Astro.url.pathname, Astro.site).href;
@@ -1710,6 +1719,84 @@ const year = new Date().getFullYear();
 				text-decoration: underline;
 			}
 
+			/* --- related engineering articles (internal linking network) --- */
+			.t-related-articles {
+				margin-top: 2.5rem;
+				padding-top: 1.5rem;
+				border-top: 1px solid var(--gridline);
+			}
+			.t-related-articles h2 {
+				font-size: 1.15rem;
+				font-weight: 700;
+				margin-bottom: 1.1rem;
+				color: var(--fg);
+			}
+			.t-article-cards {
+				display: grid;
+				grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+				gap: 1rem;
+			}
+			.t-article-card {
+				display: flex;
+				flex-direction: column;
+				background: var(--card);
+				border: 1px solid var(--gridline);
+				border-radius: 10px;
+				padding: 1.15rem 1.25rem;
+				text-decoration: none;
+				color: inherit;
+				box-shadow: var(--box-shadow);
+				transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+			}
+			.t-article-card:hover {
+				border-color: var(--accent);
+				transform: translateY(-2px);
+				box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+			}
+			.t-article-badge {
+				display: inline-flex;
+				align-items: center;
+				align-self: flex-start;
+				font-size: 0.72rem;
+				font-weight: 700;
+				text-transform: uppercase;
+				letter-spacing: 0.04em;
+				padding: 0.18em 0.55em;
+				border-radius: 4px;
+				background: var(--accent-soft);
+				color: var(--accent);
+				margin-bottom: 0.65rem;
+			}
+			.t-article-title {
+				font-size: 0.98rem;
+				font-weight: 600;
+				line-height: 1.45;
+				color: var(--fg);
+				margin: 0 0 0.45rem;
+				transition: color 0.15s ease;
+			}
+			.t-article-card:hover .t-article-title {
+				color: var(--accent);
+			}
+			.t-article-summary {
+				font-size: 0.85rem;
+				color: var(--dim);
+				line-height: 1.6;
+				margin: 0 0 0.85rem;
+				flex: 1;
+			}
+			.t-article-more {
+				font-size: 0.82rem;
+				font-weight: 600;
+				color: var(--accent);
+				display: inline-flex;
+				align-items: center;
+				gap: 0.25rem;
+			}
+			.t-article-card:hover .t-article-more {
+				text-decoration: underline;
+			}
+
 			/* --- ad slots: fixed min-height reserves space, so a late-loading
 			     ad never shifts the layout (CLS). Keep in sync with real units. --- */
 			.t-ad {
@@ -1875,6 +1962,41 @@ const year = new Date().getFullYear();
 								) : null}
 							</article>
 						)}
+						{relatedArticles.length ? (
+							<aside
+								class="t-related-articles"
+								aria-label="Related articles"
+								data-aria-en="Related articles"
+								data-aria-zh="相关技术文章"
+							>
+								<h2>
+									<span class="i18n-en">In-depth Engineering Guides</span>
+									<span class="i18n-zh">深度实现与原理解析</span>
+								</h2>
+								<div class="t-article-cards">
+									{relatedArticles.map((art) => (
+										<a class="t-article-card" href={`/blog/${art.slug}/`}>
+											<div class="t-article-badge">
+												<span class="i18n-en">Deep Dive</span>
+												<span class="i18n-zh">技术精读</span>
+											</div>
+											<h3 class="t-article-title">
+												<span class="i18n-en">{art.title}</span>
+												<span class="i18n-zh">{art.titleZh}</span>
+											</h3>
+											<p class="t-article-summary">
+												<span class="i18n-en">{art.summary}</span>
+												<span class="i18n-zh">{art.summaryZh}</span>
+											</p>
+											<span class="t-article-more">
+												<span class="i18n-en">Read full article &rarr;</span>
+												<span class="i18n-zh">阅读完整解析 &rarr;</span>
+											</span>
+										</a>
+									))}
+								</div>
+							</aside>
+						) : null}
 						{related.length ? (
 							<nav
 							class="t-related-page"
