@@ -65,23 +65,58 @@ function isPrime(n: bigint): boolean {
 	return true;
 }
 
-const bigGcd = (a: bigint, b: bigint): bigint => (b === 0n ? a : bigGcd(b, a % b));
+function bigGcd(a: bigint, b: bigint): bigint {
+	while (b !== 0n) {
+		const t = b;
+		b = a % b;
+		a = t;
+	}
+	return a;
+}
 
 function pollardRho(n: bigint): bigint {
-	if (n % 2n === 0n) return 2n;
+	if ((n & 1n) === 0n) return 2n;
 	if (n % 3n === 0n) return 3n;
-	// Floyd's cycle; if it collapses onto n for this c, retry with the next one.
+	// Brent's cycle detection + batch GCD. Powers of 2 steps with batch GCD
+	// save ~25% steps vs Floyd and drop GCD calls by >95%. Retries with c+1 if
+	// the batch collapses onto n.
 	for (let c = 1n; ; c++) {
-		let x = 2n;
+		const f = (z: bigint): bigint => (z * z + c) % n;
 		let y = 2n;
 		let d = 1n;
-		const f = (z: bigint): bigint => (z * z + c) % n;
+		const m = 128; // batch size for GCD
+		let r = 1;
+
 		while (d === 1n) {
-			x = f(x);
-			y = f(f(y));
-			d = bigGcd(x > y ? x - y : y - x, n);
+			const x = y;
+			let k = 0;
+			while (k < r && d === 1n) {
+				const ys = y;
+				let q = 1n;
+				const limit = Math.min(m, r - k);
+				for (let i = 0; i < limit; i++) {
+					y = f(y);
+					const diff = x > y ? x - y : y - x;
+					q = (q * diff) % n;
+				}
+				d = bigGcd(q, n);
+				k += limit;
+				// If a factor is hit, backtrack through this batch step-by-step
+				if (d > 1n) {
+					y = ys;
+					d = 1n;
+					while (d === 1n) {
+						y = f(y);
+						const diff = x > y ? x - y : y - x;
+						d = bigGcd(diff, n);
+					}
+					if (d !== n) return d;
+					break; // collapsed onto n, retry with next c
+				}
+			}
+			r <<= 1;
 		}
-		if (d !== n) return d;
+		if (d !== n && d > 1n) return d;
 	}
 }
 
@@ -103,37 +138,51 @@ function factorBig(n: bigint, out: bigint[]): void {
 // finished by Miller–Rabin + Pollard rho, which splits even a leftover with a
 // mid-size factor in ~√p steps. A literal up to 1000 keeps the table ~1 KB and
 // costs no runtime sieve on tool pages that never factorize.
-const SMALL_PRIMES: number[] = [
-	2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43,
-	47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107,
-	109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181,
-	191, 193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251, 257, 263,
-	269, 271, 277, 281, 283, 293, 307, 311, 313, 317, 331, 337, 347, 349,
-	353, 359, 367, 373, 379, 383, 389, 397, 401, 409, 419, 421, 431, 433,
-	439, 443, 449, 457, 461, 463, 467, 479, 487, 491, 499, 503, 509, 521,
-	523, 541, 547, 557, 563, 569, 571, 577, 587, 593, 599, 601, 607, 613,
-	617, 619, 631, 641, 643, 647, 653, 659, 661, 673, 677, 683, 691, 701,
-	709, 719, 727, 733, 739, 743, 751, 757, 761, 769, 773, 787, 797, 809,
-	811, 821, 823, 827, 829, 839, 853, 857, 859, 863, 877, 881, 883, 887,
-	907, 911, 919, 929, 937, 941, 947, 953, 967, 971, 977, 983, 991, 997,
+const SMALL_PRIMES: bigint[] = [
+	2n, 3n, 5n, 7n, 11n, 13n, 17n, 19n, 23n, 29n, 31n, 37n, 41n, 43n,
+	47n, 53n, 59n, 61n, 67n, 71n, 73n, 79n, 83n, 89n, 97n, 101n, 103n, 107n,
+	109n, 113n, 127n, 131n, 137n, 139n, 149n, 151n, 157n, 163n, 167n, 173n, 179n, 181n,
+	191n, 193n, 197n, 199n, 211n, 223n, 227n, 229n, 233n, 239n, 241n, 251n, 257n, 263n,
+	269n, 271n, 277n, 281n, 283n, 293n, 307n, 311n, 313n, 317n, 331n, 337n, 347n, 349n,
+	353n, 359n, 367n, 373n, 379n, 383n, 389n, 397n, 401n, 409n, 419n, 421n, 431n, 433n,
+	439n, 443n, 449n, 457n, 461n, 463n, 467n, 479n, 487n, 491n, 499n, 503n, 509n, 521n,
+	523n, 541n, 547n, 557n, 563n, 569n, 571n, 577n, 587n, 593n, 599n, 601n, 607n, 613n,
+	617n, 619n, 631n, 641n, 643n, 647n, 653n, 659n, 661n, 673n, 677n, 683n, 691n, 701n,
+	709n, 719n, 727n, 733n, 739n, 743n, 751n, 757n, 761n, 769n, 773n, 787n, 797n, 809n,
+	811n, 821n, 823n, 827n, 829n, 839n, 853n, 857n, 859n, 863n, 877n, 881n, 883n, 887n,
+	907n, 911n, 919n, 929n, 937n, 941n, 947n, 953n, 967n, 971n, 977n, 983n, 991n, 997n,
 ];
 
 /** Factor a whole number 2..2^64−1 exactly. Returns ascending prime factors
  *  with exponents and τ(n) = Π(eᵢ+1). Everything stays in BigInt after the
  *  input parse, so a factor above 2^53 is never rounded through a Number. */
 function factorWhole(n: bigint): { factors: Array<{ f: bigint; e: number }>; divisors: number } {
+	if (isPrime(n)) {
+		return { factors: [{ f: n, e: 1 }], divisors: 2 };
+	}
 	const byFactor = new Map<string, number>();
 	let rest = n;
+
+	// Bitwise trailing zero peel for factor 2 (shifts instead of BigInt division)
+	if ((rest & 1n) === 0n) {
+		let c = 0;
+		do {
+			rest >>= 1n;
+			c++;
+		} while ((rest & 1n) === 0n);
+		byFactor.set('2', c);
+	}
+
 	for (const p of SMALL_PRIMES) {
-		const pb = BigInt(p);
-		if (pb * pb > rest) break;
-		if (rest % pb === 0n) {
+		if (p === 2n) continue;
+		if (p * p > rest) break;
+		if (rest % p === 0n) {
 			let c = 0;
 			do {
-				rest /= pb;
+				rest /= p;
 				c++;
-			} while (rest % pb === 0n);
-			byFactor.set(pb.toString(), c);
+			} while (rest % p === 0n);
+			byFactor.set(p.toString(), c);
 		}
 	}
 	if (rest > 1n) {
