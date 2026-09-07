@@ -21,13 +21,12 @@ export interface SearchCategory {
 	key: string;
 	labelEn: string;
 	labelZh: string;
-	icon: string;
-	/** Badge text colour and the translucent fill behind it. Inlined per row
-	    rather than fanned out into `.sm-badge-<cat>` rules, since the blog and
-	    the tool categories share the `finance` key with different colours and a
-	    single class rule cannot serve both. */
-	color: string;
-	tint: string;
+	/** Retained for the haystack and any future visual use, but no longer
+	    rendered: the redesigned rows carry a plain dim text label instead of
+	    per-category icon/colour chips. */
+	icon?: string;
+	color?: string;
+	tint?: string;
 }
 
 export interface SearchCopy {

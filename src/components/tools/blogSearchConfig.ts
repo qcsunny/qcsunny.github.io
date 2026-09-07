@@ -13,10 +13,10 @@ import type { SearchCategory, SearchConfig } from './SearchTypes';
 // The labels match what the article cards already print (金融与数学, not 金融),
 // so a card and its own search badge never describe the same post differently.
 export const BLOG_CATEGORIES: SearchCategory[] = [
-	{ key: 'finance', labelEn: 'Finance & Math', labelZh: '金融与数学', icon: '💰', color: '#10b981', tint: 'rgba(16,185,129,0.15)' },
-	{ key: 'architecture', labelEn: 'Architecture', labelZh: '架构与数据库', icon: '🏗️', color: '#6366f1', tint: 'rgba(99,102,241,0.15)' },
-	{ key: 'ai', labelEn: 'AI & LLM', labelZh: 'AI 与大模型', icon: '🤖', color: '#ec4899', tint: 'rgba(236,72,153,0.15)' },
-	{ key: 'web', labelEn: 'Web Craft', labelZh: '前端与工具研发', icon: '🌐', color: '#f59e0b', tint: 'rgba(245,158,11,0.15)' },
+	{ key: 'finance', labelEn: 'Finance & Math', labelZh: '金融与数学' },
+	{ key: 'architecture', labelEn: 'Architecture', labelZh: '架构与数据库' },
+	{ key: 'ai', labelEn: 'AI & LLM', labelZh: 'AI 与大模型' },
+	{ key: 'web', labelEn: 'Web Craft', labelZh: '前端与工具研发' },
 ];
 
 const CAT_BY_KEY = new Map(BLOG_CATEGORIES.map((c) => [c.key, c]));
@@ -70,8 +70,8 @@ export function buildBlogSearchConfig(posts: CollectionEntry<'blog'>[]): SearchC
 			emptyHintEn: 'Try searching with "compound", "uuid", "calendar", "glm"',
 			emptyHintZh: '可尝试搜索："复利"、"UUID"、"日历"、"GLM"等',
 			footerLinkHref: '/blog/',
-			footerLinkEn: 'All articles ➔',
-			footerLinkZh: '前往全部文章 ➔',
+			footerLinkEn: 'All articles',
+			footerLinkZh: '前往全部文章',
 			btnAriaEn: 'Search articles (shortcut /)',
 			btnAriaZh: '搜索文章 (快捷键 /)',
 			btnTitleEn: 'Search articles (/ or Ctrl+K)',

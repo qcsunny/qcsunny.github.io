@@ -87,7 +87,7 @@ test('the blog list searches articles, and the button says so', async ({ browser
 	// site:lang-change, and the modal's onLang re-render reacts to it, so the
 	// live switch is still exercised end to end. ({ force: true } would not work
 	// here: it still sends the mouse to those coordinates, which the overlay owns.)
-	await page.evaluate(() => document.querySelector('.lang-toggle')?.click());
+	await page.evaluate(() => document.querySelector<HTMLButtonElement>('.lang-toggle')?.click());
 	await expect(page.locator('html')).toHaveAttribute('data-lang', 'zh');
 	await expect(btn).toHaveAttribute('aria-label', '搜索文章 (快捷键 /)');
 	await expect(page.locator('#sm-input')).toHaveAttribute('placeholder', /搜索文章/);
