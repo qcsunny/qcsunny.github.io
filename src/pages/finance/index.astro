@@ -7,7 +7,7 @@ const entries = [
 	...REGISTRY.filter((e) => e.category === 'finance')
 ].filter((e) => e.kind !== 'redirect');
 ---
-<ToolShell title="Finance" titleZh="金融计算" description="Compound interest, loans, mortgages, investments, ROI, discounts, salary and tax calculators.">
+<ToolShell title="Finance & Investment" titleZh="金融理财与投资计算" description="Compound interest, loans, mortgages, investments, ROI, discounts, salary and tax calculators.">
 	<ToolSearchBar category="finance" placeholder="Search finance tools (e.g. mortgage, irr, tax, salary)..." placeholderZh="搜索金融工具 (如 房贷、公积金、IRR、个税、薪资、复利)..." totalCount={entries.length} />
 	<div class="t-cards">
 		{

@@ -7,7 +7,7 @@ const entries = [
 	...REGISTRY.filter((e) => e.category === 'converters')
 ].filter((e) => e.kind !== 'redirect');
 ---
-<ToolShell title="Converters" titleZh="单位换算" description="Unit converters for length, weight, temperature, area, volume, speed, time and data sizes.">
+<ToolShell title="Unit Converters" titleZh="多功能单位换算" description="Unit converters for length, weight, temperature, area, volume, speed, time and data sizes.">
 	<ToolSearchBar category="converters" placeholder="Search converters (e.g. weight, length, speed, temperature)..." placeholderZh="搜索换算器 (如 重量、长度、速度、温度、面积、数据)..." totalCount={entries.length} />
 	<div class="t-cards">
 		{
