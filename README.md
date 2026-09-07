@@ -20,7 +20,7 @@ Live at **<https://qcsunny.org>** (canonical). The repo is mirrored to GitHub Pa
 | Tools engine | A hand-written tokenizer → parser → evaluator in `src/scripts/calculator/` (shared by the scientific, graph, and 3D tools) |
 | Math | KaTeX rendered at build time (no client runtime) |
 | Tooling | E2E guards with Playwright (150+ cases) gating every deploy |
-| Deploy | GitHub Pages + Cloudflare Pages (CI builds and deploys; `main` is the gate) |
+| Deploy | `qcsunny.org` on Cloudflare Workers Static Assets (`wrangler.jsonc`); GitHub Pages mirror via CI — every deploy gated by the Playwright suite |
 
 ## Project Structure
 
@@ -55,7 +55,7 @@ The dev server runs in the background: `astro dev --background`, then `astro dev
 
 ## Deployment
 
-CI (`.github/workflows/deploy.yml`) builds the site, runs the full Playwright suite as a gate, and deploys on green. Pushing to `main` triggers a deploy; non-`main` branches do not. Cloudflare Pages serves `qcsunny.org`; GitHub Pages keeps the legacy mirror.
+CI (`.github/workflows/deploy.yml`) builds the site, runs the full Playwright suite as a gate, and deploys the GitHub Pages mirror on green. Pushing to `main` triggers a deploy; non-`main` branches do not. `qcsunny.org` is served by Cloudflare Workers Static Assets (`wrangler.jsonc`, with `public/_headers` carrying the cache rules); GitHub Pages keeps the legacy mirror.
 
 ## Credit
 
