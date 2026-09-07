@@ -63,6 +63,10 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 
 	const values: FormValues = {
 		num: (id) => Number(String(getters.get(id)?.() ?? '')),
+		bigint: (id) => {
+			const raw = String(getters.get(id)?.() ?? '').trim();
+			return /^\d+$/.test(raw) ? BigInt(raw) : null;
+		},
 		str: (id) => String(getters.get(id)?.() ?? '').trim(),
 		bool: (id) => getters.get(id)?.() === true,
 	};
@@ -140,14 +144,23 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			getters.set(field.id, () => ta.value);
 			control = ta;
 		} else {
+			// 'number' gets a real numeric input; 'bigint' is a text input with a
+			// numeric keypad (pattern + inputmode) because values above 2^53 would
+			// be rounded if they passed through a JS Number.
+			const numericish = field.type === 'number' || field.type === 'bigint';
 			const input = document.createElement('input');
 			input.type = field.type === 'number' ? 'number' : 'text';
+			if (field.type === 'bigint') {
+				input.inputMode = 'numeric';
+				input.pattern = '[0-9]*';
+				input.autocomplete = 'off';
+			}
 			if (field.step) input.step = field.step;
 			if (field.min) input.min = field.min;
 			if (field.max) input.max = field.max;
 			input.value = field.def ?? '';
-			const phEn = field.placeholder ?? (field.type === 'number' ? 'Required (number)' : 'Required');
-			const phZh = field.placeholderZh ?? (field.placeholder ? undefined : field.type === 'number' ? '必填数值' : '必填');
+			const phEn = field.placeholder ?? (numericish ? 'Required (number)' : 'Required');
+			const phZh = field.placeholderZh ?? (field.placeholder ? undefined : numericish ? '必填数值' : '必填');
 			langProp(input, 'placeholder', phEn, phZh);
 			getters.set(field.id, () => input.value);
 			control = input;
@@ -168,8 +181,8 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 		const tip = document.createElement('span');
 		tip.className = 't-req-tip';
 		tip.style.display = 'none';
-		const tipEn = field.type === 'number' ? 'This field is required (valid number)' : 'This field is required';
-		const tipZh = field.type === 'number' ? '此项为必填项，请输入有效数值' : '此项为必填项，请填写内容';
+		const tipEn = field.type === 'number' || field.type === 'bigint' ? 'This field is required (valid whole number)' : 'This field is required';
+		const tipZh = field.type === 'number' || field.type === 'bigint' ? '此项为必填项，请输入有效的整数' : '此项为必填项，请填写内容';
 		tip.append(bilingual(tipEn, tipZh));
 		below.append(tip);
 		reqTips.set(field.id, tip);
@@ -331,7 +344,10 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 
 			if (isReq) {
 				const raw = String(getters.get(f.id)?.() ?? '').trim();
-				const isBad = raw === '' || (f.type === 'number' && !Number.isFinite(Number(raw)));
+				const isBad =
+					raw === '' ||
+					(f.type === 'number' && !Number.isFinite(Number(raw))) ||
+					(f.type === 'bigint' && !/^\d+$/.test(raw));
 				if (isBad) {
 					missingFields.push(f);
 					ctrl?.classList.add('t-invalid');

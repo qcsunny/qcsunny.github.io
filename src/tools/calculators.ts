@@ -16,12 +16,13 @@ const cash = (v: number | null): { value: string; valueZh: string } =>
 	v === null || !Number.isFinite(v) ? { value: '—', valueZh: '—' } : { value: `$${money(v)}`, valueZh: `¥${money(v)}` };
 
 // --- prime factorization (Miller–Rabin + Pollard rho) ------------------------
-// The mainstream route for a whole number up to 2^53: strip small primes by
-// trial division in Number (exact below 2^53), then finish the remainder with
-// deterministic Miller–Rabin and Pollard's rho in BigInt. Trial-dividing every
-// integer up to √n — the previous code — took ~3.4 s on a prime near 2^53;
-// rho is ~n^¼ steps (~10⁴), so the same input returns in milliseconds. rho's
-// (a·a) mod n would overflow a Number, hence BigInt for the remainder.
+// The mainstream route for a whole number up to 2^64−1: strip small primes by
+// trial division, then finish the remainder with deterministic Miller–Rabin and
+// Pollard's rho in BigInt. Trial-dividing every integer up to √n — the original
+// code — took ~3.4 s on a prime near 2^53; rho is ~n^¼ steps (~10⁴), so the
+// same input returns in milliseconds. Everything above the small-prime prefix
+// runs in BigInt: rho's (a·a) mod n would overflow a Number, and the input
+// itself stops being exact past 2^53.
 const MR_BASES = [2n, 325n, 9375n, 28178n, 450775n, 9780504n, 1795265022n];
 
 function modPow(b: bigint, e: bigint, m: bigint): bigint {
@@ -35,7 +36,7 @@ function modPow(b: bigint, e: bigint, m: bigint): bigint {
 	return r;
 }
 
-/** Deterministic below 2^64 (covers every n this tool accepts, n ≤ 2^53). */
+/** Deterministic below 2^64 (covers every n this tool accepts, n ≤ 2^64−1). */
 function isPrime(n: bigint): boolean {
 	if (n < 2n) return false;
 	for (const p of [2n, 3n, 5n, 7n, 11n, 13n, 17n, 19n, 23n, 29n, 31n, 37n]) {
@@ -117,32 +118,38 @@ const SMALL_PRIMES: number[] = [
 	907, 911, 919, 929, 937, 941, 947, 953, 967, 971, 977, 983, 991, 997,
 ];
 
-/** Factor a whole number 2..2^53. Returns prime→exponent and τ(n) = Π(eᵢ+1). */
-function factorWhole(n: number): { exponents: Map<number, number>; divisors: number } {
-	const exponents = new Map<number, number>();
+/** Factor a whole number 2..2^64−1 exactly. Returns ascending prime factors
+ *  with exponents and τ(n) = Π(eᵢ+1). Everything stays in BigInt after the
+ *  input parse, so a factor above 2^53 is never rounded through a Number. */
+function factorWhole(n: bigint): { factors: Array<{ f: bigint; e: number }>; divisors: number } {
+	const byFactor = new Map<string, number>();
 	let rest = n;
 	for (const p of SMALL_PRIMES) {
-		if (p * p > rest) break;
-		if (rest % p === 0) {
+		const pb = BigInt(p);
+		if (pb * pb > rest) break;
+		if (rest % pb === 0n) {
 			let c = 0;
 			do {
-				rest /= p;
+				rest /= pb;
 				c++;
-			} while (rest % p === 0);
-			exponents.set(p, c);
+			} while (rest % pb === 0n);
+			byFactor.set(pb.toString(), c);
 		}
 	}
-	if (rest > 1) {
+	if (rest > 1n) {
 		const bigs: bigint[] = [];
-		factorBig(BigInt(rest), bigs);
+		factorBig(rest, bigs);
 		for (const q of bigs) {
-			const qi = Number(q);
-			exponents.set(qi, (exponents.get(qi) ?? 0) + 1);
+			const k = q.toString();
+			byFactor.set(k, (byFactor.get(k) ?? 0) + 1);
 		}
 	}
+	const factors = [...byFactor.entries()]
+		.map(([k, e]) => ({ f: BigInt(k), e }))
+		.sort((a, b) => (a.f < b.f ? -1 : a.f > b.f ? 1 : 0));
 	let divisors = 1;
-	for (const e of exponents.values()) divisors *= e + 1;
-	return { exponents, divisors };
+	for (const { e } of factors) divisors *= e + 1;
+	return { factors, divisors };
 }
 
 // --- percentage -----------------------------------------------------------------
@@ -471,29 +478,38 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 		kind: 'form',
 		config: {
 			fields: [
-				{ id: 'number', label: 'Number', labelZh: '待分解整数', type: 'number', def: '360', step: '1', min: '2', required: true },
+				{
+					id: 'number',
+					label: 'Number',
+					labelZh: '待分解整数',
+					// bigint (text + numeric keypad), not number: an <input type=number>
+					// round-trips through a JS Number, which stops being exact at 2^53 —
+					// above that the factorization could not be trusted. BigInt holds the
+					// whole 2..2^64−1 range exactly (Miller–Rabin is deterministic <2^64).
+					type: 'bigint',
+					def: '360',
+					required: true,
+					hint: 'Whole number 2 … 2^64−1 (up to 20 digits).',
+					hintZh: '整数 2 … 2^64−1（最多 20 位）。',
+				},
 			],
 			compute: (v) => {
-				const n = v.num('number');
-				if (!Number.isInteger(n) || n < 2 || n > 2 ** 53) {
+				const n = v.bigint('number');
+				if (n === null || n < 2n || n >= 1n << 64n) {
 					return {
 						rows: [
 							{
 								label: 'Result',
 								labelZh: '计算结果',
-								value: '— (enter a whole number ≥ 2)',
-								valueZh: '— (请输入大于等于 2 的整数)',
+								value: '— (enter a whole number from 2 to 2^64−1)',
+								valueZh: '— (请输入 2 到 2^64−1 的整数)',
 							},
 						],
 					};
 				}
-				const { exponents, divisors } = factorWhole(n);
-				const repr = [...exponents.keys()]
-					.sort((a, b) => a - b)
-					.map((p) => {
-						const e = exponents.get(p) as number;
-						return e === 1 ? String(p) : `${p}^${e}`;
-					})
+				const { factors, divisors } = factorWhole(n);
+				const repr = factors
+					.map(({ f, e }) => (e === 1 ? f.toString() : `${f}^${e}`))
 					.join(' × ');
 				return {
 					rows: [
