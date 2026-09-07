@@ -260,14 +260,57 @@ const totalCount = items.length;
 			}
 
 			const tokens = q.split(/\s+/).filter(Boolean);
-			return pool.filter((item) => {
-				// The category's localized labels join the haystack too: a blog
-				// post is filed as finance but reads 金融, and either should hit.
+
+			// Relevance: a slug/name hit outranks a description mention, so typing
+			// "uuid" puts the UUID guide on top even though a password article also
+			// says "UUID" in its blurb. Each token must match (AND), but where it
+			// lands decides the order. Equal scores keep insertion order, so the
+			// ranking is deterministic and never reorders an otherwise-tied pool.
+			const score = (item) => {
+				const lo = (s) => (s || '').toLowerCase();
+				const slug = lo(item.slug);
+				const name = lo(item.name);
+				const nameZh = lo(item.nameZh);
+				const kw = lo(item.keywords);
+				const desc = lo(item.desc);
+				const descZh = lo(item.descZh);
 				const ci = CAT_MAP[item.category];
-				const catText = ci ? ci.labelEn + ' ' + ci.labelZh : '';
-				const full = `${item.slug || ''} ${item.category} ${item.name} ${item.nameZh || ''} ${item.desc} ${item.descZh || ''} ${item.keywords || ''} ${catText}`.toLowerCase();
-				return tokens.every((token) => full.includes(token));
-			});
+				const catEn = ci ? ci.labelEn.toLowerCase() : '';
+				const catZh = ci ? ci.labelZh.toLowerCase() : '';
+				let total = 0;
+				for (const token of tokens) {
+					if (slug === token) total += 12;
+					else if (slug.startsWith(token)) total += 9;
+					else if (slug.includes(token)) total += 6;
+					if (name === token) total += 6;
+					else if (name.startsWith(token)) total += 4;
+					else if (name.includes(token)) total += 3;
+					if (nameZh && nameZh !== name) {
+						if (nameZh === token) total += 6;
+						else if (nameZh.startsWith(token)) total += 4;
+						else if (nameZh.includes(token)) total += 3;
+					}
+					// The category key and both its labels match like keywords.
+					if ((item.category && item.category === token) || catEn.includes(token) || catZh.includes(token)) total += 2;
+					if (kw && kw.includes(token)) total += 2;
+					// Description mentions rank last: the haystack still finds
+					// them, but a sidebar remark must not beat the real article.
+					if (desc && desc.includes(token)) total += 1;
+					if (descZh && descZh !== desc && descZh.includes(token)) total += 1;
+				}
+				return total;
+			};
+
+			return pool
+				.filter((item) => {
+					const ci = CAT_MAP[item.category];
+					const catText = ci ? ci.labelEn + ' ' + ci.labelZh : '';
+					const full = `${item.slug || ''} ${item.category} ${item.name} ${item.nameZh || ''} ${item.desc} ${item.descZh || ''} ${item.keywords || ''} ${catText}`.toLowerCase();
+					return tokens.every((token) => full.includes(token));
+				})
+				.map((item, idx) => ({ item, score: score(item), idx }))
+				.sort((a, b) => b.score - a.score || a.idx - b.idx)
+				.map((r) => r.item);
 		}
 
 		function renderResults(query) {

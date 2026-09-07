@@ -49,14 +49,17 @@ test('the blog list searches articles, and the button says so', async ({ browser
 
 	// A slug hits even though the title is Chinese. Two rows come back, not one:
 	// the UUID post, plus the password-entropy post whose blurb mentions UUID.
-	// Both are genuine hits, and searchItems has no ranking (plain filter, pool
-	// order), so pin the slug match by href rather than by count alone or by
-	// first() — either of those would break on any new article that mentions UUID.
+	// searchItems ranks by field weight (slug > name > category > description),
+	// so the guide is pinned first and the sidebar remark stays second — this
+	// assertion is the contract that ordering keeps working.
 	await page.locator('#sm-input').fill('uuid');
 	await expect(page.locator('#sm-results-list .sm-item')).toHaveCount(2);
 	await expect(
-		page.locator('#sm-results-list .sm-item[href="/blog/uuid-v4-vs-v7-database-guide/"]'),
-	).toBeVisible();
+		page.locator('#sm-results-list .sm-item').first(),
+	).toHaveAttribute('href', '/blog/uuid-v4-vs-v7-database-guide/');
+	await expect(
+		page.locator('#sm-results-list .sm-item').nth(1),
+	).toHaveAttribute('href', '/blog/password-entropy-and-secure-random/');
 
 	// A Chinese query hits from English mode too — the haystack is bilingual.
 	await page.locator('#sm-input').fill('复利');
