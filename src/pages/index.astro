@@ -30,11 +30,22 @@ const featuredSlugs = [
 ];
 const featured = featuredSlugs.map(bySlug).filter((e) => e !== undefined);
 
-const posts = (await getCollection('blog'))
-	.sort((a: CollectionEntry<'blog'>, b: CollectionEntry<'blog'>) =>
+const allPosts = (await getCollection('blog')).sort(
+	(a: CollectionEntry<'blog'>, b: CollectionEntry<'blog'>) =>
 		b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
-	)
-	.slice(0, 3);
+);
+const posts = allPosts.slice(0, 3);
+
+// The homepage's numbers are computed at build time, never typed by hand: an
+// early hardcoded "40+" aged into a lie as tools shipped, and a "<50ms" stat had
+// nothing on the page to back it. Count what REGISTRY actually holds — redirect
+// stubs exist only to carry legacy URLs and are not tools — so the reader sees
+// the truth of this build, whatever it is.
+const realTools = all.filter((e) => e.kind !== 'redirect');
+const toolTotal = realTools.length;
+const postTotal = allPosts.length;
+const catTotal = new Set(realTools.map((e) => e.category)).size;
+const converterTotal = realTools.filter((e) => e.category === 'converters').length;
 
 // rough reading-time estimate: ~220 latin words or ~400 CJK chars per minute
 const readMinutes = (body: string): number => {
@@ -67,8 +78,8 @@ const siteJsonLd = {
 			<section class="hero-section">
 				<div class="hero-badge">
 					<span class="badge-dot"></span>
-					<span class="i18n-zh">100% 浏览器本地计算 · 零隐私上传 · 极速免费</span>
-					<span class="i18n-en">100% In-Browser Execution · Zero Data Upload · Free & Open</span>
+					<span class="i18n-zh">免登录 · 无广告 · 数据不出浏览器 · 源码开源</span>
+					<span class="i18n-en">No login · No ads · In-browser only · Open source</span>
 				</div>
 
 				<h1 class="hero-title">
@@ -77,47 +88,47 @@ const siteJsonLd = {
 				</h1>
 
 				<p class="hero-desc i18n-zh">
-					专注于纯客户端运行的开发者工作台与科学计算工具集。免注册、零数据上传，彻底守护代码与数据隐私；同步分享手写算法、架构调优与数学原理解析。
+					这里不堆抽象口号，只说站里真实的东西：{toolTotal} 款免注册工具在浏览器里直接跑——JSON / SQL 格式化、JWT 解码、房贷与复利测算、{converterTotal} 类单位换算；{postTotal} 篇亲手实现、用实测数据写成的工程手记——二维码 Reed–Solomon 纠错、SQL 词法分析、不用 WebGL 的三维曲面、FIRE 与个税数学。数据不出浏览器，源码全部开源。
 				</p>
 				<p class="hero-desc i18n-en">
-					Browser-based developer workbench and mathematical calculators. Zero telemetry, zero server-side storage, complete privacy for your sensitive data and source code.
+					No abstract slogans here, just what the site actually holds: {toolTotal} login-free tools that run entirely in your browser — JSON/SQL formatting, JWT decoding, mortgage and compound-interest math, {converterTotal} unit-converter families — plus {postTotal} hand-written engineering posts backed by measured numbers: QR Reed–Solomon encoding, an SQL tokenizer, a WebGL-free 3-D plotter, FIRE and tax math. Nothing leaves your browser; the source is open.
 				</p>
 
 				<div class="hero-actions">
 					<a href="/tools/" class="btn-primary">
-						<span class="i18n-zh">⚡ 探索 40+ 款实用工具</span>
-						<span class="i18n-en">⚡ Explore 40+ Tools</span>
+						<span class="i18n-zh">⚡ 打开工具库</span>
+						<span class="i18n-en">⚡ Open the Tools</span>
 					</a>
 					<a href="/blog/" class="btn-secondary">
-						<span class="i18n-zh">📖 阅读技术博客</span>
-						<span class="i18n-en">📖 Read Engineering Blog</span>
+						<span class="i18n-zh">📖 读最新手记</span>
+						<span class="i18n-en">📖 Read the Notes</span>
 					</a>
 				</div>
 
 				<!-- Stats Bar -->
 				<div class="hero-stats">
 					<div class="stat-item">
-						<strong>40+</strong>
-						<span class="i18n-zh">实用在线工具</span>
-						<span class="i18n-en">Browser Tools</span>
+						<strong>{postTotal}</strong>
+						<span class="i18n-zh">篇工程手记</span>
+						<span class="i18n-en">Articles</span>
 					</div>
 					<div class="stat-sep" aria-hidden="true"></div>
 					<div class="stat-item">
-						<strong>100%</strong>
-						<span class="i18n-zh">本地离线计算</span>
-						<span class="i18n-en">Client-Side Only</span>
+						<strong>{toolTotal}</strong>
+						<span class="i18n-zh">款免注册工具</span>
+						<span class="i18n-en">Free tools</span>
 					</div>
 					<div class="stat-sep" aria-hidden="true"></div>
 					<div class="stat-item">
 						<strong>0</strong>
-						<span class="i18n-zh">服务端隐私留存</span>
-						<span class="i18n-en">Data Uploaded</span>
+						<span class="i18n-zh">数据上传</span>
+						<span class="i18n-en">Data uploaded</span>
 					</div>
 					<div class="stat-sep" aria-hidden="true"></div>
 					<div class="stat-item">
-						<strong>&lt; 50ms</strong>
-						<span class="i18n-zh">全球 Edge 秒开</span>
-						<span class="i18n-en">Edge CDN Speed</span>
+						<strong>{catTotal}</strong>
+						<span class="i18n-zh">工具大类</span>
+						<span class="i18n-en">Tool categories</span>
 					</div>
 				</div>
 			</section>
@@ -136,8 +147,8 @@ const siteJsonLd = {
 						</p>
 					</div>
 					<a href="/tools/" class="section-link">
-						<span class="i18n-zh">查看全部 40+ 工具 →</span>
-						<span class="i18n-en">Browse all 40+ tools →</span>
+						<span class="i18n-zh">浏览全部 {toolTotal} 款工具 →</span>
+						<span class="i18n-en">Browse all {toolTotal} tools →</span>
 					</a>
 				</div>
 
@@ -210,44 +221,6 @@ const siteJsonLd = {
 				</div>
 			</section>
 
-			<!-- 4. CORE PRINCIPLES & PRIVACY PLEDGE -->
-			<section class="pledge-section">
-				<div class="pledge-grid">
-					<div class="pledge-item">
-						<div class="pledge-icon">🛡️</div>
-						<h3 class="pledge-title">
-							<span class="i18n-zh">100% 客户端离线安全</span>
-							<span class="i18n-en">100% Client-Side Privacy</span>
-						</h3>
-						<p class="pledge-desc">
-							<span class="i18n-zh">数据库 SQL、JWT 鉴权 Token 与私密文本均在浏览器本地运算，无任何服务端数据库存储或网络传输，断网亦可顺畅运行。</span>
-							<span class="i18n-en">SQL queries, auth tokens, and secret texts run strictly in your browser. Nothing touches our servers.</span>
-						</p>
-					</div>
-					<div class="pledge-item">
-						<div class="pledge-icon">⚡</div>
-						<h3 class="pledge-title">
-							<span class="i18n-zh">零庞大依赖 · 极致轻量</span>
-							<span class="i18n-en">Zero Dependency Bloat</span>
-						</h3>
-						<p class="pledge-desc">
-							<span class="i18n-zh">拒绝臃肿框架与冗余 npm 包，基于现代 Web 标准 API 与手写原生状态机构建，打包体积以 KB 计量，毫秒极速载入。</span>
-							<span class="i18n-en">Built with standard Web APIs and custom state machines. No heavy dependencies, sub-50ms instant loading.</span>
-						</p>
-					</div>
-					<div class="pledge-item">
-						<div class="pledge-icon">🌐</div>
-						<h3 class="pledge-title">
-							<span class="i18n-zh">全球 Edge 节点高可用</span>
-							<span class="i18n-en">Global Edge High Availability</span>
-						</h3>
-						<p class="pledge-desc">
-							<span class="i18n-zh">双重部署于 Cloudflare Workers 全球边缘 CDN 与 GitHub Pages，配合 IndexNow 搜索引擎即时推送，永远在线稳定访问。</span>
-							<span class="i18n-en">Dual-deployed to Cloudflare Global Edge and GitHub Pages for rock-solid 99.99% global uptime.</span>
-						</p>
-					</div>
-				</div>
-			</section>
 		</main>
 		<Footer />
 	</body>
@@ -631,44 +604,4 @@ const siteJsonLd = {
 		transform: translateX(4px);
 	}
 
-	/* --- PLEDGE SECTION --- */
-	.pledge-section {
-		margin-top: 5rem;
-		padding: 2.5rem 2rem;
-		background: var(--card);
-		border: 1px solid var(--gridline);
-		border-radius: 16px;
-		box-shadow: var(--box-shadow);
-	}
-
-	.pledge-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-		gap: 2rem;
-	}
-
-	.pledge-item {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5em;
-	}
-
-	.pledge-icon {
-		font-size: 2rem;
-		margin-bottom: 0.2em;
-	}
-
-	.pledge-title {
-		font-size: 1.1rem;
-		font-weight: 700;
-		color: var(--fg);
-		margin: 0;
-	}
-
-	.pledge-desc {
-		font-size: 0.88rem;
-		color: var(--dim);
-		line-height: 1.65;
-		margin: 0;
-	}
 </style>
