@@ -404,49 +404,6 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 		config: fraction,
 	},
 	{
-		slug: 'average',
-		category: 'calculators',
-		name: 'Average Calculator',
-		nameZh: '平均数与统计计算器',
-		description: 'Mean, median, mode, sum, count, min, max, variance and standard deviation.',
-		descriptionZh: '一键计算数据集的算术平均数、中位数、众数、方差与样本/总体标准差。',
-		kind: 'text',
-		config: {
-			placeholder: 'e.g. 12  15  15  9  27  (spaces, commas, semicolons or new lines)',
-			placeholderZh: '例如 12  15  15  9  27（空格、逗号、分号或换行分隔均可）',
-			mono: true,
-			stats: (text) => {
-				const { nums, invalid } = parseNumbers(text);
-				const s = computeStats(nums);
-				if (!s) {
-					return invalid.length
-						? [{ label: 'Ignoring invalid entries', labelZh: '已忽略的无效数据', value: invalid.join(', ') }]
-						: [];
-				}
-				const fmt = (v: number): string => (Number.isNaN(v) ? '—' : formatNumber(v));
-				const rows: import('./registry').TextStat[] = [
-					{ label: 'Mean (average)', labelZh: '平均数', value: fmt(s.mean) },
-					{ label: 'Median', labelZh: '中位数', value: fmt(s.median) },
-					{
-						label: 'Mode',
-						labelZh: '众数',
-						value: s.modes ? s.modes.map((m) => formatNumber(m)).join(', ') : '—',
-					},
-					{ label: 'Count', labelZh: '数据个数', value: String(s.count) },
-					{ label: 'Sum', labelZh: '总和', value: fmt(s.sum) },
-					{ label: 'Min', labelZh: '最小值', value: fmt(s.min) },
-					{ label: 'Max', labelZh: '最大值', value: fmt(s.max) },
-					{ label: 'Sample std. deviation (s)', labelZh: '样本标准差 (s)', value: fmt(s.sdS) },
-					{ label: 'Population std. deviation (σ)', labelZh: '总体标准差 (σ)', value: fmt(s.sdP) },
-				];
-				if (invalid.length) {
-					rows.push({ label: 'Ignoring invalid entries', labelZh: '已忽略的无效数据', value: invalid.join(', ') });
-				}
-				return rows;
-			},
-		},
-	},
-	{
 		slug: 'ratio',
 		category: 'calculators',
 		name: 'Ratio & Proportion Calculator',
@@ -582,8 +539,8 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 		category: 'calculators',
 		name: 'Descriptive Statistics',
 		nameZh: '描述统计与线性回归',
-		description: 'Mean, median, sample variance and standard deviation, min/max and simple linear regression.',
-		descriptionZh: '计算均值、中位数、样本方差与标准差、极值，并对 y 关于 x 做一元线性回归。',
+		description: 'Sum, mean, median, mode, min/max and both sample & population standard deviation — plus optional simple linear regression.',
+		descriptionZh: '求和、均值、中位数、众数、极值、样本与总体标准差，并可对 y 关于 x 做一元线性回归。',
 		kind: 'form',
 		config: {
 			fields: [
@@ -603,14 +560,14 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 				},
 			],
 			compute: (v) => {
-				const nums = (s: string) =>
-					s
-						.split(/[,;\s]+/)
-						.map((x) => Number(x))
-						.filter((x) => Number.isFinite(x));
-				const y = nums(v.str('y'));
-				const x = nums(v.str('x'));
-				if (y.length === 0) {
+				// Univariate stats come from the shared computeStats() — one source for
+				// both this tool and the retired /calculators/average page. parseNumbers
+				// accepts spaces, commas, semicolons or new lines and reports (rather than
+				// silently drops) entries that cannot be parsed.
+				const { nums: y, invalid: badY } = parseNumbers(v.str('y'));
+				const { nums: x, invalid: badX } = parseNumbers(v.str('x'));
+				const s = computeStats(y);
+				if (!s) {
 					return {
 						rows: [
 							{
@@ -622,44 +579,45 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						],
 					};
 				}
-				const mean = y.reduce((a, b) => a + b, 0) / y.length;
-				const sorted = [...y].sort((a, b) => a - b);
-				const mid = sorted.length >> 1;
-				const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-				// Sample variance divides by n−1: a single value would be 0/0 = NaN.
-				// Show the em dash like the average tool does instead of a "NaN" row.
-				const variance = y.length >= 2 ? y.reduce((a, b) => a + (b - mean) ** 2, 0) / (y.length - 1) : null;
-				const std = variance === null ? null : Math.sqrt(variance);
-				const fmt = (n: number) => String(Math.round(n * 1e6) / 1e6);
-				const dash = '—';
+				// Sample variance divides by n−1, so a single value is 0/0 = NaN — render
+				// the em dash (same as the retired average tool did) instead of a NaN row.
+				const cell = (n: number) => (Number.isNaN(n) ? '—' : formatNumber(n));
+				const row = (label: string, labelZh: string, v: string) => ({ label, labelZh, value: v, valueZh: v });
 				const rows = [
-					{ label: 'Count', labelZh: '数据个数', value: String(y.length), valueZh: String(y.length) },
-					{ label: 'Mean', labelZh: '平均值', value: fmt(mean), valueZh: fmt(mean) },
-					{ label: 'Median', labelZh: '中位数', value: fmt(median), valueZh: fmt(median) },
-					{ label: 'Sample variance', labelZh: '样本方差', value: variance === null ? dash : fmt(variance), valueZh: variance === null ? dash : fmt(variance) },
-					{ label: 'Sample std. deviation', labelZh: '样本标准差', value: std === null ? dash : fmt(std), valueZh: std === null ? dash : fmt(std) },
-					{ label: 'Min', labelZh: '最小值', value: fmt(Math.min(...sorted)), valueZh: fmt(Math.min(...sorted)) },
-					{ label: 'Max', labelZh: '最大值', value: fmt(Math.max(...sorted)), valueZh: fmt(Math.max(...sorted)) },
+					row('Count', '数据个数', String(s.count)),
+					row('Sum', '总和', formatNumber(s.sum)),
+					row('Mean', '平均值', formatNumber(s.mean)),
+					row('Median', '中位数', formatNumber(s.median)),
+					{
+						label: 'Mode',
+						labelZh: '众数',
+						value: s.modes ? s.modes.map((m) => formatNumber(m)).join(', ') : '—',
+						valueZh: s.modes ? s.modes.map((m) => formatNumber(m)).join(', ') : '—',
+					},
+					row('Min', '最小值', formatNumber(s.min)),
+					row('Max', '最大值', formatNumber(s.max)),
+					row('Sample variance', '样本方差', cell(s.varianceS)),
+					row('Sample std. deviation', '样本标准差', cell(s.sdS)),
+					row('Population std. deviation (σ)', '总体标准差 (σ)', cell(s.sdP)),
 				];
+				if (badY.length || badX.length) {
+					const bad = [...badY, ...badX];
+					rows.push({
+						label: 'Ignoring invalid entries',
+						labelZh: '已忽略的无效数据',
+						value: bad.join('  '),
+						valueZh: bad.join('  '),
+					});
+				}
 				if (x.length === y.length && x.length >= 2) {
 					const mx = x.reduce((a, b) => a + b, 0) / x.length;
-					const sxy = x.reduce((a, xi, i) => a + (xi - mx) * (y[i] - mean), 0);
+					const sxy = x.reduce((a, xi, i) => a + (xi - mx) * (y[i] - s.mean), 0);
 					const sxx = x.reduce((a, xi) => a + (xi - mx) ** 2, 0);
 					if (sxx !== 0) {
 						const slope = sxy / sxx;
-						const inter = mean - slope * mx;
-						rows.push({
-							label: 'Regression slope (y ~ a + b·x)',
-							labelZh: '回归斜率 b',
-							value: fmt(slope),
-							valueZh: fmt(slope),
-						});
-						rows.push({
-							label: 'Regression intercept',
-							labelZh: '回归截距 a',
-							value: fmt(inter),
-							valueZh: fmt(inter),
-						});
+						const inter = s.mean - slope * mx;
+						rows.push(row('Regression slope (y ~ a + b·x)', '回归斜率 b', formatNumber(slope)));
+						rows.push(row('Regression intercept', '回归截距 a', formatNumber(inter)));
 					}
 				}
 				return { rows };

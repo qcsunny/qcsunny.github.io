@@ -73,24 +73,26 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '为什么 0.333… 会得到 1/3？', a: '连分数算法会找出分母较小时最接近 0.333… 的分数，正是 1/3。' },
 		],
 	},
-	'calculators/average': {
+	'calculators/descriptive-statistics': {
 		about: [
 			'Paste a list of numbers — separated by spaces, commas, semicolons or new lines — and get the full statistics at once: mean, median, mode, sum, count, min, max, and both sample and population standard deviation.',
-			'The mean is the sum divided by the count; the median is the middle value (robust to outliers); the mode is the most frequent value. Invalid entries are ignored and listed so you can fix them.',
+			'The mean is the sum divided by the count; the median is the middle value (robust to outliers); the mode is the most frequent value. Invalid entries are ignored and listed so you can fix them. Optionally paste an equally long x list and the calculator also fits the regression line y = a + b·x by least squares.',
 		],
 		aboutZh: [
 			'粘贴一组数字（支持空格、逗号、分号或换行分隔），一次性得到完整统计：均值、中位数、众数、总和、个数、最值，以及样本与总体两种标准差。',
-			'均值 = 总和 ÷ 个数；中位数是排序后的中间值（对异常值稳健）；众数是出现最频繁的值。无法解析的条目会被忽略并列出，便于修正。',
+			'均值 = 总和 ÷ 个数；中位数是排序后的中间值（对异常值稳健）；众数是出现最频繁的值。无法解析的条目会被忽略并列出，便于修正。若再粘贴一组等长 x 数值，还会以最小二乘拟合回归直线 y = a + b·x。',
 		],
 		faq: [
 			{ q: 'Mean or median — which should I use?', a: 'The median when the data has outliers or is skewed (like incomes); the mean is fine for symmetric data.' },
 			{ q: 'What is the difference between the two standard deviations?', a: 'Sample (s) divides by n−1 for estimating from a sample; population (σ) divides by n when you have every value.' },
 			{ q: 'What if no number repeats?', a: 'Then there is no mode, and the calculator shows "—".' },
+			{ q: 'What does the regression line tell me?', a: 'It fits y = a + b·x to your (x, y) pairs: b is the slope and a the intercept, both shown when you provide equally long x and y lists.' },
 		],
 		faqZh: [
 			{ q: '均值和中位数用哪个？', a: '数据有异常值或偏态（如收入）时用中位数；对称分布的数据用均值即可。' },
 			{ q: '两种标准差有什么区别？', a: '样本标准差（s）除以 n−1，用于从样本估计；总体标准差（σ）除以 n，适用于拥有全部数据的情形。' },
 			{ q: '如果没有数字重复怎么办？', a: '那就没有众数，计算器会显示"—"。' },
+			{ q: '回归直线表示什么？', a: '以最小二乘对每组 (x, y) 拟合 y = a + b·x：b 为斜率、a 为截距。当 x 与 y 等长时自动计算显示。' },
 		],
 	},
 	'calculators/ratio': {
