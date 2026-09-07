@@ -1,7 +1,61 @@
 ---
 import { getAllSearchItems } from '../../tools/registry';
+import type { SearchCategory, SearchConfig, SearchCopy, SearchItem } from './SearchTypes';
+
+// The site-wide search overlay. It is data-driven so a page can search
+// anything — the tool registry by default, the blog collection on the blog
+// pages — and the visual language is one and the same everywhere. The config
+// is built at build time (no fetch), so the first keystroke has data and
+// search keeps working offline.
+//
+// The item shape is deliberately loose (name/desc over slug/description) so
+// the tool registry and the blog collection both map onto it without an
+// adapter; `slug` and `keywords` are folded into the searchable text.
+
+interface Props {
+	/** Absent → the default tool index. Present → search those items instead. */
+	config?: SearchConfig;
+}
+
+const { config } = Astro.props;
 
 const allTools = getAllSearchItems();
+
+const TOOLS_CATEGORIES: SearchCategory[] = [
+	{ key: 'finance', labelEn: 'Finance', labelZh: '金融', icon: '💰', color: '#b45309', tint: 'rgba(234,179,8,0.15)' },
+	{ key: 'calculators', labelEn: 'Calculators', labelZh: '计算', icon: '📐', color: '#1d4ed8', tint: 'rgba(59,130,246,0.15)' },
+	{ key: 'converters', labelEn: 'Converters', labelZh: '换算', icon: '🔄', color: '#047857', tint: 'rgba(160,185,129,0.15)' },
+	{ key: 'tools', labelEn: 'Dev Tools', labelZh: '开发', icon: '🛠️', color: '#7e22ce', tint: 'rgba(168,85,247,0.15)' },
+];
+const TOOLS_COPY: SearchCopy = {
+	placeholderEn: `Search ${allTools.length} tools (e.g. mortgage, irr, tax, uuid, speed)...`,
+	placeholderZh: '搜索工具 (支持中英文、拼音、关键词，如 房贷、IRR、个税、换算)...',
+	emptyHintEn: 'Try searching with "mortgage", "tax", "json", "speed", "loan"',
+	emptyHintZh: '可尝试搜索："房贷"、"个税"、"json"、"速度"、"贷款"等',
+	footerLinkHref: '/tools/',
+	footerLinkEn: 'Tools Hub ➔',
+	footerLinkZh: '前往全部工具库 ➔',
+	btnAriaEn: 'Search tools (shortcut /)',
+	btnAriaZh: '搜索工具 (快捷键 /)',
+	btnTitleEn: 'Search tools (/ or Ctrl+K)',
+	btnTitleZh: '搜索工具 (快捷键 / 或 Ctrl+K)',
+};
+// The registry's item shape uses slug/description; the overlay reads name/desc.
+const TOOLS_ITEMS: SearchItem[] = allTools.map((t) => ({
+	href: t.href,
+	slug: t.slug,
+	name: t.name,
+	nameZh: t.nameZh,
+	desc: t.description,
+	descZh: t.descriptionZh,
+	category: t.category,
+	keywords: t.keywords,
+}));
+
+const items = config?.items ?? TOOLS_ITEMS;
+const categories = config?.categories ?? TOOLS_CATEGORIES;
+const copy = config?.copy ?? TOOLS_COPY;
+const totalCount = items.length;
 ---
 
 <div id="site-search-modal" class="sm-overlay" style="display: none;" aria-hidden="true" role="dialog" aria-modal="true">
@@ -14,9 +68,9 @@ const allTools = getAllSearchItems();
 					type="text"
 					id="sm-input"
 					class="sm-input"
-					placeholder={`Search ${allTools.length} tools (e.g. mortgage, irr, tax, uuid, speed)...`}
-					data-placeholder-en={`Search ${allTools.length} tools (e.g. mortgage, irr, tax, uuid, speed)...`}
-					data-placeholder-zh="搜索工具 (支持中英文、拼音、关键词，如 房贷、IRR、个税、换算)..."
+					placeholder={copy.placeholderEn}
+					data-placeholder-en={copy.placeholderEn}
+					data-placeholder-zh={copy.placeholderZh}
 					autocomplete="off"
 					spellcheck="false"
 				/>
@@ -35,32 +89,21 @@ const allTools = getAllSearchItems();
 					class="sm-close-btn"
 					aria-label="Close modal"
 					data-aria-en="Close modal"
-					data-aria-zh="关闭搜索框">Esc</button
-				>
+					data-aria-zh="关闭搜索框">Esc</button>
 			</div>
 
 			<div class="sm-filter-row">
 				<button type="button" class="sm-filter-pill sm-filter-active" data-cat="all">
 					<span class="i18n-en">All</span>
 					<span class="i18n-zh">全部</span>
-					<span class="sm-pill-num">({allTools.length})</span>
+					<span class="sm-pill-num">({totalCount})</span>
 				</button>
-				<button type="button" class="sm-filter-pill" data-cat="finance">
-					<span class="i18n-en">Finance</span>
-					<span class="i18n-zh">金融</span>
-				</button>
-				<button type="button" class="sm-filter-pill" data-cat="calculators">
-					<span class="i18n-en">Calculators</span>
-					<span class="i18n-zh">计算</span>
-				</button>
-				<button type="button" class="sm-filter-pill" data-cat="converters">
-					<span class="i18n-en">Converters</span>
-					<span class="i18n-zh">换算</span>
-				</button>
-				<button type="button" class="sm-filter-pill" data-cat="tools">
-					<span class="i18n-en">Dev Tools</span>
-					<span class="i18n-zh">开发</span>
-				</button>
+				{categories.map((cat) => (
+					<button type="button" class="sm-filter-pill" data-cat={cat.key}>
+						<span class="i18n-en">{cat.labelEn}</span>
+						<span class="i18n-zh">{cat.labelZh}</span>
+					</button>
+				))}
 			</div>
 
 			<div class="sm-results-area">
@@ -69,12 +112,12 @@ const allTools = getAllSearchItems();
 				<div id="sm-empty" class="sm-empty" style="display: none;">
 					<div class="sm-empty-icon">🔍</div>
 					<p class="sm-empty-text">
-						<span class="i18n-en">No tools matching "<strong class="sm-empty-q"></strong>"</span>
-						<span class="i18n-zh">未找到与 “<strong class="sm-empty-q"></strong>” 相关的工具</span>
+						<span class="i18n-en">No results matching "<strong class="sm-empty-q"></strong>"</span>
+						<span class="i18n-zh">未找到与 “<strong class="sm-empty-q"></strong>” 相关的内容</span>
 					</p>
 					<p class="sm-empty-hint">
-						<span class="i18n-en">Try searching with "mortgage", "tax", "json", "speed", "loan"</span>
-						<span class="i18n-zh">可尝试搜索：“房贷”、“个税”、“json”、“速度”、“贷款”等</span>
+						<span class="i18n-en">{copy.emptyHintEn}</span>
+						<span class="i18n-zh">{copy.emptyHintZh}</span>
 					</p>
 				</div>
 			</div>
@@ -85,16 +128,16 @@ const allTools = getAllSearchItems();
 					<span><kbd>Enter</kbd> <span class="i18n-en">Open</span><span class="i18n-zh">打开</span></span>
 					<span><kbd>Esc</kbd> <span class="i18n-en">Close</span><span class="i18n-zh">关闭</span></span>
 				</div>
-				<a href="/tools/" class="sm-footer-all-link">
-					<span class="i18n-en">Tools Hub ➔</span>
-					<span class="i18n-zh">前往全部工具库 ➔</span>
+				<a href={copy.footerLinkHref} class="sm-footer-all-link">
+					<span class="i18n-en">{copy.footerLinkEn}</span>
+					<span class="i18n-zh">{copy.footerLinkZh}</span>
 				</a>
 			</div>
 		</div>
 	</div>
 </div>
 
-<script is:inline define:vars={{ toolsData: allTools }}>
+<script is:inline define:vars={{ searchData: items, searchCategories: categories, searchCopy: copy }}>
 	(() => {
 		const modal = document.getElementById('site-search-modal');
 		const backdrop = document.getElementById('sm-backdrop');
@@ -112,13 +155,22 @@ const allTools = getAllSearchItems();
 		let activeIndex = 0;
 		let currentItems = [];
 		let isComposing = false;
+		// Where focus came from, so closing can give it back. Hiding the modal
+		// without this leaves the browser holding its now-invisible input as
+		// document.activeElement until the next layout pass drops the display:none
+		// box; a "/" pressed in that gap reads activeElement as an <input> and the
+		// guard below skips the shortcut, so "Esc, then /" silently does nothing.
+		// Unannotated on purpose: this is:inline script ships as plain JavaScript,
+		// so a TS type here would be a SyntaxError that kills the whole IIFE and
+		// leaves window.openSiteSearchModal unset on every page.
+		let lastFocused = null;
 
-		const CAT_LABELS = {
-			finance: { en: 'Finance', zh: '金融工具', icon: '💰' },
-			calculators: { en: 'Calculator', zh: '计算器', icon: '📐' },
-			converters: { en: 'Converter', zh: '单位换算', icon: '🔄' },
-			tools: { en: 'Dev Tool', zh: '开发者工具', icon: '🛠️' },
-		};
+		// Category lookup: label pair, icon, and the badge colours, keyed by
+		// the data-cat the rows and the pills both carry.
+		const CAT_MAP = {};
+		for (const c of searchCategories) {
+			CAT_MAP[c.key] = c;
+		}
 
 		// Placeholder sync with site lang. The two buttons' labels use the same
 		// data-* pair as ToolShell's syncLangUI, but that helper only exists on tool
@@ -147,6 +199,7 @@ const allTools = getAllSearchItems();
 		window.addEventListener('site:lang-change', onLang);
 
 		function openModal(defaultQuery = '') {
+			lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 			modal.style.display = 'block';
 			modal.setAttribute('aria-hidden', 'false');
 			document.body.style.overflow = 'hidden';
@@ -162,6 +215,11 @@ const allTools = getAllSearchItems();
 			modal.style.display = 'none';
 			modal.setAttribute('aria-hidden', 'true');
 			document.body.style.overflow = '';
+			// .focus() lands on document.activeElement synchronously, so the
+			// shortcut below never sees the focus this modal just orphaned. It is
+			// also the dialog contract: a screen reader user pressing Esc should
+			// land back on the trigger, not on an element that stopped rendering.
+			if (lastFocused && document.contains(lastFocused)) lastFocused.focus();
 		}
 
 		// Expose global open helper for buttons across site
@@ -185,21 +243,25 @@ const allTools = getAllSearchItems();
 			});
 		});
 
-		function searchTools(query, cat) {
+		function searchItems(query, cat) {
 			const q = (query || '').trim().toLowerCase();
-			let pool = toolsData;
+			let pool = searchData;
 			if (cat && cat !== 'all') {
 				pool = pool.filter((t) => t.category === cat);
 			}
 
 			if (!q) {
-				// Return first 10 tools if query is empty
+				// Return first 10 items if query is empty
 				return pool.slice(0, 10);
 			}
 
 			const tokens = q.split(/\s+/).filter(Boolean);
 			return pool.filter((item) => {
-				const full = `${item.slug} ${item.category} ${item.name} ${item.nameZh || ''} ${item.description} ${item.keywords || ''}`.toLowerCase();
+				// The category's localized labels join the haystack too: a blog
+				// post is filed as finance but reads 金融, and either should hit.
+				const ci = CAT_MAP[item.category];
+				const catText = ci ? ci.labelEn + ' ' + ci.labelZh : '';
+				const full = `${item.slug || ''} ${item.category} ${item.name} ${item.nameZh || ''} ${item.desc} ${item.descZh || ''} ${item.keywords || ''} ${catText}`.toLowerCase();
 				return tokens.every((token) => full.includes(token));
 			});
 		}
@@ -208,7 +270,7 @@ const allTools = getAllSearchItems();
 			const q = (query || '').trim();
 			if (clearBtn) clearBtn.style.display = q ? 'inline-flex' : 'none';
 
-			currentItems = searchTools(q, selectedCat);
+			currentItems = searchItems(q, selectedCat);
 			activeIndex = 0;
 
 			if (currentItems.length === 0) {
@@ -223,17 +285,18 @@ const allTools = getAllSearchItems();
 
 			resultsList.innerHTML = currentItems
 				.map((item, idx) => {
-					const catInfo = CAT_LABELS[item.category] || { en: item.category, zh: item.category, icon: '⚡' };
-					const catLabel = isZh ? catInfo.zh : catInfo.en;
+					const ci = CAT_MAP[item.category] || { labelEn: item.category, labelZh: item.category, icon: '⚡', color: '#64748b', tint: 'rgba(100,116,139,0.15)' };
+					const catLabel = isZh ? ci.labelZh : ci.labelEn;
 					const title = isZh && item.nameZh ? item.nameZh : item.name;
-					const desc = isZh && item.descriptionZh ? item.descriptionZh : item.description;
+					const desc = isZh && item.descZh ? item.descZh : item.desc;
+					const icon = item.icon || ci.icon;
 					return `
 					<a href="${item.href}" class="sm-item ${idx === 0 ? 'sm-item-active' : ''}" data-index="${idx}">
-						<div class="sm-item-icon">${catInfo.icon}</div>
+						<div class="sm-item-icon">${icon}</div>
 						<div class="sm-item-body">
 							<div class="sm-item-title-row">
 								<span class="sm-item-title">${title}</span>
-								<span class="sm-item-badge sm-badge-${item.category}">${catLabel}</span>
+								<span class="sm-item-badge" style="color:${ci.color};background:${ci.tint};">${catLabel}</span>
 							</div>
 							<div class="sm-item-desc">${desc}</div>
 						</div>
@@ -355,9 +418,9 @@ const allTools = getAllSearchItems();
 	.sm-backdrop {
 		position: fixed;
 		inset: 0;
-		background: rgba(15, 23, 42, 0.65);
-		backdrop-filter: blur(8px);
-		-webkit-backdrop-filter: blur(8px);
+		background: rgba(15, 23, 42, 0.6);
+		backdrop-filter: blur(10px);
+		-webkit-backdrop-filter: blur(10px);
 	}
 	.sm-container {
 		position: relative;
@@ -365,25 +428,27 @@ const allTools = getAllSearchItems();
 		display: flex;
 		align-items: flex-start;
 		justify-content: center;
-		padding: 3.5rem 1rem 2rem;
+		padding: 6vh 1rem 2rem;
 	}
 	.sm-panel {
 		position: relative;
 		width: 100%;
-		max-width: 640px;
+		max-width: 680px;
 		background: var(--card, #ffffff);
 		color: var(--fg, #1e293b);
-		border-radius: 16px;
-		box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--gridline, rgba(226, 232, 240, 0.8));
+		border-radius: 18px;
+		box-shadow:
+			0 24px 60px -12px rgba(0, 0, 0, 0.4),
+			0 0 0 1px color-mix(in srgb, var(--gridline, #e2e8f0) 60%, transparent);
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
-		animation: sm-pop 0.16s ease-out;
+		animation: sm-pop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 	}
 	@keyframes sm-pop {
 		from {
 			opacity: 0;
-			transform: scale(0.97) translateY(-8px);
+			transform: scale(0.97) translateY(-10px);
 		}
 		to {
 			opacity: 1;
@@ -393,14 +458,15 @@ const allTools = getAllSearchItems();
 	.sm-input-row {
 		display: flex;
 		align-items: center;
-		padding: 0.85rem 1.1rem;
+		padding: 1rem 1.2rem;
 		border-bottom: 1px solid var(--gridline, #e2e8f0);
-		gap: 0.75rem;
+		gap: 0.8rem;
 	}
 	.sm-search-icon {
-		font-size: 1.15rem;
+		font-size: 1.2rem;
 		color: var(--dim, #64748b);
 		user-select: none;
+		flex-shrink: 0;
 	}
 	.sm-input {
 		flex: 1;
@@ -419,30 +485,37 @@ const allTools = getAllSearchItems();
 		border: none;
 		background: var(--gridline, #e2e8f0);
 		color: var(--dim, #64748b);
-		width: 1.45rem;
-		height: 1.45rem;
+		width: 1.5rem;
+		height: 1.5rem;
 		border-radius: 50%;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 1.1rem;
+		font-size: 1.05rem;
 		cursor: pointer;
+		flex-shrink: 0;
+		transition: background 0.12s ease, color 0.12s ease;
+	}
+	.sm-clear:hover {
+		background: var(--dim, #64748b);
+		color: var(--card, #ffffff);
 	}
 	.sm-close-btn {
 		border: 1px solid var(--gridline, #e2e8f0);
 		background: var(--bg, #f8fafc);
 		color: var(--dim, #64748b);
-		padding: 0.2rem 0.5rem;
-		border-radius: 6px;
-		font-size: 0.75rem;
+		padding: 0.25rem 0.6rem;
+		border-radius: 8px;
+		font-size: 0.72rem;
 		font-family: var(--font-mono, monospace);
 		font-weight: 600;
 		cursor: pointer;
+		flex-shrink: 0;
 	}
 	.sm-filter-row {
 		display: flex;
-		gap: 0.4rem;
-		padding: 0.6rem 1.1rem;
+		gap: 0.45rem;
+		padding: 0.65rem 1.2rem;
 		border-bottom: 1px solid var(--gridline, #e2e8f0);
 		overflow-x: auto;
 		scrollbar-width: none;
@@ -455,16 +528,16 @@ const allTools = getAllSearchItems();
 		border: 1px solid transparent;
 		background: transparent;
 		color: var(--dim, #64748b);
-		padding: 0.25rem 0.65rem;
-		border-radius: 6px;
-		font-size: 0.82rem;
+		padding: 0.3rem 0.75rem;
+		border-radius: 999px;
+		font-size: 0.8rem;
 		font-weight: 600;
 		cursor: pointer;
 		white-space: nowrap;
-		transition: all 0.12s ease;
+		transition: all 0.15s ease;
 		display: inline-flex;
 		align-items: center;
-		gap: 0.25rem;
+		gap: 0.35rem;
 	}
 	.sm-filter-pill:hover {
 		color: var(--fg, #0f172a);
@@ -473,15 +546,15 @@ const allTools = getAllSearchItems();
 	.sm-filter-active {
 		background: var(--card, #ffffff) !important;
 		color: var(--accent, #2563eb) !important;
-		border-color: var(--gridline, #cbd5e1) !important;
+		border-color: color-mix(in srgb, var(--accent, #2563eb) 30%, transparent) !important;
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 	}
 	.sm-pill-num {
-		opacity: 0.7;
-		font-size: 0.75rem;
+		opacity: 0.65;
+		font-size: 0.72rem;
 	}
 	.sm-results-area {
-		max-height: 52vh;
+		max-height: 54vh;
 		min-height: 180px;
 		overflow-y: auto;
 		padding: 0.5rem;
@@ -489,13 +562,14 @@ const allTools = getAllSearchItems();
 	.sm-results-list {
 		display: flex;
 		flex-direction: column;
-		gap: 0.35rem;
+		gap: 0.3rem;
 	}
 	.sm-item {
+		position: relative;
 		display: flex;
 		align-items: center;
-		gap: 0.85rem;
-		padding: 0.7rem 0.85rem;
+		gap: 0.9rem;
+		padding: 0.75rem 0.9rem;
 		border-radius: 10px;
 		text-decoration: none;
 		color: var(--fg, #1e293b);
@@ -504,16 +578,33 @@ const allTools = getAllSearchItems();
 	}
 	.sm-item-active,
 	.sm-item:hover {
-		background: rgba(var(--accent-rgb, 59, 130, 246), 0.1);
+		background: rgba(var(--accent-rgb, 59, 130, 246), 0.08);
+	}
+	.sm-item-active::before {
+		content: '';
+		position: absolute;
+		left: 0;
+		top: 12%;
+		bottom: 12%;
+		width: 3px;
+		border-radius: 0 3px 3px 0;
+		background: var(--accent, #2563eb);
 	}
 	.sm-item-active .sm-item-arrow {
 		transform: translateX(3px);
 		color: var(--accent, #2563eb);
 	}
 	.sm-item-icon {
-		font-size: 1.35rem;
+		font-size: 1.25rem;
 		line-height: 1;
 		flex-shrink: 0;
+		width: 2.3rem;
+		height: 2.3rem;
+		display: grid;
+		place-items: center;
+		border-radius: 8px;
+		background: var(--bg, #f8fafc);
+		border: 1px solid var(--gridline, #e2e8f0);
 	}
 	.sm-item-body {
 		flex: 1;
@@ -523,37 +614,21 @@ const allTools = getAllSearchItems();
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		margin-bottom: 0.2rem;
+		margin-bottom: 0.22rem;
 		flex-wrap: wrap;
 	}
 	.sm-item-title {
 		font-weight: 600;
-		font-size: 0.95rem;
+		font-size: 0.93rem;
 		color: var(--fg, #0f172a);
 	}
 	.sm-item-badge {
-		font-size: 0.7rem;
+		font-size: 0.68rem;
 		font-weight: 700;
-		padding: 0.12rem 0.45rem;
-		border-radius: 4px;
-		text-transform: uppercase;
+		padding: 0.15rem 0.5rem;
+		border-radius: 5px;
 		letter-spacing: 0.02em;
-	}
-	.sm-badge-finance {
-		background: rgba(234, 179, 8, 0.15);
-		color: #b45309;
-	}
-	.sm-badge-calculators {
-		background: rgba(59, 130, 246, 0.15);
-		color: #1d4ed8;
-	}
-	.sm-badge-converters {
-		background: rgba(160, 185, 129, 0.15);
-		color: #047857;
-	}
-	.sm-badge-tools {
-		background: rgba(168, 85, 247, 0.15);
-		color: #7e22ce;
+		white-space: nowrap;
 	}
 	.sm-item-desc {
 		font-size: 0.8rem;
@@ -565,52 +640,52 @@ const allTools = getAllSearchItems();
 	.sm-item-arrow {
 		font-size: 0.85rem;
 		color: var(--dim, #94a3b8);
-		transition: transform 0.12s ease, color 0.12s ease;
+		transition: transform 0.15s ease, color 0.12s ease;
 		flex-shrink: 0;
 	}
 	.sm-empty {
 		text-align: center;
-		padding: 2.5rem 1rem;
+		padding: 2.8rem 1rem;
 	}
 	.sm-empty-icon {
-		font-size: 2rem;
-		margin-bottom: 0.5rem;
-		opacity: 0.6;
+		font-size: 2.4rem;
+		margin-bottom: 0.6rem;
+		opacity: 0.5;
 	}
 	.sm-empty-text {
 		font-size: 0.95rem;
 		font-weight: 600;
-		margin-bottom: 0.25rem;
+		margin-bottom: 0.3rem;
 	}
 	.sm-empty-hint {
-		font-size: 0.82rem;
+		font-size: 0.8rem;
 		color: var(--dim, #64748b);
 	}
 	.sm-footer {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		padding: 0.65rem 1.1rem;
+		padding: 0.7rem 1.2rem;
 		border-top: 1px solid var(--gridline, #e2e8f0);
 		background: var(--bg, #f8fafc);
-		font-size: 0.76rem;
+		font-size: 0.75rem;
 		color: var(--dim, #64748b);
 	}
 	.sm-footer-keys {
 		display: flex;
-		gap: 0.85rem;
+		gap: 0.9rem;
 		align-items: center;
 	}
 	.sm-footer-keys kbd {
 		display: inline-block;
-		padding: 0.1rem 0.35rem;
+		padding: 0.12rem 0.4rem;
 		font-size: 0.7rem;
 		font-family: var(--font-mono, monospace);
 		font-weight: 600;
 		background: var(--card, #ffffff);
 		border: 1px solid var(--gridline, #cbd5e1);
-		border-radius: 4px;
-		margin-right: 0.25rem;
+		border-radius: 5px;
+		margin-right: 0.2rem;
 	}
 	.sm-footer-all-link {
 		color: var(--accent, #2563eb);

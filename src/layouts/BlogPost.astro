@@ -1,10 +1,11 @@
 ---
 import { Image } from 'astro:assets';
-import type { CollectionEntry } from 'astro:content';
+import { getCollection, type CollectionEntry } from 'astro:content';
 import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
+import { buildBlogSearchConfig } from '../components/tools/blogSearchConfig';
 import TableOfContents from '../components/blog/TableOfContents.astro';
 import SupportBox from '../components/SupportBox.astro';
 import { ADSENSE_CLIENT, AD_SLOTS, SITE_TITLE } from '../consts';
@@ -20,6 +21,11 @@ type Props = CollectionEntry<'blog'>['data'] & {
 
 const { title, description, pubDate, updatedDate, heroImage, minutes, slug, hasMath, headings = [] } =
 	Astro.props;
+
+// The Header's search button stays pointed at the blog collection on a reading
+// page too, so hopping to a neighbouring article never needs a trip back to the
+// list first.
+const blogSearchConfig = buildBlogSearchConfig(await getCollection('blog'));
 
 const isZh = /[\p{Script=Han}]/u.test(title);
 const pageLang = isZh ? 'zh-CN' : 'en';
@@ -334,7 +340,7 @@ const jsonLd = {
 	</head>
 
 	<body>
-		<Header />
+		<Header searchConfig={blogSearchConfig} />
 		<main>
 			<div class="article-grid">
 			<article>

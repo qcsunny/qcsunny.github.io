@@ -86,15 +86,16 @@ test('the shared tool bundle stays inside its brotli budget', () => {
 	expect(size, `main chunk is ${size} B brotli`).toBeLessThan(45_000);
 });
 
-// Every page carrying the tool search modal inlines the same index (49 tools,
-// bilingual names plus search aliases) so the first keystroke has data and search
-// keeps working offline. That is a deliberate trade — inline bytes cannot be
-// cached, so a multi-page visit pays for it again on each page — and the reason
-// it is deliberate is that it is small. This pins the "small": if the index grows
-// past ~12 KB brotli per page it stops being the cheap option and should move to
-// a fetched, immutable file.
+// Every page carrying the search modal inlines the index its button searches —
+// the 49 tools (bilingual names plus search aliases) on most pages, the blog
+// collection on the blog list and article pages — so the first keystroke has
+// data and search keeps working offline. That is a deliberate trade: inline
+// bytes cannot be cached, so a multi-page visit pays for them again on each
+// page. The reason it is deliberate is that they are small. This pins "small":
+// if the index grows past ~12 KB brotli per page it stops being the cheap
+// option and should move to a fetched, immutable file.
 test('the inlined search index stays small enough to justify inlining', () => {
-	const withIndex = distHtml().filter(([, html]) => html.includes('const toolsData'));
+	const withIndex = distHtml().filter(([, html]) => html.includes('const searchData'));
 	expect(withIndex.length, 'pages carrying the search modal').toBeGreaterThan(50);
 
 	// The block carries the same payload on every page, but its brotli *cost* is
@@ -105,7 +106,7 @@ test('the inlined search index stays small enough to justify inlining', () => {
 	// tool list page ran ~1.4 KB. Pin the worst page so an index that grows
 	// past the budget is caught regardless of which page the sort hits first.
 	const costs = withIndex.map(([route, html]) => {
-		const block = html.match(/<script>\(function\(\)\{const toolsData[\s\S]*?<\/script>/);
+		const block = html.match(/<script>\(function\(\)\{const searchData[\s\S]*?<\/script>/);
 		if (!block) return [route, -1] as const;
 		return [route, brotli(html) - brotli(html.replace(block[0], ''))] as const;
 	});

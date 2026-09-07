@@ -3,6 +3,24 @@ import HeaderLink from './HeaderLink.astro';
 import SiteLogo from './SiteLogo.astro';
 import ToolSearchModal from './tools/ToolSearchModal.astro';
 import { SITE_TITLE } from '../consts';
+import type { SearchConfig } from './tools/SearchTypes';
+
+// `searchConfig` re-points the overlay at a different index. The blog pages
+// hand in the blog collection, so their search button opens article search;
+// everywhere else the overlay keeps its default tool index and the button
+// says "Search tools".
+interface Props {
+	searchConfig?: SearchConfig;
+}
+
+const { searchConfig } = Astro.props;
+
+const BTN_COPY = searchConfig?.copy ?? {
+	btnAriaEn: 'Search tools (shortcut /)',
+	btnAriaZh: '搜索工具 (快捷键 /)',
+	btnTitleEn: 'Search tools (/ or Ctrl+K)',
+	btnTitleZh: '搜索工具 (快捷键 / 或 Ctrl+K)',
+};
 ---
 
 <header>
@@ -26,10 +44,15 @@ import { SITE_TITLE } from '../consts';
 		</div>
 		<div class="nav-right">
 			<button class="search-modal-btn" type="button" id="header-search-btn"
-				aria-label="Search tools (shortcut /)" title="Search tools (/ or Ctrl+K)"
-				data-aria-en="Search tools (shortcut /)" data-aria-zh="搜索工具 (快捷键 /)"
-				data-title-en="Search tools (/ or Ctrl+K)" data-title-zh="搜索工具 (快捷键 / 或 Ctrl+K)">
-				<span class="search-btn-icon" aria-hidden="true">🔍</span>
+				aria-label={BTN_COPY.btnAriaEn} title={BTN_COPY.btnTitleEn}
+				data-aria-en={BTN_COPY.btnAriaEn} data-aria-zh={BTN_COPY.btnAriaZh}
+				data-title-en={BTN_COPY.btnTitleEn} data-title-zh={BTN_COPY.btnTitleZh}>
+				<span class="search-btn-icon" aria-hidden="true">
+					<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+						<circle cx="7" cy="7" r="4.6"></circle>
+						<path d="M10.4 10.4 L13.8 13.8"></path>
+					</svg>
+				</span>
 				<span class="search-btn-text"><span class="i18n-en">Search</span><span class="i18n-zh">搜索</span></span>
 				<kbd class="search-btn-kbd">/</kbd>
 			</button>
@@ -99,7 +122,7 @@ import { SITE_TITLE } from '../consts';
 			</div>
 		</div>
 	</div>
-	<ToolSearchModal />
+	<ToolSearchModal config={searchConfig} />
 </header>
 
 <script>
@@ -310,48 +333,77 @@ import { SITE_TITLE } from '../consts';
 		align-items: center;
 		gap: 0.5em;
 	}
+	/* Reads as a search field, not a plain button: the icon and the "/" afford
+	   the affordance so the label can stay one word. */
 	.search-modal-btn {
+		position: relative;
 		border: 1px solid var(--gridline);
-		background: transparent;
+		background: color-mix(in srgb, var(--card) 72%, var(--bg));
 		color: var(--dim);
-		border-radius: 8px;
+		border-radius: 9px;
 		height: 34px;
-		padding: 0 0.65em;
-		font-size: 13px;
+		padding: 0 0.5em 0 0.7em;
+		font-size: 12.5px;
 		font-weight: 600;
 		cursor: pointer;
 		display: inline-flex;
 		align-items: center;
-		gap: 0.35rem;
+		gap: 0.5em;
 		transition:
-			color 0.15s ease,
-			border-color 0.15s ease,
-			background 0.15s ease;
+			color 0.16s ease,
+			border-color 0.16s ease,
+			background 0.16s ease,
+			box-shadow 0.16s ease;
 	}
 	.search-modal-btn:hover {
+		color: var(--fg);
+		border-color: color-mix(in srgb, var(--accent) 45%, var(--gridline));
+		background: var(--accent-soft);
+	}
+	.search-modal-btn:hover .search-btn-icon {
 		color: var(--accent);
+	}
+	.search-modal-btn:hover .search-btn-kbd {
+		border-color: color-mix(in srgb, var(--accent) 45%, var(--gridline));
+		color: var(--fg);
+	}
+	.search-modal-btn:focus-visible {
+		outline: none;
 		border-color: var(--accent);
-		background: rgba(var(--accent-rgb, 59, 130, 246), 0.08);
+		box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
 	}
 	.search-btn-icon {
-		font-size: 13px;
+		display: grid;
+		place-items: center;
+		color: var(--dim);
+		transition: color 0.16s ease;
+	}
+	.search-btn-icon svg {
+		display: block;
 	}
 	.search-btn-text {
 		font-size: 12.5px;
+		letter-spacing: 0.01em;
 	}
 	.search-btn-kbd {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
+		min-width: 17px;
+		height: 17px;
 		font-family: var(--font-mono, monospace);
-		font-size: 11px;
+		font-size: 10.5px;
 		font-weight: 700;
-		padding: 0.05rem 0.3rem;
+		line-height: 1;
+		padding: 0 0.25rem;
 		border-radius: 4px;
 		background: var(--bg);
 		color: var(--dim);
 		border: 1px solid var(--gridline);
-		margin-left: 0.15rem;
+		box-shadow: 0 1px 0 var(--gridline);
+		transition:
+			color 0.16s ease,
+			border-color 0.16s ease;
 	}
 	.lang-toggle {
 		border: 1px solid var(--gridline);
