@@ -12,11 +12,13 @@ import type { SearchCategory, SearchConfig } from './SearchTypes';
 
 // The labels match what the article cards already print (金融与数学, not 金融),
 // so a card and its own search badge never describe the same post differently.
+// color/tint feed the blog list card pills' --cat-color; the search overlay no
+// longer renders them (rows are plain text), but the cards still do.
 export const BLOG_CATEGORIES: SearchCategory[] = [
-	{ key: 'finance', labelEn: 'Finance & Math', labelZh: '金融与数学' },
-	{ key: 'architecture', labelEn: 'Architecture', labelZh: '架构与数据库' },
-	{ key: 'ai', labelEn: 'AI & LLM', labelZh: 'AI 与大模型' },
-	{ key: 'web', labelEn: 'Web Craft', labelZh: '前端与工具研发' },
+	{ key: 'finance', labelEn: 'Finance & Math', labelZh: '金融与数学', color: '#10b981', tint: 'rgba(16,185,129,0.15)' },
+	{ key: 'architecture', labelEn: 'Architecture', labelZh: '架构与数据库', color: '#6366f1', tint: 'rgba(99,102,241,0.15)' },
+	{ key: 'ai', labelEn: 'AI & LLM', labelZh: 'AI 与大模型', color: '#ec4899', tint: 'rgba(236,72,153,0.15)' },
+	{ key: 'web', labelEn: 'Web Craft', labelZh: '前端与工具研发', color: '#f59e0b', tint: 'rgba(245,158,11,0.15)' },
 ];
 
 const CAT_BY_KEY = new Map(BLOG_CATEGORIES.map((c) => [c.key, c]));

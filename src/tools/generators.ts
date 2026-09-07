@@ -1,5 +1,5 @@
-// Registry entries for the three generators (/tools/password-generator,
-// /tools/uuid-generator, /tools/random-number). Rendered by
+// Registry entries for the three generators (/devtools/password-generator,
+// /devtools/uuid-generator, /devtools/random-number). Rendered by
 // src/scripts/tools/generators.ts — these need crypto APIs and copy buttons,
 // which the plain form renderer doesn't cover.
 

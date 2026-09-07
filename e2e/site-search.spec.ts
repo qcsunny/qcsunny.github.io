@@ -141,6 +141,18 @@ test('non-blog pages keep searching the tool registry', async ({ browser }) => {
 		await openModal(page);
 		await expect(page.locator('#sm-input')).toHaveAttribute('placeholder', /^Search \d+ tools/);
 		await expect(page.locator('#sm-results-list .sm-item').first()).not.toHaveAttribute('href', /^\/blog\//);
+
+		// The Dev Tools pill filters the migrated /devtools/ tools. The registry
+		// key is 'devtools'; a stale 'tools' key here matched nothing and left
+		// every badge as the raw key, so assert both filter and badge text.
+		await page.locator('#site-search-modal .sm-filter-pill[data-cat="devtools"]').click();
+		await expect(page.locator('#sm-results-list .sm-item').first()).toBeVisible();
+		const devBadges = page.locator('#sm-results-list .sm-item-badge');
+		expect(await devBadges.count()).toBeGreaterThan(0);
+		for (const badge of await devBadges.all()) {
+			expect((await badge.textContent())?.trim()).toBe('Dev Tools');
+		}
+		await page.locator('#site-search-modal .sm-filter-pill[data-cat="all"]').click();
 		await page.keyboard.press('Escape');
 		await expect(page.locator('#site-search-modal')).toBeHidden();
 	}

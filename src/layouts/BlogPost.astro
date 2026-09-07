@@ -19,6 +19,11 @@ const toolTotal = [...CALCULATOR_FEATURED, ...REGISTRY].filter(
 	(e) => e.kind !== 'redirect',
 ).length;
 
+// Astro auto-binds props typing to `interface Props` but not to a `type`
+// alias, so headings silently stayed never[] and the TOC filter's `h` was
+// untyped (two latent astro-check errors on main; CI never runs it). An
+// interface cannot extend the indexed-access `CollectionEntry<'blog'>['data']`,
+// so keep the alias and make the binding explicit with a cast.
 type Props = CollectionEntry<'blog'>['data'] & {
 	minutes?: number;
 	slug?: string;
@@ -28,7 +33,7 @@ type Props = CollectionEntry<'blog'>['data'] & {
 };
 
 const { title, description, pubDate, updatedDate, heroImage, minutes, slug, hasMath, headings = [] } =
-	Astro.props;
+	Astro.props as Props;
 
 // The Header's search button stays pointed at the blog collection on a reading
 // page too, so hopping to a neighbouring article never needs a trip back to the
@@ -89,7 +94,13 @@ const jsonLd = {
 
 <html lang={pageLang}>
 	<head>
-		<BaseHead title={title} description={description} image={socialImage} />
+		<BaseHead
+			title={title}
+			description={description}
+			image={socialImage}
+			ogType="article"
+			publishedTime={pubDate.toISOString()}
+		/>
 		{ADSENSE_CLIENT && (
 			<script is:inline
 				async
@@ -369,7 +380,7 @@ const jsonLd = {
 							</span>
 							<FormattedDate date={pubDate} />
 							<span aria-hidden="true">·</span>
-							{minutes && <span>{minutes} min read</span>}
+							{minutes && <span>{minutes}<span class="i18n-zh"> 分钟</span><span class="i18n-en"> min read</span></span>}
 							{
 								updatedDate && (
 									<span class="last-updated-on">

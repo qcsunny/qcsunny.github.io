@@ -294,16 +294,15 @@ export function categoryLabelZh(id: ToolCategory): string {
 
 /** Breadcrumb href for a category — each category has its own hub page, so a
  *  category link always lands on a page whose title is that category's name.
- *  Three map 1:1 onto their route segment (/finance/, /calculators/,
- *  /converters/); `tools` is the odd one — its route segment is taken by the
- *  aggregated /tools/ hub (which hosts every category), and the tool pages
- *  themselves live under /tools/<slug> — so its category hub is a top-level
- *  /devtools/ page instead, keeping every category hub at the site root. */
+ *  All four map 1:1 onto their route segment: /finance/, /calculators/,
+ *  /converters/ and /devtools/ (the dev-tool pages live under /devtools/<slug>
+ *  since the migration off /tools/<slug>). The old 'tools' id survives only as
+ *  a defensive alias for callers that still hold it. */
 export function categoryHref(id: ToolCategory): string {
 	return id === 'tools' ? '/devtools/' : `/${id}/`;
 }
 
-/** Registry entries for /tools/qr-code-generator and /tools/color-converter.
+/** Registry entries for /devtools/qr-code-generator and /devtools/color-converter.
  *  Their widgets live in src/scripts/tools/{qr,color}.ts and are loaded via
  *  dynamic import from the dispatcher. */
 export const TOOL_WIDGETS: ToolEntry[] = [

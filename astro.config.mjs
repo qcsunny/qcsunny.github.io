@@ -4,16 +4,51 @@ import mdx from '@astrojs/mdx';
 import { satteri } from '@astrojs/markdown-satteri';
 import sitemap from '@astrojs/sitemap';
 import { defineConfig, fontProviders } from 'astro/config';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import llmsTxt from './llms-txt.mjs';
 import modulePreload from './modulepreload.mjs';
 import ogImages from './og-images.mjs';
 import satteriKatex from './satteri-katex.mjs';
 
+// Blog pubDate → ISO, skimmed from frontmatter at config time so the sitemap
+// can emit <lastmod>. @astrojs/sitemap never sees the content collection, so
+// there is no collection-aware hook; pubDate is the one honest per-page date
+// we carry (updatedDate is deliberately not filled yet).
+/** @type {Record<string, string>} */
+const blogLastmod = {};
+{
+	const dir = 'src/content/blog';
+	for (const f of readdirSync(dir)) {
+		if (!f.endsWith('.md') && !f.endsWith('.mdx')) continue;
+		const raw = readFileSync(join(dir, f), 'utf8');
+		const fm = raw.match(/^---\s*\r?\n([\s\S]*?)\r?\n---/);
+		const line = fm?.[1].match(/pubDate:\s*(.*)$/m)?.[1];
+		if (!line) continue;
+		const ts = Date.parse(line.trim().replace(/^['"]|['"]$/g, ''));
+		if (!Number.isNaN(ts)) {
+			blogLastmod[`/blog/${f.replace(/\.(md|mdx)$/, '')}/`] = new Date(ts).toISOString();
+		}
+	}
+}
+
 // https://astro.build/config
 export default defineConfig({
 	site: 'https://qcsunny.org',
-	integrations: [mdx(), sitemap(), llmsTxt(), ogImages(), modulePreload()],
+	integrations: [
+		mdx(),
+		sitemap({
+			serialize: (item) => {
+				const path = new URL(item.url).pathname;
+				const lastmod = blogLastmod[path];
+				return lastmod ? { ...item, lastmod } : item;
+			},
+		}),
+		llmsTxt(),
+		ogImages(),
+		modulePreload(),
+	],
 	markdown: {
 		// Dual Shiki themes so a code block follows the site theme instead of
 		// being permanently dark: light mode renders github-light (light bg,

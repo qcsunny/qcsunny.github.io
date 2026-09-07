@@ -206,7 +206,7 @@ const siteJsonLd = {
 								<div class="post-card-meta">
 									<FormattedDate date={post.data.pubDate} />
 									<span class="meta-dot">·</span>
-									<span class="read-chip">{readMinutes(post.body ?? '')} min read</span>
+									<span class="read-chip">{readMinutes(post.body ?? '')}<span class="i18n-zh"> 分钟</span><span class="i18n-en"> min read</span></span>
 								</div>
 								<h3 class="post-card-title">{post.data.title}</h3>
 								<p class="post-card-desc">{post.data.description}</p>

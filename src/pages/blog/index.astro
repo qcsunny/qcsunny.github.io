@@ -77,7 +77,7 @@ const readMinutes = (body: string): number => {
 									<span class="i18n-en">{getBlogCategory(featured.id).labelEn}</span>
 								</span>
 								<span class="read-time-pill">
-									{readMinutes(featured.body ?? '')} min read
+									{readMinutes(featured.body ?? '')}<span class="i18n-zh"> 分钟</span><span class="i18n-en"> min read</span>
 								</span>
 							</div>
 

@@ -531,9 +531,14 @@ const BTN_COPY = searchConfig?.copy ?? {
 		max-height: 0;
 		opacity: 0;
 		overflow: hidden;
+		/* visibility:hidden takes the closed links out of the Tab order; the
+		   delay keeps it invisible until the collapse finishes, so closing does
+		   not yank the drawer away mid-animation. */
+		visibility: hidden;
 		transition:
 			max-height 0.32s cubic-bezier(0.16, 1, 0.3, 1),
-			opacity 0.22s ease;
+			opacity 0.22s ease,
+			visibility 0s linear 0.32s;
 		background: color-mix(in srgb, var(--bg) 96%, transparent);
 		backdrop-filter: blur(16px);
 		-webkit-backdrop-filter: blur(16px);
@@ -544,6 +549,11 @@ const BTN_COPY = searchConfig?.copy ?? {
 		max-height: 85vh;
 		opacity: 1;
 		overflow-y: auto;
+		visibility: visible;
+		transition:
+			max-height 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+			opacity 0.22s ease,
+			visibility 0s;
 	}
 	.mobile-nav-inner {
 		padding: 0.85rem 1.25rem 1.25rem;

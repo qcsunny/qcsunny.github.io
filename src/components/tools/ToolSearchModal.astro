@@ -25,7 +25,10 @@ const TOOLS_CATEGORIES: SearchCategory[] = [
 	{ key: 'finance', labelEn: 'Finance', labelZh: '金融' },
 	{ key: 'calculators', labelEn: 'Calculators', labelZh: '计算' },
 	{ key: 'converters', labelEn: 'Converters', labelZh: '换算' },
-	{ key: 'tools', labelEn: 'Dev Tools', labelZh: '开发' },
+	// 'devtools', not the pre-migration 'tools': the dev tool registry entries
+	// were moved to category 'devtools' (/devtools/<slug>), so a chip keyed
+	// 'tools' would filter to nothing and leave every badge as the raw key.
+	{ key: 'devtools', labelEn: 'Dev Tools', labelZh: '开发' },
 ];
 const TOOLS_COPY: SearchCopy = {
 	placeholderEn: `Search ${allTools.length} tools (e.g. mortgage, irr, tax, uuid, speed)...`,
@@ -58,7 +61,8 @@ const copy = config?.copy ?? TOOLS_COPY;
 const totalCount = items.length;
 ---
 
-<div id="site-search-modal" class="sm-overlay" style="display: none;" aria-hidden="true" role="dialog" aria-modal="true">
+<div id="site-search-modal" class="sm-overlay" style="display: none;" aria-hidden="true" role="dialog" aria-modal="true"
+	aria-label="Site search" data-aria-en="Site search" data-aria-zh="站内搜索">
 	<div class="sm-backdrop" id="sm-backdrop"></div>
 	<div class="sm-container">
 		<div class="sm-panel">
@@ -184,6 +188,10 @@ const totalCount = items.length;
 			const isZh = document.documentElement.dataset.lang === 'zh';
 			const ph = isZh ? input.dataset.placeholderZh : input.dataset.placeholderEn;
 			if (ph) input.placeholder = ph;
+			// The dialog itself carries a data-aria pair; querySelectorAll on the
+			// modal never includes the modal root, so swap it explicitly first.
+			const dlg = (isZh ? modal.dataset.ariaZh : modal.dataset.ariaEn) || modal.dataset.ariaEn;
+			if (dlg) modal.setAttribute('aria-label', dlg);
 			for (const el of modal.querySelectorAll('[data-aria-en]')) {
 				const v = (isZh ? el.dataset.ariaZh : el.dataset.ariaEn) || el.dataset.ariaEn;
 				if (v) el.setAttribute('aria-label', v);
@@ -245,6 +253,27 @@ const totalCount = items.length;
 				selectedCat = pill.getAttribute('data-cat') || 'all';
 				renderResults(input.value);
 			});
+		});
+
+		// Tab stays inside the dialog while it is open — without this the tab
+		// order falls through to the links behind the overlay. The result rows
+		// re-render on every keystroke, so the focusable set is gathered on
+		// demand; hidden rows/buttons are skipped via offsetParent.
+		modal.addEventListener('keydown', (e) => {
+			if (e.key !== 'Tab' || modal.style.display === 'none') return;
+			const focusables = Array.from(
+				modal.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'),
+			).filter((el) => el.offsetParent !== null || el === document.activeElement);
+			if (focusables.length === 0) return;
+			const first = focusables[0];
+			const last = focusables[focusables.length - 1];
+			if (e.shiftKey && (document.activeElement === first || document.activeElement === modal)) {
+				e.preventDefault();
+				last.focus();
+			} else if (!e.shiftKey && document.activeElement === last) {
+				e.preventDefault();
+				first.focus();
+			}
 		});
 
 		function searchItems(query, cat) {
