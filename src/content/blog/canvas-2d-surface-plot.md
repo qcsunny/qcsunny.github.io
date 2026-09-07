@@ -2,6 +2,12 @@
 title: '不用 WebGL 画三维曲面：一帧 181ms 里只有 18ms 在光栅化，以及一个不需要排序的画家算法'
 description: '把 Canvas 2D 曲面渲染器逐项拆开测量：7,744 个四边形，建路径 2.7ms、恒定颜色填充 17.6ms，而 fillStyle 的 CSS 颜色解析 123ms——其中 ctx.strokeStyle = ctx.fillStyle 一句就占 59ms。顺手推翻了自己上一篇里"瓶颈在表达式求值"的说法，并证明单值高度场在正交相机下有一个精确且零成本的从后往前绘制顺序。一帧 166ms → 59ms。'
 pubDate: 'Sep 06 2026'
+category: web
+topics: [performance, frontend]
+searchTerms: ['Canvas 2D', '三维曲面', '光栅化']
+contentLang: 'zh-CN'
+relatedTools: ['calculators/graph', 'calculators/graph3d']
+relatedPosts: []
 ---
 
 [/calculators/graph3d/](/calculators/graph3d/) 画 `z = f(x, y)` 的三维曲面，用的是 Canvas 2D——没有 WebGL，没有 three.js，整个渲染器是 944 行 TypeScript。这篇写它是怎么工作的，但重点不在"我实现了一个软渲染器"，而在两件被实测推翻的事：

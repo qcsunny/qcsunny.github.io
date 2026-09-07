@@ -2,6 +2,12 @@
 title: '网页工具集：科学计算器、二维码与 58 个免费小工具'
 description: '博客自建的 58 个纯浏览器端工具页：科学计算器、函数绘图、Canvas 2D 三维曲面、复利/房贷计算、二维码生成器（手写编码器）等，全部零第三方依赖。'
 pubDate: 'Sep 01 2026'
+category: web
+topics: [frontend, web-platform]
+searchTerms: ['科学计算器', '二维码', '工具集']
+contentLang: 'zh-CN'
+relatedTools: ['calculators/standard', 'calculators/graph', 'devtools/qr-code-generator']
+relatedPosts: ['markdown-parser-and-katex-math']
 ---
 
 博客导航栏里的 **Calculator**（[/calculators/standard/](/calculators/standard/)）是一个纯浏览器端运行的进阶计算器。它最初是四个选项卡挤在一个页面里，后来随着工具页体系（见 [Tools](/tools/)）的建立被拆成了独立子页面——每个工具一个网址，更好分享、更好搜索：

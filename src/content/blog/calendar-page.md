@@ -2,6 +2,12 @@
 title: '日历页：周数规则、月历年历与纯日期算法'
 description: '博客的 /calendar/ 全屏日历：月历/年历双视图、周数显示、日期跳转，以及"第一个完整周"周数规则的手写实现。'
 pubDate: 'Sep 01 2026'
+category: productivity
+topics: [date-time, frontend]
+searchTerms: ['日历', '周数', '日期算法']
+contentLang: 'zh-CN'
+relatedTools: []
+relatedPosts: ['clock-page']
 ---
 
 博客导航栏里的 **Calendar**（[/calendar/](/calendar/)）是一个全屏日历页面，支持月历/年历双视图、周数显示和日期跳转。有意思的部分是周数规则，展开讲讲。

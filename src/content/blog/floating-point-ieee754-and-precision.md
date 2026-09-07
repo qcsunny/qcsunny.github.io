@@ -2,6 +2,12 @@
 title: '为什么 0.1 + 0.2 不等于 0.3？IEEE 754 浮点数、尾数截断与前端精度避坑指南'
 description: '从十进制小数转二进制循环小数的数学推导，深入剖析 IEEE 754 双精度 64 位浮点数的内存布局与截断误差机制，解释为什么 Number.MAX_SAFE_INTEGER 恰好是 2^53-1，以及在前端金融与工程计算中规避浮点灾难的最佳实践。'
 pubDate: 'Sep 07 2026'
+category: math
+topics: [mathematics, algorithms]
+searchTerms: ['IEEE 754', '浮点数', '精度']
+contentLang: 'zh-CN'
+relatedTools: ['calculators/standard', 'calculators/fraction', 'devtools/number-base-converter']
+relatedPosts: ['sample-variance-bessel-correction-and-welford']
 ---
 
 在 JavaScript 或任何基于 IEEE 754 标准的编程语言中，几乎每一个开发者都在初学时被这一行代码震惊过：

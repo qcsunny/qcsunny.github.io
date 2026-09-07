@@ -2,6 +2,12 @@
 title: 'UUID 演进史：从 v1/v4 到 v7，为什么现代数据库主键推荐 UUID v7？'
 description: '深入分析 UUID v4 的随机性痛点、B-tree 索引页分裂与写性能断崖式衰退，对比 RFC 9562 UUID v7 的时间戳单调有序设计、结构组成与选型建议。'
 pubDate: 'Sep 03 2026'
+category: engineering
+topics: [databases, performance]
+searchTerms: ['UUID v4', 'UUID v7', 'B-tree']
+contentLang: 'zh-CN'
+relatedTools: ['devtools/uuid-generator']
+relatedPosts: ['static-site-byte-ledger']
 ---
 
 在分布式系统和微服务架构中，生成全局唯一 ID 是每一位后端工程师绕不开的话题。

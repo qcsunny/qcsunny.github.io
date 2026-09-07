@@ -2,6 +2,12 @@
 title: 'GLM-5.3 和 Hy4 preview：两个 78 层 MoE 的对比'
 description: '把智谱 GLM-5.3 和腾讯混元 Hy4 preview 的 config、33 项公开基准、OpenRouter 实价和接入细节逐项摊开，包括两家自报数字互相矛盾的地方。'
 pubDate: 'Sep 01 2026'
+category: ai
+topics: [ai, llm]
+searchTerms: ['GLM-5.3', 'Hy4', 'MoE']
+contentLang: 'zh-CN'
+relatedTools: []
+relatedPosts: []
 ---
 
 GLM-5.3 是 8 月 14 日发布的，Hy4 preview 是 8 月 28 日，隔了两周。都开源了权重，都是 1M 上下文，都在讲长程 Agent 和真实软件工程。

@@ -2,6 +2,12 @@
 title: '质因数分解的算力账：从试除卡死 3 秒到 Miller–Rabin、Pollard–Brent 与批量 GCD'
 description: '复盘质因数分解计算器从 O(√n) 试除法到确定性 7 基数 Miller–Rabin、Pollard-Brent 周期判环、128 步批量 GCD 及位运算剥离的完整优化历程。拆解人脑十进制心算与计算机二进制算法的本质差异，看如何将 64 位整数的最坏分解耗时从数秒彻底压进毫秒级。'
 pubDate: 'Sep 07 2026'
+category: algorithms
+topics: [algorithms, developer-tools]
+searchTerms: ['质因数分解', 'Pollard-Brent', 'Miller-Rabin']
+contentLang: 'zh-CN'
+relatedTools: ['calculators/prime-factorization']
+relatedPosts: ['combinatorics-combinations-and-bigint']
 ---
 
 在前端网页里写一个[质因数分解计算器](/calculators/prime-factorization/)，听起来像是一道大一编程初学者的随堂作业题：一个循环从 2 走到 $\sqrt{n}$，能整除就除尽，除不尽就递增。

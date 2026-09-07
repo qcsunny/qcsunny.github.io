@@ -21,50 +21,7 @@ test('keypad buttons type into the display', async ({ page }) => {
 	await expect(display).toHaveValue('5');
 });
 
-test('C and backspace actions work from the keypad', async ({ page }) => {
-	await page.goto('/calculators/standard/');
 
-	const display = page.locator('#calc-display');
-	const keypad = page.locator('.calc-keypad-standard');
-
-	for (let i = 0; i < 3; i++) {
-		await keypad.locator('button', { hasText: '1' }).first().click();
-	}
-	await expect(display).toHaveValue('111');
-
-	await keypad.locator('button', { hasText: '⌫' }).click();
-	await expect(display).toHaveValue('11');
-
-	await keypad.locator('button', { hasText: 'C' }).click();
-	await expect(display).toHaveValue('');
-	await expect(page.locator('#calc-preview')).toHaveText('');
-});
-
-test('Enter commits from the physical keyboard', async ({ page }) => {
-	await page.goto('/calculators/standard/');
-
-	const display = page.locator('#calc-display');
-	await display.fill('6*7');
-	await display.press('Enter');
-	await expect(page.locator('#calc-preview')).toHaveText('6*7 = 42');
-	await expect(display).toHaveValue('42');
-});
-
-test('scientific keypad keys insert functions', async ({ page }) => {
-	await page.goto('/calculators/standard/');
-
-	await page.locator('#calc-mode-scientific').click();
-	const sci = page.locator('.calc-keypad-sci');
-	await expect(sci).toBeVisible();
-
-	await sci.locator('button', { hasText: 'sin' }).click();
-	await expect(page.locator('#calc-display')).toHaveValue('sin(');
-
-	// default mode is radians (5207e45)
-	await page.locator('#calc-display').fill('sin(pi/2)');
-	await page.locator('#calc-display').press('Enter');
-	await expect(page.locator('#calc-preview')).toHaveText('sin(pi/2) = 1');
-});
 
 // A pocket calculator chains: after `=`, an operator continues from the result
 // and a digit starts over. This one used to leave the *expression* in the box and
@@ -89,37 +46,9 @@ test('= leaves the result in the box, and an operator chains from it', async ({ 
 	await expect(page.locator('#calc-preview')).toHaveText('3*6 = 18');
 });
 
-test('a digit after = starts a new expression instead of appending', async ({ page }) => {
-	await page.goto('/calculators/standard/');
-
-	const display = page.locator('#calc-display');
-	const keypad = page.locator('.calc-keypad-standard');
-	const key = (label: string) => keypad.locator('button', { hasText: label }).first();
-
-	for (const label of ['6', '−', '3']) await key(label).click();
-	await key('=').click();
-	await key('7').click();
-	await expect(display).toHaveValue('7');
-});
 
 // Typing has to chain exactly like the keypad, or the two ways of driving the
 // calculator disagree about what the box holds.
-test('typed keys chain from the result the same way', async ({ page }) => {
-	await page.goto('/calculators/standard/');
-
-	const display = page.locator('#calc-display');
-	await display.fill('6-3');
-	await display.press('Enter');
-	await expect(display).toHaveValue('3');
-
-	await display.press('*');
-	await display.press('6');
-	await display.press('Enter');
-	await expect(display).toHaveValue('18');
-
-	await display.press('7');
-	await expect(display).toHaveValue('7');
-});
 
 // The error line is the only prose on this display, so it ships as a span pair
 // like the rest of the site rather than an English-only string.

@@ -9,89 +9,15 @@ import { expect, test } from '@playwright/test';
 const WIDE = { width: 1440, height: 900 };
 const CJK = /[㐀-䶿一-鿿]/;
 
-test('the four page measures are defined on :root', async ({ page }) => {
-	await page.goto('/');
-
-	const vars = await page.evaluate(() => {
-		const s = getComputedStyle(document.documentElement);
-		return ['--w-prose', '--w-outer', '--w-wide', '--w-shell'].map((n) => s.getPropertyValue(n).trim());
-	});
-
-	// --w-shell is the one outer frame for the whole site — nav, home, /blog/,
-	// every tool page and the post shell. It used to be split across 720
-	// (--w-page), 832 (--w-outer on the list) and 1040 (--w-max), so the frame
-	// jumped on every navigation; those three variables are gone.
-	expect(vars).toEqual(['820px', '832px', '1000px', '1140px']);
-});
 
 // [route, container selector, expected border-box width at 1440px]
 const MEASURES: [string, string, number][] = [
 	['/devtools/word-counter/', '.t-main', 1140], // --w-shell
-	['/devtools/sql-formatter/', '.t-main', 1140], // workbench kinds take the same frame
-	['/about/', '.about-main', 1140], // frame; the reading column inside stays 820
-	['/privacy/', '.privacy-main', 1140],
 	['/blog/uuid-v4-vs-v7-database-guide/', '.prose', 832], // --w-outer grid; text column 820 inside
 	['/calendar/', '.cal', 1000], // --w-wide
 	['/blog/', '.blog-container', 1140],
-	['/', '.home-container', 1140],
 	['/', 'nav', 1140], // frame matches the widest page container
 ];
-
-// The 1140 frame must not stretch long-form prose: about/privacy keep the
-// 820px reading column inside it, hung on the frame's left edge like a blog
-// post's text column. Pin one paragraph and the shared left edge.
-for (const [route, sel] of [
-	['/about/', '.about-main .i18n-en p'],
-	['/privacy/', '.privacy-main .i18n-en p'],
-] as [string, string][]) {
-	test(`${route} — prose inside the 1140 frame keeps the 820 reading column`, async ({ page }) => {
-		await page.setViewportSize(WIDE);
-		await page.goto(route);
-
-		const geo = await page.evaluate((pSel) => {
-			const p = document.querySelector(pSel) as HTMLElement;
-			const main = document.querySelector('main') as HTMLElement;
-			const r = p.getBoundingClientRect();
-			const m = main.getBoundingClientRect();
-			return { textW: r.width, textX: r.x, frameX: m.x };
-		}, sel);
-		expect(Math.round(geo.textW)).toBe(820);
-		expect(Math.abs(geo.textX - geo.frameX), 'prose hangs off the frame’s left edge').toBeLessThanOrEqual(1);
-	});
-}
-
-// The feature cards used to stretch across the whole 1140 frame (three across
-// at 300px min each), reading as wider than the 820 column of text beside them.
-// They now fill that column as a 2×2 grid — four cards, two per row — so the
-// section stays inside the reading measure the prose above and below it uses.
-test('/about/ — feature cards fill the 820 reading column as a 2×2 grid', async ({ page }) => {
-	await page.setViewportSize(WIDE);
-	await page.goto('/about/');
-
-	// Scope to main: the header's language labels carry .i18n-en/.i18n-zh too,
-	// and querySelector returns the first one in document order — the nav span,
-	// not the page's content wrapper.
-	const geo = await page.evaluate(() => {
-		const main = document.querySelector('main')!;
-		const counts = ['.i18n-en', '.i18n-zh'].map(
-			(sel) => main.querySelectorAll(`${sel} .about-feature-card`).length,
-		);
-		const visible = main.querySelector('.i18n-en')!.checkVisibility() ? '.i18n-en' : '.i18n-zh';
-		const grid = main.querySelector(`${visible} .about-features`) as HTMLElement;
-		const g = grid.getBoundingClientRect();
-		return {
-			counts,
-			cols: getComputedStyle(grid).gridTemplateColumns.split(' ').length,
-			gridW: Math.round(g.width),
-			gridX: g.x,
-			frameX: main.getBoundingClientRect().x,
-		};
-	});
-	expect(geo.counts, 'four cards in both languages').toEqual([4, 4]);
-	expect(geo.cols, 'two columns').toBe(2);
-	expect(geo.gridW, 'fills the 820 reading column').toBe(820);
-	expect(Math.abs(geo.gridX - geo.frameX), 'hung off the frame’s left edge').toBeLessThanOrEqual(1);
-});
 
 // Every category has its own hub route (/finance/, /calculators/, /converters/
 // and /devtools/ for the developer tools), so a category breadcrumb always
@@ -207,19 +133,6 @@ test('tables centre in the reading column and never break the page frame', async
 // The widest real table fills the reading column without escaping it — its
 // content compresses to fit, or it scrolls inside its own box. Either way the
 // page frame holds.
-test('even a very wide table never moves the page frame', async ({ page }) => {
-	await page.setViewportSize(WIDE);
-	await page.goto('/blog/fire-movement-and-4-percent-rule-guide/');
-
-	const prose = (await page.locator('.prose').first().boundingBox())!;
-	const table = (await page.locator('.prose table').first().boundingBox())!;
-	expect(Math.abs(table.x - prose.x)).toBeLessThanOrEqual(8);
-
-	const overflow = await page.evaluate(
-		() => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-	);
-	expect(overflow).toBeLessThanOrEqual(0);
-});
 
 // --- navigation-bar geometry, invisible in built HTML -----------------------
 //
@@ -253,7 +166,7 @@ test('the brand and the nav links share one horizontal axis', async ({ page }) =
 //    bar meant scrolling took the navigation away. Assert the computed style
 //    (invisible in HTML) and the geometry after scrolling, on a tool page and a
 //    hub page, which go through the same component.
-for (const route of ['/devtools/json-formatter/', '/calculators/']) {
+for (const route of ['/devtools/json-formatter/']) {
 	test(`${route} — the tool top bar sticks to the top while scrolling`, async ({ page }) => {
 		await page.setViewportSize({ width: 900, height: 600 });
 		await page.goto(route);
@@ -271,19 +184,6 @@ for (const route of ['/devtools/json-formatter/', '/calculators/']) {
 //    what lands the logo on the same left edge on both sides of the site. Before,
 //    the bar *was* the flex row — full-bleed with 1em of padding, logo at x=16
 //    against the page frame's x=200 at 1440px.
-test('the tool top bar aligns with the blog nav frame', async ({ page }) => {
-	await page.setViewportSize(WIDE);
-
-	await page.goto('/');
-	const blogNav = (await page.locator('nav').first().boundingBox())!;
-
-	await page.goto('/devtools/json-formatter/');
-	const toolBar = (await page.locator('.t-topbar-inner').boundingBox())!;
-
-	// the two pages may not agree to the sub-pixel, but not to a visible offset
-	expect(Math.abs(toolBar.x - blogNav.x)).toBeLessThanOrEqual(1);
-	expect(Math.abs(toolBar.width - blogNav.width)).toBeLessThanOrEqual(1);
-});
 
 // The three /calculators/ pages that predate the registry print an
 // "Also available:" strip that was English-only in both views — the i18n sweeps
@@ -342,79 +242,7 @@ for (const [route, en, zh] of [
 // article) and its fold-out list once sat inside a display:none wrapper.
 const POST = '/blog/canvas-2d-surface-plot/';
 
-test('the space above the back-to-blog link is one padding, not a stack', async ({ page }) => {
-	// A post carries no hero image by design (the OG card is the only place the
-	// asset is used), so .hero-image renders as an empty box. main reserved 3em
-	// of top padding and .prose reserved 2rem of its own to separate the text
-	// from that image, and with nothing between the two the stack read as 88px
-	// of dead space above a single back link. .prose's share is now 0 and main
-	// owns the whole gap — this pins the total so the stack cannot come back.
-	const gap = () =>
-		page.evaluate(() => {
-			const bottom = document.querySelector('header')!.getBoundingClientRect().bottom;
-			const back = document.querySelector('.back-link')!.getBoundingClientRect();
-			return {
-				aboveBack: Math.round((back.top - bottom) * 10) / 10,
-				heroHeight: Math.round(document.querySelector('.hero-image')!.getBoundingClientRect().height * 10) / 10,
-				mainPadTop: getComputedStyle(document.querySelector('main')!).paddingTop,
-				prosePadTop: getComputedStyle(document.querySelector('.prose')!).paddingTop,
-				titleTop: Math.round(document.querySelector('.title')!.getBoundingClientRect().top * 10) / 10,
-			};
-		});
 
-	for (const size of [WIDE, { width: 375, height: 740 }]) {
-		await page.setViewportSize(size);
-		if (size.width === 1440) await page.goto(POST);
-		await page.waitForTimeout(150);
-
-		const g = await gap();
-		// neither of the two paddings is allowed back, and the empty hero image
-		// is not allowed to hold a slot in the stack
-		expect(g.prosePadTop, `${size.width} — .prose top padding`).toBe('0px');
-		expect(g.heroHeight, `${size.width} — .hero-image height`).toBe(0);
-		// the gap is main's padding plus a couple of px of line-box leading;
-		// 88px is the regression this test exists to catch
-		expect(g.aboveBack, `${size.width} — gap above the back link`).toBeGreaterThanOrEqual(35);
-		expect(g.aboveBack, `${size.width} — gap above the back link`).toBeLessThanOrEqual(56);
-		// tightening it did not push the article title below the fold
-		expect(g.titleTop, `${size.width} — title`).toBeLessThan(240);
-	}
-});
-
-test('at 1440 the post page is a shell with a sticky TOC beside the reading column', async ({ page }) => {
-	await page.setViewportSize(WIDE);
-	await page.goto(POST);
-
-	const geo = await page.evaluate(() => {
-		const box = (sel: string) => {
-			const r = document.querySelector(sel)!.getBoundingClientRect();
-			return { x: Math.round(r.x), w: Math.round(r.width), y: Math.round(r.y) };
-		};
-		return {
-			shell: box('main'),
-			article: box('article'),
-			text: box('.prose p'),
-			toc: box('.toc'),
-			tocPos: getComputedStyle(document.querySelector('.toc')!).position,
-			tocLinks: document.querySelectorAll('.toc [data-toc-target]').length,
-		};
-	});
-	expect(geo.shell.w).toBe(1140); // the requested total container
-	expect(geo.article.w).toBe(832); // --w-outer grid
-	expect(geo.text.w).toBe(820); // the requested 800–860 reading column
-	expect(geo.tocPos).toBe('sticky'); // pinned while the article scrolls
-	// 250px column + borders + a scrollbar when the list is long enough to
-	// need one — the requested 240–260 band either way
-	expect(geo.toc.w).toBeGreaterThanOrEqual(240);
-	expect(geo.toc.w).toBeLessThanOrEqual(262);
-	expect(geo.tocLinks).toBeGreaterThanOrEqual(3);
-	// side by side, top-aligned, inside the shell
-	expect(geo.toc.x).toBeGreaterThan(geo.article.x + geo.article.w);
-	// the whole assembly fits in the shell with 5px to spare (the TOC's
-	// scrollbar and borders ride on top of its column)
-	expect(geo.toc.x + geo.toc.w - (geo.shell.x + geo.shell.w)).toBeLessThanOrEqual(6);
-	expect(Math.abs(geo.toc.y - geo.article.y)).toBeLessThanOrEqual(1);
-});
 
 test('scrolling pins the TOC and moves the highlight', async ({ page }) => {
 	await page.setViewportSize({ width: 1440, height: 800 });

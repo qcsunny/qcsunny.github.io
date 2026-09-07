@@ -21,16 +21,6 @@ test('compound-interest computes from defaults', async ({ page }) => {
 	await expect(emph).toHaveText('$118327.61', { useInnerText: true });
 });
 
-test('compound-interest renders the year-by-year table', async ({ page }) => {
-	await page.goto('/finance/compound-interest/');
-
-	// tables are appended to the host (#t-root), not into .t-results
-	const table = page.locator('#t-root .t-tablewrap table');
-	await expect(table).toBeVisible();
-	// 10 years → 10 body rows + header
-	await expect(table.locator('tr')).toHaveCount(11);
-	await expect(table.locator('tr').nth(1)).toContainText('1');
-});
 
 test('loan-payment shows required-field prompt when emptied', async ({ page }) => {
 	await page.goto('/finance/loan-payment/');

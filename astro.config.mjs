@@ -4,8 +4,9 @@ import mdx from '@astrojs/mdx';
 import { createGfmMarkdownProcessor } from './markdown-processor.mjs';
 import sitemap from '@astrojs/sitemap';
 import { defineConfig, fontProviders } from 'astro/config';
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+
+import { readBlogFrontmatter } from './scripts/lib/blog-frontmatter.mjs';
+import { assertBlogRelations } from './src/blog/blogMetadata.ts';
 
 import llmsTxt from './llms-txt.mjs';
 import modulePreload from './modulepreload.mjs';
@@ -20,16 +21,15 @@ import satteriKatex from './satteri-katex.mjs';
 const blogLastmod = {};
 {
 	const dir = 'src/content/blog';
-	for (const f of readdirSync(dir)) {
-		if (!f.endsWith('.md') && !f.endsWith('.mdx')) continue;
-		const raw = readFileSync(join(dir, f), 'utf8');
-		const fm = raw.match(/^---\s*\r?\n([\s\S]*?)\r?\n---/);
-		const line = fm?.[1].match(/pubDate:\s*(.*)$/m)?.[1];
-		if (!line) continue;
-		const ts = Date.parse(line.trim().replace(/^['"]|['"]$/g, ''));
-		if (!Number.isNaN(ts)) {
-			blogLastmod[`/blog/${f.replace(/\.(md|mdx)$/, '')}/`] = new Date(ts).toISOString();
-		}
+	const entries = readBlogFrontmatter(dir);
+	assertBlogRelations(
+		/** @type {import('./src/blog/blogMetadata.ts').RelationValidationInput[]} */ (
+			entries.map((/** @type {{ slug: string, data: Record<string, unknown> }} */ entry) => ({ slug: entry.slug, ...entry.data }))
+		),
+	);
+	for (const { slug, data } of entries) {
+		const ts = Date.parse(data.pubDate);
+		blogLastmod[`/blog/${slug}/`] = new Date(ts).toISOString();
 	}
 }
 

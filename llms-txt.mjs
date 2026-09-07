@@ -10,22 +10,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { readBlogFrontmatter } from './scripts/lib/blog-frontmatter.mjs';
 import { CATEGORIES, REAL_TOOLS } from './src/tools/registry.ts';
 
 const SITE = 'https://qcsunny.org';
-
-function frontmatter(file) {
-	const md = fs.readFileSync(file, 'utf8');
-	const m = md.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-	const out = {};
-	if (!m) return out;
-	for (const line of m[1].split(/\r?\n/)) {
-		const kv = line.match(/^([A-Za-z]+):\s*(.*)$/);
-		if (!kv) continue;
-		out[kv[1]] = kv[2].replace(/^['"](.*)['"]$/, '$1').trim();
-	}
-	return out;
-}
 
 function render() {
 	// REAL_TOOLS = CALCULATOR_FEATURED + REGISTRY minus the redirect stubs.
@@ -59,19 +47,15 @@ function render() {
 		path.dirname(fileURLToPath(import.meta.url)),
 		'src/content/blog',
 	);
-	const posts = fs
-		.readdirSync(blogDir)
-		.filter((f) => /\.mdx?$/.test(f))
-		.map((f) => ({ fm: frontmatter(path.join(blogDir, f)), file: f }))
-		.filter((p) => p.fm.title)
-		.sort((a, b) => (b.fm.pubDate ?? '').localeCompare(a.fm.pubDate ?? ''));
+	const posts = readBlogFrontmatter(blogDir)
+		.map(({ slug, data }) => ({ slug, data }))
+		.sort((a, b) => Date.parse(b.data.pubDate) - Date.parse(a.data.pubDate));
 
 	if (posts.length > 0) {
 		lines.push('');
 		lines.push('## Engineering Blog');
-		for (const p of posts) {
-			const slug = p.file.replace(/\.mdx?$/, '');
-			lines.push(`- [${p.fm.title}](${SITE}/blog/${slug}/): ${p.fm.description}`);
+		for (const post of posts) {
+			lines.push(`- [${post.data.title}](${SITE}/blog/${post.slug}/): ${post.data.description}`);
 		}
 	}
 

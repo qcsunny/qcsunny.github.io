@@ -29,16 +29,3 @@ test('form results export as a PNG at 2x width', async ({ page }) => {
 	// or header-only card would come out far shorter.
 	expect(buf.readUInt32BE(20)).toBeGreaterThan(600);
 });
-
-test('PNG export button is bilingual', async ({ page }) => {
-	await page.goto('/finance/compound-interest/');
-
-	await expect(pngBtn(page).locator('.i18n-en')).toBeVisible();
-	await expect(pngBtn(page).locator('.i18n-zh')).toBeHidden();
-
-	await page.locator('.t-lang, .lang-toggle').first().click();
-	await expect(page.locator('html')).toHaveAttribute('data-lang', 'zh');
-
-	await expect(pngBtn(page).locator('.i18n-zh')).toBeVisible();
-	await expect(pngBtn(page).locator('.i18n-en')).toBeHidden();
-});

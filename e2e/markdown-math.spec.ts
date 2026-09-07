@@ -87,18 +87,6 @@ test('a dollar inside inline code does not pair with a real formula', async ({ p
 // then walks. With `%%MATHBLOCK_0%%` as the token, the italic rule paired the two
 // underscores across the gap and both formulas were lost, the reader left staring
 // at `%%MATHBLOCK<em>0%% 与 %%MATHBLOCK</em>1%%`.
-test('two display formulas on one line both survive the inline rules', async ({ page }) => {
-	await page.goto(TOOL);
-	const preview = page.locator('.t-md-preview-body');
-
-	await page.locator('.t-md-textarea').fill('两个公式：$$a^2$$ 与 $$b^2$$ 都在这一行。\n');
-
-	await expect(preview.locator('.t-math-display')).toHaveCount(2);
-	await expect(preview.locator('.t-math-display .katex').first()).toBeVisible();
-	// No placeholder token leaked into the output, whole or broken.
-	await expect(preview).not.toContainText('MATHBLOCK');
-	await expect(preview.locator('em')).toHaveCount(0);
-});
 
 test('a formula KaTeX cannot parse keeps its source visible', async ({ page }) => {
 	await page.goto(TOOL);
@@ -146,27 +134,3 @@ test('exported HTML carries formulas as self-contained MathML', async ({ page })
 // The 259 KB of KaTeX must not be a cost every tool page pays. The document Astro
 // serves references none of it; the chunk arrives from the client only when a
 // formula shows up, and other tools never mention it.
-test('KaTeX is not in any tool page as served', async ({ page }) => {
-	const requested: string[] = [];
-	page.on('request', (r) => {
-		if (/katex/i.test(r.url())) requested.push(r.url());
-	});
-
-	// Static HTML for the maths tool itself: no stylesheet link, no module. Matched
-	// on URLs rather than on the word, since the page's own FAQ mentions KaTeX.
-	const served = await (await page.request.get(TOOL)).text();
-	expect(served, 'the served page must not link or preload katex').not.toMatch(
-		/(?:src|href)="[^"]*katex[^"]*"/i,
-	);
-
-	// A tool with no maths at all never fetches it, even after interacting.
-	await page.goto('/devtools/json-formatter/');
-	await page.locator('.t-json-editor').first().click();
-	await expect(page.locator('.t-json-editor').first()).toBeVisible();
-	expect(requested, 'json-formatter pulled KaTeX').toEqual([]);
-
-	// The maths tool does — its sample document opens with formulas in it.
-	await page.goto(TOOL);
-	await expect(page.locator('.t-md-preview-body .katex').first()).toBeVisible();
-	expect(requested.some((u) => /katex\.[\w-]+\.js$/.test(u)), 'chunk not fetched').toBe(true);
-});

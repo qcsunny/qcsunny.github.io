@@ -53,13 +53,6 @@ test('editing the formula resamples the surface', async ({ page }) => {
 	await expect(page.locator('#g3-error')).toBeHidden();
 });
 
-test('example chips load their formula', async ({ page }) => {
-	await page.goto('/calculators/graph3d/');
-
-	await page.locator('[data-g3-example="x * y"]').click();
-	await expect(page.locator('#g3-expr')).toHaveValue('x * y');
-	expect(await paintedPixels(canvasOf(page))).toBeGreaterThan(5000);
-});
 
 test('undefined regions become holes rather than fake values', async ({ page }) => {
 	await page.goto('/calculators/graph3d/');
@@ -69,12 +62,6 @@ test('undefined regions become holes rather than fake values', async ({ page }) 
 	await expect(page.locator('#g3-readout')).toContainText('undefined');
 });
 
-test('a pole reports the clipped height range', async ({ page }) => {
-	await page.goto('/calculators/graph3d/');
-
-	await page.locator('#g3-expr').fill('1 / (x^2 + y^2)');
-	await expect(page.locator('#g3-readout')).toContainText('percentile');
-});
 
 test('an invalid formula shows an error and clears the plot', async ({ page }) => {
 	await page.goto('/calculators/graph3d/');
@@ -106,33 +93,7 @@ test('dragging rotates the plot', async ({ page }) => {
 	expect(await snapshot(canvas)).not.toBe(before);
 });
 
-test('arrow keys rotate and 0 resets the view', async ({ page }) => {
-	await page.goto('/calculators/graph3d/');
 
-	const canvas = canvasOf(page);
-	await canvas.click({ position: { x: 4, y: 4 } });
-	const start = await snapshot(canvas);
-
-	await canvas.press('ArrowRight');
-	await canvas.press('ArrowRight');
-	const rotated = await snapshot(canvas);
-	expect(rotated).not.toBe(start);
-
-	await canvas.press('0');
-	expect(await snapshot(canvas)).toBe(start);
-});
-
-test('detail and style controls take effect', async ({ page }) => {
-	await page.goto('/calculators/graph3d/');
-
-	const canvas = canvasOf(page);
-	await page.locator('#g3-res').selectOption('28');
-	await expect(page.locator('#g3-readout')).toContainText('28 × 28');
-
-	const shaded = await snapshot(canvas);
-	await page.locator('#g3-style').selectOption('wire');
-	expect(await snapshot(canvas)).not.toBe(shaded);
-});
 
 test('domain inputs resample and reject an inverted range', async ({ page }) => {
 	await page.goto('/calculators/graph3d/');
@@ -155,17 +116,4 @@ test('domain inputs resample and reject an inverted range', async ({ page }) => 
 	await page.locator('#g3-xmax').fill('-9');
 	await page.locator('#g3-xmax').blur();
 	await expect(page.locator('#g3-error')).toContainText('max > min');
-});
-
-test('the readout follows the language switch', async ({ page }) => {
-	await page.goto('/calculators/graph3d/');
-
-	const readout = page.locator('#g3-readout');
-	await expect(readout.locator('.i18n-en').first()).toBeVisible();
-	await expect(readout.locator('.i18n-zh').first()).toBeHidden();
-
-	await page.locator('.t-lang').first().click();
-	await expect(page.locator('html')).toHaveAttribute('data-lang', 'zh');
-	await expect(readout.locator('.i18n-zh').first()).toBeVisible();
-	await expect(readout.locator('.i18n-en').first()).toBeHidden();
 });

@@ -1,8 +1,5 @@
-// Editorial mapping connecting interactive tools to in-depth engineering blog posts.
-// Keyed by "<category>/<slug>", e.g. "calculators/prime-factorization".
-// Rendered at build time by ToolShell.astro to form a solid two-way internal linking network (mesh).
-// Kept in this dedicated file so client bundles never download editorial prose.
-
+// Legacy PR3 compatibility mapping. Blog frontmatter relatedTools/relatedPosts
+// is the future canonical source; keep this renderer unchanged in PR2.
 export interface RelatedArticle {
 	slug: string;
 	title: string;

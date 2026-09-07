@@ -2,6 +2,12 @@
 title: '从杨辉三角到千万级大数：组合数 C(n, r) 与阶乘的高效防溢出计算'
 description: '拆解组合数 C(n, r) 与排列数 P(n, r) 的数学模型与计算陷阱：阶乘爆炸为何让朴素公式在 n=21 时直接溢出、杨辉三角加法递推与乘除交替约分算法的优劣对比，以及如何用 BigInt 在浏览器端实现零损耗的大数精确组合计数。'
 pubDate: 'Sep 07 2026'
+category: math
+topics: [mathematics, algorithms]
+searchTerms: ['组合数', 'BigInt', '阶乘']
+contentLang: 'zh-CN'
+relatedTools: ['calculators/combinatorics']
+relatedPosts: ['prime-factorization-and-pollard-brent']
 ---
 
 在离散数学、概率论与算法竞赛中，**排列（Permutations, $nPr$）** 与 **组合（Combinations, $nCr$）** 是最基础的计数模型。

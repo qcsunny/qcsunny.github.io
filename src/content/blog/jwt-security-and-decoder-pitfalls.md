@@ -2,6 +2,12 @@
 title: 'JWT 签名真的安全吗？None 算法注入、密钥混淆与浏览器端解码的安全边界'
 description: '拆解 JSON Web Token (JWT) 的三段结构与其核心安全假象：Payload 为何不是加密而只是 Base64Url 序列化、历史上臭名昭著的 alg: none 绕过与 RS256/HS256 密钥混淆攻击，以及纯前端本地解码器的设计安全边界。'
 pubDate: 'Sep 07 2026'
+category: security
+topics: [security, cryptography]
+searchTerms: ['JWT', 'None算法', '密钥混淆']
+contentLang: 'zh-CN'
+relatedTools: ['devtools/jwt-decoder']
+relatedPosts: ['password-entropy-and-secure-random']
 ---
 
 在现代 Web 前后端分离、微服务架构以及 OAuth 2.0 / OIDC 身份认证体系中，JSON Web Token（JWT）几乎已经成为了跨系统传递身份凭证的行业标准。

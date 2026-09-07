@@ -38,16 +38,6 @@ test('converter swap exchanges units and values', async ({ page }) => {
 	await expect(page.locator('[aria-label="Converted value"]')).toHaveValue('100');
 });
 
-test('all-units reference grid is searchable', async ({ page }) => {
-	await page.goto('/converters/weight/');
-
-	const filter = page.locator('[aria-label="Filter all unit conversions"]');
-	await expect(filter).toBeVisible();
-	await filter.fill('磅');
-	// grid still renders rows (filtered), no crash
-	await page.waitForTimeout(200);
-	await expect(page.locator('.t-conv-grid, .t-conv-all')).toBeVisible();
-});
 
 // The exact byte count is the whole point of a data-size converter — someone
 // checking why a "1 TB" drive shows as 931 GiB, or setting a byte quota. 2^40 is

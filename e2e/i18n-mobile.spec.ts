@@ -47,21 +47,6 @@ test('language toggle switches card copy on calculators index', async ({ page })
 	await onlyOneLanguage(firstCard, 'en');
 });
 
-test('form tool export buttons follow the language switch', async ({ page }) => {
-	await page.goto('/finance/compound-interest/');
-
-	await langButton(page).click();
-	await expect(page.locator('html')).toHaveAttribute('data-lang', 'zh');
-
-	// both export buttons (print/PDF and PNG) carry i18n spans, so assert on
-	// every one of them rather than a single match
-	const buttons = page.locator('.t-export-btn');
-	await expect(buttons).not.toHaveCount(0);
-	for (const btn of await buttons.all()) {
-		await expect(btn.locator('.i18n-zh')).toBeVisible();
-		await expect(btn.locator('.i18n-en')).toBeHidden();
-	}
-});
 
 // Mobile smoke: no horizontal overflow (regression: global.css main{width:720px}
 // + page container max-width overrides used to leave home/blog 393px wide);

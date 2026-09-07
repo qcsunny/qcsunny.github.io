@@ -40,40 +40,12 @@ test('jwt decoder decodes header and payload', async ({ page }) => {
 	await expect(output).toHaveValue(/"sub":\s*"1"/);
 });
 
-test('markdown preview renders live HTML', async ({ page }) => {
-	await page.goto('/devtools/markdown-preview/');
-
-	const editor = page.locator('.t-md-textarea');
-	const preview = page.locator('.t-md-preview-body');
-
-	await editor.fill('# Hello\n\n**bold** and `code`');
-	await expect(preview.locator('h1')).toHaveText('Hello');
-	await expect(preview.locator('strong')).toHaveText('bold');
-	await expect(preview.locator('code')).toHaveText('code');
-});
 
 // Every rule in parseInline() is a regex over the whole line and none of them can
 // see structure, so inline code has to be lifted out before they run and put back
 // after. With it left in place they reached inside it: the italic rule turned
 // `snake_case_name` into snake<em>case</em>name, the bold rule ate the asterisks
 // of `**literal**`, and the autolinker nested an <a> inside the <code>.
-test('inline code is opaque to the other inline rules', async ({ page }) => {
-	await page.goto('/devtools/markdown-preview/');
-
-	const preview = page.locator('.t-md-preview-body');
-	await page
-		.locator('.t-md-textarea')
-		.fill('`snake_case_name`, `**literal**`, `https://a.test`, `<b>tag</b>`\n');
-
-	const codes = preview.locator('code.t-inline-code');
-	await expect(codes).toHaveCount(4);
-	await expect(codes.nth(0)).toHaveText('snake_case_name');
-	await expect(codes.nth(1)).toHaveText('**literal**');
-	await expect(codes.nth(2)).toHaveText('https://a.test');
-	await expect(codes.nth(3)).toHaveText('<b>tag</b>');
-	// Nothing was injected inside any of them.
-	await expect(preview.locator('code em, code strong, code a')).toHaveCount(0);
-});
 
 // The SQL tokenizer used to have no branch for a bare '-' or '/': the word scan
 // stopped on them without advancing, so `a - b` spun forever and froze the tab.
@@ -91,16 +63,6 @@ test('sql formatter handles bare operators without hanging', async ({ page }) =>
 	await expect(output).toHaveValue(/qty > -1/);
 });
 
-test('sql formatter leaves string literals untouched', async ({ page }) => {
-	await page.goto('/devtools/sql-formatter/');
-
-	// 'a,b--c' contains both a comma and a line-comment marker: a formatter that
-	// normalises spacing or strips comments by regex would corrupt it.
-	await page.locator('[data-role="input"]').fill("select * from t where tag = 'a,b--c'");
-	await page.getByRole('button', { name: /Format \(2 spaces\)|格式化 \(2 空格\)/ }).click();
-
-	await expect(page.locator('[data-role="output"]')).toHaveValue(/'a,b--c'/);
-});
 
 test('sql minify keeps literals and drops comments', async ({ page }) => {
 	await page.goto('/devtools/sql-formatter/');

@@ -2,6 +2,12 @@
 title: '写死凌晨两点跑批却在冬令时重复执行：Cron 表达式规范、时区陷阱与跳变计算'
 description: '深入剖析定时任务调度中的 Cron 表达式：Linux 5 段与 Spring/Quartz 6/7 段标准差异、日与周字段的冲突语义、夏令时跳变导致的生产事故复盘，以及如何利用位掩码算法高效求解下一次执行时间。'
 pubDate: 'Sep 07 2026'
+category: engineering
+topics: [date-time, developer-tools]
+searchTerms: ['Cron', '时区', '夏令时']
+contentLang: 'zh-CN'
+relatedTools: ['devtools/cron-expression-parser', 'devtools/unix-timestamp']
+relatedPosts: ['calendar-page']
 ---
 
 在后台架构与分布式任务调度体系中，Cron 表达式几乎是每一个后端与运维工程师每天都在打交道的配置语法。

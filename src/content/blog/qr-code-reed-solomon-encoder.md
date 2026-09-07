@@ -2,6 +2,12 @@
 title: '二维码生成原理与 Reed–Solomon 纠错：400 行零依赖手写编码器全解析'
 description: '从 GF(256) 有限域乘法、Reed–Solomon 生成多项式长除法，到分块交织、BCH 格式信息与 8 种掩码的 ISO 惩罚分评分，逐段拆解一个纯 TypeScript 手写二维码编码器的完整实现。'
 pubDate: 'Sep 05 2026'
+category: algorithms
+topics: [algorithms, developer-tools]
+searchTerms: ['二维码', 'Reed-Solomon', 'GF(256)']
+contentLang: 'zh-CN'
+relatedTools: ['devtools/qr-code-generator']
+relatedPosts: ['sql-tokenizer-and-code-formatter']
 ---
 
 二维码看起来像一张图片，本质上却是一条**编译流水线**：文本 → 比特流 → 有限域多项式除法 → 矩阵排布 → 掩码优选。本站的[二维码生成器](/devtools/qr-code-generator/)没有引入任何第三方库，用 415 行 TypeScript 从零实现了 ISO/IEC 18004 的核心路径。这篇文章按流水线顺序把它拆开。

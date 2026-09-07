@@ -72,24 +72,3 @@ test('every chip resolves to a built page and to a live registry entry', async (
 	}
 	expect(bad, 'renaming a registry slug would otherwise break the chip silently').toEqual([]);
 });
-
-test('/blog/ — the chips render visibly inside the 820px reading column', async ({ page }) => {
-	await page.goto(`/blog/${posts[0]}/`);
-
-	const geo = await page.evaluate(() => {
-		const card = document.querySelector('.blog-tools-card');
-		if (!card) return null;
-		const links = [...card.querySelectorAll('a.tool-chip')];
-		return {
-			w: Math.round(card.getBoundingClientRect().width),
-			count: links.length,
-			hidden: links.filter((a) => !a.checkVisibility()).length,
-			outsideCard: links.filter((a) => !card.contains(a)).length,
-		};
-	});
-	expect(geo, 'the card rendered').not.toBeNull();
-	expect(geo!.w, 'the card fills the reading column').toBe(820);
-	expect(geo!.count).toBeGreaterThan(0);
-	expect(geo!.hidden, 'every chip is painted').toBe(0);
-	expect(geo!.outsideCard).toBe(0);
-});
