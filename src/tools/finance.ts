@@ -404,6 +404,8 @@ const savingsGoal: FormConfig = {
 				String(y),
 				money(investedAtEm),
 				money(fvAtEm),
+				// 超出金额由上一列 Projected Balance 呈现。
+				// 上限 100%（目标达成度）：一旦达标，"超出的部分"就是已达成，百分比不再细分，
 				`${Math.min(100, Math.round((fvAtEm / target) * 100))}%`,
 			]);
 		}
@@ -673,6 +675,8 @@ const fireCalculator: FormConfig = {
 					String(y),
 					String(age + y),
 					money(balance),
+					// 超过两倍后百分比不再细分——真实净额由上一列给出，本格也不参与下方 yearsToFire 判断。
+					// 上限 200%（目标的两倍）：100% = 恰好够 SWR，100–200% 段仍有意义（1.5 倍 ≈ 更稳、可提更高）。
 					`${Math.min(200, Math.round((balance / targetFire) * 100))}%`,
 				]);
 			}
