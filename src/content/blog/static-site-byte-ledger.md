@@ -2,6 +2,12 @@
 title: '静态站的字节账：首页 50 KB 里 58% 是字体、"零 JS"里的 8.9 KB 内联脚本，和一个 27 字节的桩浪费掉的一次往返'
 description: '实测本站 82 个页面的首屏成本。首页 7 个请求、brotli 后 50,230 B，两个字体文件占掉 58%、且再压一遍反而变大 4 字节；正文页确实是 0 个 JS 文件，但有 8.9 KB 内联脚本，其中工具搜索索引一个人就占掉 HTML 字节的 46%；另有一个 27 字节的桩，让 46 个工具页各白等一次往返。'
 pubDate: 'Sep 05 2026'
+category: engineering
+topics: [performance, static-sites]
+searchTerms: ['静态站', '字节账', '性能']
+contentLang: 'zh-CN'
+relatedTools: ['devtools/markdown-preview']
+relatedPosts: ['canvas-2d-surface-plot']
 ---
 
 这个站有 82 个 HTML 页面、49 个工具、16 篇文章，全部在构建期生成，运行时不依赖任何第三方域名。这类说法很容易写进首页，也很容易是错的——所以这篇不写"如何优化"，只做一件事：**把每条路由实际下载的字节数一项一项数出来**，然后看数完之后哪些结论和预期不一样。

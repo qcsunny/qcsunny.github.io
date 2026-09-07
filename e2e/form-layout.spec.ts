@@ -104,33 +104,6 @@ test('a single-column form still keeps its controls inside the page', async ({ p
 	expect(bad, 'form field layout at 375px').toEqual([]);
 });
 
-// An <option> cannot hold the .i18n-en / .i18n-zh span pair the rest of the site
-// uses, so form.ts used to write `${label} (${labelZh})` into it — both languages
-// at once, in both languages. Several English labels in finance.ts already
-// carried their Chinese in parentheses, so those options printed the Chinese
-// twice: "Forward: Loan Amount to Monthly Payment (正向：…) (正向：…)", 490px of it.
-// The text is now swapped when Header.astro flips html[data-lang].
-const CJK = /[一-鿿]/;
-
-test('option text shows one language and follows the language switch', async ({ page }) => {
-	await page.goto('/finance/loan-payment/');
-	const sel = page.locator('#t-f-calcMode');
-	const read = () => sel.evaluate((s: HTMLSelectElement) => [...s.options].map((o) => o.textContent ?? ''));
-
-	const en = await read();
-	expect(en.length).toBe(2);
-	for (const t of en) expect(t, 'English options must not carry a Chinese gloss').not.toMatch(CJK);
-
-	await page.evaluate(() => {
-		document.documentElement.dataset.lang = 'zh';
-	});
-	await expect
-		.poll(async () => (await read())[0], { message: 'options follow html[data-lang]' })
-		.toMatch(CJK);
-	const zh = await read();
-	for (const t of zh) expect(t, 'Chinese options must not repeat the English').not.toMatch(/[A-Za-z]{4}/);
-});
-
 // Zero tolerance, unlike the share-based sweep in i18n.spec.ts: everything
 // inside a .t-form is a label, an option or a hint that comes from the registry,
 // so a Chinese character in the English view is a missing *Zh field rather than

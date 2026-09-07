@@ -12,6 +12,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import sharp from 'sharp';
+import { readBlogFrontmatter } from './scripts/lib/blog-frontmatter.mjs';
 
 const W = 1200;
 const H = 630;
@@ -126,19 +127,6 @@ function card({ title, description, date }) {
 </svg>`;
 }
 
-function frontmatter(file) {
-	const md = fs.readFileSync(file, 'utf8');
-	const m = md.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-	const out = {};
-	if (!m) return out;
-	for (const line of m[1].split(/\r?\n/)) {
-		const kv = line.match(/^([A-Za-z]+):\s*(.*)$/);
-		if (!kv) continue;
-		out[kv[1]] = kv[2].replace(/^['"](.*)['"]$/, '$1').trim();
-	}
-	return out;
-}
-
 /**
  * libvips renders text through fontconfig, so a build image without a CJK font
  * would silently emit cards full of tofu boxes. Fail the build instead.
@@ -173,23 +161,21 @@ export default function ogImages() {
 				const outDir = path.join(dir.pathname, 'og');
 				fs.mkdirSync(outDir, { recursive: true });
 
-				const posts = fs
-					.readdirSync(blogDir)
-					.filter((f) => /\.mdx?$/.test(f))
-					.map((f) => ({ slug: f.replace(/\.mdx?$/, ''), fm: frontmatter(path.join(blogDir, f)) }))
-					.filter((p) => p.fm.title);
+				const posts = readBlogFrontmatter(blogDir).map(({ slug, data }) => ({ slug, fm: data }));
 
 				if (posts.some((p) => /[\p{Script=Han}]/u.test(p.fm.title))) assertCjkFont(logger);
 
 				for (const p of posts) {
-					const svg = card({
+					const outputFile = path.join(outDir, `${p.slug}.png`);
+						fs.mkdirSync(path.dirname(outputFile), { recursive: true });
+						const svg = card({
 						title: p.fm.title,
 						description: p.fm.description,
 						date: p.fm.pubDate,
 					});
 					await sharp(Buffer.from(svg))
 						.png({ compressionLevel: 9 })
-						.toFile(path.join(outDir, `${p.slug}.png`));
+						.toFile(outputFile);
 				}
 				logger.info(`og images generated (${posts.length} cards → dist/og/)`);
 			},

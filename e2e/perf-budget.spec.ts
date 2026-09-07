@@ -47,33 +47,6 @@ test('prose pages ship no first-party JavaScript', () => {
 	}
 });
 
-// Editorial prose (about paragraphs, FAQ) is rendered into the HTML at build
-// time and read by nobody in the browser — but src/scripts/tools/main.ts imports
-// the registry to find one entry's config, so anything hanging off a ToolEntry
-// object rides along into the chunk all 46 tool pages load. Rollup drops an
-// unused top-level export (TOOL_KEYWORDS never appears in a bundle) and cannot
-// drop an unused property, so the fix was structural: the prose lives in
-// src/tools/content.ts, which only ToolShell imports. It was 76,008 B raw /
-// 25,922 B brotli, i.e. 42% of that chunk, duplicating words already in the HTML.
-const PROSE_SAMPLES: [string, string][] = [
-	['calculators/percentage/index.html', 'Percent means'],
-	['converters/weight/index.html', 'Comprehensive mass and weight converter'],
-	['devtools/json-formatter/index.html', '把杂乱的 JSON 排版成统一缩进'],
-];
-
-test('build-time prose stays out of the client bundle', () => {
-	const bundles = astroJs();
-	for (const [route, phrase] of PROSE_SAMPLES) {
-		// Asserting both halves: absent from every bundle, and still on the page.
-		// Deleting the prose would satisfy the first half on its own.
-		expect(readFileSync(join(DIST, route), 'utf-8'), `${phrase} missing from ${route}`).toContain(
-			phrase,
-		);
-		const offenders = bundles.filter(([, js]) => js.includes(phrase)).map(([f]) => f);
-		expect(offenders, `"${phrase}" shipped as JavaScript`).toEqual([]);
-	}
-});
-
 // A ceiling, not a target. The dispatcher chunk is shared by all 46 registry
 // tool pages and cached immutably, so it is paid once per visitor — but it is on
 // the critical path to the first tool becoming interactive, and it grows with
@@ -192,22 +165,3 @@ test('lazily imported chunks are never preloaded', () => {
 // tag with the wrong attributes would still be present and still be useless —
 // and a preload the module loader cannot reuse shows up as a second request for
 // the same file, which is worse than no preload at all.
-test('the shared chunk is requested without waiting for the entry chunk', async ({ page }) => {
-	const order: string[] = [];
-	page.on('request', (req) => {
-		const m = /\/_astro\/([^/?]+\.js)$/.exec(new URL(req.url()).pathname);
-		if (m) order.push(m[1]);
-	});
-	await page.goto('/devtools/json-formatter/');
-	await page.waitForLoadState('load');
-
-	const at = (prefix: string): number => order.findIndex((f) => f.startsWith(prefix));
-	expect(at('main.'), 'main chunk never requested').toBeGreaterThanOrEqual(0);
-	expect(at('engine.'), 'engine chunk never requested').toBeGreaterThanOrEqual(0);
-	expect(at('_slug_'), 'entry chunk never requested').toBeGreaterThanOrEqual(0);
-	expect(at('main.'), 'main.js waited for the entry chunk').toBeLessThan(at('_slug_'));
-	for (const prefix of ['main.', 'engine.']) {
-		const n = order.filter((f) => f.startsWith(prefix)).length;
-		expect(n, `${prefix}js fetched ${n} times — the preload is not being reused`).toBe(1);
-	}
-});

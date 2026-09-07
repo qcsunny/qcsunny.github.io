@@ -2,6 +2,12 @@
 title: '单位换算的精度账：中心辐射式因子表、仿射单位为什么必须单独写，以及一个显示得出来的手抄小数'
 description: '本站 11 个换算页共 180 个单位。这篇拆解它们背后的中心辐射式因子表（180 个因子而不是 3154 个转换对）、实测 36674 次往返换算的精度分布（线性类最差 1 ulp，温度类 563 ulp），以及一个结论反转：真正毁掉精度的不是浮点运算，而是手抄的小数——inHg 曾让页面把 1 英寸汞柱显示成 25.4000001975 毫米汞柱。'
 pubDate: 'Sep 05 2026'
+category: engineering
+topics: [unit-conversion, numerical-computing]
+searchTerms: ['单位换算', 'SI单位', '精度']
+contentLang: 'zh-CN'
+relatedTools: ['converters/length', 'converters/weight']
+relatedPosts: ['floating-point-ieee754-and-precision']
 ---
 
 本站有 [11 个单位换算页](/converters/weight/)，从[重量](/converters/weight/)、[长度](/converters/length/)、[面积](/converters/area/)、[体积](/converters/volume/)到[温度](/converters/temperature/)、[压力](/converters/pressure/)、[功率](/converters/power/)、[能量](/converters/energy/)、[速度](/converters/speed/)、[时间](/converters/time/)和[数据存储](/converters/data/)，一共 **180 个单位**。它们全部在浏览器里算完，一个字节都不上传。

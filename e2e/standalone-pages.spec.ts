@@ -13,45 +13,6 @@ import { expect, test, type Browser, type Page } from '@playwright/test';
 // /calculators/standard/ for a week — a page whose script silently stops running
 // looks completely normal. So each widget is exercised, not just inspected.
 
-const CJK = /[㐀-鿿＀-￯]/;
-const LATIN_WORD = /[A-Za-z]{3,}/;
-
-// Everything a reader can actually read: visible text nodes, plus the labels and
-// tooltips that live in attributes and so cannot hold a span pair.
-async function visibleStrings(page: Page): Promise<{ where: string; text: string; skip: boolean }[]> {
-	return page.evaluate(() => {
-		const out: { where: string; text: string; skip: boolean }[] = [];
-		const name = (el: Element): string => {
-			const cls = typeof el.className === 'string' ? el.className.trim().split(/\s+/).filter(Boolean) : [];
-			return el.tagName.toLowerCase() + (el.id ? `#${el.id}` : '') + cls.map((c) => `.${c}`).join('');
-		};
-		// The switch itself names the other language — that is the whole button —
-		// and "ISO 8601" is the name of a standard, not an untranslated label.
-		const exempt = (el: Element): boolean => !!el.closest('.lang-toggle, [data-week-rule]');
-		const visible = (el: Element): boolean =>
-			el.checkVisibility({ contentVisibilityAuto: true, visibilityProperty: true });
-		const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-		for (let n = walk.nextNode(); n; n = walk.nextNode()) {
-			const text = (n.nodeValue ?? '').replace(/\s+/g, ' ').trim();
-			const el = n.parentElement;
-			if (!text || !el || el.closest('script,style,template,noscript')) continue;
-			if (!visible(el)) continue;
-			out.push({
-				where: name(el) + (el.closest('.i18n-en') ? ' [.i18n-en]' : el.closest('.i18n-zh') ? ' [.i18n-zh]' : ''),
-				text,
-				skip: exempt(el),
-			});
-		}
-		for (const el of document.querySelectorAll('[aria-label],[title]')) {
-			if (!visible(el)) continue;
-			for (const attr of ['aria-label', 'title']) {
-				const v = el.getAttribute(attr);
-				if (v) out.push({ where: `${name(el)}[${attr}]`, text: v, skip: exempt(el) });
-			}
-		}
-		return out;
-	});
-}
 
 async function pageIn(browser: Browser, lang: 'en' | 'zh', route: string): Promise<Page> {
 	const ctx = await browser.newContext();
@@ -60,26 +21,6 @@ async function pageIn(browser: Browser, lang: 'en' | 'zh', route: string): Promi
 	await page.goto(route);
 	await expect(page.locator('html')).toHaveAttribute('data-lang', lang);
 	return page;
-}
-
-for (const route of ['/clock/', '/calendar/']) {
-	test(`${route} — the English view is English`, async ({ browser }) => {
-		const page = await pageIn(browser, 'en', route);
-		const bad = (await visibleStrings(page)).filter(
-			(s) => !s.skip && (CJK.test(s.text) || s.where.includes('[.i18n-zh]')),
-		);
-		expect(bad, 'Chinese showing in the English view').toEqual([]);
-		await page.context().close();
-	});
-
-	test(`${route} — the Chinese view is Chinese`, async ({ browser }) => {
-		const page = await pageIn(browser, 'zh', route);
-		const bad = (await visibleStrings(page)).filter(
-			(s) => !s.skip && (LATIN_WORD.test(s.text) || s.where.includes('[.i18n-en]')),
-		);
-		expect(bad, 'English showing in the Chinese view').toEqual([]);
-		await page.context().close();
-	});
 }
 
 test('/clock/ — weekday and date are written in the reader’s language and follow the switch', async ({

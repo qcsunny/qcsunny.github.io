@@ -2,6 +2,12 @@
 title: '七十二法则、真实购买力与通胀侵蚀：你的存款如何在 3% 通胀下 24 年缩水一半'
 description: '从微积分与连续复利推导金融学著名的七十二法则（Rule of 72），拆解费雪方程式下的名义利率与实际利率，测算存款在温和通胀下购买力减半的时间硬账，以及如何通过复利定投抵御长期购买力衰减。'
 pubDate: 'Sep 07 2026'
+category: finance
+topics: [finance, mathematics]
+searchTerms: ['通胀', '购买力', '72法则']
+contentLang: 'zh-CN'
+relatedTools: ['finance/inflation', 'finance/savings-goal']
+relatedPosts: ['compound-interest-and-irr-guide']
 ---
 
 在宏观经济学中，通货膨胀常被称为"最隐蔽的非显性税收"。

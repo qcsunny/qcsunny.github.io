@@ -2,6 +2,12 @@
 title: '代码格式化器怎么写：SQL 词法分词器、缩进状态机，与一个冻结标签页的死循环'
 description: '拆解手写 SQL 格式化器的六类 token 分词器与括号深度缩进状态机，剖析正则替换为何会静默改坏字符串字面量、格式化为何不需要完整 AST，以及 JSON 格式化为何应当复用宿主 JSON.parse 并把引擎报错反查成行列号。'
 pubDate: 'Sep 05 2026'
+category: engineering
+topics: [algorithms, developer-tools]
+searchTerms: ['SQL格式化', '词法分析', '状态机']
+contentLang: 'zh-CN'
+relatedTools: ['devtools/sql-formatter', 'devtools/json-formatter']
+relatedPosts: ['markdown-parser-and-katex-math']
 ---
 
 本站有两个格式化工具：[JSON 格式化校验](/devtools/json-formatter/)和 [SQL 格式化美化](/devtools/sql-formatter/)。它们看起来是同一类东西，实现却几乎没有共同点——一个把活全交给宿主环境，另一个从字符开始手写。这篇文章讲清楚为什么，顺便记录一个把浏览器标签页直接冻结的死循环 bug。

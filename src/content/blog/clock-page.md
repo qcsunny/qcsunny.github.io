@@ -2,6 +2,12 @@
 title: '极简时钟页：主题、番茄钟与零依赖实现'
 description: '博客的 /clock/ 全屏时钟页：自适应字号、三态主题、秒数开关和番茄钟，全部零依赖纯浏览器实现。'
 pubDate: 'Sep 01 2026'
+category: productivity
+topics: [date-time, frontend]
+searchTerms: ['时钟', '番茄钟', '主题']
+contentLang: 'zh-CN'
+relatedTools: []
+relatedPosts: ['calendar-page']
 ---
 
 博客导航栏里的 **Clock**（[/clock/](/clock/)）是一个全屏极简时钟页面，参考 Kindle 待机时钟的设计：白底黑字（或黑底白字）、超大时间、星期与英文长日期。本文记录它的功能与实现。

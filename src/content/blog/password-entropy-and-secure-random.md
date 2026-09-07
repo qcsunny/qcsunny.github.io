@@ -2,6 +2,12 @@
 title: '密码强度的比特账：熵怎么算、为什么必须用 CSPRNG、取模偏差与第二个冻结标签页的死循环'
 description: '拆解浏览器端密码/UUID/随机数生成器的三个核心问题：密码强度为什么是 length × log₂(池大小) 而"必须含符号"反而降熵、Math.random 为何不能做安全随机、如何把随机字节无偏地压进任意区间，以及一个范围超过 2³² 就把标签页冻死的拒绝采样死循环。'
 pubDate: 'Sep 05 2026'
+category: security
+topics: [security, cryptography]
+searchTerms: ['密码熵', 'CSPRNG', '取模偏差']
+contentLang: 'zh-CN'
+relatedTools: ['devtools/password-generator']
+relatedPosts: ['jwt-security-and-decoder-pitfalls']
 ---
 
 本站有三个都靠随机性吃饭的工具：[强密码生成器](/devtools/password-generator/)、[UUID 生成器](/devtools/uuid-generator/)和[随机数生成器](/devtools/random-number/)。它们看着简单——"生成一串随机东西"——但真正做对要回答三个各自独立、又都容易做错的问题：

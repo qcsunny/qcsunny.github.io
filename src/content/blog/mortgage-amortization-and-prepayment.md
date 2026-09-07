@@ -2,6 +2,12 @@
 title: '等额本息 vs 等额本金：房贷提前还款怎么算最划算？月供摊销推导'
 description: '推导等额本息与等额本金的数学公式，剖析月供中本金与利息的动态演变结构，并用真实数据拆解提前还贷时“缩短年限”与“减少月供”的抉择模型。'
 pubDate: 'Sep 03 2026'
+category: finance
+topics: [finance, mathematics]
+searchTerms: ['房贷', '等额本息', '提前还款']
+contentLang: 'zh-CN'
+relatedTools: ['finance/mortgage', 'finance/mortgage-prepayment']
+relatedPosts: ['auto-loan-and-irr-cost']
 ---
 
 买房贷款是大多数人一生中金额最大的一笔负债。面对银行客户经理的询问——“选等额本息还是等额本金？”、“未来有闲钱要不要提前还款？是选缩短年限还是减少月供？”，很多人往往只能凭借直觉做出选择。

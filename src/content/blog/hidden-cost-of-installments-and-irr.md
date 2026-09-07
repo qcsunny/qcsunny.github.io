@@ -2,6 +2,12 @@
 title: '为什么名义手续费 3% 的分期，真实年化利率（IRR）高达近 6%？揭秘借贷利息陷阱'
 description: '深度剖析信用卡账单分期、车贷及各类消费贷中“名义分期费率”与“真实内部收益率（IRR / APR）”的翻倍差距，推导等额还款资金占用模型，并提供一眼识破高息陷阱的速算法。'
 pubDate: 'Sep 05 2026'
+category: finance
+topics: [finance, mathematics]
+searchTerms: ['分期', 'IRR', '手续费']
+contentLang: 'zh-CN'
+relatedTools: ['finance/irr-calculator', 'finance/loan-payment']
+relatedPosts: ['auto-loan-and-irr-cost']
 ---
 
 在日常消费、买车或信用卡还款时，你一定经常看到类似这样极具诱惑力的广告文案：

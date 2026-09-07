@@ -2,6 +2,12 @@
 title: 'FIRE 财务自由运动与“4%法则”科学测算：你需要攒够多少钱才能提前退休？'
 description: '详解全球 FIRE 运动核心理论“4% 安全提现法则”（Trinity Study）的数学模型，对比极简、丰裕、咖啡师等四大流派，剖析通货膨胀与投资回报对退休养老资产的长期影响。'
 pubDate: 'Sep 05 2026'
+category: finance
+topics: [finance, mathematics]
+searchTerms: ['FIRE', '4%法则', '提前退休']
+contentLang: 'zh-CN'
+relatedTools: ['finance/fire-calculator', 'finance/savings-goal']
+relatedPosts: ['inflation-purchasing-power-and-rule-of-72']
 ---
 
 在当今日益加速的职场内卷和职场倦怠压力下，发源于北美的 **FIRE 运动（Financial Independence, Retire Early，财务独立，提早退休）** 正迅速席卷全球年轻一代。

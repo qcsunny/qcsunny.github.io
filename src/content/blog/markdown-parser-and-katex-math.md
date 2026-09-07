@@ -2,6 +2,12 @@
 title: '手写 Markdown 解析器：抬出-还原式占位符、行内代码的不透明性，与一个不该自己写的 LaTeX 排版器'
 description: '拆解零依赖 Markdown 解析器的三层占位符抬出-还原机制，剖析行内代码为何会被斜体/加粗/自动链接规则钻进去改坏、占位符自身为何也必须对后续规则免疫、HTML 转义为何必须分段做，以及数学公式这一层为什么该用 KaTeX 而不是手写——附按需加载的逐字节成本、MathML 自包含导出，与一个被 Vite 内联进样式表的 3,624 字节字体。'
 pubDate: 'Sep 05 2026'
+category: web
+topics: [frontend, web-platform]
+searchTerms: ['Markdown', 'KaTeX', '解析器']
+contentLang: 'zh-CN'
+relatedTools: ['devtools/markdown-preview']
+relatedPosts: ['sql-tokenizer-and-code-formatter']
 ---
 
 [Markdown 实时预览](/devtools/markdown-preview/)这个工具里有两套完全不同的东西：Markdown 解析是从零手写的，一行第三方代码都没有；数学公式排版则是把 KaTeX 打包进了自己的产物。这篇文章讲清楚这条界线划在哪里、为什么划在那里，以及手写解析器里最容易写错的那一类 bug——**规则之间互相钻进对方的领地**。写这篇文章的过程中又抓到一个同源的、已经上线的实例，也一并记在下面。

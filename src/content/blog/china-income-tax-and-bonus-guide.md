@@ -2,6 +2,12 @@
 title: '个税与年终奖计税避坑全解析：累计预扣法、7项专项附加扣除与临界点税收陷阱'
 description: '详解中国个人所得税累计预扣法计算原理、7项专项附加扣除减税测算，揭秘年终奖单独计税的临界点“多发1元多扣数千税”陷阱，并提供单独与合并计税的最优决策模型。'
 pubDate: 'Sep 05 2026'
+category: finance
+topics: [finance, mathematics]
+searchTerms: ['个税', '年终奖', '累计预扣']
+contentLang: 'zh-CN'
+relatedTools: ['finance/tax', 'finance/salary']
+relatedPosts: []
 ---
 
 每到岁末年初或跳槽谈薪季，个人所得税（个税）与年终奖始终是职场人最为关心的核心财务议题。“为什么下半年到手的工资比上半年少？”、“公司发了 36,001 元年终奖，到手反而不如 36,000 元？”、“专项附加扣除到底能为我省下多少税？”

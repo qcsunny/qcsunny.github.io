@@ -2,6 +2,12 @@
 title: '复利与定投计算原理：单利、复利与真实年化（IRR）怎么算？'
 description: '详解复利数学公式推导、按月定投资产终值模型、单利与复利的本质差距，以及如何用浏览器本地复利计算器科学测算长期投资收益。'
 pubDate: 'Sep 03 2026'
+category: finance
+topics: [finance, mathematics]
+searchTerms: ['复利', '定投', 'IRR']
+contentLang: 'zh-CN'
+relatedTools: ['finance/compound-interest', 'finance/irr-calculator']
+relatedPosts: ['inflation-purchasing-power-and-rule-of-72']
 ---
 
 在财富积累和资产规划中，复利常被称为“世界第八大奇迹”。但在日常投资决策中，很多人对“年化 8% 的投资产品”、“每月定投 2000 元”到底能在 10 年或 20 年后产生多少资产并没有精确的数学概念，甚至常常混淆了**单利（Simple Interest）**、**名义复利（Nominal Compound Interest）**与**内部收益率（IRR / 真实年化）**。

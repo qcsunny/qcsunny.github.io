@@ -2,6 +2,12 @@
 title: '车贷"0首付0利息"背后的数字账：服务费、分段计息与真实 IRR 年化拆解'
 description: '拆解汽车分期与消费贷中最常见的数字陷阱：名义费率 4% 为什么实际年化（IRR）高达近 8%、贴息政策下的金融服务费与 GPS 费用如何大幅推高真实借款成本，以及如何用内部收益率现金流模型识破各类免息噱头。'
 pubDate: 'Sep 07 2026'
+category: finance
+topics: [finance, mathematics]
+searchTerms: ['车贷', 'IRR', '名义费率']
+contentLang: 'zh-CN'
+relatedTools: ['finance/auto-loan', 'finance/irr-calculator', 'finance/loan-payment']
+relatedPosts: ['hidden-cost-of-installments-and-irr']
 ---
 
 在汽车 4S 店买车时，消费者最常听到的推销话术往往是这样的：

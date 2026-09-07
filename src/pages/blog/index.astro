@@ -4,7 +4,8 @@ import BaseHead from '../../components/BaseHead.astro';
 import Footer from '../../components/Footer.astro';
 import FormattedDate from '../../components/FormattedDate.astro';
 import Header from '../../components/Header.astro';
-import { buildBlogSearchConfig, getBlogCategory } from '../../components/tools/blogSearchConfig';
+import { getBlogCategory } from '../../blog/blogMetadata';
+import { buildBlogSearchConfig } from '../../components/tools/blogSearchConfig';
 import { SITE_TITLE } from '../../consts';
 import { TOOL_COUNT } from '../../tools/registry';
 
@@ -66,14 +67,14 @@ const readMinutes = (body: string): number => {
 			{
 				featured && (
 					<section class="featured-section">
-						<a class="featured-card" href={`/blog/${featured.id}/`} data-cat={getBlogCategory(featured.id).key}>
+						<a class="featured-card" href={`/blog/${featured.id}/`} data-cat={getBlogCategory(featured.data.category).key}>
 							<div class="featured-badge-row">
 								<span class="featured-tag">
 									⭐ <span class="i18n-zh">最新精选</span><span class="i18n-en">Featured</span>
 								</span>
-								<span class="cat-pill" style={`--cat-color: ${getBlogCategory(featured.id).color};`}>
-									<span class="i18n-zh">{getBlogCategory(featured.id).labelZh}</span>
-									<span class="i18n-en">{getBlogCategory(featured.id).labelEn}</span>
+								<span class="cat-pill" style={`--cat-color: ${getBlogCategory(featured.data.category).color};`}>
+									<span class="i18n-zh">{getBlogCategory(featured.data.category).labelZh}</span>
+									<span class="i18n-en">{getBlogCategory(featured.data.category).labelEn}</span>
 								</span>
 								<span class="read-time-pill">
 									{readMinutes(featured.body ?? '')}<span class="i18n-zh"> 分钟</span><span class="i18n-en"> min read</span>
@@ -113,7 +114,7 @@ const readMinutes = (body: string): number => {
 				<div class="articles-grid">
 					{
 						rest.map((post) => {
-							const cat = getBlogCategory(post.id);
+							const cat = getBlogCategory(post.data.category);
 							return (
 								<article class="article-card" data-cat={cat.key}>
 									<a href={`/blog/${post.id}/`} class="article-card-link">

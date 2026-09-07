@@ -2,6 +2,12 @@
 title: '为什么样本方差要除以 n-1？贝塞尔修正推导与单趟 Welford 算法的数值稳定性'
 description: '从代数期望严格推导统计学中著名的贝塞尔修正（Bessel correction），揭示为何样本方差除以 n 会系统性低估总体离散度，以及在计算机工程中朴素方差公式为何会遭遇浮点数灾难性消除，并介绍流式高精度的 Welford 算法。'
 pubDate: 'Sep 07 2026'
+category: math
+topics: [mathematics, algorithms]
+searchTerms: ['样本方差', '贝塞尔修正', 'Welford']
+contentLang: 'zh-CN'
+relatedTools: ['calculators/descriptive-statistics']
+relatedPosts: ['floating-point-ieee754-and-precision']
 ---
 
 在学习概率论与数理统计时，几乎每一个人都曾产生过强烈的困惑：
