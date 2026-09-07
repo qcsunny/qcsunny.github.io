@@ -5,12 +5,12 @@ import Header from '../components/Header.astro';
 import SupportBox from '../components/SupportBox.astro';
 import { getCollection } from 'astro:content';
 import { SITE_TITLE } from '../consts';
-import { CALCULATOR_FEATURED, REGISTRY } from '../tools/registry';
+import { TOOL_COUNT } from '../tools/registry';
 
-// About-page numbers are computed, not typed: the same union the homepage and
-// ToolShell use, minus the redirect stubs that only carry legacy URLs.
-const realTools = [...CALCULATOR_FEATURED, ...REGISTRY].filter((e) => e.kind !== 'redirect');
-const toolTotal = realTools.length;
+// About-page numbers are computed, not typed: TOOL_COUNT is the single
+// registry-derived source for "how many tools" (REAL_TOOLS minus the redirect
+// stubs that carry no page), so it cannot drift from what the registry holds.
+const toolTotal = TOOL_COUNT;
 const postTotal = (await getCollection('blog')).length;
 ---
 

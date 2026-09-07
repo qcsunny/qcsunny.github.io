@@ -6,15 +6,14 @@ import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
-import { CALCULATOR_FEATURED, REGISTRY } from '../tools/registry';
+import { REAL_TOOLS, TOOL_COUNT } from '../tools/registry';
 
-const all = [...CALCULATOR_FEATURED, ...REGISTRY];
-// Two entries share the slug `compound-interest`: the real /finance/ tool and a
-// /calculators/ redirect that points at it. find() returns the first match and
-// REGISTRY lists calculators before finance, so this used to hand the featured
-// card a redirect page. A featured card has to land on a real page — the whole
-// point of picking it by hand is that it is somewhere a reader actually goes.
-const bySlug = (slug: string) => all.find((e) => e.slug === slug && e.kind !== 'redirect');
+// REAL_TOOLS is the registry minus the redirect stubs that carry no page, so a
+// featured pick can never resolve to one: the /calculators/ redirect that once
+// shadowed /finance/compound-interest (same slug, listed earlier in REGISTRY)
+// is simply not in this array. A card has to land on a page a reader actually
+// goes to — the whole point of picking it by hand.
+const bySlug = (slug: string) => REAL_TOOLS.find((e) => e.slug === slug);
 
 // Hand-picked high-frequency tools across developer, finance and utility categories
 const featuredSlugs = [
@@ -38,14 +37,13 @@ const posts = allPosts.slice(0, 3);
 
 // The homepage's numbers are computed at build time, never typed by hand: an
 // early hardcoded "40+" aged into a lie as tools shipped, and a "<50ms" stat had
-// nothing on the page to back it. Count what REGISTRY actually holds — redirect
-// stubs exist only to carry legacy URLs and are not tools — so the reader sees
-// the truth of this build, whatever it is.
-const realTools = all.filter((e) => e.kind !== 'redirect');
-const toolTotal = realTools.length;
+// nothing on the page to back it. Count REAL_TOOLS — the registry minus the
+// redirect stubs that only carry legacy URLs — so the reader sees the truth of
+// this build, whatever it is.
+const toolTotal = TOOL_COUNT;
 const postTotal = allPosts.length;
-const catTotal = new Set(realTools.map((e) => e.category)).size;
-const converterTotal = realTools.filter((e) => e.category === 'converters').length;
+const catTotal = new Set(REAL_TOOLS.map((e) => e.category)).size;
+const converterTotal = REAL_TOOLS.filter((e) => e.category === 'converters').length;
 
 // rough reading-time estimate: ~220 latin words or ~400 CJK chars per minute
 const readMinutes = (body: string): number => {
