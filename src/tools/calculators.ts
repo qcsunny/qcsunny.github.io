@@ -15,6 +15,143 @@ const money = (v: number): string => formatNumber(Math.round(v * 100) / 100);
 const cash = (v: number | null): { value: string; valueZh: string } =>
 	v === null || !Number.isFinite(v) ? { value: '—', valueZh: '—' } : { value: `$${money(v)}`, valueZh: `¥${money(v)}` };
 
+// --- prime factorization (Miller–Rabin + Pollard rho) ------------------------
+// The mainstream route for a whole number up to 2^64−1: strip small primes by
+// trial division, then finish the remainder with deterministic Miller–Rabin and
+// Pollard's rho in BigInt. Trial-dividing every integer up to √n — the original
+// code — took ~3.4 s on a prime near 2^53; rho is ~n^¼ steps (~10⁴), so the
+// same input returns in milliseconds. Everything above the small-prime prefix
+// runs in BigInt: rho's (a·a) mod n would overflow a Number, and the input
+// itself stops being exact past 2^53.
+const MR_BASES = [2n, 325n, 9375n, 28178n, 450775n, 9780504n, 1795265022n];
+
+function modPow(b: bigint, e: bigint, m: bigint): bigint {
+	let r = 1n;
+	b %= m;
+	while (e > 0n) {
+		if (e & 1n) r = (r * b) % m;
+		b = (b * b) % m;
+		e >>= 1n;
+	}
+	return r;
+}
+
+/** Deterministic below 2^64 (covers every n this tool accepts, n ≤ 2^64−1). */
+function isPrime(n: bigint): boolean {
+	if (n < 2n) return false;
+	for (const p of [2n, 3n, 5n, 7n, 11n, 13n, 17n, 19n, 23n, 29n, 31n, 37n]) {
+		if (n % p === 0n) return n === p;
+	}
+	let d = n - 1n;
+	let s = 0n;
+	while (d % 2n === 0n) {
+		d /= 2n;
+		s++;
+	}
+	for (const a of MR_BASES) {
+		if (a % n === 0n) continue;
+		let x = modPow(a, d, n);
+		if (x === 1n || x === n - 1n) continue;
+		let composite = true;
+		for (let r = 0n; r < s; r++) {
+			x = (x * x) % n;
+			if (x === n - 1n) {
+				composite = false;
+				break;
+			}
+		}
+		if (composite) return false;
+	}
+	return true;
+}
+
+const bigGcd = (a: bigint, b: bigint): bigint => (b === 0n ? a : bigGcd(b, a % b));
+
+function pollardRho(n: bigint): bigint {
+	if (n % 2n === 0n) return 2n;
+	if (n % 3n === 0n) return 3n;
+	// Floyd's cycle; if it collapses onto n for this c, retry with the next one.
+	for (let c = 1n; ; c++) {
+		let x = 2n;
+		let y = 2n;
+		let d = 1n;
+		const f = (z: bigint): bigint => (z * z + c) % n;
+		while (d === 1n) {
+			x = f(x);
+			y = f(f(y));
+			d = bigGcd(x > y ? x - y : y - x, n);
+		}
+		if (d !== n) return d;
+	}
+}
+
+/** n is composite here — callers run isPrime first. Collects n's prime factors. */
+function factorBig(n: bigint, out: bigint[]): void {
+	if (n === 1n) return;
+	if (isPrime(n)) {
+		out.push(n);
+		return;
+	}
+	const d = pollardRho(n);
+	factorBig(d, out);
+	factorBig(n / d, out);
+}
+
+// Small primes for the cheap first pass. Pure trial division would walk every
+// prime up to √n (~9.5×10⁷ at 2^53) — the code never does that. This short
+// baked table only peels the ubiquitous small factors; the remainder is
+// finished by Miller–Rabin + Pollard rho, which splits even a leftover with a
+// mid-size factor in ~√p steps. A literal up to 1000 keeps the table ~1 KB and
+// costs no runtime sieve on tool pages that never factorize.
+const SMALL_PRIMES: number[] = [
+	2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43,
+	47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107,
+	109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181,
+	191, 193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251, 257, 263,
+	269, 271, 277, 281, 283, 293, 307, 311, 313, 317, 331, 337, 347, 349,
+	353, 359, 367, 373, 379, 383, 389, 397, 401, 409, 419, 421, 431, 433,
+	439, 443, 449, 457, 461, 463, 467, 479, 487, 491, 499, 503, 509, 521,
+	523, 541, 547, 557, 563, 569, 571, 577, 587, 593, 599, 601, 607, 613,
+	617, 619, 631, 641, 643, 647, 653, 659, 661, 673, 677, 683, 691, 701,
+	709, 719, 727, 733, 739, 743, 751, 757, 761, 769, 773, 787, 797, 809,
+	811, 821, 823, 827, 829, 839, 853, 857, 859, 863, 877, 881, 883, 887,
+	907, 911, 919, 929, 937, 941, 947, 953, 967, 971, 977, 983, 991, 997,
+];
+
+/** Factor a whole number 2..2^64−1 exactly. Returns ascending prime factors
+ *  with exponents and τ(n) = Π(eᵢ+1). Everything stays in BigInt after the
+ *  input parse, so a factor above 2^53 is never rounded through a Number. */
+function factorWhole(n: bigint): { factors: Array<{ f: bigint; e: number }>; divisors: number } {
+	const byFactor = new Map<string, number>();
+	let rest = n;
+	for (const p of SMALL_PRIMES) {
+		const pb = BigInt(p);
+		if (pb * pb > rest) break;
+		if (rest % pb === 0n) {
+			let c = 0;
+			do {
+				rest /= pb;
+				c++;
+			} while (rest % pb === 0n);
+			byFactor.set(pb.toString(), c);
+		}
+	}
+	if (rest > 1n) {
+		const bigs: bigint[] = [];
+		factorBig(rest, bigs);
+		for (const q of bigs) {
+			const k = q.toString();
+			byFactor.set(k, (byFactor.get(k) ?? 0) + 1);
+		}
+	}
+	const factors = [...byFactor.entries()]
+		.map(([k, e]) => ({ f: BigInt(k), e }))
+		.sort((a, b) => (a.f < b.f ? -1 : a.f > b.f ? 1 : 0));
+	let divisors = 1;
+	for (const { e } of factors) divisors *= e + 1;
+	return { factors, divisors };
+}
+
 // --- percentage -----------------------------------------------------------------
 
 const percentage: FormConfig = {
@@ -341,48 +478,39 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 		kind: 'form',
 		config: {
 			fields: [
-				{ id: 'number', label: 'Number', labelZh: '待分解整数', type: 'number', def: '360', step: '1', min: '2', required: true },
+				{
+					id: 'number',
+					label: 'Number',
+					labelZh: '待分解整数',
+					// bigint (text + numeric keypad), not number: an <input type=number>
+					// round-trips through a JS Number, which stops being exact at 2^53 —
+					// above that the factorization could not be trusted. BigInt holds the
+					// whole 2..2^64−1 range exactly (Miller–Rabin is deterministic <2^64).
+					type: 'bigint',
+					def: '360',
+					required: true,
+					hint: 'Whole number 2 … 2^64−1 (up to 20 digits).',
+					hintZh: '整数 2 … 2^64−1（最多 20 位）。',
+				},
 			],
 			compute: (v) => {
-				const n = v.num('number');
-				if (!Number.isInteger(n) || n < 2 || n > 2 ** 53) {
+				const n = v.bigint('number');
+				if (n === null || n < 2n || n >= 1n << 64n) {
 					return {
 						rows: [
 							{
 								label: 'Result',
 								labelZh: '计算结果',
-								value: '— (enter a whole number ≥ 2)',
-								valueZh: '— (请输入大于等于 2 的整数)',
+								value: '— (enter a whole number from 2 to 2^64−1)',
+								valueZh: '— (请输入 2 到 2^64−1 的整数)',
 							},
 						],
 					};
 				}
-				const parts: string[] = [];
-				let rest = n;
-				let div = 2;
-				while (div * div <= rest) {
-					let count = 0;
-					while (rest % div === 0) {
-						rest /= div;
-						count++;
-					}
-					if (count === 1) parts.push(String(div));
-					else if (count > 1) parts.push(`${div}^${count}`);
-					div++;
-				}
-				if (rest > 1) parts.push(String(rest));
-				let divisors = 1;
-				let r2 = n;
-				for (let i = 2; i * i <= n; i++) {
-					let c = 0;
-					while (r2 % i === 0) {
-						r2 /= i;
-						c++;
-					}
-					if (c) divisors *= c + 1;
-				}
-				if (r2 > 1) divisors *= 2;
-				const repr = parts.join(' × ');
+				const { factors, divisors } = factorWhole(n);
+				const repr = factors
+					.map(({ f, e }) => (e === 1 ? f.toString() : `${f}^${e}`))
+					.join(' × ');
 				return {
 					rows: [
 						{ label: 'Prime factorization', labelZh: '质因数分解', value: repr, valueZh: repr },

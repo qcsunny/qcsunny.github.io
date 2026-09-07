@@ -71,8 +71,10 @@ export interface FormField {
 	id: string;
 	label: string;
 	labelZh?: string;
-	/** input type rendered; 'select' needs options, 'checkbox' is boolean */
-	type?: 'number' | 'text' | 'select' | 'checkbox' | 'textarea';
+	/** input type rendered; 'select' needs options, 'checkbox' is boolean;
+	 *  'bigint' is a text field with a numeric keypad whose value is read as
+	 *  BigInt (use when the number can exceed Number's exact 2^53 range) */
+	type?: 'number' | 'bigint' | 'text' | 'select' | 'checkbox' | 'textarea';
 	def?: string;
 	placeholder?: string;
 	placeholderZh?: string;
@@ -122,6 +124,8 @@ export interface FormResult {
 export interface FormValues {
 	/** parsed number, NaN when empty/invalid */
 	num(id: string): number;
+	/** exact integer for a 'bigint' field; null when empty / not digits / > 2^64−1 */
+	bigint(id: string): bigint | null;
 	/** raw input string, trimmed */
 	str(id: string): string;
 	bool(id: string): boolean;
