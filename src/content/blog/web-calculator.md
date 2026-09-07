@@ -11,7 +11,7 @@ pubDate: 'Sep 01 2026'
 - **Units** → 独立成 11 个换算页 [/converters/length/](/converters/length/) 等（长度、重量、温度、面积、体积、速度、时间、数据大小、压强、功率、能量）
 - **Stats** → 并入 [/calculators/average/](/calculators/average/)（平均数与统计）
 
-旧地址 `/calculator/` 会自动跳转到新页面。
+拆分前的旧地址 `/calculator/` 现已下线。
 
 ## 一个注册表，49 个工具
 

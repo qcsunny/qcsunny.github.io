@@ -328,26 +328,6 @@ export const TOOL_WIDGETS: ToolEntry[] = [
 ];
 
 /** Every registry-driven tool page, all four categories. */
-/** Legacy redirects: every developer tool used to live at /tools/<slug> until the
- *  category grew its own hub. Moving it to /devtools/<slug> (same content, category
- *  renamed) left those URLs linked and indexed, so each old path keeps working by
- *  meta-refresh + rel=canonical to the new page. Cloned from the real entries and
- *  pinned to the END of REGISTRY so a find()-by-slug (homepage featured cards, the
- *  related strip) never mistakes a stub for the real tool. */
-export const LEGACY_DEVTOOLS_REDIRECTS: ToolEntry[] = [
-	...TEXT_TOOLS,
-	...GENERATOR_TOOLS,
-	...TOOL_WIDGETS,
-].map(
-	(e) =>
-		({
-			...e,
-			category: 'tools',
-			kind: 'redirect',
-			config: { target: `/devtools/${e.slug}/` },
-		}) as ToolEntry,
-);
-
 export const REGISTRY: ToolEntry[] = [
 	...CALCULATOR_TOOLS,
 	...CONVERTER_TOOLS,
@@ -355,7 +335,6 @@ export const REGISTRY: ToolEntry[] = [
 	...TEXT_TOOLS,
 	...GENERATOR_TOOLS,
 	...TOOL_WIDGETS,
-	...LEGACY_DEVTOOLS_REDIRECTS,
 ];
 
 export function findEntry(category: string, slug: string): ToolEntry | undefined {
