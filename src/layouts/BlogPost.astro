@@ -4,12 +4,13 @@ import { getCollection, type CollectionEntry } from 'astro:content';
 import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
+import ReadingTime from '../components/ReadingTime.astro';
 import Header from '../components/Header.astro';
 import { buildBlogSearchConfig } from '../components/tools/blogSearchConfig';
 import TableOfContents from '../components/blog/TableOfContents.astro';
 import SupportBox from '../components/SupportBox.astro';
 import { ADSENSE_CLIENT, AD_SLOTS, SITE_TITLE } from '../consts';
-import { TOOL_COUNT } from '../tools/registry';
+import { CALCULATOR_FEATURED, REGISTRY, TOOL_COUNT } from '../tools/registry';
 import katexHref from '../styles/katex.css?url';
 
 // The tools card used to say "40+"; a hardcoded count ages into a lie as tools
@@ -21,9 +22,13 @@ const toolTotal = TOOL_COUNT;
 // Astro auto-binds props typing to `interface Props` but not to a `type`
 // alias, so headings silently stayed never[] and the TOC filter's `h` was
 // untyped (two latent astro-check errors on main; CI never runs it). An
-// interface cannot extend the indexed-access `CollectionEntry<'blog'>['data']`,
-// so keep the alias and make the binding explicit with a cast.
-type Props = CollectionEntry<'blog'>['data'] & {
+// interface cannot extend the indexed-access `CollectionEntry<'blog'>['data']`
+// while replacing the relation fields with resolved cards, so omit those two
+// fields and make the binding explicit with a cast.
+type RelatedPost = { slug: string; title: string; description: string; contentLang: string };
+type Props = Omit<CollectionEntry<'blog'>['data'], 'relatedTools' | 'relatedPosts'> & {
+	relatedTools?: string[];
+	relatedPosts?: RelatedPost[];
 	minutes?: number;
 	slug?: string;
 	hasMath?: boolean;
@@ -31,16 +36,40 @@ type Props = CollectionEntry<'blog'>['data'] & {
 	headings?: { depth: number; slug: string; text: string }[];
 };
 
-const { title, description, pubDate, updatedDate, heroImage, minutes, slug, hasMath, headings = [] } =
-	Astro.props as Props;
+const {
+	title,
+	description,
+	pubDate,
+	updatedDate,
+	asOfDate,
+	heroImage,
+	contentLang,
+	relatedTools = [],
+	relatedPosts = [],
+	minutes,
+	slug,
+	hasMath,
+	headings = [],
+} = Astro.props as Props;
+
+const allTools = [...CALCULATOR_FEATURED, ...REGISTRY];
+const relatedToolEntries = relatedTools
+	.map((key) => {
+		const [category, toolSlug] = key.split('/');
+		return allTools.find((tool) => tool.category === category && tool.slug === toolSlug);
+	})
+	.filter((tool): tool is NonNullable<typeof tool> => Boolean(tool))
+	.filter((tool) => tool.kind !== 'redirect');
 
 // The Header's search button stays pointed at the blog collection on a reading
 // page too, so hopping to a neighbouring article never needs a trip back to the
 // list first.
 const blogSearchConfig = buildBlogSearchConfig(await getCollection('blog'));
 
-const isZh = /[\p{Script=Han}]/u.test(title);
-const pageLang = isZh ? 'zh-CN' : 'en';
+// The document language follows the UI toggle at runtime; content language is
+// explicit metadata so assistive technology and crawlers can read the authored
+// article language independently of the visitor's interface language.
+const pageLang = 'en';
 
 // h2/h3 only: every h1 on the page is the article title itself, and h4+
 // entries are noise in a 250px column. Three entries minimum — a two-entry
@@ -67,10 +96,11 @@ const jsonLd = {
 	headline: title,
 	description: description,
 	datePublished: pubDate.toISOString(),
-	dateModified: (updatedDate || pubDate).toISOString(),
+	...(updatedDate ? { dateModified: updatedDate.toISOString() } : {}),
+	...(asOfDate ? { temporalCoverage: `..${asOfDate.toISOString().slice(0, 10)}` } : {}),
 	url: pageUrl,
 	image: imageUrl,
-	inLanguage: pageLang,
+	inLanguage: contentLang,
 	author: {
 		'@type': 'Person',
 		name: 'QCSunny',
@@ -379,7 +409,7 @@ const jsonLd = {
 							</span>
 							<FormattedDate date={pubDate} />
 							<span aria-hidden="true">·</span>
-							{minutes && <span>{minutes}<span class="i18n-zh"> 分钟</span><span class="i18n-en"> min read</span></span>}
+							{minutes && <ReadingTime minutes={minutes} />}
 							{
 								updatedDate && (
 									<span class="last-updated-on">
@@ -388,33 +418,27 @@ const jsonLd = {
 								)
 							}
 						</p>
-						<h1>{title}</h1>
-						{description && <p class="lede">{description}</p>}
+						<h1 lang={contentLang}>{title}</h1>
+						{description && <p class="lede" lang={contentLang}>{description}</p>}
 					</header>
-					<slot />
+					<div class="post-content" lang={contentLang}>
+						<slot />
+					</div>
 
-					<aside class="blog-tools-card">
-						<h3>🛠️ 探索在线免注册小工具库</h3>
-						<p>
-							本站提供 {toolTotal} 款纯浏览器端运行、免登录的免费工具——格式化、编解码、金融测算与生成器都有，数据仅在本地运算，绝不上传任何服务器：
-						</p>
-						<div class="tool-links">
-							<a class="tool-chip" href="/devtools/json-formatter/">JSON 格式化</a>
-							<a class="tool-chip" href="/devtools/sql-formatter/">SQL 格式化</a>
-							<a class="tool-chip" href="/devtools/jwt-decoder/">JWT 解码</a>
-							<a class="tool-chip" href="/devtools/url-parser/">URL 解析</a>
-							<a class="tool-chip" href="/finance/compound-interest/">复利计算器</a>
-							<a class="tool-chip" href="/finance/mortgage/">房贷计算器</a>
-							<a class="tool-chip" href="/finance/tax/">个人所得税计算器</a>
-							<a class="tool-chip" href="/devtools/uuid-generator/">UUID 生成器</a>
-							<a class="tool-chip" href="/calculators/standard/">科学计算器</a>
-							<a class="tool-chip" href="/calculators/percentage/">百分比计算器</a>
-						</div>
-						<a class="all-tools-link" href="/tools/">
-							<span class="i18n-zh">浏览全部 {toolTotal} 款工具 →</span>
-							<span class="i18n-en">Browse all {toolTotal} tools →</span>
-						</a>
-					</aside>
+					{(relatedToolEntries.length > 0 || relatedPosts.length > 0) && (
+						<aside class="blog-tools-card">
+							{relatedToolEntries.length > 0 && <>
+								<h3><span class="i18n-zh">配套工具</span><span class="i18n-en">Related tools</span></h3>
+								<p><span class="i18n-zh">用这些工具把文章中的方法直接跑起来。</span><span class="i18n-en">Try the methods from this article with these tools.</span></p>
+								<div class="tool-links">{relatedToolEntries.slice(0, 4).map((tool) => <a class="tool-chip" data-related-tool href={`/${tool.category}/${tool.slug}/`}><span class="i18n-en">{tool.name}</span><span class="i18n-zh">{tool.nameZh || tool.name}</span></a>)}</div>
+								<a class="all-tools-link" href="/tools/"><span class="i18n-zh">浏览全部 {toolTotal} 款工具 →</span><span class="i18n-en">Browse all {toolTotal} tools →</span></a>
+							</>}
+							{relatedPosts.length > 0 && <>
+								<h3><span class="i18n-zh">继续阅读</span><span class="i18n-en">Continue reading</span></h3>
+								<div class="tool-links">{relatedPosts.slice(0, 3).map((post) => <a class="tool-chip" data-related-post href={`/blog/${post.slug}/`} lang={post.contentLang}>{post.title}</a>)}</div>
+							</>}
+						</aside>
+					)}
 
 					<SupportBox />
 

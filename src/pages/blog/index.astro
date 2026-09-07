@@ -3,8 +3,10 @@ import { getCollection } from 'astro:content';
 import BaseHead from '../../components/BaseHead.astro';
 import Footer from '../../components/Footer.astro';
 import FormattedDate from '../../components/FormattedDate.astro';
+import ReadingTime from '../../components/ReadingTime.astro';
 import Header from '../../components/Header.astro';
-import { getBlogCategory } from '../../blog/blogMetadata';
+import { readingMinutes } from '../../blog/blogMetadata';
+import { BLOG_CATEGORIES, getBlogCategory } from '../../blog/blogMetadata';
 import { buildBlogSearchConfig } from '../../components/tools/blogSearchConfig';
 import { SITE_TITLE } from '../../consts';
 import { TOOL_COUNT } from '../../tools/registry';
@@ -24,13 +26,6 @@ const toolTotal = TOOL_COUNT;
 // articles instead of the tool registry.
 const blogSearchConfig = buildBlogSearchConfig(posts);
 
-// rough reading-time estimate: ~220 latin words or ~400 CJK chars per minute
-const readMinutes = (body: string): number => {
-	const words = body.match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu)?.length ?? 0;
-	const cjk = body.match(/[\p{Script=Han}]/gu)?.length ?? 0;
-	const minutes = (words - cjk) / 220 + cjk / 400;
-	return Math.max(1, Math.round(minutes));
-};
 ---
 
 <!doctype html>
@@ -63,11 +58,26 @@ const readMinutes = (body: string): number => {
 				</p>
 			</div>
 
+			<form class="blog-category-filter" data-blog-category-filter action="/blog/" method="get">
+				<span class="filter-label">
+					<span class="i18n-zh">按主题筛选</span>
+					<span class="i18n-en">Filter by topic</span>
+				</span>
+				<button type="submit" name="category" value="" data-blog-category="all" aria-pressed="true" aria-current="true">
+					<span class="i18n-zh">全部</span><span class="i18n-en">All</span>
+				</button>
+				{BLOG_CATEGORIES.map((category) => (
+					<button type="submit" name="category" value={category.key} data-blog-category={category.key} aria-pressed="false" aria-current="false">
+						<span class="i18n-zh">{category.labelZh}</span><span class="i18n-en">{category.labelEn}</span>
+					</button>
+				))}
+			</form>
+
 			<!-- Featured Hero Article -->
 			{
 				featured && (
-					<section class="featured-section">
-						<a class="featured-card" href={`/blog/${featured.id}/`} data-cat={getBlogCategory(featured.data.category).key}>
+					<section class="featured-section" data-blog-card-container data-cat={getBlogCategory(featured.data.category).key}>
+						<a class="featured-card" href={`/blog/${featured.id}/`} data-blog-card data-cat={getBlogCategory(featured.data.category).key}>
 							<div class="featured-badge-row">
 								<span class="featured-tag">
 									⭐ <span class="i18n-zh">最新精选</span><span class="i18n-en">Featured</span>
@@ -77,12 +87,12 @@ const readMinutes = (body: string): number => {
 									<span class="i18n-en">{getBlogCategory(featured.data.category).labelEn}</span>
 								</span>
 								<span class="read-time-pill">
-									{readMinutes(featured.body ?? '')}<span class="i18n-zh"> 分钟</span><span class="i18n-en"> min read</span>
+									<ReadingTime minutes={readingMinutes(featured.body ?? '')} />
 								</span>
 							</div>
 
-							<h2 class="featured-title">{featured.data.title}</h2>
-							<p class="featured-desc">{featured.data.description}</p>
+							<h2 class="featured-title" lang={featured.data.contentLang}>{featured.data.title}</h2>
+							<p class="featured-desc" lang={featured.data.contentLang}>{featured.data.description}</p>
 
 							<div class="featured-foot">
 								<div class="featured-meta">
@@ -116,7 +126,7 @@ const readMinutes = (body: string): number => {
 						rest.map((post) => {
 							const cat = getBlogCategory(post.data.category);
 							return (
-								<article class="article-card" data-cat={cat.key}>
+								<article class="article-card" data-blog-card data-cat={cat.key}>
 									<a href={`/blog/${post.id}/`} class="article-card-link">
 										<div class="article-meta-row">
 											<span class="cat-pill" style={`--cat-color: ${cat.color};`}>
@@ -127,11 +137,11 @@ const readMinutes = (body: string): number => {
 												<FormattedDate date={post.data.pubDate} />
 											</span>
 											<span class="meta-dot">·</span>
-											<span class="article-read">{readMinutes(post.body ?? '')}m</span>
+											<ReadingTime minutes={readingMinutes(post.body ?? '')} />
 										</div>
 
-										<h3 class="article-title">{post.data.title}</h3>
-										<p class="article-desc">{post.data.description}</p>
+										<h3 class="article-title" lang={post.data.contentLang}>{post.data.title}</h3>
+										<p class="article-desc" lang={post.data.contentLang}>{post.data.description}</p>
 
 										<div class="article-foot">
 											<span class="read-more">
@@ -167,6 +177,48 @@ const readMinutes = (body: string): number => {
 			</section>
 		</main>
 		<Footer />
+		<script is:inline>
+			(() => {
+				const filter = document.querySelector('[data-blog-category-filter]');
+				if (!filter) return;
+				const buttons = Array.from(filter.querySelectorAll('[data-blog-category]'));
+				const cards = Array.from(document.querySelectorAll('[data-blog-card]'));
+				const containers = Array.from(document.querySelectorAll('[data-blog-card-container]'));
+				const validCategories = new Set(buttons.map((button) => button.dataset.blogCategory));
+
+				const applyCategory = (category, updateUrl = false) => {
+					const selected = validCategories.has(category) ? category : 'all';
+					buttons.forEach((button) => {
+						const active = button.dataset.blogCategory === selected;
+						button.setAttribute('aria-pressed', String(active));
+						button.setAttribute('aria-current', String(active));
+					});
+					cards.forEach((card) => {
+						card.hidden = selected !== 'all' && card.dataset.cat !== selected;
+					});
+					containers.forEach((container) => {
+						container.hidden = selected !== 'all' && container.dataset.cat !== selected;
+					});
+					if (updateUrl) {
+						const url = new URL(window.location.href);
+						if (selected === 'all') url.searchParams.delete('category');
+						else url.searchParams.set('category', selected);
+						window.history.pushState({}, '', url.pathname + (url.search ? url.search : '') + url.hash);
+					}
+				};
+
+				const initial = new URLSearchParams(window.location.search).get('category') || 'all';
+				applyCategory(initial);
+				filter.addEventListener('submit', (event) => {
+					event.preventDefault();
+					const submitter = event.submitter;
+					applyCategory(submitter?.dataset.blogCategory || 'all', true);
+				});
+				window.addEventListener('popstate', () => {
+					applyCategory(new URLSearchParams(window.location.search).get('category') || 'all');
+				});
+			})();
+		</script>
 	</body>
 </html>
 
@@ -226,7 +278,46 @@ const readMinutes = (body: string): number => {
 		margin: 0;
 	}
 
-	/* --- FEATURED SECTION --- */
+	.blog-category-filter {
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+		flex-wrap: wrap;
+		margin: -1.1rem 0 2.6rem;
+	}
+
+	.filter-label {
+		color: var(--dim);
+		font-size: 0.84rem;
+		font-weight: 600;
+		margin-right: 0.2rem;
+	}
+
+	.blog-category-filter button {
+		border: 1px solid var(--gridline);
+		border-radius: 999px;
+		background: var(--card);
+		color: var(--dim);
+		cursor: pointer;
+		font: inherit;
+		font-size: 0.82rem;
+		padding: 0.38rem 0.75rem;
+		transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+	}
+
+	.blog-category-filter button:hover,
+	.blog-category-filter button:focus-visible {
+		border-color: var(--accent);
+		color: var(--accent);
+	}
+
+	.blog-category-filter button[aria-pressed='true'] {
+		background: var(--accent-soft);
+		border-color: var(--accent);
+		color: var(--accent);
+	}
+
+
 	.featured-section {
 		margin-bottom: 3.5rem;
 	}

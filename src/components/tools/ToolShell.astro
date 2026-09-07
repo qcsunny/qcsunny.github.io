@@ -9,8 +9,8 @@ import BaseHead from '../BaseHead.astro';
 import SiteLogo from '../SiteLogo.astro';
 import ToolSearchModal from './ToolSearchModal.astro';
 import { ADSENSE_CLIENT, AD_SLOTS, SITE_TITLE } from '../../consts';
+import { getCollection } from 'astro:content';
 import { TOOL_CONTENT } from '../../tools/content';
-import { TOOL_RELATED_ARTICLES } from '../../tools/relatedArticles';
 import {
 	CALCULATOR_FEATURED,
 	REGISTRY,
@@ -74,7 +74,17 @@ const articleKey = entry
 	: relatedCategory && selfSlug
 		? `${relatedCategory}/${selfSlug}`
 		: '';
-const relatedArticles = articleKey ? (TOOL_RELATED_ARTICLES[articleKey] ?? []) : [];
+const relatedArticles = articleKey
+	? (await getCollection('blog'))
+			.filter((post) => post.data.relatedTools.includes(articleKey))
+			.slice(0, 3)
+			.map((post) => ({
+				slug: post.id,
+				title: post.data.title,
+				description: post.data.description,
+				contentLang: post.data.contentLang,
+			}))
+	: [];
 
 // --- JSON-LD structured data ---
 const pageUrl = new URL(Astro.url.pathname, Astro.site).href;
@@ -1980,15 +1990,9 @@ const year = new Date().getFullYear();
 												<span class="i18n-en">Deep Dive</span>
 												<span class="i18n-zh">技术精读</span>
 											</div>
-											<h3 class="t-article-title">
-												<span class="i18n-en">{art.title}</span>
-												<span class="i18n-zh">{art.titleZh}</span>
-											</h3>
-											<p class="t-article-summary">
-												<span class="i18n-en">{art.summary}</span>
-												<span class="i18n-zh">{art.summaryZh}</span>
-											</p>
-											<span class="t-article-more">
+											<h3 class="t-article-title" lang={art.contentLang}>{art.title}</h3>
+												<p class="t-article-summary" lang={art.contentLang}>{art.description}</p>
+												<span class="t-article-more">
 												<span class="i18n-en">Read full article &rarr;</span>
 												<span class="i18n-zh">阅读完整解析 &rarr;</span>
 											</span>

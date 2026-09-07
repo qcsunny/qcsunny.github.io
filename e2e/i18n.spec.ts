@@ -164,7 +164,7 @@ async function chineseInEnglishView(page: Page, maxShare: number): Promise<strin
 			// The blog is written in Chinese and has no English edition, so the
 			// homepage's post cards print Chinese titles in both views on purpose.
 			// The toolbox chrome around them is what this sweep is for.
-			if (el.closest('.post-card')) return;
+			if (el.closest('.post-card, .t-article-card, [data-related-post]')) return;
 			if (el.closest('.t-content')) {
 				if (s >= maxShare) push(`prose is ${Math.round(s * 100)}% Chinese`, el, text);
 			} else push(why, el, text);

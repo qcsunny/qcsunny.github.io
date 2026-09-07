@@ -75,6 +75,15 @@ test('llms.txt is generated and its stated tool count matches its listing', asyn
 	expect(stated, 'SITE_DESCRIPTION must state the registry tool count').toBe(claimed);
 });
 
+test('RSS feed entries are in non-increasing publication date order', async ({ request }) => {
+	const res = await request.get('/rss.xml');
+	expect(res.status()).toBe(200);
+	const dates = [...(await res.text()).matchAll(/<pubDate>([^<]+)<\/pubDate>/g)].map((m) => Date.parse(m[1]));
+	expect(dates.length).toBeGreaterThan(1);
+	expect(dates.every((date, index) => index === 0 || date <= dates[index - 1])).toBe(true);
+});
+
+
 test('blog posts get a generated 1200x630 OG card', async ({ page, request }) => {
 	await page.goto('/blog/uuid-v4-vs-v7-database-guide/');
 

@@ -4,71 +4,74 @@ import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 import { CALCULATOR_FEATURED, REGISTRY } from '../src/tools/registry';
 
-// BlogPost.astro hardcodes a .blog-tools-card listing a fixed handful of tool
-// chips, and every post renders it. That makes it the single strongest internal
-// link source on the site — 17 posts × N chips — so one typo in an href silently
-// 404s on 17 pages at once. Nothing else in the suite catches it: seo.spec walks
-// the sitemap, not a post's outbound links, and a dead chip is invisible in the
-// HTML too.
-//
-// It is also the one place where ordering is *not* the ranking. The related-tools
-// strip and the search modal both read REGISTRY declaration order, so naming a
-// tool here is the only way to hand it internal links without reshuffling a
-// category. The list is kept in sync by hand; this file is what stops that hand
-// from drifting.
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const DIST = join(ROOT, 'dist');
+const BLOG = join(ROOT, 'src/content/blog');
+const tools = [...CALCULATOR_FEATURED, ...REGISTRY].filter((tool) => tool.kind !== 'redirect');
+const toolKeys = new Set(tools.map((tool) => `${tool.category}/${tool.slug}`));
+const routeOfTool = (key: string) => `/${key}/`;
+const routeOfPost = (slug: string) => `/blog/${slug}/`;
 
-const DIST = fileURLToPath(new URL('../dist', import.meta.url));
-const CHIP_RE = /class="tool-chip" href="([^"]+)"/g;
+function frontmatter(file: string) {
+	const text = readFileSync(join(BLOG, file), 'utf8');
+	const block = text.match(/^---\n([\s\S]*?)\n---/m)?.[1] ?? '';
+	const readArray = (name: string) => {
+		const raw = block.match(new RegExp(`^${name}:\\s*\\[([^\\]]*)\\]`, 'm'))?.[1] ?? '';
+		return [...raw.matchAll(/['"]([^'"]+)['"]/g)].map((match) => match[1]);
+	};
+	return {
+		slug: file.replace(/\.mdx?$/, ''),
+		relatedTools: readArray('relatedTools'),
+		relatedPosts: readArray('relatedPosts'),
+	};
+}
 
-const posts = readdirSync(join(DIST, 'blog'), { withFileTypes: true })
-	.filter((d) => d.isDirectory())
-	.map((d) => d.name);
+const posts = readdirSync(BLOG).filter((file) => /\.mdx?$/.test(file)).map(frontmatter);
+const postSlugs = new Set(posts.map((post) => post.slug));
+const htmlOf = (slug: string) => readFileSync(join(DIST, 'blog', slug, 'index.html'), 'utf8');
+const hrefs = (html: string) => [...html.matchAll(/href="([^"]+)"/g)].map((match) => match[1]);
 
-const chipsOf = (html: string): string[] => [...html.matchAll(CHIP_RE)].map((m) => m[1]);
-
-test('every post renders the card, and every card carries the same chip set', async () => {
-	expect(posts, 'the build has blog posts').not.toHaveLength(0);
-
-	const counts = new Set<number>();
-	const sets = new Set<string>();
-	const bad: string[] = [];
-	for (const post of posts) {
-		const html = readFileSync(join(DIST, 'blog', post, 'index.html'), 'utf-8');
-		const chips = chipsOf(html);
-		if (!html.includes('class="blog-tools-card"')) bad.push(`${post} (no card)`);
-		else if (!chips.length) bad.push(`${post} (card without chips)`);
-		else {
-			counts.add(chips.length);
-			sets.add(chips.join('\n'));
+for (const post of posts) {
+	test(`blog relations match frontmatter: ${post.slug}`, async () => {
+		const html = htmlOf(post.slug);
+		const relatedToolHrefs = [...html.matchAll(/<a[^>]*data-related-tool[^>]*href="([^"]+)"/g)].map((match) => match[1]);
+		const relatedPostHrefs = [...html.matchAll(/<a[^>]*data-related-post[^>]*href="([^"]+)"/g)].map((match) => match[1]);
+		expect(new Set(relatedToolHrefs), `${post.slug} tool links`).toEqual(
+			new Set(post.relatedTools.map(routeOfTool)),
+		);
+		expect(new Set(relatedPostHrefs), `${post.slug} article links`).toEqual(
+			new Set(post.relatedPosts.map(routeOfPost)),
+		);
+		if (post.relatedTools.length === 0) expect(html).not.toContain('data-related-tool');
+		for (const href of [...relatedToolHrefs, ...relatedPostHrefs]) {
+			expect(existsSync(join(DIST, href.slice(1), 'index.html')), `${post.slug} -> ${href}`).toBe(true);
 		}
-	}
+	});
+}
 
-	expect(bad, 'every post shows the card').toEqual([]);
-	expect(counts.size, 'no post renders a different number of chips').toBe(1);
-	expect(
-		sets.size,
-		'no post renders a different chip set — the card is shared markup',
-	).toBe(1);
+test('frontmatter relations have no duplicate, self, or dead references', async () => {
+	const errors: string[] = [];
+	for (const post of posts) {
+		for (const list of [post.relatedTools, post.relatedPosts]) {
+			if (new Set(list).size !== list.length) errors.push(`${post.slug}: duplicate relation`);
+		}
+		if (post.relatedPosts.includes(post.slug)) errors.push(`${post.slug}: self relation`);
+		for (const key of post.relatedTools) if (!toolKeys.has(key)) errors.push(`${post.slug}: unknown tool ${key}`);
+		for (const slug of post.relatedPosts) if (!postSlugs.has(slug)) errors.push(`${post.slug}: unknown post ${slug}`);
+	}
+	expect(errors).toEqual([]);
 });
 
-test('every chip resolves to a built page and to a live registry entry', async () => {
-	const chips = chipsOf(readFileSync(join(DIST, 'blog', posts[0], 'index.html'), 'utf-8'));
-	expect(chips, 'the card links some tools').not.toHaveLength(0);
-
-	// The same union ToolShell uses for its related pool: the featured calculators
-	// (standard, graph, graph3d) live in their own array and are absent from REGISTRY.
-	const known = [...CALCULATOR_FEATURED, ...REGISTRY];
-
-	const bad: string[] = [];
-	for (const href of chips) {
-		if (!href.startsWith('/')) bad.push(`${href} (not site-relative)`);
-		else if (!existsSync(join(DIST, href.slice(1), 'index.html')))
-			bad.push(`${href} (404s on all ${posts.length} posts)`);
-		else {
-			const slug = href.split('/').filter(Boolean).pop();
-			if (!known.some((e) => e.slug === slug))
-				bad.push(`${href} (${slug} is no longer a registry slug)`);
-		}
+test('tool pages render the reverse blog relation from frontmatter', async () => {
+	const expected = new Map<string, string[]>();
+	for (const post of posts) for (const tool of post.relatedTools) (expected.get(tool) ?? expected.set(tool, []).get(tool)!).push(post.slug);
+	const errors: string[] = [];
+	for (const [key, slugs] of expected) {
+		const html = readFileSync(join(DIST, key, 'index.html'), 'utf8');
+		const actual = hrefs(html).filter((href) => href.startsWith('/blog/')).map((href) => href.split('/')[2]);
+		if (new Set(actual).size !== actual.length) errors.push(`${key}: duplicate reverse article`);
+		if (new Set(actual).size !== new Set(slugs).size || actual.some((slug) => !slugs.includes(slug)))
+			errors.push(`${key}: expected ${slugs.join(',')}, got ${actual.join(',')}`);
 	}
-	expect(bad, 'renaming a registry slug would otherwise break the chip silently').toEqual([]);
+	expect(errors).toEqual([]);
 });
