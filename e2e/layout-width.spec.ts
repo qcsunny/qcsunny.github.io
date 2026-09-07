@@ -93,18 +93,19 @@ test('/about/ — feature cards fill the 820 reading column as a 2×2 grid', asy
 	expect(Math.abs(geo.gridX - geo.frameX), 'hung off the frame’s left edge').toBeLessThanOrEqual(1);
 });
 
-// The 'tools' category's hub IS /tools/, which the first breadcrumb segment
-// already links — the middle crumb used to point at /tools/ again and just
-// reload the same page. It now anchors the category section; the categories
-// with their own hub route keep it.
-test('the category breadcrumb never duplicates the Tools crumb’s destination', async ({ page }) => {
+// Every category has its own hub route (/finance/, /calculators/, /converters/
+// and /tools/devtools/ for the developer tools), so a category breadcrumb always
+// lands on a page whose title is the category's name — never on /tools/ itself,
+// which the first crumb already links and which used to make the middle crumb
+// reload the same page (the pre-hub /tools/#cat-tools anchor was the stopgap).
+test('the category breadcrumb lands on each category’s own hub, never /tools/ itself', async ({ page }) => {
 	await page.goto('/tools/word-counter/');
 	const crumbs = page.locator('.t-crumbs a');
 	await expect(crumbs.nth(0)).toHaveAttribute('href', '/tools/');
-	await expect(crumbs.nth(1)).toHaveAttribute('href', '/tools/#cat-tools');
-	// and the anchor actually exists on the hub
-	await page.goto('/tools/');
-	await expect(page.locator('#cat-tools')).toHaveCount(1);
+	await expect(crumbs.nth(1)).toHaveAttribute('href', '/tools/devtools/');
+	// and that hub page really exists, titled by the category
+	await page.goto('/tools/devtools/');
+	await expect(page.locator('h1')).toContainText('Developer');
 
 	await page.goto('/finance/mortgage/');
 	await expect(page.locator('.t-crumbs a').nth(1)).toHaveAttribute('href', '/finance/');

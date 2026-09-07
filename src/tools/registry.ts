@@ -292,13 +292,14 @@ export function categoryLabelZh(id: ToolCategory): string {
 	return CATEGORIES.find((c) => c.id === id)?.labelZh ?? id;
 }
 
-/** Breadcrumb href for a category. Three categories have their own hub route
- *  (/finance/, /calculators/, /converters/), but `tools`'s hub IS the /tools/
- *  index the first breadcrumb segment already points at — linking /tools/
- *  again made the middle crumb reload the very page the first crumb leads to.
- *  Point it at the category's section anchor on that index instead. */
+/** Breadcrumb href for a category — each category has its own hub page, so a
+ *  category link always lands on a page whose title is that category's name:
+ *  /finance/, /calculators/, /converters/ and, for `tools`, /tools/devtools/.
+ *  (Linking `tools` to /tools/ itself used to make the middle crumb reload the
+ *  very page the first crumb leads to; the anchor variant was a stopgap until
+ *  the category got its own small hub.) */
 export function categoryHref(id: ToolCategory): string {
-	return id === 'tools' ? '/tools/#cat-tools' : `/${id}/`;
+	return id === 'tools' ? '/tools/devtools/' : `/${id}/`;
 }
 
 /** Registry entries for /tools/qr-code-generator and /tools/color-converter.

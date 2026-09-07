@@ -1,0 +1,31 @@
+---
+// Tools-category hub: the 16 developer & security tools (formatters, JWT, URL,
+// generators, widgets), on their own page. The Tools hub at /tools/ is the
+// aggregated view of every category; this is the single-category view the
+// breadcrumb on a /tools/<slug>/ page links to, mirroring how finance,
+// calculators and converters each have their own category hub.
+import ToolShell from '../../components/tools/ToolShell.astro';
+import ToolSearchBar from '../../components/tools/ToolSearchBar.astro';
+import { REGISTRY } from '../../tools/registry';
+
+const entries = REGISTRY.filter((e) => e.category === 'tools' && e.kind !== 'redirect');
+---
+<ToolShell title="Developer & Security Tools" titleZh="开发调试与安全工具" description="Developer utilities: JSON/SQL/HTML/CSS/XML formatters, JWT decoder, URL parser, Base64, generators and color tools.">
+	<ToolSearchBar category="tools" placeholder="Search developer tools (e.g. JSON, SQL, JWT, UUID, QR)..." placeholderZh="搜索开发调试与安全工具 (如 JSON、SQL、JWT、UUID、二维码)..." totalCount={entries.length} />
+	<div class="t-cards">
+		{
+			entries.map((e) => (
+				<a class="t-card" href={`/${e.category}/${e.slug}/`} data-slug={e.slug} data-cat={e.category}>
+					<h2>
+						<span class="i18n-en">{e.name}</span>
+						<span class="i18n-zh">{e.nameZh || e.name}</span>
+					</h2>
+					<p>
+						<span class="i18n-en">{e.description}</span>
+						{e.descriptionZh && <span class="i18n-zh">{e.descriptionZh}</span>}
+					</p>
+				</a>
+			))
+		}
+	</div>
+</ToolShell>
