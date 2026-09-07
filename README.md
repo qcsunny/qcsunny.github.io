@@ -1,12 +1,12 @@
 # QCSunny Lab
 
-> 个人博客与 49 个纯浏览器端在线工具——科学计算器、单位换算、金融计算、二维码生成器等。A bilingual (中文 / English) static site: an engineering blog plus 49 in-browser tools that run with no backend.
+> 个人博客与 59 个纯浏览器端在线工具——科学计算器、单位换算、金融计算、二维码生成器等。A bilingual (中文 / English) static site: an engineering blog plus 59 in-browser tools that run with no backend.
 
 Live at **<https://qcsunny.org>** (canonical). The repo is mirrored to GitHub Pages at `qcsunny.github.io`; canonical URLs, the sitemap, and OG cards always point at `qcsunny.org`.
 
 ## Features
 
-- **49 browser-side tools** — calculators (scientific, graph, 3D surface), unit converters, finance helpers (compound interest, mortgage, loan), and developer tools (JSON / SQL formatter, JWT decoder, QR & UUID generator, color converter, …). Each tool is a single page; all computation happens client-side, no server round-trip.
+- **59 browser-side tools** — calculators (scientific, graph, 3D surface), unit converters, finance helpers (compound interest, mortgage, loan), and developer tools (JSON / SQL formatter, JWT decoder, QR & UUID generator, color converter, …). Each tool is a single page; all computation happens client-side, no server round-trip.
 - **Bilingual** — every page is Chinese + English via `html[data-lang]` + CSS. The first paint is English (no-JS default); the toggle is sticky across tabs via `localStorage`.
 - **Zero-JS prose** — blog posts, the about page, and listings ship no first-party JavaScript. Words render from HTML at build time.
 - **Engineering blog** — Markdown via Astro Content Collections, with build-time KaTeX math rendering and a generated RSS feed.

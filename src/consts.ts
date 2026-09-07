@@ -6,7 +6,7 @@ export const SITE_TITLE = 'QCSunny Lab';
  *  tool without touching this line fails the build gate. It has drifted twice
  *  already (34, then 48). */
 export const SITE_DESCRIPTION =
-	'个人博客与免费在线工具集：科学计算器、单位换算、复利与房贷计算、二维码生成器等 49 个纯浏览器端工具。Free browser-based tools: calculators, converters, finance helpers and more.';
+	'个人博客与免费在线工具集：科学计算器、单位换算、复利与房贷计算、二维码生成器等 59 个纯浏览器端工具。Free browser-based tools: calculators, converters, finance helpers and more.';
 
 /** GitHub Sponsors (or any donation) page for the "support this site" block on
  *  the About page and post footers. Empty = the sponsor button is not rendered;

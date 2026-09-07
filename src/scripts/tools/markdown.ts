@@ -38,7 +38,7 @@ export const SAMPLE_MARKDOWN_ZH = `# Markdown 实时渲染与编辑工具 (QCSun
 
 甚至还能结合超链接与图片：
 - 官方主页：[QCSunny Lab 首页](/)
-- 工具库：[浏览 49 款实用工具](/tools/)
+- 工具库：[浏览全部实用工具](/tools/)
 
 > **引用名言**：  
 > “工欲善其事，必先利其器。”  

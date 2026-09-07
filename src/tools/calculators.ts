@@ -330,4 +330,209 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 		config: simpleInterest,
 	},
 	// the three finance overlaps live on /finance/* — these paths redirect
+
+	{
+		slug: 'prime-factorization',
+		category: 'calculators',
+		name: 'Prime Factorization',
+		nameZh: '质因数分解',
+		description: 'Factor a whole number into primes as 2^3 × 3 × 5, with the divisor count.',
+		descriptionZh: '把一个整数分解为质因数（如 2^3 × 3 × 5），并给出约数个数。',
+		kind: 'form',
+		config: {
+			fields: [
+				{ id: 'number', label: 'Number', labelZh: '待分解整数', type: 'number', def: '360', step: '1', min: '2', required: true },
+			],
+			compute: (v) => {
+				const n = v.num('number');
+				if (!Number.isInteger(n) || n < 2 || n > 2 ** 53) {
+					return {
+						rows: [
+							{
+								label: 'Result',
+								labelZh: '计算结果',
+								value: '— (enter a whole number ≥ 2)',
+								valueZh: '— (请输入大于等于 2 的整数)',
+							},
+						],
+					};
+				}
+				const parts: string[] = [];
+				let rest = n;
+				let div = 2;
+				while (div * div <= rest) {
+					let count = 0;
+					while (rest % div === 0) {
+						rest /= div;
+						count++;
+					}
+					if (count === 1) parts.push(String(div));
+					else if (count > 1) parts.push(`${div}^${count}`);
+					div++;
+				}
+				if (rest > 1) parts.push(String(rest));
+				let divisors = 1;
+				let r2 = n;
+				for (let i = 2; i * i <= n; i++) {
+					let c = 0;
+					while (r2 % i === 0) {
+						r2 /= i;
+						c++;
+					}
+					if (c) divisors *= c + 1;
+				}
+				if (r2 > 1) divisors *= 2;
+				const repr = parts.join(' × ');
+				return {
+					rows: [
+						{ label: 'Prime factorization', labelZh: '质因数分解', value: repr, valueZh: repr },
+						{ label: 'Number of divisors', labelZh: '约数个数', value: String(divisors), valueZh: String(divisors) },
+					],
+				};
+			},
+		},
+	},
+	{
+		slug: 'combinatorics',
+		category: 'calculators',
+		name: 'Combinations & Permutations',
+		nameZh: '组合与排列计算器',
+		description: 'Compute nCr (combinations), nPr (permutations) and n! with exact BigInt results.',
+		descriptionZh: '精确计算组合数 nCr、排列数 nPr 与阶乘 n!，大数使用 BigInt 无溢出。',
+		kind: 'form',
+		config: {
+			fields: [
+				{ id: 'n', label: 'n', labelZh: '总数 n', type: 'number', def: '10', step: '1', min: '0', required: true },
+				{ id: 'r', label: 'r (choose r)', labelZh: '选取数 r', type: 'number', def: '3', step: '1', min: '0', required: true },
+			],
+			compute: (v) => {
+				const n = v.num('n');
+				const r = v.num('r');
+				if (!Number.isInteger(n) || !Number.isInteger(r) || n < 0 || r < 0 || r > n) {
+					return {
+						rows: [
+							{
+								label: 'Result',
+								labelZh: '计算结果',
+								value: '— (integers with 0 ≤ r ≤ n)',
+								valueZh: '— (请输入满足 0 ≤ r ≤ n 的整数)',
+							},
+						],
+					};
+				}
+				if (n > 2000) {
+					return {
+						rows: [
+							{
+								label: 'Result',
+								labelZh: '计算结果',
+								value: '— (n is capped at 2000)',
+								valueZh: '— (n 上限为 2000)',
+							},
+						],
+					};
+				}
+				const fac = (x: number) => {
+					let p = 1n;
+					for (let i = 2n; i <= BigInt(x); i++) p *= i;
+					return p;
+				};
+				const perm = fac(n) / fac(n - r);
+				const comb = perm / fac(r);
+				return {
+					rows: [
+						{ label: 'n! (factorial)', labelZh: '阶乘 n!', value: fac(n).toString(), valueZh: fac(n).toString() },
+						{ label: 'nPr (permutations)', labelZh: '排列数 nPr', value: perm.toString(), valueZh: perm.toString() },
+						{ label: 'nCr (combinations)', labelZh: '组合数 nCr', value: comb.toString(), valueZh: comb.toString() },
+					],
+				};
+			},
+		},
+	},
+	{
+		slug: 'descriptive-statistics',
+		category: 'calculators',
+		name: 'Descriptive Statistics',
+		nameZh: '描述统计与线性回归',
+		description: 'Mean, median, sample variance and standard deviation, min/max and simple linear regression.',
+		descriptionZh: '计算均值、中位数、样本方差与标准差、极值，并对 y 关于 x 做一元线性回归。',
+		kind: 'form',
+		config: {
+			fields: [
+				{
+					id: 'y',
+					label: 'Values (comma or space separated)',
+					labelZh: '数值列表（逗号或空格分隔）',
+					type: 'textarea',
+					def: '1, 2, 3, 4, 5',
+				},
+				{
+					id: 'x',
+					label: 'Optional x (for linear regression)',
+					labelZh: '可选 x 列表（用于线性回归）',
+					type: 'textarea',
+					def: '',
+				},
+			],
+			compute: (v) => {
+				const nums = (s: string) =>
+					s
+						.split(/[,;\s]+/)
+						.map((x) => Number(x))
+						.filter((x) => Number.isFinite(x));
+				const y = nums(v.str('y'));
+				const x = nums(v.str('x'));
+				if (y.length === 0) {
+					return {
+						rows: [
+							{
+								label: 'Result',
+								labelZh: '计算结果',
+								value: '— (enter at least one value)',
+								valueZh: '— (请至少输入一个数值)',
+							},
+						],
+					};
+				}
+				const mean = y.reduce((a, b) => a + b, 0) / y.length;
+				const sorted = [...y].sort((a, b) => a - b);
+				const mid = sorted.length >> 1;
+				const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+				const variance = y.reduce((a, b) => a + (b - mean) ** 2, 0) / (y.length - 1);
+				const std = Math.sqrt(variance);
+				const fmt = (n: number) => String(Math.round(n * 1e6) / 1e6);
+				const rows = [
+					{ label: 'Count', labelZh: '数据个数', value: String(y.length), valueZh: String(y.length) },
+					{ label: 'Mean', labelZh: '平均值', value: fmt(mean), valueZh: fmt(mean) },
+					{ label: 'Median', labelZh: '中位数', value: fmt(median), valueZh: fmt(median) },
+					{ label: 'Sample variance', labelZh: '样本方差', value: fmt(variance), valueZh: fmt(variance) },
+					{ label: 'Sample std. deviation', labelZh: '样本标准差', value: fmt(std), valueZh: fmt(std) },
+					{ label: 'Min', labelZh: '最小值', value: fmt(Math.min(...sorted)), valueZh: fmt(Math.min(...sorted)) },
+					{ label: 'Max', labelZh: '最大值', value: fmt(Math.max(...sorted)), valueZh: fmt(Math.max(...sorted)) },
+				];
+				if (x.length === y.length && x.length >= 2) {
+					const mx = x.reduce((a, b) => a + b, 0) / x.length;
+					const sxy = x.reduce((a, xi, i) => a + (xi - mx) * (y[i] - mean), 0);
+					const sxx = x.reduce((a, xi) => a + (xi - mx) ** 2, 0);
+					if (sxx !== 0) {
+						const slope = sxy / sxx;
+						const inter = mean - slope * mx;
+						rows.push({
+							label: 'Regression slope (y ~ a + b·x)',
+							labelZh: '回归斜率 b',
+							value: fmt(slope),
+							valueZh: fmt(slope),
+						});
+						rows.push({
+							label: 'Regression intercept',
+							labelZh: '回归截距 a',
+							value: fmt(inter),
+							valueZh: fmt(inter),
+						});
+					}
+				}
+				return { rows };
+			},
+		},
+	},
 ];
