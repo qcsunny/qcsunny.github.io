@@ -626,15 +626,18 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 				const sorted = [...y].sort((a, b) => a - b);
 				const mid = sorted.length >> 1;
 				const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-				const variance = y.reduce((a, b) => a + (b - mean) ** 2, 0) / (y.length - 1);
-				const std = Math.sqrt(variance);
+				// Sample variance divides by n−1: a single value would be 0/0 = NaN.
+				// Show the em dash like the average tool does instead of a "NaN" row.
+				const variance = y.length >= 2 ? y.reduce((a, b) => a + (b - mean) ** 2, 0) / (y.length - 1) : null;
+				const std = variance === null ? null : Math.sqrt(variance);
 				const fmt = (n: number) => String(Math.round(n * 1e6) / 1e6);
+				const dash = '—';
 				const rows = [
 					{ label: 'Count', labelZh: '数据个数', value: String(y.length), valueZh: String(y.length) },
 					{ label: 'Mean', labelZh: '平均值', value: fmt(mean), valueZh: fmt(mean) },
 					{ label: 'Median', labelZh: '中位数', value: fmt(median), valueZh: fmt(median) },
-					{ label: 'Sample variance', labelZh: '样本方差', value: fmt(variance), valueZh: fmt(variance) },
-					{ label: 'Sample std. deviation', labelZh: '样本标准差', value: fmt(std), valueZh: fmt(std) },
+					{ label: 'Sample variance', labelZh: '样本方差', value: variance === null ? dash : fmt(variance), valueZh: variance === null ? dash : fmt(variance) },
+					{ label: 'Sample std. deviation', labelZh: '样本标准差', value: std === null ? dash : fmt(std), valueZh: std === null ? dash : fmt(std) },
 					{ label: 'Min', labelZh: '最小值', value: fmt(Math.min(...sorted)), valueZh: fmt(Math.min(...sorted)) },
 					{ label: 'Max', labelZh: '最大值', value: fmt(Math.max(...sorted)), valueZh: fmt(Math.max(...sorted)) },
 				];
