@@ -20,6 +20,12 @@ export interface UnitCategory {
 	id: string;
 	label: string;
 	labelZh?: string;
+	/**
+	 * Default source unit — the most commonly used international unit for this
+	 * category. Falls back to the first defined unit when unset, so the
+	 * declaration order still rules for any category without a preference.
+	 */
+	defaultSource?: string;
 	units: Record<string, UnitDef>;
 }
 
@@ -44,6 +50,7 @@ export const UNIT_CATEGORIES: UnitCategory[] = [
 		id: 'weight',
 		label: 'Weight & Mass',
 		labelZh: '重量与质量',
+		defaultSource: 'kg',
 		units: {
 			// Metric
 			ug: lin('microgram (µg)', 1e-9, '微克', 'µg'),
@@ -84,6 +91,7 @@ export const UNIT_CATEGORIES: UnitCategory[] = [
 		id: 'length',
 		label: 'Length',
 		labelZh: '长度与距离',
+		defaultSource: 'm',
 		units: {
 			// Metric
 			pm: lin('picometer (pm)', 1e-12, '皮米', 'pm'),
@@ -123,6 +131,7 @@ export const UNIT_CATEGORIES: UnitCategory[] = [
 		id: 'area',
 		label: 'Area',
 		labelZh: '面积',
+		defaultSource: 'm2',
 		units: {
 			// Metric
 			mm2: lin('square millimeter (mm²)', 1e-6, '平方毫米', 'mm²'),
@@ -153,6 +162,7 @@ export const UNIT_CATEGORIES: UnitCategory[] = [
 		id: 'volume',
 		label: 'Volume & Capacity',
 		labelZh: '体积与容量',
+		defaultSource: 'L',
 		units: {
 			// Metric
 			mL: lin('milliliter (mL)', 0.001, '毫升 (mL)', 'mL'),
@@ -195,6 +205,7 @@ export const UNIT_CATEGORIES: UnitCategory[] = [
 		id: 'temperature',
 		label: 'Temperature',
 		labelZh: '温度',
+		defaultSource: 'C',
 		units: {
 			C: {
 				label: 'Celsius (°C)',
@@ -237,6 +248,7 @@ export const UNIT_CATEGORIES: UnitCategory[] = [
 		id: 'speed',
 		label: 'Speed & Velocity',
 		labelZh: '速度',
+		defaultSource: 'kmh',
 		units: {
 			ms: lin('meter/second (m/s)', 1, '米/秒 / 米每秒 (m/s · 国际标准)', 'm/s'),
 			kmh: lin('kilometer/hour (km/h)', 1 / 3.6, '千米/小时 / 公里每小时 (km/h · 俗称码/时速)', 'km/h'),
@@ -257,6 +269,7 @@ export const UNIT_CATEGORIES: UnitCategory[] = [
 		id: 'pressure',
 		label: 'Pressure',
 		labelZh: '压力与压强',
+		defaultSource: 'kPa',
 		units: {
 			Pa: lin('pascal (Pa)', 1, '帕斯卡 (国际标准单位)', 'Pa'),
 			hPa: lin('hectopascal / mbar (hPa)', 100, '百帕 / 毫巴 (气象天气预报)', 'hPa'),
@@ -288,6 +301,7 @@ export const UNIT_CATEGORIES: UnitCategory[] = [
 		id: 'power',
 		label: 'Power',
 		labelZh: '功率',
+		defaultSource: 'kW',
 		units: {
 			mW: lin('milliwatt (mW)', 0.001, '毫瓦 (微功耗芯片)', 'mW'),
 			W: lin('watt (W)', 1, '瓦特 (国际标准单位)', 'W'),
@@ -308,6 +322,7 @@ export const UNIT_CATEGORIES: UnitCategory[] = [
 		id: 'energy',
 		label: 'Energy & Work',
 		labelZh: '能量与功',
+		defaultSource: 'kWh',
 		units: {
 			J: lin('joule (J)', 1, '焦耳 (国际标准单位)', 'J'),
 			kJ: lin('kilojoule (kJ)', 1000, '千焦 (食品标签营养热量标准)', 'kJ'),
@@ -329,6 +344,7 @@ export const UNIT_CATEGORIES: UnitCategory[] = [
 		id: 'time',
 		label: 'Time',
 		labelZh: '时间',
+		defaultSource: 'min',
 		units: {
 			ps: lin('picosecond (ps)', 1e-12, '皮秒', 'ps'),
 			ns: lin('nanosecond (ns)', 1e-9, '纳秒 (光纤与内存延迟)', 'ns'),
@@ -351,6 +367,7 @@ export const UNIT_CATEGORIES: UnitCategory[] = [
 		id: 'data',
 		label: 'Data Size & Bandwidth',
 		labelZh: '数据存储与带宽',
+		defaultSource: 'GB',
 		units: {
 			// Bits (Bandwidth)
 			b: lin('bit (b)', 0.125, '比特 (1/8 字节，网络带宽通信标准)', 'b'),

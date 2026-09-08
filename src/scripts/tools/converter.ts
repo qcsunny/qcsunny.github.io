@@ -161,7 +161,13 @@ export function initConverter(host: HTMLElement, config: ConverterConfig): void 
 		return { picker, select, searchInput, clearBtn, populate };
 	}
 
-	const fromPicker = createSearchablePicker(names[0] as string, () => convert('from'));
+	// Source defaults to the category's internationally common unit when one is
+	// declared (kg, m, km/h, kWh…), otherwise to the first defined unit. Either
+	// stays fully user-switchable through the picker.
+	const fromPicker = createSearchablePicker(
+		cat.defaultSource ?? (names[0] as string),
+		() => convert('from'),
+	);
 	const toPicker = createSearchablePicker(names[1] ?? (names[0] as string), () => convert('from'));
 
 	const fromInput = document.createElement('input');
