@@ -36,7 +36,7 @@ test('default surface renders with a readout and no error', async ({ page }) => 
 
 	// sin(x)·cos(y) reaches ±1 on [-5, 5]²
 	const readout = page.locator('#g3-readout');
-	await expect(readout).toContainText('44 × 44');
+	await expect(readout).toContainText('160 × 160');
 	await expect(readout).toContainText('1');
 	await expect(page.locator('#g3-error')).toBeHidden();
 });

@@ -18,14 +18,18 @@ import BasicTab from '../../components/calculator/BasicTab.astro';
 			'所有计算都在本地完成——每一步都不经过服务器——因此离线可用，长会话也完全私密。表达式引擎是真正的解析器，直接输入 2 + 3 × 4² 会得到 50，与书写顺序的数学含义一致。',
 		],
 		faq: [
+			{ q: 'How do I use this calculator? (Quick Manual)', a: 'Enter any formula directly in the box: 1) Basic arithmetic: e.g. 2 + 3 * 4 or (5 + 3) / 2. 2) Functions: sin(x), cos(x), tan(x), ln(x), log(x, base), sqrt(x), abs(x). 3) Combinatorics & Number Theory: nCr(n, r), nPr(n, r), gcd(a, b), lcm(a, b). 4) Constants: pi (π), e, tau (τ), phi (φ), gamma (γ), c. 5) Variables: type a = 5 to save a variable. 6) Fractions: use the a/b button to toggle between decimal and exact fraction.' },
 			{ q: 'Does it follow operator precedence?', a: 'Yes: parentheses, then powers, then × ÷, then + −, matching standard math notation.' },
 			{ q: 'Can I store values?', a: 'Yes — assign to named variables (e.g. x = 5) and reuse them in later expressions.' },
 			{ q: 'What is the difference between DEG and RAD?', a: 'They set how trig functions interpret angles: DEG treats sin(90) as 1, RAD treats sin(π/2) as 1.' },
+			{ q: 'How does the a/b button work?', a: 'Clicking a/b switches between decimals and exact irreducible fractions (e.g. converts 0.375 to 3/8, or 3/8 back to 0.375).' },
 		],
 		faqZh: [
+			{ q: '科学计算器怎么用？（简要使用说明书）', a: '直接在输入框中输入算式：1）四则与括号：支持标准优先级，如 2 + 3 * 4 或 (5 + 3) / 2；2）函数支持：sin(x)、cos(x)、tan(x)、ln(x)、log(x, 底数)、sqrt(x)、abs(x)；3）排列组合与数论：nCr(n, r)、nPr(n, r)、gcd(a, b)、lcm(a, b)；4）内置常量：π (pi)、e、τ (tau)、φ (phi 黄金分割比)、γ (gamma 欧拉常数)、c (光速)；5）变量存储：输入 a = 12 保存变量并在后续引用；6）分数互转：点击科学键盘上的 a/b 键可在小数与最简分数间无缝切换。' },
 			{ q: '遵循运算优先级吗？', a: '遵循：括号 > 乘方 > 乘除 > 加减，与标准数学记法一致。' },
 			{ q: '可以保存数值吗？', a: '可以，给命名变量赋值（如 x = 5），之后的表达式可直接引用。' },
 			{ q: 'DEG 和 RAD 有什么区别？', a: '决定三角函数的角度单位：DEG 下 sin(90) = 1，RAD 下 sin(π/2) = 1。' },
+			{ q: 'a/b 分数按键有什么用？', a: '点击 a/b 可以在小数与最简分数之间互相转换（例如将 0.375 还原为 3/8，或把 3/8 展开为 0.375）。' },
 		],
 	}}
 >

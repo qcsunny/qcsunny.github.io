@@ -17,7 +17,7 @@ import { REAL_TOOLS, TOOL_COUNT } from '../tools/registry';
 // goes to — the whole point of picking it by hand.
 const bySlug = (slug: string) => REAL_TOOLS.find((e) => e.slug === slug);
 
-// Hand-picked high-frequency tools across developer, finance and utility categories
+// Hand-picked high-frequency tools across developer, finance, math and utility categories
 const featuredSlugs = [
 	'mortgage-prepayment',
 	'json-formatter',
@@ -25,6 +25,9 @@ const featuredSlugs = [
 	'sql-formatter',
 	'compound-interest',
 	'jwt-decoder',
+	'equation-solver',
+	'complex-number',
+	'vector',
 	'uuid-generator',
 	'password-generator',
 	'fire-calculator',
@@ -81,10 +84,10 @@ const siteJsonLd = {
 				</h1>
 
 				<p class="hero-desc i18n-zh">
-					这里不堆抽象口号，只说站里真实的东西：{toolTotal} 款免注册工具在浏览器里直接跑——JSON / SQL 格式化、JWT 解码、房贷与复利测算、{converterTotal} 类单位换算；{postTotal} 篇亲手实现、用实测数据写成的工程手记——二维码 Reed–Solomon 纠错、SQL 词法分析、不用 WebGL 的三维曲面、FIRE 与个税数学。数据不出浏览器，源码全部开源。
+					这里不堆抽象口号，只说站里真实的东西：{toolTotal} 款免注册工具在浏览器里直接跑——JSON / SQL 格式化、JWT 解码、函数图像与三维曲面绘制、微积分与常微分方程求解、复数与空间向量几何、房贷与复利测算、{converterTotal} 类单位换算；{postTotal} 篇亲手实现、用实测数据写成的工程手记——二维码 Reed–Solomon 纠错、SQL 词法分析、不用 WebGL 的三维曲面、FIRE 与个税数学。数据不出浏览器，源码全部开源。
 				</p>
 				<p class="hero-desc i18n-en">
-					No abstract slogans here, just what the site actually holds: {toolTotal} login-free tools that run entirely in your browser — JSON/SQL formatting, JWT decoding, mortgage and compound-interest math, {converterTotal} unit-converter families — plus {postTotal} hand-written engineering posts backed by measured numbers: QR Reed–Solomon encoding, an SQL tokenizer, a WebGL-free 3-D plotter, FIRE and tax math. Nothing leaves your browser; the source is open.
+					No abstract slogans here, just what the site actually holds: {toolTotal} login-free tools that run entirely in your browser — JSON/SQL formatting, JWT decoding, 2D/3D function graphing, calculus &amp; ODE solving, complex numbers &amp; vectors, mortgage and compound-interest math, {converterTotal} unit-converter families — plus {postTotal} hand-written engineering posts backed by measured numbers: QR Reed–Solomon encoding, an SQL tokenizer, a WebGL-free 3-D plotter, FIRE and tax math. Nothing leaves your browser; the source is open.
 				</p>
 
 				<div class="hero-actions">

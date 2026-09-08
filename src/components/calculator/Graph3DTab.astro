@@ -75,12 +75,25 @@
 		<label class="g3-select">
 			<span class="i18n-en">Detail</span><span class="i18n-zh">精度</span>
 			<select id="g3-res">
-				<option value="28">28 × 28</option>
-				<option value="44" selected>44 × 44</option>
-				<option value="64">64 × 64</option>
-				<option value="88">88 × 88</option>
+				<option value="44" data-text-en="44 × 44 (Fast)" data-text-zh="44 × 44 (快速)">44 × 44 (Fast)</option>
+				<option value="88" data-text-en="88 × 88 (Medium)" data-text-zh="88 × 88 (标准)">88 × 88 (Medium)</option>
+				<option value="160" selected data-text-en="160 × 160 (High · Default)" data-text-zh="160 × 160 (高清 · 默认)">160 × 160 (High · Default)</option>
+				<option value="250" data-text-en="250 × 250 (Very High)" data-text-zh="250 × 250 (超清)">250 × 250 (Very High)</option>
+				<option value="500" data-text-en="500 × 500 (Extreme)" data-text-zh="500 × 500 (极致 500²)">500 × 500 (Extreme)</option>
+				<option value="1000" data-text-en="1000 × 1000 (Max 1M)" data-text-zh="1000 × 1000 (百万点极限 1000²)">1000 × 1000 (Max 1M)</option>
 			</select>
 		</label>
+		<button
+			type="button"
+			id="g3-fs"
+			title="Toggle fullscreen"
+			aria-label="Toggle fullscreen"
+			data-title-en="Toggle fullscreen"
+			data-title-zh="全屏展示"
+			data-aria-en="Toggle fullscreen"
+			data-aria-zh="全屏展示"
+			><span class="i18n-en">Fullscreen</span><span class="i18n-zh">全屏</span></button
+		>
 	</div>
 
 	<canvas
@@ -270,6 +283,27 @@
 		background: var(--bg);
 		touch-action: none;
 		cursor: grab;
+	}
+	.g3:fullscreen,
+	.g3.is-fullscreen {
+		position: fixed;
+		inset: 0;
+		width: 100vw;
+		height: 100vh;
+		max-width: 100vw;
+		z-index: 1000;
+		background: var(--bg);
+		padding: 1.25rem 2rem;
+		box-sizing: border-box;
+		display: flex;
+		flex-direction: column;
+		overflow-y: auto;
+	}
+	.g3:fullscreen #g3-canvas,
+	.g3.is-fullscreen #g3-canvas {
+		flex: 1 1 auto;
+		min-height: 360px;
+		height: calc(100vh - 240px);
 	}
 	#g3-canvas:active {
 		cursor: grabbing;

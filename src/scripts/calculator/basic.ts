@@ -1,4 +1,4 @@
-import { CalcError, errorText, evaluate, formatNumber, tryAssign, type Scope } from './engine';
+import { CalcError, errorText, evaluate, formatNumber, toFraction, tryAssign, type Scope } from './engine';
 import { isZh, langProp, onLang, setBilingual } from '../tools/i18n';
 import {
 	clearHistory,
@@ -81,7 +81,10 @@ export function initBasic(scope: Scope, hooks: BasicHooks = {}): void {
 			return;
 		}
 		try {
-			showPreview(`= ${formatNumber(evaluate(src, scope))}`);
+			const res = evaluate(src, scope);
+			const numText = formatNumber(res);
+			const frac = toFraction(res);
+			showPreview(frac ? `= ${numText}  [${frac.num}/${frac.den}]` : `= ${numText}`);
 		} catch {
 			// While typing, don't flash errors — just show nothing
 			showPreview('');
@@ -123,12 +126,15 @@ export function initBasic(scope: Scope, hooks: BasicHooks = {}): void {
 				if (Number.isNaN(result)) throw new CalcError('Result is undefined', '结果未定义');
 				if (!Number.isFinite(result)) throw new CalcError('Result overflows', '结果超出可表示范围');
 				const text = formatNumber(result);
+				const frac = toFraction(result);
 				scope.vars['ans'] = result;
 				// The expression moves to the preview line as the box takes the
 				// result — otherwise pressing = would erase what was computed.
-				showPreview(`${src} = ${text}`);
+				// If the decimal has a neat simple fraction (e.g. 0.375 = 3/8), show both.
+				const previewStr = frac ? `${src} = ${text} [${frac.num}/${frac.den}]` : `${src} = ${text}`;
+				showPreview(previewStr);
 				takeResult(text);
-				pushHistory({ expr: src, result: text, ts: Date.now() });
+				pushHistory({ expr: src, result: frac ? `${text} (${frac.num}/${frac.den})` : text, ts: Date.now() });
 				renderHistory();
 			}
 		} catch (err) {
@@ -247,6 +253,33 @@ export function initBasic(scope: Scope, hooks: BasicHooks = {}): void {
 					if (degButton) degButton.textContent = scope.deg ? 'DEG' : 'RAD';
 					schedulePreview();
 					break;
+				case 'frac': {
+					const cur = display!.value.trim();
+					if (!cur) break;
+					// If it's a simple fraction like "a/b", evaluate to decimal
+					const fracMatch = /^(-?\d+)\s*\/\s*(\d+)$/.exec(cur);
+					if (fracMatch) {
+						const n = Number(fracMatch[1]);
+						const d = Number(fracMatch[2]);
+						if (d !== 0) {
+							display!.value = formatNumber(n / d);
+							display!.setSelectionRange(display!.value.length, display!.value.length);
+							schedulePreview();
+						}
+						break;
+					}
+					// Otherwise try converting decimal to exact fraction
+					const num = Number(cur);
+					if (Number.isFinite(num) && !Number.isInteger(num)) {
+						const f = toFraction(num);
+						if (f) {
+							display!.value = `${f.num}/${f.den}`;
+							display!.setSelectionRange(display!.value.length, display!.value.length);
+							schedulePreview();
+						}
+					}
+					break;
+				}
 			}
 		});
 	});

@@ -66,3 +66,160 @@ test('an engine error is shown in the reader language', async ({ page }) => {
 	await page.locator('.t-lang').click();
 	await expect(preview).toHaveText('表达式意外结束', { useInnerText: true });
 });
+
+test('evaluates built-in constants including phi, gamma, and c with unicode aliases', async ({ page }) => {
+	await page.goto('/calculators/standard/');
+
+	const display = page.locator('#calc-display');
+	const preview = page.locator('#calc-preview');
+
+	// Test phi (golden ratio: ~1.61803398875)
+	await display.fill('φ');
+	await display.press('Enter');
+	await expect(preview).toHaveText(/φ = 1\.61803398875/);
+
+	// Test gamma (Euler-Mascheroni: ~0.577215664902)
+	await display.fill('γ');
+	await display.press('Enter');
+	await expect(preview).toHaveText(/γ = 0\.577215664902/);
+
+	// Test c (speed of light: 299792458)
+	await display.fill('c');
+	await display.press('Enter');
+	await expect(preview).toHaveText('c = 299792458');
+
+	// Test implicit multiplication: 2phi
+	await display.fill('2phi');
+	await display.press('Enter');
+	await expect(preview).toHaveText(/2phi = 3\.2360679775/);
+});
+
+test('evaluates nCr, nPr, gcd, and supports fraction display and a/b toggle', async ({ page }) => {
+	await page.goto('/calculators/standard/');
+
+	const display = page.locator('#calc-display');
+	const preview = page.locator('#calc-preview');
+
+	// Test nCr(5, 2) = 10
+	await display.fill('nCr(5, 2)');
+	await display.press('Enter');
+	await expect(preview).toHaveText('nCr(5, 2) = 10');
+	await expect(display).toHaveValue('10');
+
+	// Test gcd(48, 180) = 12
+	await display.fill('gcd(48, 180)');
+	await display.press('Enter');
+	await expect(preview).toHaveText('gcd(48, 180) = 12');
+
+	// Test fraction display: 1/4 + 1/8 = 0.375 [3/8]
+	await display.fill('1/4 + 1/8');
+	await display.press('Enter');
+	await expect(preview).toHaveText('1/4 + 1/8 = 0.375 [3/8]');
+	await expect(display).toHaveValue('0.375');
+
+	// Switch to scientific mode to access a/b button
+	await page.locator('#calc-mode-scientific').click();
+	const fracBtn = page.locator('.calc-keypad-sci button', { hasText: 'a/b' });
+	await expect(fracBtn).toBeVisible();
+
+	// Click a/b to convert 0.375 to 3/8 in display
+	await fracBtn.click();
+	await expect(display).toHaveValue('3/8');
+
+	// Click a/b again to convert back to decimal
+	await fracBtn.click();
+	await expect(display).toHaveValue('0.375');
+});
+
+test('equation-solver computes limits (sin(x)/x -> 0), ODEs, and quadratic vertex', async ({ page }) => {
+	await page.goto('/calculators/equation-solver/');
+	const results = page.locator('.t-results');
+
+	// 1. Check default quadratic solving: x^2 - 5x + 6 = 0 -> roots 3, 2, vertex
+	await expect(results).toContainText('Root x₁');
+	await expect(results).toContainText('3');
+	await expect(results).toContainText('2');
+	await expect(results).toContainText('Vertex (xv, yv)');
+
+	// 2. Select Limit calculation
+	await page.locator('#t-f-type').selectOption('limit');
+
+	// Verify defaults: sin(x)/x at x0 = 0 -> limit = 1
+	await expect(results).toContainText('Two-sided Limit lim(x → 0) f(x)');
+	await expect(results).toContainText('1');
+
+	// Test one-sided limit: 1/x as x -> 0+
+	await page.locator('#t-f-limExpr').fill('1/x');
+	await page.locator('#t-f-limDir').selectOption('right');
+	await expect(results).toContainText('Right-sided Limit lim(x → 0⁺) f(x)');
+
+	// 3. Test ODE (Runge-Kutta 4th order)
+	await page.locator('#t-f-type').selectOption('ode');
+	await expect(results).toContainText('y(1)');
+	await expect(results).toContainText('Numerical Solution');
+});
+
+test('matrix computes 2x2 eigenvalues and eigenvectors', async ({ page }) => {
+	await page.goto('/calculators/matrix/');
+	const results = page.locator('.t-results');
+
+	// Matrix [[4, 1], [2, 3]] -> eigenvalues 5 and 2
+	await page.locator('#t-f-matA').fill('4  1\n2  3');
+
+	await expect(results).toContainText('Eigenvalues (λ₁, λ₂)');
+	await expect(results).toContainText('5');
+	await expect(results).toContainText('2');
+	await expect(results).toContainText('Eigenvectors');
+});
+
+test('complex-number calculator computes rectangular, polar, and operations', async ({ page }) => {
+	await page.goto('/calculators/complex-number/');
+	const results = page.locator('.t-results');
+
+	// Default 3 + 4i -> Modulus 5
+	await expect(results).toContainText('Modulus |z₁|');
+	await expect(results).toContainText('5');
+	await expect(results).toContainText('Polar / Euler form');
+	await expect(results).toContainText('Conjugate');
+	await expect(results).toContainText('3 − 4i');
+
+	// Sum with z2 = 2 + 1i -> 5 + 5i
+	await page.locator('#t-f-a2').fill('2');
+	await page.locator('#t-f-b2').fill('1');
+	await expect(results).toContainText('Addition z₁ + z₂');
+	await expect(results).toContainText('5 + 5i');
+});
+
+test('vector calculator computes dot and cross products in 3D', async ({ page }) => {
+	await page.goto('/calculators/vector/');
+	const results = page.locator('.t-results');
+
+	// Default u = [1, 2, 3], v = [4, 5, 6]
+	// Dot product = 1*4 + 2*5 + 3*6 = 32
+	await expect(results).toContainText('Dot Product u · v');
+	await expect(results).toContainText('32');
+	// Cross product = (-3, 6, -3)
+	await expect(results).toContainText('Cross Product u × v');
+	await expect(results).toContainText('(-3, 6, -3)');
+});
+
+test('2D and 3D graphers have responsive fullscreen toggle buttons', async ({ page }) => {
+	await page.goto('/calculators/graph/');
+	const graphFs = page.locator('#graph-fs');
+	await expect(graphFs).toBeVisible();
+	await graphFs.click();
+	await expect(page.locator('.graph-tab')).toHaveClass(/is-fullscreen/);
+	await graphFs.click();
+	await expect(page.locator('.graph-tab')).not.toHaveClass(/is-fullscreen/);
+
+	await page.goto('/calculators/graph3d/');
+	const g3Fs = page.locator('#g3-fs');
+	await expect(g3Fs).toBeVisible();
+	await g3Fs.click();
+	await expect(page.locator('.g3')).toHaveClass(/is-fullscreen/);
+	await g3Fs.click();
+	await expect(page.locator('.g3')).not.toHaveClass(/is-fullscreen/);
+});
+
+
+

@@ -44,7 +44,7 @@ const postTotal = (await getCollection('blog')).length;
 				<h2>Built from Scratch, Then Measured</h2>
 				<ul class="about-list">
 					<li><strong>Hand-written engines:</strong> the QR encoder is ~400 lines of self-authored
-					Reed–Solomon; Markdown parsing, the SQL tokenizer and the calculator engine are first-party code,
+					Reed–Solomon; Markdown parsing, the SQL tokenizer, the mathematical expression engine, ODE solvers, and matrix algorithms are first-party code,
 					not library wrappers.</li>
 					<li><strong>Measured, not assumed:</strong> posts cite numbers taken from the running site — a 3-D
 					surface plot spends 18 ms of a 181 ms frame on rasterization; this homepage ships 50 KB, 58% of it
@@ -116,7 +116,7 @@ const postTotal = (await getCollection('blog')).length;
 				<h2>从零手写，再拿数据验证</h2>
 				<ul class="about-list">
 					<li><strong>引擎都是自己写的：</strong>二维码编码器约 400 行自写 Reed–Solomon；Markdown 解析、SQL 分词器、
-					计算器引擎都是第一方代码，不是库的壳。</li>
+					数学表达式引擎、微分方程与矩阵算法都是第一方代码，不是库的壳。</li>
 					<li><strong>先测量再下结论：</strong>手记引用的是跑在真站上的数字——三维曲面一帧 181ms 里只有 18ms
 					在光栅化；这份首页 50KB 里 58% 是字体；KaTeX 只发样式表，没有会失效的 CDN 脚本。</li>
 					<li><strong>用测试守门：</strong>每次部署前要跑 150+ 条浏览器 E2E，计算器按键静默失效、双语标签泄漏

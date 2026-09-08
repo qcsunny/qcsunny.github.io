@@ -49,7 +49,9 @@ const overlongTerm = (): FormResult => ({
 	],
 });
 
-/** Amortization rows grouped by year: [year, principal, interest, balance]. */
+/** Amortization rows grouped by year: [year, principal, interest, balance].
+ *  Calculated via closed-form annuity formulas O(years) rather than nested monthly iterations O(months).
+ */
 function amortize(
 	principal: number,
 	annualRatePct: number,
@@ -57,21 +59,36 @@ function amortize(
 ): { rows: string[][]; totalInterest: number } {
 	const pay = monthlyPayment(principal, annualRatePct, months);
 	const i = annualRatePct / 100 / 12;
-	let balance = principal;
+	let prevBalance = principal;
 	let totalInterest = 0;
 	const out: string[][] = [];
-	for (let y = 1; y <= Math.ceil(months / 12); y++) {
-		let principalY = 0;
-		let interestY = 0;
-		for (let m = 0; m < 12 && (y - 1) * 12 + m < months; m++) {
-			const interest = balance * i;
-			const princ = Math.min(pay - interest, balance);
-			balance -= princ;
-			principalY += princ;
-			interestY += interest;
-			totalInterest += interest;
+	const totalYears = Math.ceil(months / 12);
+
+	if (i <= 0) {
+		const yearlyPrinc = principal / totalYears;
+		for (let y = 1; y <= totalYears; y++) {
+			const endBalance = Math.max(0, principal - yearlyPrinc * y);
+			out.push([String(y), money(yearlyPrinc), money(0), money(endBalance)]);
 		}
-		out.push([String(y), money(principalY), money(interestY), money(Math.max(balance, 0))]);
+		return { rows: out, totalInterest: 0 };
+	}
+
+	let powK = 1;
+	for (let y = 1; y <= totalYears; y++) {
+		const mCount = y === totalYears && months % 12 !== 0 ? months % 12 : 12;
+		let endBalance = 0;
+		if (y === totalYears && mCount === 12) {
+			endBalance = 0;
+		} else {
+			powK *= (1 + i) ** mCount;
+			endBalance = Math.max(0, principal * powK - pay * ((powK - 1) / i));
+		}
+		const principalY = prevBalance - endBalance;
+		const actualPayY = pay * mCount;
+		const interestY = actualPayY - principalY;
+		totalInterest += interestY;
+		out.push([String(y), money(principalY), money(interestY), money(endBalance)]);
+		prevBalance = endBalance;
 	}
 	return { rows: out, totalInterest };
 }

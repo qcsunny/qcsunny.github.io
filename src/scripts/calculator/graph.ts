@@ -245,10 +245,38 @@ export function initGraph(scope: Scope): GraphController {
 			.map((row, i) => ({ row, color: COLORS[i] as string }))
 			.filter(({ row }) => row.visible && row.fn)
 			.map(({ row, color }) => {
-				const y = sample(row.fn as (s: Scope) => number, x);
-				return y !== null && Number.isFinite(y)
-					? { color, text: `${formatNumber(x)}, ${formatNumber(y)}` }
-					: { color, text: `${formatNumber(x)}, —` };
+				const fn = row.fn as (s: Scope) => number;
+				const y = sample(fn, x);
+				if (y !== null && Number.isFinite(y)) {
+					// Draw tangent line segment at (x, y)
+					const h = 1e-5 * Math.max(1, Math.abs(x));
+					const yPlus = sample(fn, x + h);
+					const yMinus = sample(fn, x - h);
+					let slopeStr = '';
+					if (yPlus !== null && yMinus !== null && Number.isFinite(yPlus) && Number.isFinite(yMinus)) {
+						const slope = (yPlus - yMinus) / (2 * h);
+						if (Number.isFinite(slope)) {
+							slopeStr = ` (m: ${formatNumber(slope)})`;
+							// Draw tangent segment of length ~60px
+							const dxScreen = 35;
+							const dyScreen = -slope * (cssH / (view.yMax - view.yMin)) / (cssW / (view.xMax - view.xMin)) * dxScreen;
+							ctx!.save();
+							ctx!.strokeStyle = color;
+							ctx!.lineWidth = 1.5;
+							ctx!.setLineDash([3, 3]);
+							const cx = sx(x), cy = sy(y);
+							line(cx - dxScreen, cy - dyScreen, cx + dxScreen, cy + dyScreen);
+							ctx!.restore();
+							// Draw point dot
+							ctx!.fillStyle = color;
+							ctx!.beginPath();
+							ctx!.arc(cx, cy, 3.5, 0, Math.PI * 2);
+							ctx!.fill();
+						}
+					}
+					return { color, text: `${formatNumber(x)}, ${formatNumber(y)}${slopeStr}` };
+				}
+				return { color, text: `${formatNumber(x)}, —` };
 			});
 		if (readings.length === 0) return;
 		ctx!.font = '11px ui-monospace, Consolas, monospace';
@@ -378,6 +406,68 @@ export function initGraph(scope: Scope): GraphController {
 			}
 		});
 	});
+
+	const fsBtn = document.querySelector<HTMLButtonElement>('#graph-fs');
+	const container = canvas.closest<HTMLElement>('.graph-tab') || canvas;
+
+	function isFs(): boolean {
+		return document.fullscreenElement === container || container.classList.contains('is-fullscreen');
+	}
+
+	function syncFsBtn(): void {
+		if (!fsBtn) return;
+		const active = isFs();
+		setBilingual(fsBtn, active ? 'Exit Fullscreen' : 'Fullscreen', active ? '退出全屏' : '全屏');
+		const label = active ? (isZh() ? '退出全屏' : 'Exit fullscreen') : (isZh() ? '全屏展示' : 'Toggle fullscreen');
+		fsBtn.setAttribute('title', label);
+		fsBtn.setAttribute('aria-label', label);
+		fsBtn.dataset.titleEn = active ? 'Exit fullscreen' : 'Toggle fullscreen';
+		fsBtn.dataset.titleZh = active ? '退出全屏' : '全屏展示';
+		fsBtn.dataset.ariaEn = active ? 'Exit fullscreen' : 'Toggle fullscreen';
+		fsBtn.dataset.ariaZh = active ? '退出全屏' : '全屏展示';
+	}
+
+	onLang(() => {
+		syncFsBtn();
+	});
+
+	if (fsBtn) {
+		fsBtn.addEventListener('click', async () => {
+			if (!isFs()) {
+				container.classList.add('is-fullscreen');
+				if (container.requestFullscreen) {
+					try {
+						await container.requestFullscreen();
+					} catch {}
+				}
+			} else {
+				if (document.fullscreenElement) {
+					try {
+						await document.exitFullscreen();
+					} catch {}
+				}
+				container.classList.remove('is-fullscreen');
+			}
+			syncFsBtn();
+			resize();
+		});
+
+		document.addEventListener('fullscreenchange', () => {
+			if (!document.fullscreenElement) {
+				container.classList.remove('is-fullscreen');
+			}
+			syncFsBtn();
+			resize();
+		});
+
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape' && container.classList.contains('is-fullscreen')) {
+				container.classList.remove('is-fullscreen');
+				syncFsBtn();
+				resize();
+			}
+		});
+	}
 
 	// --- function rows -------------------------------------------------------
 	function recompile(row: FnRow): void {

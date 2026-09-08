@@ -115,7 +115,11 @@ export function compileNode(node: Node): (scope: Scope) => number {
 			const name = node.name;
 			const arity = def.arity;
 			return (scope) => {
-				if (typeof arity === 'number' ? argFns.length !== arity : argFns.length < arity[0]) {
+				const ok =
+					typeof arity === 'number'
+						? argFns.length === arity
+						: argFns.length >= arity[0] && argFns.length <= arity[1];
+				if (!ok) {
 					const want = typeof arity === 'number' ? `${arity}` : `${arity[0]}–${arity[1]}`;
 					throw new CalcError(
 						`${name}() expects ${want} argument(s)`,
@@ -167,4 +171,31 @@ export function formatNumber(n: number): string {
 
 function trimExp(s: string): string {
 	return s.replace(/(\.\d*?)0+e/, '$1e').replace(/\.e/, 'e');
+}
+
+/**
+ * Convert a finite floating-point number to an exact or best-fit simple fraction.
+ * Returns null if the number is integer, non-finite, or cannot be approximated
+ * within maxDenom with sufficient precision.
+ */
+export function toFraction(x: number, maxDenom = 10000): { num: number; den: number } | null {
+	if (!Number.isFinite(x) || Number.isInteger(x)) return null;
+	const sign = x < 0 ? -1 : 1;
+	x = Math.abs(x);
+	let h1 = 1,
+		h0 = 0,
+		k1 = 0,
+		k0 = 1,
+		b = x;
+	for (let i = 0; i < 32; i++) {
+		const a = Math.floor(b);
+		[h0, h1] = [h1, a * h1 + h0];
+		[k0, k1] = [k1, a * k1 + k0];
+		if (k1 > maxDenom) break;
+		if (Math.abs(x - h1 / k1) < 1e-12) return k1 > 1 ? { num: sign * h1, den: k1 } : null;
+		const frac = b - a;
+		if (frac < 1e-12) return k1 > 1 && k1 <= maxDenom ? { num: sign * h1, den: k1 } : null;
+		b = 1 / frac;
+	}
+	return k1 > 1 && k1 <= maxDenom && Math.abs(x - h1 / k1) < 1e-9 ? { num: sign * h1, den: k1 } : null;
 }

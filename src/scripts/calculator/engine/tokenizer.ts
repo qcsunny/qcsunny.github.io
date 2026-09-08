@@ -30,6 +30,16 @@ export function tokenize(src: string): Token[] {
 			i++;
 			continue;
 		}
+		if (ch === 'φ' || ch === 'ϕ') {
+			tokens.push({ type: 'ident', value: 'phi', pos: i });
+			i++;
+			continue;
+		}
+		if (ch === 'γ') {
+			tokens.push({ type: 'ident', value: 'gamma', pos: i });
+			i++;
+			continue;
+		}
 		if (ch === '×' || ch === '·') {
 			tokens.push({ type: 'op', value: '*', pos: i });
 			i++;

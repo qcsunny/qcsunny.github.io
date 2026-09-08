@@ -137,6 +137,106 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '哪些场景用单利？', a: '短期工具、部分贷款和债券；车贷通常是单利。' },
 		],
 	},
+	'calculators/pi': {
+		about: [
+			'Compute the mathematical constant Pi (π) up to 2,000 decimal digits in real time directly inside your browser. Powered by Machin-like series expansion (π/4 = 4·arccot(5) − arccot(239)) and BigInt arbitrary-precision integer arithmetic, without floating-point truncation.',
+			'Along with the exact decimal digits, this tool provides ancient Milü (355/113) and Yuelü (22/7) fraction rational approximations, plus circle circumference and area calculations when radius is provided.',
+		],
+		aboutZh: [
+			'在浏览器端实时高精度计算圆周率 π 至小数点后 2000 位。算法采用经典的梅钦级数公式（Machin formula: π/4 = 4·arccot(5) − arccot(239)）结合 JavaScript 原生 BigInt 任意精度整型递推，完全杜绝常规浮点数的尾数截断。',
+			'除了输出高精度位数值，页面还同时提供祖冲之密率（355/113，相对误差不足亿分之一）与约率（22/7）分式逼近对比，并支持输入圆半径联动验算圆周长与面积。',
+		],
+		faq: [
+			{ q: 'How is Pi calculated to 2,000 digits without freezing the page?', a: 'Using Machin-like arctangent series with BigInt integer scaling, which computes 2,000 digits in tens of milliseconds.' },
+			{ q: 'What is Zu Chongzhi Milü (355/113)?', a: 'Milü is a legendary rational approximation discovered in the 5th century by Chinese mathematician Zu Chongzhi, accurate to 6 decimal places.' },
+			{ q: 'Why is Pi an irrational number?', a: 'Pi cannot be written as a simple fraction of two integers, and its decimal representation never ends or repeats.' },
+		],
+		faqZh: [
+			{ q: '为什么能瞬间算出 2000 位圆周率而不卡顿？', a: '梅钦类反正切公式收敛速度极快，结合 BigInt 定点整数递推，计算 2000 位只需几十毫秒。' },
+			{ q: '什么是祖冲之密率（355/113）？', a: '公元 5 世纪中国南北朝数学家祖冲之算出的精美有理数逼近，仅用三位数分子分母就达到了小数点后第 6 位的极高精度。' },
+			{ q: '圆周率是无理数吗？', a: '是的。π 既是无理数又是超越数，小数位无限且不循环。' },
+		],
+	},
+	'calculators/matrix': {
+		about: [
+			'A dedicated linear algebra matrix calculator that performs essential matrix operations instantly in your browser: compute determinants det(A), matrix inversion A⁻¹ via Gauss-Jordan elimination, matrix trace tr(A), and transpose Aᵀ.',
+			'Also supports binary operations between two matrices: matrix addition (A + B), subtraction (A − B), and row-by-column matrix multiplication (A × B). All computations run locally with zero latency.',
+		],
+		aboutZh: [
+			'专为高等数学与线性代数设计的矩阵计算工具，支持在浏览器本地实时完成常见矩阵运算：方阵行列式 det(A)、通过高斯-若尔当消元法求解逆矩阵 A⁻¹、主对角线迹 tr(A) 以及矩阵转置 Aᵀ。',
+			'同时支持双矩阵二元运算：同型矩阵加法 (A + B)、减法 (A − B) 以及基于行乘列内积的标准矩阵乘法 (A × B)。纯本地即时运算，结果支持制表符矩阵视图。',
+		],
+		faq: [
+			{ q: 'How do I input a matrix?', a: 'Separate each row with a new line (Enter), and separate numbers within each row using spaces or commas (e.g. "1 2 3\\n4 5 6").' },
+			{ q: 'When is a matrix invertible?', a: 'Only square matrices with a non-zero determinant (det ≠ 0) have an inverse. If det = 0, it is a singular matrix.' },
+			{ q: 'What dimensions are required for matrix multiplication (A × B)?', a: 'The number of columns in Matrix A must equal the number of rows in Matrix B.' },
+		],
+		faqZh: [
+			{ q: '如何输入矩阵数据？', a: '矩阵的每一行请使用回车换行分隔；行内的各个数字请使用空格或逗号分隔（例如："1 2 3\\n4 5 6"）。' },
+			{ q: '什么样的矩阵可以求逆？', a: '只有行列式不为 0 的方阵才存在逆矩阵。如果行列式等于 0，则该矩阵为奇异矩阵（不可逆）。' },
+			{ q: '矩阵乘法 (A × B) 对尺寸有什么要求？', a: '矩阵 A 的列数必须与矩阵 B 的行数严格相等，所得结果矩阵的行数等于 A 的行数，列数等于 B 的列数。' },
+		],
+	},
+	'calculators/equation-solver': {
+		about: [
+			'Solve essential algebraic equations, numerical calculus, and mathematical limits in your browser. Handles quadratic equations ax² + bx + c = 0 (with real and complex conjugate roots using the numerically stable Citardauq formula), cubic equations via Cardano formula, and 2×2 linear equation systems.',
+			'Also features a numerical calculus engine: evaluates first-order derivatives f\'(x₀) via a 5-point symmetric stencil, definite integrals ∫[a,b] f(x) dx via Adaptive Simpson Quadrature, and limits (including indeterminate forms like sin(x)/x as x→0) via Richardson extrapolation across geometric perturbation sequences.',
+		],
+		aboutZh: [
+			'在浏览器本地实时求解经典代数方程、数值微积分与数学极限：支持一元二次方程（采用高精度 Citardauq 公式消除巨额灾难性抵消，自动输出实根与共轭复数虚根）、基于卡尔丹公式的一元三次方程解析求解，以及二元一次线性方程组。',
+			'同时集成高精度数值微积分与极限求解器：利用五点对称差商计算导数切线斜率 f\'(x₀)，利用自适应辛普森积分法（Adaptive Simpson Quadrature）以极少函数采样高精度求解定积分，并通过几何步长理查森外推算法（Richardson Extrapolation）稳健化解 0/0 不定型并精确计算单侧与双侧极限（如 sin(x)/x 在 x 趋向 0 时的极限为 1）。',
+		],
+		faq: [
+			{ q: 'Can it solve quadratic equations with negative discriminant (Δ < 0)?', a: 'Yes. When Δ < 0, it computes both complex conjugate roots in the standard format u ± vi.' },
+			{ q: 'How does it solve indeterminate limits like sin(x)/x as x → 0?', a: 'Direct substitution gives 0/0 (NaN). The solver samples decreasing perturbations h = 10⁻¹ ... 10⁻⁶ around x₀ and applies Richardson extrapolation (4·f(h/10) - f(h))/3 to eliminate first-order truncation error and cleanly converge to 1.' },
+			{ q: 'How is the definite integral computed?', a: 'It uses Adaptive Simpson Quadrature with recursive sub-interval refinement (tolerance 1e-9), adjusting sample density where curvature is high while computing smooth intervals in fractions of a millisecond.' },
+		],
+		faqZh: [
+			{ q: '判别式 Δ < 0 时能求解虚根吗？', a: '可以。当 Δ < 0 时，计算器会自动输出共轭复数解 u ± vi。' },
+			{ q: '如何求解像 sin(x)/x 在 x 趋向 0 这样的 0/0 不定式极限？', a: '直接代入会产生 0/0 无法求值。求解器在趋近点附近按几何递减步长 h = 10⁻¹ ... 10⁻⁶ 采样，并通过理查森外推公式 (4·f(h/10) - f(h))/3 消除主导截断误差，稳定消除浮点抖动并精确收敛至极限值 1。' },
+			{ q: '定积分是如何计算的？', a: '基于自适应辛普森积分法（Adaptive Simpson Quadrature），递归评估局部误差（容差 1e-9），在平滑区域只需十余次计算即可完成，在剧烈振荡区域自动加密网格，兼顾极高精度与毫秒级速度。' },
+		],
+	},
+	'calculators/complex-number': {
+		about: [
+			'Calculate complex numbers with instant conversion between rectangular form (a + bi) and polar/Euler form (r·e^(iθ)). Computes modulus, argument (in degrees and radians), complex conjugate, and reciprocal.',
+			'Also evaluates arithmetic operations between two complex numbers (addition, subtraction, multiplication, division), integer and fractional powers via De Moivre\'s theorem, principal square roots, complex exponential, and natural logarithm.',
+		],
+		aboutZh: [
+			'全功能复数运算与形式互转工具：支持代数形式 (a + bi) 与极坐标/欧拉形式 (r·e^(iθ)) 实时双向互转，计算复数模长、辐角（角度与弧度）、共轭复数与倒数。',
+			'同时支持两复数间的四则运算（加减乘除），基于棣莫弗定理（De Moivre\'s formula）计算高阶幂次，以及主平方根、复指数函数 e^z 与复数主对数 Ln(z)。',
+		],
+		faq: [
+			{ q: 'What is the relationship between rectangular and polar form?', a: 'Rectangular form is z = a + bi. Polar form is z = r(cos θ + i sin θ) = r·e^(iθ), where r = √(a² + b²) and θ = atan2(b, a).' },
+			{ q: 'How does it compute complex powers?', a: 'Using De Moivre\'s formula: zⁿ = [r·e^(iθ)]ⁿ = rⁿ·e^(i·n·θ) = rⁿ(cos(nθ) + i sin(nθ)).' },
+			{ q: 'What is Euler\'s identity?', a: 'Setting r = 1 and θ = π yields e^(iπ) + 1 = 0, connecting five fundamental mathematical constants.' },
+		],
+		faqZh: [
+			{ q: '复数的代数形式与极坐标形式是如何转换的？', a: '代数形式为 z = a + bi；极坐标/欧拉形式为 z = r·e^(iθ) = r(cos θ + i sin θ)，其中模长 r = √(a² + b²)，辐角 θ = atan2(b, a)。' },
+			{ q: '复数的高次幂是如何计算的？', a: '利用棣莫弗定理（De Moivre\'s formula）：zⁿ = rⁿ[cos(nθ) + i sin(nθ)]，通过极坐标进行乘方运算既稳定又精确。' },
+			{ q: '什么是欧拉恒等式？', a: '当取模长 r = 1、辐角 θ = π 时，由 e^(iθ) = cos θ + i sin θ 可得著名公式 e^(iπ) + 1 = 0，将数学中最重要的五大常数融为一体。' },
+		],
+	},
+	'calculators/vector': {
+		about: [
+			'Calculate 2D and 3D vector arithmetic in your browser. Computes vector magnitudes, unit vectors, dot product (scalar product), cross product (vector product), angle between vectors, and vector projection.',
+			'Essential for linear algebra, physics simulations, 3D graphics, and robotics kinematic calculations.',
+		],
+		aboutZh: [
+			'二维与三维空间几何向量计算工具：支持向量模长、归一化单位向量、数量积（点乘/内积）、向量积（叉乘/外积）、夹角（弧度与角度制）、投影向量以及空间距离求解。',
+			'广泛适用于大学线性代数、大学物理力学与电磁学、计算机三维图形学与机器人运动学计算。',
+		],
+		faq: [
+			{ q: 'What is the geometric meaning of the dot product?', a: 'The dot product u · v = |u||v| cos θ measures how much two vectors point in the same direction. It is zero if and only if the vectors are perpendicular (orthogonal).' },
+			{ q: 'What does the cross product represent?', a: 'The cross product u × v produces a vector perpendicular to both u and v, whose magnitude equals the area of the parallelogram formed by u and v.' },
+			{ q: 'Can the cross product be calculated in 2D?', a: 'In 2D, the cross product is treated as a pseudo-scalar (ux·vy - uy·vx), representing the signed 2D area (determinant).' },
+		],
+		faqZh: [
+			{ q: '向量点乘（数量积）的几何意义是什么？', a: '点乘公式为 u · v = |u||v| cos θ，衡量两向量在同方向上的投影贡献。两非零向量点积为 0 当且仅当两者互相垂直正交。' },
+			{ q: '向量叉乘（向量积）的几何意义是什么？', a: '三维叉乘结果是一个同时垂直于 u 和 v 的法向量，其模长在数值上精确等于以 u 和 v 为邻边构成的平行四边形面积。' },
+			{ q: '二维向量可以做叉乘吗？', a: '在 2D 平面中，叉乘被定义为伪标量 ux·vy − uy·vx（即二阶行列式），表示两向量张成的有向平行四边形面积。' },
+		],
+	},
 	'finance/mortgage-prepayment': {
 		about: [
 			'Calculate the financial impact of paying down your mortgage early. Whether you have a year-end bonus or accumulated savings, this calculator shows exactly how much interest you save and lets you compare two strategies: shortening your loan term (keeping your monthly payment the same) versus lowering your ongoing monthly payment.',

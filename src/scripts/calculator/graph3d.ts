@@ -6,7 +6,7 @@
 // the domain or the resolution triggers a re-sample.
 
 import { CalcError, compile, errorText, type Scope } from './engine';
-import { langProp, setBilingual } from '../tools/i18n';
+import { isZh, langProp, onLang, setBilingual } from '../tools/i18n';
 
 const DEG = Math.PI / 180;
 const DEFAULT_DOMAIN = { xMin: -5, xMax: 5, yMin: -5, yMax: 5 };
@@ -230,7 +230,26 @@ export function initGraph3d(scope: Scope): void {
 
 	const domain: Domain = { ...DEFAULT_DOMAIN };
 	const view = { ...DEFAULT_VIEW };
-	let n = 44;
+	let baseN = 160;
+	let n = 160;
+
+	function detectHighFrequency(src: string): boolean {
+		const s = src.toLowerCase();
+		return (
+			/(?:sin|cos|tan)\s*\([^)]*(?:[3-9]|\d{2,})\s*\*?\s*[xy]/.test(s) ||
+			/(?:sin|cos)\s*\([^)]*(?:\^2|\*\s*[xy]|\+\s*y\^2)/.test(s) ||
+			/(?:sin|cos)\s*\([^)]*[xy]\s*\*\s*[xy]\)/.test(s)
+		);
+	}
+
+	function resolveResolution(): void {
+		const src = exprEl?.value.trim() || '';
+		if (baseN <= 160 && detectHighFrequency(src)) {
+			n = Math.max(baseN, 250);
+		} else {
+			n = baseN;
+		}
+	}
 	let style: Style = 'surface';
 	let fn: ((s: Scope) => number) | null = null;
 	let grid: Grid | null = null;
@@ -494,16 +513,20 @@ export function initGraph3d(scope: Scope): void {
 		// costs more than the rasterising does; neighbouring cells routinely round
 		// to the same 8-bit triple, so skipping the repeats is free speed.
 		let last = '';
-		for (let jj = 0; jj < N; jj++) {
+		const isInteracting = pointers.size > 0;
+		const stepMult = isInteracting && N >= 120 ? Math.ceil(N / 60) : 1;
+		for (let jj = 0; jj < N; jj += stepMult) {
 			const j = jFrom + jj * jStep;
-			for (let ii = 0; ii < N; ii++) {
+			for (let ii = 0; ii < N; ii += stepMult) {
 				const i = iFrom + ii * iStep;
 				const cell = j * N + i;
 				if (!sh.ok[cell]) continue;
+				const di = Math.min(stepMult, N - ii) * (sy > 0 ? -1 : 1);
+				const dj = Math.min(stepMult, N - jj) * (cy > 0 ? -1 : 1);
 				const k = j * stride + i;
-				const k1 = k + 1;
-				const k2 = k + stride + 1;
-				const k3 = k + stride;
+				const k1 = j * stride + (i + di);
+				const k2 = (j + dj) * stride + (i + di);
+				const k3 = (j + dj) * stride + i;
 				const colour = colours[cell] as string;
 
 				ctx!.beginPath();
@@ -755,6 +778,7 @@ export function initGraph3d(scope: Scope): void {
 			return;
 		}
 		errEl!.textContent = '';
+		resolveResolution();
 		resample();
 	}
 
@@ -850,6 +874,7 @@ export function initGraph3d(scope: Scope): void {
 	function endPointer(e: PointerEvent): void {
 		pointers.delete(e.pointerId);
 		pinchDist = pointers.size === 2 ? spread() : 0;
+		render();
 	}
 	canvas.addEventListener('pointerup', endPointer);
 	canvas.addEventListener('pointercancel', endPointer);
@@ -936,7 +961,8 @@ export function initGraph3d(scope: Scope): void {
 	document.querySelector<HTMLSelectElement>('#g3-res')?.addEventListener('change', (e) => {
 		const v = Number.parseInt((e.target as HTMLSelectElement).value, 10);
 		if (Number.isFinite(v) && v >= 8) {
-			n = v;
+			baseN = v;
+			resolveResolution();
 			resample();
 		}
 	});
@@ -945,6 +971,68 @@ export function initGraph3d(scope: Scope): void {
 		style = (e.target as HTMLSelectElement).value as Style;
 		render();
 	});
+
+	const fsBtn = document.querySelector<HTMLButtonElement>('#g3-fs');
+	const container = canvas.closest<HTMLElement>('.g3') || canvas;
+
+	function isFs(): boolean {
+		return document.fullscreenElement === container || container.classList.contains('is-fullscreen');
+	}
+
+	function syncFsBtn(): void {
+		if (!fsBtn) return;
+		const active = isFs();
+		setBilingual(fsBtn, active ? 'Exit Fullscreen' : 'Fullscreen', active ? '退出全屏' : '全屏');
+		const label = active ? (isZh() ? '退出全屏' : 'Exit fullscreen') : (isZh() ? '全屏展示' : 'Toggle fullscreen');
+		fsBtn.setAttribute('title', label);
+		fsBtn.setAttribute('aria-label', label);
+		fsBtn.dataset.titleEn = active ? 'Exit fullscreen' : 'Toggle fullscreen';
+		fsBtn.dataset.titleZh = active ? '退出全屏' : '全屏展示';
+		fsBtn.dataset.ariaEn = active ? 'Exit fullscreen' : 'Toggle fullscreen';
+		fsBtn.dataset.ariaZh = active ? '退出全屏' : '全屏展示';
+	}
+
+	onLang(() => {
+		syncFsBtn();
+	});
+
+	if (fsBtn) {
+		fsBtn.addEventListener('click', async () => {
+			if (!isFs()) {
+				container.classList.add('is-fullscreen');
+				if (container.requestFullscreen) {
+					try {
+						await container.requestFullscreen();
+					} catch {}
+				}
+			} else {
+				if (document.fullscreenElement) {
+					try {
+						await document.exitFullscreen();
+					} catch {}
+				}
+				container.classList.remove('is-fullscreen');
+			}
+			syncFsBtn();
+			resize();
+		});
+
+		document.addEventListener('fullscreenchange', () => {
+			if (!document.fullscreenElement) {
+				container.classList.remove('is-fullscreen');
+			}
+			syncFsBtn();
+			resize();
+		});
+
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape' && container.classList.contains('is-fullscreen')) {
+				container.classList.remove('is-fullscreen');
+				syncFsBtn();
+				resize();
+			}
+		});
+	}
 
 	// --- init ----------------------------------------------------------------
 	writeDomainInputs();

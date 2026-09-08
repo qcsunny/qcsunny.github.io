@@ -75,12 +75,12 @@ $$\text{VRAM}_{\text{weights}} \approx P_{\text{total}} \times \frac{\text{Bits}
 
 $$\text{KV\_Cache} = 2 \times n_{\text{layers}} \times n_{\text{kv\_heads}} \times d_{\text{head}} \times \text{tokens} \times 2 \text{ bytes (FP16)}$$
 
-以一个典型的 64 层、8 对 KV heads、维度 128 的模型为例：
-- **8K 上下文**：KV Cache 仅需约 **0.25 GB**；
-- **32K 上下文**：KV Cache 升至约 **1.0 GB**；
-- **128K 上下文**：KV Cache 飙升至约 **4.1 GB**；
+以一个典型的 64 层、8 对 KV heads、维度 128 的模型为例（单 Token 的 KV Cache 需占用 $2 \times 64 \times 8 \times 128 \times 2 = 262,144 \text{ 字节} = 256\ \mathrm{KiB} = 0.25\ \mathrm{MiB}$）：
+- **8K 上下文**：KV Cache 需占用约 **2.0 GB**（$2.0\ \mathrm{GiB}$）；
+- **32K 上下文**：KV Cache 升至约 **8.0 GB**（$8.0\ \mathrm{GiB}$）；
+- **128K 上下文**：KV Cache 飙升至约 **32.0 GB**（$32.0\ \mathrm{GiB}$）；
 - **1M 上下文（1,000,000 tokens）**：
-  纯 KV Cache 就需要吃掉 **整整 32.8 GB 显存**！这还不算任何模型权重！
+  纯 KV Cache 就需要吃掉 **整整 244 GB 显存**（$\approx 262\ \mathrm{GB}$）！这还不算任何模型权重！
 
 这也是为什么 DeepSeek 采用 **MLA（多头潜在注意力压缩）**、MiMo 采用 **混合滑动窗口注意力（Hybrid Attention）** 的核心原因 —— 必须在算法层面将 KV Cache 压缩数倍，否则 1M 窗口在端侧物理上根本无法运行。
 
@@ -112,8 +112,8 @@ $$\text{Tokens/s}_{\max} = \frac{\text{硬件显存总带宽 (GB/s)}}{\text{单 
 
 以 4-bit 量化下激活约 15B 参数（对应每次读取约 9 GB 权重数据）测算：
 - 在配备 800 GB/s 统一内存带宽的 Mac Studio 192GB 上：
-  $$\text{单流生成速度} \approx \frac{800 \text{ GB/s}}{9 \text{ GB}} \approx \mathbf{18 \sim 25 \text{ tokens/s}}$$
-  已经完全超越人类肉眼的阅读舒适速度，对于个人开发者做本地私有代码助手、长文档审计完全可用！
+  $$\text{单流理论上限} \approx \frac{800 \text{ GB/s}}{9 \text{ GB}} \approx \mathbf{88.9 \text{ tokens/s}}$$
+  在实际端侧部署中，受限于 Metal/CPU 调度开销、KV Cache 寻址与内存控制器利用率（MFU 实际有效带宽利用率通常约为 20%~30%），实际持续生成速度约为 **18 ~ 25 tokens/s**。这已经完全超越人类肉眼的阅读舒适速度，对于个人开发者做本地私有代码助手、长文档审计完全可用！
 
 ---
 

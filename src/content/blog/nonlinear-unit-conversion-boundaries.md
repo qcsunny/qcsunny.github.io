@@ -136,7 +136,8 @@ $$
 1\ \mathrm{GiB}=2^{30}\ \mathrm{B}=1{,}073{,}741{,}824\ \mathrm{B}
 $$
 
-两者相差约 7.37%。硬盘标称的 `1 TB` 在操作系统里显示为约 `931 GiB`，不是厂商少给了容量，而是十进制与二进制的分母不同。
+从 Windows 操作系统的角度来看（以二进制 $1024$ 为基准）：$1\ \mathrm{GB}$ 在系统中仅被识别为 $\frac{1000^3}{1024^3} \approx \mathbf{0.9313226}\ \mathrm{GiB}$（折损约 $6.87\%$；若反过来以十进制为分母看 $1\ \mathrm{GiB}$ 比 $1\ \mathrm{GB}$ 多出多少则是约 $7.37\%$）。
+随着量级由 GB 递进到 TB，四次方级联使这种折减进一步加深：$\frac{1000^4}{1024^4} \approx \mathbf{0.9094947}\ \mathrm{TiB}$，这就是为什么厂商标称的 `1 TB` 硬盘插在 Windows 里显示为约 `931.32 GiB`（缩水了整整 $9.05\%$）。这并不是厂商少给了容量，而是十进制与二进制的计数基准不同。
 
 IEC 80000-13 使用 `Ki`, `Mi`, `Gi`, `Ti` 等二进制前缀来表示 $1024$ 的幂，并把它们与 SI 的 `k`, `M`, `G`, `T` 十进制前缀区分开。[IEC 80000-13: Information technology — Quantities and units — Part 13: Information science and technology](https://webstore.iec.ch/en/publication/6948)
 

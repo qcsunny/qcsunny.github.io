@@ -14,6 +14,17 @@
 			data-title-zh="重置视图"
 			><span class="i18n-en">Reset</span><span class="i18n-zh">重置</span></button
 		>
+		<button
+			type="button"
+			id="graph-fs"
+			title="Toggle fullscreen"
+			data-title-en="Toggle fullscreen"
+			data-title-zh="全屏展示"
+			aria-label="Toggle fullscreen"
+			data-aria-en="Toggle fullscreen"
+			data-aria-zh="全屏展示"
+			><span class="i18n-en">Fullscreen</span><span class="i18n-zh">全屏</span></button
+		>
 		<span class="graph-hint">
 			<span class="i18n-en">scroll to zoom · drag to pan · pinch on touch</span><span class="i18n-zh"
 				>滚轮缩放 · 拖动平移 · 触屏双指缩放</span
@@ -71,9 +82,29 @@
 		border: 1px solid var(--gridline);
 		border-radius: 10px;
 		background: var(--bg);
-		
 		touch-action: none;
 		cursor: crosshair;
+	}
+	.graph-tab:fullscreen,
+	.graph-tab.is-fullscreen {
+		position: fixed;
+		inset: 0;
+		width: 100vw;
+		height: 100vh;
+		max-width: 100vw;
+		z-index: 1000;
+		background: var(--bg);
+		padding: 1.25rem 2rem;
+		box-sizing: border-box;
+		display: flex;
+		flex-direction: column;
+		overflow-y: auto;
+	}
+	.graph-tab:fullscreen #graph-canvas,
+	.graph-tab.is-fullscreen #graph-canvas {
+		flex: 1 1 auto;
+		min-height: 360px;
+		height: calc(100vh - 240px);
 	}
 	.graph-rows {
 		display: flex;
