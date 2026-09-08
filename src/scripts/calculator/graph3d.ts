@@ -32,15 +32,36 @@ const LIGHT: readonly [number, number, number] = (() => {
 	return [v[0] / m, v[1] / m, v[2] / m] as const;
 })();
 
-/** Viridis stops — perceptually uniform and colour-vision-safe, the usual
- *  choice for a height ramp. */
-const RAMP: ReadonlyArray<readonly [number, number, number]> = [
-	[68, 1, 84],
-	[59, 82, 139],
-	[33, 145, 140],
-	[94, 201, 98],
-	[253, 231, 37],
-];
+const RAMPS: Record<string, ReadonlyArray<readonly [number, number, number]>> = {
+	viridis: [
+		[68, 1, 84],
+		[59, 82, 139],
+		[33, 145, 140],
+		[94, 201, 98],
+		[253, 231, 37],
+	],
+	plasma: [
+		[13, 8, 135],
+		[126, 3, 168],
+		[204, 71, 120],
+		[248, 149, 64],
+		[240, 249, 33],
+	],
+	coolwarm: [
+		[59, 76, 192],
+		[141, 175, 252],
+		[221, 221, 221],
+		[244, 154, 123],
+		[180, 4, 38],
+	],
+	turbo: [
+		[48, 18, 59],
+		[40, 188, 235],
+		[164, 252, 60],
+		[251, 126, 33],
+		[122, 4, 3],
+	],
+};
 
 type Style = 'surface' | 'mesh' | 'wire';
 
@@ -141,12 +162,13 @@ function shortNum(v: number, digits = 4): string {
 	return String(Number(v.toPrecision(digits)));
 }
 
-function colorAt(t: number): [number, number, number] {
-	const c = Math.min(1, Math.max(0, t)) * (RAMP.length - 1);
-	const i = Math.min(RAMP.length - 2, Math.floor(c));
+function colorAt(t: number, cmap = 'viridis'): [number, number, number] {
+	const ramp = RAMPS[cmap] || RAMPS.viridis!;
+	const c = Math.min(1, Math.max(0, t)) * (ramp.length - 1);
+	const i = Math.min(ramp.length - 2, Math.floor(c));
 	const f = c - i;
-	const a = RAMP[i] as readonly [number, number, number];
-	const b = RAMP[i + 1] as readonly [number, number, number];
+	const a = ramp[i] as readonly [number, number, number];
+	const b = ramp[i + 1] as readonly [number, number, number];
 	return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f];
 }
 
@@ -259,6 +281,29 @@ export function initGraph3d(scope: Scope): void {
 			render();
 		});
 	}
+
+	const cmapSelect = document.querySelector<HTMLSelectElement>('#g3-cmap');
+	const opacitySelect = document.querySelector<HTMLSelectElement>('#g3-opacity');
+	let cmap = 'viridis';
+	let opacity = 1.0;
+
+	if (cmapSelect) {
+		cmapSelect.addEventListener('change', () => {
+			cmap = cmapSelect.value;
+			if (grid) shading = shadeGrid(grid);
+			render();
+		});
+	}
+
+	if (opacitySelect) {
+		opacitySelect.addEventListener('change', () => {
+			opacity = Number.parseFloat(opacitySelect.value) || 1.0;
+			if (grid) shading = shadeGrid(grid);
+			render();
+		});
+	}
+
+	let hoverPoint: { x: number; y: number; z: number; px: number; py: number } | null = null;
 
 	// the one string here a span pair cannot hold
 	langProp(exprEl, 'placeholder', 'e.g. x^2 - y^2', '例如 x^2 - y^2');
@@ -410,9 +455,10 @@ export function initGraph3d(scope: Scope): void {
 					0,                  0,                  0,                  1,
 				]);
 
-				glRenderer.render(mvp, style, palette);
+				glRenderer.render(mvp, style, palette, cmap, opacity);
 				drawTicks(p, grid);
 				drawColorbar(grid);
+				drawHoverCrosshair();
 				return;
 			} catch (err) {
 				console.warn('[WebGL] Render call threw an error, falling back to CPU Canvas 2D:', err);
@@ -428,6 +474,22 @@ export function initGraph3d(scope: Scope): void {
 		if (shading) drawSurface(grid, shading);
 		drawTicks(p, grid);
 		drawColorbar(grid);
+		drawHoverCrosshair();
+	}
+
+	function drawHoverCrosshair(): void {
+		if (!hoverPoint) return;
+		ctx!.save();
+		ctx!.beginPath();
+		ctx!.arc(hoverPoint.px, hoverPoint.py, 5, 0, Math.PI * 2);
+		ctx!.fillStyle = '#ffffff';
+		ctx!.shadowColor = 'rgba(0, 0, 0, 0.45)';
+		ctx!.shadowBlur = 6;
+		ctx!.fill();
+		ctx!.lineWidth = 2;
+		ctx!.strokeStyle = '#2337ff';
+		ctx!.stroke();
+		ctx!.restore();
 	}
 
 	type Proj = (u: number, v: number, w: number) => Projected;
@@ -527,8 +589,11 @@ export function initGraph3d(scope: Scope): void {
 					4;
 				const t = (Math.min(g.zHi, Math.max(g.zLo, meanZ)) - g.zLo) / (half * 2);
 				tone[cell] = t;
-				const [r, gg, b] = colorAt(t);
-				fill[cell] = `rgb(${(r * lit) | 0}, ${(gg * lit) | 0}, ${(b * lit) | 0})`;
+				const [r, gg, b] = colorAt(t, cmap);
+				fill[cell] =
+					opacity < 0.99
+						? `rgba(${(r * lit) | 0}, ${(gg * lit) | 0}, ${(b * lit) | 0}, ${opacity})`
+						: `rgb(${(r * lit) | 0}, ${(gg * lit) | 0}, ${(b * lit) | 0})`;
 			}
 		}
 		return { n: N, ok, w, tone, fill, wire: null };
@@ -541,8 +606,8 @@ export function initGraph3d(scope: Scope): void {
 			const out: string[] = new Array(sh.n * sh.n).fill('');
 			for (let cell = 0; cell < out.length; cell++) {
 				if (!sh.ok[cell]) continue;
-				const [r, gg, b] = colorAt(sh.tone[cell] as number);
-				out[cell] = `rgba(${r | 0}, ${gg | 0}, ${b | 0}, 0.6)`;
+				const [r, gg, b] = colorAt(sh.tone[cell] as number, cmap);
+				out[cell] = `rgba(${r | 0}, ${gg | 0}, ${b | 0}, ${0.6 * opacity})`;
 			}
 			sh.wire = out;
 		}
@@ -766,7 +831,7 @@ export function initGraph3d(scope: Scope): void {
 		const y = cssH - 18 - h;
 		const grad = ctx!.createLinearGradient(0, y + h, 0, y);
 		for (let i = 0; i <= 8; i++) {
-			const [r, gg, b] = colorAt(i / 8);
+			const [r, gg, b] = colorAt(i / 8, cmap);
 			grad.addColorStop(i / 8, `rgb(${r | 0}, ${gg | 0}, ${b | 0})`);
 		}
 		ctx!.fillStyle = grad;
@@ -807,6 +872,14 @@ export function initGraph3d(scope: Scope): void {
 		if (holes > 0) {
 			parts.push(
 				stat(bi('undefined', '无定义'), `${holes} ${bi('points', '点')}`),
+			);
+		}
+		if (hoverPoint) {
+			parts.push(
+				stat(
+					bi('probe', '探针'),
+					`(${shortNum(hoverPoint.x)}, ${shortNum(hoverPoint.y)}) = <b>${shortNum(hoverPoint.z)}</b>`,
+				),
 			);
 		}
 		if (g.clipped) {
@@ -956,16 +1029,69 @@ export function initGraph3d(scope: Scope): void {
 
 	canvas.addEventListener('pointermove', (e) => {
 		const prev = pointers.get(e.pointerId);
-		if (!prev) return;
-		pointers.set(e.pointerId, { x: e.offsetX, y: e.offsetY });
-		if (pointers.size === 1) {
-			rotate(e.offsetX - prev.x, e.offsetY - prev.y);
-		} else if (pointers.size === 2 && pinchDist > 0) {
-			const d = spread();
-			if (d > 0) {
-				zoomBy(d / pinchDist);
-				pinchDist = d;
+		if (prev) {
+			hoverPoint = null;
+			pointers.set(e.pointerId, { x: e.offsetX, y: e.offsetY });
+			if (pointers.size === 1) {
+				rotate(e.offsetX - prev.x, e.offsetY - prev.y);
+			} else if (pointers.size === 2 && pinchDist > 0) {
+				const d = spread();
+				if (d > 0) {
+					zoomBy(d / pinchDist);
+					pinchDist = d;
+				}
 			}
+			return;
+		}
+
+		if (!grid || pointers.size > 0) {
+			if (hoverPoint) {
+				hoverPoint = null;
+				render();
+				setReadout(grid);
+			}
+			return;
+		}
+
+		const mx = e.offsetX;
+		const my = e.offsetY;
+		const p = projector();
+		const N = grid.n;
+		const stride = N + 1;
+		let closestDist = 26;
+		let bestPt: typeof hoverPoint = null;
+
+		const step = Math.max(1, Math.floor(N / 40));
+		for (let j = 0; j <= N; j += step) {
+			const yVal = domain.yMin + ((domain.yMax - domain.yMin) * j) / N;
+			const v = toV(yVal);
+			for (let i = 0; i <= N; i += step) {
+				const k = j * stride + i;
+				if (!grid.ok[k]) continue;
+				const xVal = domain.xMin + ((domain.xMax - domain.xMin) * i) / N;
+				const u = toU(xVal);
+				const w = toW(grid.z[k] as number, grid);
+				const proj = p(u, v, w);
+				const d = Math.hypot(proj.px - mx, proj.py - my);
+				if (d < closestDist) {
+					closestDist = d;
+					bestPt = { x: xVal, y: yVal, z: grid.z[k] as number, px: proj.px, py: proj.py };
+				}
+			}
+		}
+
+		if (bestPt !== hoverPoint) {
+			hoverPoint = bestPt;
+			render();
+			setReadout(grid);
+		}
+	});
+
+	canvas.addEventListener('pointerleave', () => {
+		if (hoverPoint) {
+			hoverPoint = null;
+			render();
+			setReadout(grid);
 		}
 	});
 

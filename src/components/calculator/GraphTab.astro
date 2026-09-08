@@ -14,6 +14,14 @@
 			data-title-zh="重置视图"
 			><span class="i18n-en">Reset</span><span class="i18n-zh">重置</span></button
 		>
+		<label class="graph-select">
+			<span class="i18n-en">Mode</span><span class="i18n-zh">模式</span>
+			<select id="graph-mode">
+				<option value="cartesian" selected data-text-en="Curves (y=f(x) & Implicit)" data-text-zh="曲线模式 (函数与隐方程)">Curves (y=f(x) & Implicit)</option>
+				<option value="complex" data-text-en="Complex Domain (f(z))" data-text-zh="复变函数域着色 (f(z))">Complex Domain (f(z))</option>
+				<option value="vector" data-text-en="Vector Field (dy/dx)" data-text-zh="向量场与相位图 (dy/dx)">Vector Field (dy/dx)</option>
+			</select>
+		</label>
 		<button
 			type="button"
 			id="graph-fs"
@@ -31,11 +39,15 @@
 			>
 		</span>
 	</div>
-	<canvas
-		id="graph-canvas"
-		aria-label="Function graph plot"
-		data-aria-en="Function graph plot"
-		data-aria-zh="函数图像画布"></canvas>
+	<div class="graph-viewport">
+		<canvas id="graph-gl" class="graph-canvas-gl" aria-hidden="true"></canvas>
+		<canvas
+			id="graph-canvas"
+			class="graph-canvas-2d"
+			aria-label="Function graph plot"
+			data-aria-en="Function graph plot"
+			data-aria-zh="函数图像画布"></canvas>
+	</div>
 	<div id="graph-rows" class="graph-rows"></div>
 	<button id="graph-add" type="button" class="graph-add"
 		><span class="i18n-en">+ Add function</span><span class="i18n-zh">+ 添加函数</span></button
@@ -75,13 +87,33 @@
 		font-size: 0.8rem;
 		color: var(--dim);
 	}
-	#graph-canvas {
-		display: block;
+	.graph-select {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35em;
+		font-size: 0.8rem;
+		color: var(--dim);
+	}
+	.graph-select select {
+		font: inherit;
+		font-size: 0.85rem;
+		padding: 0.3em 0.5em;
+		border: 1px solid var(--gridline);
+		border-radius: 6px;
+		background: var(--bg);
+		color: var(--fg);
+	}
+	.graph-select select:focus-visible {
+		outline: 2px solid var(--accent);
+	}
+	.graph-viewport {
+		position: relative;
 		width: 100%;
 		height: clamp(280px, 55vw, 480px);
 		border: 1px solid var(--gridline);
 		border-radius: 10px;
 		background: var(--bg);
+		overflow: hidden;
 		touch-action: none;
 		cursor: crosshair;
 	}
@@ -100,11 +132,29 @@
 		flex-direction: column;
 		overflow-y: auto;
 	}
-	.graph-tab:fullscreen #graph-canvas,
-	.graph-tab.is-fullscreen #graph-canvas {
+	.graph-tab:fullscreen .graph-viewport,
+	.graph-tab.is-fullscreen .graph-viewport {
 		flex: 1 1 auto;
 		min-height: 360px;
 		height: calc(100vh - 240px);
+	}
+	#graph-gl,
+	#graph-canvas {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		display: block;
+	}
+	#graph-gl {
+		z-index: 1;
+		pointer-events: none;
+	}
+	#graph-canvas {
+		z-index: 2;
+		background: transparent;
+		touch-action: none;
+		cursor: crosshair;
 	}
 	.graph-rows {
 		display: flex;

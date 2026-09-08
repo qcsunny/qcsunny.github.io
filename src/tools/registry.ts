@@ -92,6 +92,8 @@ export interface FormField {
 	required?: boolean | ((values: FormValues) => boolean);
 	/** condition to display and activate this field based on other form values */
 	showIf?: (values: FormValues) => boolean;
+	/** fast clickable preset chips rendered below the input */
+	presets?: { label: string; labelZh?: string; value: string }[];
 }
 
 export interface FormResultRow {

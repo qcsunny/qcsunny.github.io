@@ -1,10 +1,17 @@
-import { compile, errorText, formatNumber, type Scope } from './engine';
+import { CalcError, compile, errorText, formatNumber, type Scope } from './engine';
 import { isZh, onLang, setBilingual } from '../tools/i18n';
+import {
+	createWebGL2DGraphRenderer,
+	renderImplicitCPU,
+	renderVectorFieldCPU,
+	type WebGL2DGraphRenderer,
+} from './graph-gl';
 
 interface FnRow {
 	expr: string;
 	fn: ((scope: Scope) => number) | null;
 	visible: boolean;
+	isImplicit?: boolean;
 	/** Both renderings of the compile error, so the message survives the rebuild
 	 *  a language switch triggers instead of vanishing until the next keystroke. */
 	err: { en: string; zh: string } | null;
@@ -58,11 +65,16 @@ function readPalette(): Palette {
 
 export function initGraph(scope: Scope): GraphController {
 	const canvas = document.querySelector<HTMLCanvasElement>('#graph-canvas');
+	const glCanvas = document.querySelector<HTMLCanvasElement>('#graph-gl');
+	const modeSelect = document.querySelector<HTMLSelectElement>('#graph-mode');
 	const rowsHost = document.querySelector<HTMLElement>('#graph-rows');
 	const addBtn = document.querySelector<HTMLButtonElement>('#graph-add');
 	if (!canvas || !rowsHost || !addBtn) return { refresh: () => {} };
 	const ctx = canvas.getContext('2d');
 	if (!ctx) return { refresh: () => {} };
+
+	let mode: 'cartesian' | 'complex' | 'vector' = 'cartesian';
+	let glRenderer: WebGL2DGraphRenderer | null = glCanvas ? createWebGL2DGraphRenderer(glCanvas) : null;
 
 	let view = { ...DEFAULT_VIEW };
 	let rows: FnRow[] = [{ expr: 'sin(x)', fn: null, visible: true, err: null }];
@@ -93,6 +105,9 @@ export function initGraph(scope: Scope): GraphController {
 		dpr = window.devicePixelRatio || 1;
 		canvas!.width = Math.round(cssW * dpr);
 		canvas!.height = Math.round(cssH * dpr);
+		if (glCanvas && glRenderer) {
+			glRenderer.resize(cssW, cssH, dpr);
+		}
 		render();
 	}
 	new ResizeObserver(resize).observe(canvas);
@@ -102,12 +117,79 @@ export function initGraph(scope: Scope): GraphController {
 		if (cssW < 2 || cssH < 2) return;
 		ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
 		ctx!.clearRect(0, 0, cssW, cssH);
+		if (glRenderer) glRenderer.clear();
+
+		if (mode === 'complex') {
+			const targetRow = rows.find((r) => r.visible && r.expr.trim() !== '');
+			if (targetRow) {
+				glRenderer?.renderComplex(targetRow.expr, view);
+			}
+		} else if (mode === 'vector') {
+			const targetRow = rows.find((r) => r.visible && r.expr.trim() !== '');
+			if (targetRow) {
+				const ok = glRenderer?.renderVectorField(targetRow.expr, view);
+				if (!ok && targetRow.fn) {
+					const fn = targetRow.fn;
+					renderVectorFieldCPU(
+						ctx!,
+						(x, y) => {
+							scope.vars['x'] = x;
+							scope.vars['y'] = y;
+							try {
+								return fn(scope);
+							} finally {
+								delete scope.vars['x'];
+								delete scope.vars['y'];
+							}
+						},
+						view,
+						cssW,
+						cssH,
+					);
+				}
+			}
+		} else {
+			// Cartesian mode: render implicit curves
+			rows.forEach((row, i) => {
+				if (!row.visible || !row.expr.trim()) return;
+				if (row.isImplicit) {
+					const ok = glRenderer?.renderImplicit(row.expr, view, COLORS[i] as string);
+					if (!ok && row.fn) {
+						const fn = row.fn;
+						renderImplicitCPU(
+							ctx!,
+							(x, y) => {
+								scope.vars['x'] = x;
+								scope.vars['y'] = y;
+								try {
+									return fn(scope);
+								} finally {
+									delete scope.vars['x'];
+									delete scope.vars['y'];
+								}
+							},
+							view,
+							COLORS[i] as string,
+							cssW,
+							cssH,
+						);
+					}
+				}
+			});
+		}
+
 		drawGrid();
-		rows.forEach((row, i) => {
-			if (row.visible && row.fn) drawCurve(row.fn, COLORS[i] as string);
-		});
+
+		if (mode === 'cartesian') {
+			rows.forEach((row, i) => {
+				if (row.visible && row.fn && !row.isImplicit) {
+					drawCurve(row.fn, COLORS[i] as string);
+				}
+			});
+		}
+
 		drawLegend();
-		if (hoverPx !== null) drawCrosshair(hoverPx);
+		if (hoverPx !== null && mode === 'cartesian') drawCrosshair(hoverPx);
 	}
 
 	function niceStep(range: number, targetTicks = 8): number {
@@ -216,7 +298,11 @@ export function initGraph(scope: Scope): GraphController {
 			.filter(({ row }) => row.visible && row.expr.trim() !== '');
 		if (items.length === 0) return;
 		ctx!.font = '12px ui-monospace, Consolas, monospace';
-		const texts = items.map(({ row }, i) => `f${i + 1}: y = ${row.expr}`);
+		const texts = items.map(({ row }, i) => {
+			if (mode === 'complex') return `f(z) = ${row.expr}`;
+			if (mode === 'vector') return `dy/dx = ${row.expr}`;
+			return row.isImplicit ? row.expr : `f${i + 1}: y = ${row.expr}`;
+		});
 		const widest = Math.max(...texts.map((t) => ctx!.measureText(t).width));
 		const boxW = widest + 34;
 		const boxH = items.length * 18 + 10;
@@ -243,7 +329,7 @@ export function initGraph(scope: Scope): GraphController {
 
 		const readings = rows
 			.map((row, i) => ({ row, color: COLORS[i] as string }))
-			.filter(({ row }) => row.visible && row.fn)
+			.filter(({ row }) => row.visible && row.fn && !row.isImplicit)
 			.map(({ row, color }) => {
 				const fn = row.fn as (s: Scope) => number;
 				const y = sample(fn, x);
@@ -473,15 +559,72 @@ export function initGraph(scope: Scope): GraphController {
 	function recompile(row: FnRow): void {
 		if (!row.expr.trim()) {
 			row.fn = null;
+			row.isImplicit = false;
 			return;
 		}
-		try {
-			row.fn = compile(row.expr);
-		} catch (err) {
+		const raw = row.expr.trim();
+
+		if (mode === 'complex') {
 			row.fn = null;
-			// message surfaced by the row's error element
-			throw err;
+			row.isImplicit = false;
+			let depth = 0;
+			for (const ch of raw) {
+				if (ch === '(') depth++;
+				else if (ch === ')') depth--;
+				if (depth < 0) throw new CalcError('Unmatched closing parenthesis', '括号不匹配');
+			}
+			if (depth !== 0) throw new CalcError('Unmatched opening parenthesis', '括号未闭合');
+			return;
 		}
+
+		if (mode === 'vector') {
+			row.fn = null;
+			row.isImplicit = false;
+			scope.vars['x'] = 1;
+			scope.vars['y'] = 1;
+			try {
+				row.fn = compile(raw);
+			} catch (err) {
+				row.fn = null;
+				throw err;
+			} finally {
+				delete scope.vars['x'];
+				delete scope.vars['y'];
+			}
+			return;
+		}
+
+		// Cartesian mode:
+		let s = raw;
+		if (/^y\s*=\s*/i.test(s)) {
+			s = s.replace(/^y\s*=\s*/i, '');
+			row.isImplicit = false;
+			row.fn = compile(s);
+			return;
+		}
+
+		if (s.includes('=') || /\by\b/.test(s)) {
+			row.isImplicit = true;
+			if (s.includes('=')) {
+				const [lhs, rhs] = s.split('=');
+				s = `(${lhs}) - (${rhs})`;
+			}
+			scope.vars['x'] = 1;
+			scope.vars['y'] = 1;
+			try {
+				row.fn = compile(s);
+			} catch (err) {
+				row.fn = null;
+				throw err;
+			} finally {
+				delete scope.vars['x'];
+				delete scope.vars['y'];
+			}
+			return;
+		}
+
+		row.isImplicit = false;
+		row.fn = compile(s);
 	}
 
 	// A language switch re-runs this (see onLang below), so everything it writes
@@ -496,12 +639,15 @@ export function initGraph(scope: Scope): GraphController {
 
 			const swatch = document.createElement('span');
 			swatch.className = 'graph-swatch';
-			swatch.style.background = COLORS[i];
+			swatch.style.background = COLORS[i] as string;
 
 			const input = document.createElement('input');
 			input.type = 'text';
 			input.value = row.expr;
-			input.placeholder = zh ? '例如 x^2 - 3 或 a*x' : 'e.g. x^2 - 3 or a*x';
+			let ph = zh ? '例如 x^2 - 3 或 x^2 + y^2 = 25' : 'e.g. x^2 - 3 or x^2 + y^2 = 25';
+			if (mode === 'complex') ph = zh ? '例如 z^3 - 1 或 sin(z)' : 'e.g. z^3 - 1 or sin(z)';
+			else if (mode === 'vector') ph = zh ? '例如 y - x 或 -x/y' : 'e.g. y - x or -x/y';
+			input.placeholder = ph;
 			input.setAttribute('aria-label', zh ? `函数 ${i + 1}` : `Function ${i + 1}`);
 
 			const errorEl = document.createElement('span');
@@ -546,7 +692,7 @@ export function initGraph(scope: Scope): GraphController {
 			div.append(swatch, input, errorEl, visible, remove);
 			rowsHost!.append(div);
 		});
-		addBtn!.disabled = rows.length >= MAX_FNS;
+		addBtn!.disabled = rows.length >= MAX_FNS || mode === 'complex' || mode === 'vector';
 	}
 
 	addBtn.addEventListener('click', () => {
@@ -556,6 +702,27 @@ export function initGraph(scope: Scope): GraphController {
 		const inputs = rowsHost!.querySelectorAll('input[type="text"]');
 		(inputs[inputs.length - 1] as HTMLInputElement).focus();
 	});
+
+	if (modeSelect) {
+		modeSelect.addEventListener('change', () => {
+			mode = (modeSelect.value as 'cartesian' | 'complex' | 'vector') || 'cartesian';
+			if (mode === 'complex' && rows.length > 0 && !rows[0]!.expr) {
+				rows[0]!.expr = 'z^3 - 1';
+			} else if (mode === 'vector' && rows.length > 0 && !rows[0]!.expr) {
+				rows[0]!.expr = 'y - x';
+			}
+			rows.forEach((r) => {
+				try {
+					recompile(r);
+					r.err = null;
+				} catch (err) {
+					r.err = errorText(err);
+				}
+			});
+			renderRows();
+			render();
+		});
+	}
 
 	// --- init ----------------------------------------------------------------
 	rows.forEach((row) => {

@@ -195,6 +195,23 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			hint.append(bilingual(field.hint, field.hintZh));
 			below.append(hint);
 		}
+
+		if (field.presets && field.presets.length > 0) {
+			const chips = document.createElement('div');
+			chips.className = 't-presets';
+			for (const p of field.presets) {
+				const btn = document.createElement('button');
+				btn.type = 'button';
+				btn.className = 't-preset-btn';
+				btn.append(bilingual(p.label, p.labelZh));
+				btn.addEventListener('click', () => {
+					control.value = p.value;
+					control.dispatchEvent(new Event('input', { bubbles: true }));
+				});
+				chips.append(btn);
+			}
+			below.append(chips);
+		}
 		wrap.append(below);
 		return wrap;
 	}

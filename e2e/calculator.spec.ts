@@ -141,6 +141,21 @@ test('equation-solver computes limits (sin(x)/x -> 0), ODEs, and quadratic verte
 	await expect(results).toContainText('2');
 	await expect(results).toContainText('Vertex (xv, yv)');
 
+	// Test smart preset chip click: 2x + 3y = 8, 5x - y = 3
+	const linearChip = page.locator('.t-preset-btn', { hasText: '2x + 3y = 8' });
+	await expect(linearChip).toBeVisible();
+	await linearChip.click();
+	await expect(results).toContainText('2x2 Linear System');
+	await expect(results).toContainText('Solution for x');
+	await expect(results).toContainText('1');
+	await expect(results).toContainText('Solution for y');
+	await expect(results).toContainText('2');
+
+	// Test custom linear equation: 4x - 8 = 0
+	await page.locator('#t-f-eq').fill('4x - 8 = 0');
+	await expect(results).toContainText('Linear Equation in x');
+	await expect(results).toContainText('2');
+
 	// 2. Select Limit calculation
 	await page.locator('#t-f-type').selectOption('limit');
 
@@ -219,6 +234,28 @@ test('2D and 3D graphers have responsive fullscreen toggle buttons', async ({ pa
 	await expect(page.locator('.g3')).toHaveClass(/is-fullscreen/);
 	await g3Fs.click();
 	await expect(page.locator('.g3')).not.toHaveClass(/is-fullscreen/);
+});
+
+test('2D grapher supports implicit curves, complex domain coloring, and vector field modes', async ({ page }) => {
+	await page.goto('/calculators/graph/');
+	const modeSelect = page.locator('#graph-mode');
+	await expect(modeSelect).toBeVisible();
+
+	// 1. Cartesian with implicit curve x^2 + y^2 = 25
+	const input = page.locator('.graph-row input[type="text"]').first();
+	await input.fill('x^2 + y^2 = 25');
+	await page.waitForTimeout(200);
+	await expect(page.locator('.row-error')).toBeEmpty();
+
+	// 2. Switch to Complex Domain
+	await modeSelect.selectOption('complex');
+	await page.waitForTimeout(200);
+	await expect(modeSelect).toHaveValue('complex');
+
+	// 3. Switch to Vector Field
+	await modeSelect.selectOption('vector');
+	await page.waitForTimeout(200);
+	await expect(modeSelect).toHaveValue('vector');
 });
 
 

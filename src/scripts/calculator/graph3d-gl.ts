@@ -82,6 +82,8 @@ varying float vValid;
 
 uniform vec3 uLight;
 uniform int uStyle; // 0: surface, 1: mesh (opaque back), 2: wire
+uniform int uCmap;  // 0: viridis, 1: plasma, 2: coolwarm, 3: turbo
+uniform float uOpacity;
 uniform vec3 uBg;
 
 vec3 viridis(float t) {
@@ -97,19 +99,65 @@ vec3 viridis(float t) {
     return mix(c3, c4, (t - 0.75) * 4.0);
 }
 
+vec3 plasma(float t) {
+    t = clamp(t, 0.0, 1.0);
+    vec3 c0 = vec3(0.051, 0.031, 0.529);
+    vec3 c1 = vec3(0.494, 0.012, 0.659);
+    vec3 c2 = vec3(0.800, 0.278, 0.471);
+    vec3 c3 = vec3(0.973, 0.584, 0.251);
+    vec3 c4 = vec3(0.941, 0.976, 0.129);
+    if (t < 0.25) return mix(c0, c1, t * 4.0);
+    if (t < 0.50) return mix(c1, c2, (t - 0.25) * 4.0);
+    if (t < 0.75) return mix(c2, c3, (t - 0.50) * 4.0);
+    return mix(c3, c4, (t - 0.75) * 4.0);
+}
+
+vec3 coolwarm(float t) {
+    t = clamp(t, 0.0, 1.0);
+    vec3 c0 = vec3(0.231, 0.298, 0.753);
+    vec3 c1 = vec3(0.553, 0.686, 0.988);
+    vec3 c2 = vec3(0.867, 0.867, 0.867);
+    vec3 c3 = vec3(0.957, 0.604, 0.482);
+    vec3 c4 = vec3(0.706, 0.016, 0.149);
+    if (t < 0.25) return mix(c0, c1, t * 4.0);
+    if (t < 0.50) return mix(c1, c2, (t - 0.25) * 4.0);
+    if (t < 0.75) return mix(c2, c3, (t - 0.50) * 4.0);
+    return mix(c3, c4, (t - 0.75) * 4.0);
+}
+
+vec3 turbo(float t) {
+    t = clamp(t, 0.0, 1.0);
+    vec3 c0 = vec3(0.188, 0.071, 0.231);
+    vec3 c1 = vec3(0.157, 0.737, 0.922);
+    vec3 c2 = vec3(0.643, 0.988, 0.235);
+    vec3 c3 = vec3(0.984, 0.494, 0.129);
+    vec3 c4 = vec3(0.478, 0.016, 0.012);
+    if (t < 0.25) return mix(c0, c1, t * 4.0);
+    if (t < 0.50) return mix(c1, c2, (t - 0.25) * 4.0);
+    if (t < 0.75) return mix(c2, c3, (t - 0.50) * 4.0);
+    return mix(c3, c4, (t - 0.75) * 4.0);
+}
+
+vec3 evalColormap(float t) {
+    if (uCmap == 1) return plasma(t);
+    if (uCmap == 2) return coolwarm(t);
+    if (uCmap == 3) return turbo(t);
+    return viridis(t);
+}
+
 void main() {
     if (vValid < 0.5) discard;
     vec3 n = normalize(vNorm);
     float dotL = abs(dot(n, normalize(uLight)));
     float lit = 0.52 + 0.48 * dotL;
-    vec3 col = viridis(vTone);
+    vec3 col = evalColormap(vTone);
     if (uStyle == 1) {
         col = uBg;
     }
     if (uStyle == 2) {
-        gl_FragColor = vec4(col, 0.75);
+        gl_FragColor = vec4(col, 0.75 * uOpacity);
     } else {
-        gl_FragColor = vec4(col * lit, 1.0);
+        gl_FragColor = vec4(col * lit, uOpacity);
     }
 }
 `;
@@ -152,7 +200,7 @@ export interface WebGLSurfaceRenderer {
 		toU: (x: number) => number,
 		toV: (y: number) => number,
 	): void;
-	render(mvp: Float32Array, style: Style, palette: Palette): void;
+	render(mvp: Float32Array, style: Style, palette: Palette, cmap?: string, opacity?: number): void;
 	clear(): void;
 	destroy(): void;
 }
@@ -219,6 +267,8 @@ export function createWebGLRenderer(canvas: HTMLCanvasElement): WebGLSurfaceRend
 		uMVP: gl.getUniformLocation(surfProg, 'uMVP'),
 		uLight: gl.getUniformLocation(surfProg, 'uLight'),
 		uStyle: gl.getUniformLocation(surfProg, 'uStyle'),
+		uCmap: gl.getUniformLocation(surfProg, 'uCmap'),
+		uOpacity: gl.getUniformLocation(surfProg, 'uOpacity'),
 		uBg: gl.getUniformLocation(surfProg, 'uBg'),
 	};
 
@@ -471,7 +521,13 @@ export function createWebGLRenderer(canvas: HTMLCanvasElement): WebGLSurfaceRend
 		gl!.bufferData(gl!.ARRAY_BUFFER, data, gl!.STATIC_DRAW);
 	}
 
-	function render(mvp: Float32Array, style: Style, palette: Palette): void {
+	function render(
+		mvp: Float32Array,
+		style: Style,
+		palette: Palette,
+		cmap = 'viridis',
+		opacity = 1.0,
+	): void {
 		gl!.clearColor(0, 0, 0, 0);
 		gl!.clear(gl!.COLOR_BUFFER_BIT | gl!.DEPTH_BUFFER_BIT);
 
@@ -499,6 +555,10 @@ export function createWebGLRenderer(canvas: HTMLCanvasElement): WebGLSurfaceRend
 			gl!.uniform3f(sLoc.uLight, LIGHT[0], LIGHT[1], LIGHT[2]);
 			const bgRgb = parseColor(palette.bg);
 			gl!.uniform3f(sLoc.uBg, bgRgb[0], bgRgb[1], bgRgb[2]);
+
+			const cmapIndex = cmap === 'plasma' ? 1 : cmap === 'coolwarm' ? 2 : cmap === 'turbo' ? 3 : 0;
+			gl!.uniform1i(sLoc.uCmap, cmapIndex);
+			gl!.uniform1f(sLoc.uOpacity, Math.max(0.1, Math.min(1.0, opacity)));
 
 			gl!.bindBuffer(gl!.ARRAY_BUFFER, posBuf);
 			gl!.enableVertexAttribArray(sLoc.aPos);

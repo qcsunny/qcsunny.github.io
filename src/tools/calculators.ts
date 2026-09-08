@@ -961,21 +961,44 @@ function solveCubic(a: number, b: number, c: number, d: number): string[] {
 
 const equationSolver: FormConfig = {
 	intro: 'Solve polynomial equations (Quadratic ax²+bx+c=0, Cubic ax³+bx²+cx+d=0), 2x2 linear systems, numerical calculus (derivatives & integrals), and function limits via Richardson extrapolation.',
-	introZh: '代数方程求解、微积分与极限工具：一元二次/三次方程求根（含复数虚根）、二元一次线性方程组、数值微积分以及基于理查森外推的函数极限求解。',
+	introZh: '代数方程求解、微积分与极限工具：支持自然输入方程或方程组智能识别、一元二次/三次方程求根（含复数虚根）、二元一次方程组、数值微积分以及函数极限求解。',
 	fields: [
 		{
 			id: 'type',
-			label: 'Problem Type',
-			labelZh: '计算类型',
+			label: 'Problem Type / Input Mode',
+			labelZh: '计算类型 / 输入方式',
 			type: 'select',
-			def: 'quad',
+			def: 'auto',
 			options: [
-				{ value: 'quad', label: 'Quadratic Equation (ax² + bx + c = 0)', labelZh: '一元二次方程 (ax² + bx + c = 0)' },
-				{ value: 'cubic', label: 'Cubic Equation (ax³ + bx² + cx + d = 0)', labelZh: '一元三次方程 (ax³ + bx² + cx + d = 0)' },
-				{ value: 'linear2', label: '2x2 Linear System (a1·x + b1·y = c1)', labelZh: '二元一次线性方程组' },
+				{ value: 'auto', label: 'Smart Equation (e.g. x² - 5x + 6 = 0 or 2x+3y=8, 5x-y=3)', labelZh: '自然方程输入 (智能识别二次/三次/线性方程组 · 推荐)' },
+				{ value: 'quad', label: 'Quadratic by Coefficients (ax² + bx + c = 0)', labelZh: '一元二次方程 (按系数 a, b, c)' },
+				{ value: 'cubic', label: 'Cubic by Coefficients (ax³ + bx² + cx + d = 0)', labelZh: '一元三次方程 (按系数 a, b, c, d)' },
+				{ value: 'linear2', label: '2x2 Linear System (by coefficients)', labelZh: '二元一次线性方程组 (按系数)' },
 				{ value: 'calculus', label: 'Calculus: Numerical Derivative & Integral', labelZh: '微积分运算（数值导数与定积分）' },
 				{ value: 'limit', label: 'Limit (x → x0)', labelZh: '极限求解 (x → x0)' },
 				{ value: 'ode', label: 'Differential Equation (ODE: dy/dx = f(x, y))', labelZh: '常微分方程初值问题 (ODE: dy/dx = f(x, y))' },
+			],
+		},
+		// Smart Equation field with one-click presets
+		{
+			id: 'eq',
+			label: 'Equation or System',
+			labelZh: '方程或方程组表达式',
+			type: 'text',
+			def: 'x^2 - 5x + 6 = 0',
+			placeholder: 'e.g. x^2 - 5x + 6 = 0 or 2x + 3y = 8, 5x - y = 3',
+			placeholderZh: '例如 x^2 - 5x + 6 = 0 或 2x + 3y = 8, 5x - y = 3',
+			hint: 'Type any polynomial equation, linear equation, or comma-separated linear system. Click a preset chip below for instant loading.',
+			hintZh: '直接输入任意代数方程（未知数 x）或用逗号分隔的二元方程组（未知数 x, y）。可点击下方范例一键载入。',
+			wide: true,
+			showIf: (v) => v.str('type') === 'auto',
+			presets: [
+				{ label: 'x² − 5x + 6 = 0', labelZh: 'x² − 5x + 6 = 0 (实根 2, 3)', value: 'x^2 - 5x + 6 = 0' },
+				{ label: '2x² + 3x − 5 = 0', labelZh: '2x² + 3x − 5 = 0', value: '2x^2 + 3x - 5 = 0' },
+				{ label: 'x² + 4 = 0', labelZh: 'x² + 4 = 0 (复根 ±2i)', value: 'x^2 + 4 = 0' },
+				{ label: '2x + 3y = 8, 5x − y = 3', labelZh: '2x + 3y = 8, 5x − y = 3 (方程组)', value: '2x + 3y = 8, 5x - y = 3' },
+				{ label: 'x³ − 6x² + 11x − 6 = 0', labelZh: 'x³ − 6x² + 11x − 6 = 0 (三次方程)', value: 'x^3 - 6x^2 + 11x - 6 = 0' },
+				{ label: '3x + 7 = 22', labelZh: '3x + 7 = 22 (一元一次)', value: '3x + 7 = 22' },
 			],
 		},
 		// Coefficients for quadratic / cubic
@@ -1021,6 +1044,277 @@ const equationSolver: FormConfig = {
 	compute: (v) => {
 		const type = v.str('type');
 		const rows: import('./registry').FormResultRow[] = [];
+
+		if (type === 'auto') {
+			let raw = v.str('eq').trim();
+			if (!raw) {
+				return { rows: [{ label: 'Error', labelZh: '错误', value: '— (enter an equation)', valueZh: '— (请输入方程或表达式)' }] };
+			}
+
+			// Preprocess characters
+			raw = raw
+				.replace(/²/g, '^2')
+				.replace(/³/g, '^3')
+				.replace(/−/g, '-')
+				.replace(/×/g, '*')
+				.replace(/÷/g, '/');
+			raw = raw.replace(/\b([xy])\s*\(/g, '$1*(');
+			raw = raw.replace(/\)\s*\(/g, ')*(');
+			raw = raw.replace(/\)\s*([xy])/g, ')*$1');
+			raw = raw.replace(/(\d)\s*([xy])/g, '$1*$2');
+			raw = raw.replace(/(\d)\s*\(/g, '$1*(');
+
+			// 1. Check if 2x2 Linear System
+			if (/[yY]/.test(raw) && (raw.includes(',') || raw.includes(';') || raw.includes('\n'))) {
+				const parts = raw.split(/[,;\n]+/).map((p) => p.trim()).filter(Boolean);
+				if (parts.length >= 2) {
+					try {
+						const parseSide = (side: string): string => {
+							if (side.includes('=')) {
+								const [l, r] = side.split('=');
+								return `(${l}) - (${r || '0'})`;
+							}
+							return side;
+						};
+						const fn1 = compile(parseSide(parts[0]!));
+						const fn2 = compile(parseSide(parts[1]!));
+						const scope = { vars: {}, deg: false };
+						const e1 = (xv: number, yv: number) => {
+							scope.vars = { x: xv, y: yv };
+							return fn1(scope);
+						};
+						const e2 = (xv: number, yv: number) => {
+							scope.vars = { x: xv, y: yv };
+							return fn2(scope);
+						};
+
+						const a1 = e1(1, 0) - e1(0, 0);
+						const b1 = e1(0, 1) - e1(0, 0);
+						const c1 = -e1(0, 0);
+
+						const a2 = e2(1, 0) - e2(0, 0);
+						const b2 = e2(0, 1) - e2(0, 0);
+						const c2 = -e2(0, 0);
+
+						rows.push({
+							label: 'Identified Problem Type',
+							labelZh: '识别问题类型',
+							value: '2x2 Linear System',
+							valueZh: '二元一次线性方程组',
+						});
+						rows.push({
+							label: 'Standard Matrix Form',
+							labelZh: '标准方程组形式',
+							value: `${formatNumber(a1)}x + ${formatNumber(b1)}y = ${formatNumber(c1)};  ${formatNumber(a2)}x + ${formatNumber(b2)}y = ${formatNumber(c2)}`,
+							valueZh: `${formatNumber(a1)}x + ${formatNumber(b1)}y = ${formatNumber(c1)}；${formatNumber(a2)}x + ${formatNumber(b2)}y = ${formatNumber(c2)}`,
+						});
+
+						const det = a1 * b2 - a2 * b1;
+						rows.push({
+							label: 'Coefficient Determinant det(A)',
+							labelZh: '系数矩阵行列式 det(A)',
+							value: formatNumber(det),
+							valueZh: formatNumber(det),
+						});
+
+						if (Math.abs(det) < 1e-12) {
+							const consistent = Math.abs(a1 * c2 - a2 * c1) < 1e-12 && Math.abs(b1 * c2 - b2 * c1) < 1e-12;
+							rows.push({
+								label: 'System Solution',
+								labelZh: '方程组求解结果',
+								value: consistent ? 'Infinitely many solutions (dependent equations)' : 'No solution (parallel inconsistent lines)',
+								valueZh: consistent ? '无穷多解（两方程等价重合）' : '无解（两直线平行无交点）',
+								emphasis: true,
+							});
+							return { rows };
+						}
+
+						const x = (c1 * b2 - c2 * b1) / det;
+						const y = (a1 * c2 - a2 * c1) / det;
+						rows.push({
+							label: 'Solution for x',
+							labelZh: '未知数 x 解',
+							value: formatNumber(x),
+							valueZh: formatNumber(x),
+							emphasis: true,
+						});
+						rows.push({
+							label: 'Solution for y',
+							labelZh: '未知数 y 解',
+							value: formatNumber(y),
+							valueZh: formatNumber(y),
+							emphasis: true,
+						});
+						return { rows };
+					} catch (e: any) {
+						return { rows: [{ label: 'Error', labelZh: '解析错误', value: String(e.message || e), valueZh: String(e.message || e) }] };
+					}
+				}
+			}
+
+			// 2. Single variable polynomial equation in x
+			let lhs = raw;
+			let rhs = '0';
+			if (raw.includes('=')) {
+				const eqParts = raw.split('=');
+				lhs = eqParts[0]!.trim();
+				rhs = eqParts.slice(1).join('=').trim() || '0';
+			}
+
+			try {
+				const fn = compile(`(${lhs}) - (${rhs})`);
+				const scope = { vars: {}, deg: false };
+				const p = (xv: number) => {
+					scope.vars = { x: xv };
+					return fn(scope);
+				};
+
+				const p0 = p(0);
+				const p1 = p(1);
+				const pm1 = p(-1);
+				const p2 = p(2);
+
+				const d = p0;
+				const b = (p1 + pm1 - 2 * d) / 2;
+				const diff1 = p1 - pm1;
+				const a = (p2 - d - 4 * b - diff1) / 6;
+				const c = (diff1 - 2 * a) / 2;
+
+				const clean = (n: number) => (Math.abs(n - Math.round(n)) < 1e-9 ? Math.round(n) : n);
+				const ca = clean(a);
+				const cb = clean(b);
+				const cc = clean(c);
+				const cd = clean(d);
+
+				// Cubic equation
+				if (Math.abs(ca) > 1e-9) {
+					rows.push({
+						label: 'Identified Problem Type',
+						labelZh: '识别问题类型',
+						value: 'Cubic Polynomial Equation',
+						valueZh: '一元三次代数方程',
+					});
+					rows.push({
+						label: 'Standard Form',
+						labelZh: '标准形式',
+						value: `${formatNumber(ca)}x³ + ${formatNumber(cb)}x² + ${formatNumber(cc)}x + ${formatNumber(cd)} = 0`,
+						valueZh: `${formatNumber(ca)}x³ + ${formatNumber(cb)}x² + ${formatNumber(cc)}x + ${formatNumber(cd)} = 0`,
+					});
+					const roots = solveCubic(ca, cb, cc, cd);
+					roots.forEach((r, idx) => {
+						rows.push({
+							label: `Root x${idx + 1}`,
+							labelZh: `方程根 x${idx + 1}`,
+							value: r,
+							valueZh: r,
+							emphasis: idx === 0,
+						});
+					});
+					return { rows };
+				}
+
+				// Quadratic equation
+				if (Math.abs(cb) > 1e-9) {
+					rows.push({
+						label: 'Identified Problem Type',
+						labelZh: '识别问题类型',
+						value: 'Quadratic Equation (Degree 2)',
+						valueZh: '一元二次方程 (2 次)',
+					});
+					rows.push({
+						label: 'Standard Form',
+						labelZh: '标准形式',
+						value: `${formatNumber(cb)}x² + ${formatNumber(cc)}x + ${formatNumber(cd)} = 0`,
+						valueZh: `${formatNumber(cb)}x² + ${formatNumber(cc)}x + ${formatNumber(cd)} = 0`,
+					});
+					const sol = solveQuadratic(cb, cc, cd);
+					rows.push({
+						label: 'Discriminant Δ = b² − 4ac',
+						labelZh: '判别式 Δ = b² − 4ac',
+						value: formatNumber(sol.delta),
+						valueZh: formatNumber(sol.delta),
+					});
+					rows.push({
+						label: 'Root x₁',
+						labelZh: '方程根 x₁',
+						value: sol.x1,
+						valueZh: sol.x1,
+						emphasis: true,
+					});
+					rows.push({
+						label: 'Root x₂',
+						labelZh: '方程根 x₂',
+						value: sol.x2,
+						valueZh: sol.x2,
+						emphasis: true,
+					});
+					const xv = -cc / (2 * cb);
+					const yv = cd - (cc * cc) / (4 * cb);
+					rows.push({
+						label: 'Parabola Vertex (xv, yv)',
+						labelZh: '抛物线顶点坐标 (xv, yv)',
+						value: `(${formatNumber(xv)}, ${formatNumber(yv)})`,
+						valueZh: `(${formatNumber(xv)}, ${formatNumber(yv)})`,
+					});
+					rows.push({
+						label: 'Axis of Symmetry',
+						labelZh: '对称轴方程',
+						value: `x = ${formatNumber(xv)}`,
+						valueZh: `x = ${formatNumber(xv)}`,
+					});
+					return { rows };
+				}
+
+				// Linear equation
+				if (Math.abs(cc) > 1e-9) {
+					const root = -cd / cc;
+					rows.push({
+						label: 'Identified Problem Type',
+						labelZh: '识别问题类型',
+						value: 'Linear Equation in x',
+						valueZh: '一元一次方程',
+					});
+					rows.push({
+						label: 'Standard Form',
+						labelZh: '化简形式',
+						value: `${formatNumber(cc)}x + ${formatNumber(cd)} = 0`,
+						valueZh: `${formatNumber(cc)}x + ${formatNumber(cd)} = 0`,
+					});
+					rows.push({
+						label: 'Root x',
+						labelZh: '方程唯一根 x',
+						value: formatNumber(root),
+						valueZh: formatNumber(root),
+						emphasis: true,
+					});
+					rows.push({
+						label: 'Solution Steps',
+						labelZh: '求解步骤',
+						value: `${formatNumber(cc)}x = ${formatNumber(-cd)}  ⇒  x = ${formatNumber(-cd)} / ${formatNumber(cc)} = ${formatNumber(root)}`,
+						valueZh: `${formatNumber(cc)}x = ${formatNumber(-cd)}  ⇒  x = ${formatNumber(-cd)} / ${formatNumber(cc)} = ${formatNumber(root)}`,
+					});
+					return { rows };
+				}
+
+				// Constant equation (0 = 0 or c = 0)
+				rows.push({
+					label: 'Identified Problem Type',
+					labelZh: '方程类型',
+					value: 'Constant Identity / Contradiction',
+					valueZh: '常数恒等式 / 矛盾式',
+				});
+				rows.push({
+					label: 'Solution',
+					labelZh: '求解结果',
+					value: Math.abs(cd) < 1e-9 ? 'Infinite solutions (Identity 0 = 0)' : 'No solution (Contradiction)',
+					valueZh: Math.abs(cd) < 1e-9 ? '无数解（恒等式 0 = 0）' : '无解（常数矛盾）',
+					emphasis: true,
+				});
+				return { rows };
+			} catch (e: any) {
+				return { rows: [{ label: 'Error', labelZh: '计算错误', value: String(e.message || e), valueZh: String(e.message || e) }] };
+			}
+		}
 
 		if (type === 'quad') {
 			const a = v.num('a');

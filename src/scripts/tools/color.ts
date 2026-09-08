@@ -6,6 +6,7 @@
 // between so nothing has to re-run on a language change.
 
 import { bilingual, setBilingual } from './i18n';
+import { initColorGamut, rgbToOklab } from './color-gamut';
 
 interface Rgb {
 	r: number;
@@ -199,12 +200,50 @@ export function initColor(host: HTMLElement): void {
 	const cssHslV = document.createElement('span');
 	cssHslV.className = 't-row-value';
 	cssHsl.append(cssHslL, cssHslV);
-	css.append(cssHex, cssRgb, cssHsl);
+
+	const cssOklch = document.createElement('div');
+	cssOklch.className = 't-row';
+	const cssOklchL = document.createElement('span');
+	cssOklchL.className = 't-row-label';
+	cssOklchL.textContent = 'oklch()';
+	const cssOklchV = document.createElement('span');
+	cssOklchV.className = 't-row-value';
+	cssOklch.append(cssOklchL, cssOklchV);
+
+	css.append(cssHex, cssRgb, cssHsl, cssOklch);
+
+	// --- OKLCH Gamut Card -----------------------------------------------------------
+	const gamutCard = document.createElement('div');
+	gamutCard.className = 't-gamut-card';
+
+	const gamutHeader = document.createElement('div');
+	gamutHeader.className = 't-gamut-header';
+	const gamutTitle = document.createElement('span');
+	gamutTitle.append(bilingual('OKLab / OKLCH Gamut Slice', 'OKLab / OKLCH 色域剖面'));
+	const gamutInfo = document.createElement('span');
+	gamutInfo.className = 't-gamut-info';
+	gamutHeader.append(gamutTitle, gamutInfo);
+
+	const gamutViewport = document.createElement('div');
+	gamutViewport.className = 't-gamut-viewport';
+	const gamutGl = document.createElement('canvas');
+	gamutGl.className = 't-gamut-gl';
+	gamutGl.setAttribute('aria-hidden', 'true');
+	const gamut2d = document.createElement('canvas');
+	gamut2d.className = 't-gamut-2d';
+	gamut2d.setAttribute('aria-label', 'OKLab chromaticity gamut slice');
+	gamutViewport.append(gamutGl, gamut2d);
+
+	gamutCard.append(gamutHeader, gamutViewport);
 
 	const note = document.createElement('p');
 	note.className = 't-note';
 
-	host.append(groups, swatchRow, css, note);
+	host.append(groups, swatchRow, css, gamutCard, note);
+
+	const gamutCtrl = initColorGamut(gamutCard, (pickedRgb) => {
+		render(pickedRgb, 'none');
+	});
 
 	// --- sync logic: one source of truth (RGB), fields update it ---------------------
 	function render(rgb: Rgb, source: 'hex' | 'rgb' | 'hsl' | 'none'): void {
@@ -228,6 +267,10 @@ export function initColor(host: HTMLElement): void {
 		cssHexV.textContent = hex;
 		cssRgbV.textContent = `rgb(${Math.round(rgb.r)}, ${Math.round(rgb.g)}, ${Math.round(rgb.b)})`;
 		cssHslV.textContent = `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`;
+
+		const okl = rgbToOklab(rgb.r, rgb.g, rgb.b);
+		cssOklchV.textContent = `oklch(${(okl.L * 100).toFixed(1)}% ${okl.C.toFixed(3)} ${okl.h.toFixed(1)})`;
+		gamutCtrl.update(rgb);
 	}
 
 	hexInput.addEventListener('input', () => {
