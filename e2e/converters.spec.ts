@@ -10,7 +10,8 @@ test('length converter computes both directions', async ({ page }) => {
 	const from = page.locator('[aria-label="Value to convert from"]');
 	const to = page.locator('[aria-label="Converted value"]');
 
-	// defaults are the first unit in each dropdown; pin both ends explicitly
+	// the source defaults to the category's internationally common unit (here m);
+	// pin both ends explicitly since the test is about the maths, not the default
 	await page.locator('select').first().selectOption('m');
 	await page.locator('select').nth(1).selectOption('cm');
 	await from.fill('1');
@@ -19,6 +20,27 @@ test('length converter computes both directions', async ({ page }) => {
 	// edit the "to" side → "from" follows (reverse direction)
 	await to.fill('250');
 	await expect(from).toHaveValue('2.5');
+});
+
+// The all-units reference grid below the converter opens against the category's
+// internationally common source unit (kg, m, km/h, kWh…), not the first unit in
+// the table's declaration order (µg, pm, mW…). The picker stays fully
+// user-switchable — this guards the default so a reorder or new unit doesn't
+// silently change what the grid opens showing.
+test('converter defaults its source to the internationally common unit', async ({ page }) => {
+	for (const [slug, unit] of [
+		['length', 'm'],
+		['weight', 'kg'],
+		['time', 'min'],
+		['data', 'GB'],
+		['speed', 'kmh'],
+	] as const) {
+		await page.goto(`/converters/${slug}/`);
+		await expect(
+			page.locator('select').first(),
+			`${slug} converter should default its source to ${unit}`,
+		).toHaveValue(unit);
+	}
 });
 
 test('converter swap exchanges units and values', async ({ page }) => {
