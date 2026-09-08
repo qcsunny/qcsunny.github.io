@@ -47,3 +47,21 @@ test("math heading fallbacks remain readable plain text", async ({ page }) => {
   await expect(distinction).toContainText("≠");
   await expect(distinction.locator(".katex")).toHaveCount(0);
 });
+
+test("\\text macro in a heading unwraps to plain text, not LaTeX source", async ({ page }) => {
+  // markdown-processor.mjs unwraps \text{…} in headings before the generic $…$
+  // strip, so $101,325\text{ Pa}$ renders as "101,325 Pa" in both the heading
+  // and the TOC — never as the raw \text{ Pa} source.
+  await page.goto("/blog/engineering-pressure-units-gauge-vs-absolute/");
+
+  const heading = page.locator("h2").filter({ hasText: "标准大气压" });
+  await expect(heading).toHaveText("2. 国际标准大气压（101,325 Pa）与 760 mmHg 的定义微差");
+  await expect(heading.locator(".katex")).toHaveCount(0);
+  await expect(heading).not.toContainText("\\text");
+
+  const id = await heading.getAttribute("id");
+  expect(id).toBeTruthy();
+  await expect(page.locator(`.toc [data-toc-target="${id}"]`)).toHaveText(
+    "2. 国际标准大气压（101,325 Pa）与 760 mmHg 的定义微差",
+  );
+});
