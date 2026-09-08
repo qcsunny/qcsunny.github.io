@@ -7,16 +7,33 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 const canvasOf = (page: Page): Locator => page.locator('#g3-canvas');
 
 /** Number of non-transparent pixels — a blank plot is the failure mode that
- *  matters (a thrown error inside render() leaves the canvas cleared). */
+ *  matters (a thrown error inside render() leaves the canvas cleared).
+ *  Works across both WebGL surface layer and 2D canvas overlay. */
 function paintedPixels(canvas: Locator): Promise<number> {
 	return canvas.evaluate((el) => {
+		let n = 0;
 		const c = el as HTMLCanvasElement;
 		const ctx = c.getContext('2d');
-		if (!ctx) return 0;
-		const { data } = ctx.getImageData(0, 0, c.width, c.height);
-		let n = 0;
-		for (let i = 3; i < data.length; i += 4) {
-			if ((data[i] as number) > 0) n++;
+		if (ctx) {
+			const { data } = ctx.getImageData(0, 0, c.width, c.height);
+			for (let i = 3; i < data.length; i += 4) {
+				if ((data[i] as number) > 0) n++;
+			}
+		}
+		const glEl = c.parentElement?.querySelector('#g3-gl') as HTMLCanvasElement | null;
+		if (glEl) {
+			const gl = (glEl.getContext('webgl2') || glEl.getContext('webgl')) as WebGLRenderingContext | null;
+			if (gl) {
+				const w = gl.drawingBufferWidth;
+				const h = gl.drawingBufferHeight;
+				if (w > 0 && h > 0) {
+					const pixels = new Uint8Array(w * h * 4);
+					gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+					for (let i = 3; i < pixels.length; i += 4) {
+						if ((pixels[i] as number) > 0) n++;
+					}
+				}
+			}
 		}
 		return n;
 	});
@@ -117,3 +134,20 @@ test('domain inputs resample and reject an inverted range', async ({ page }) => 
 	await page.locator('#g3-xmax').blur();
 	await expect(page.locator('#g3-error')).toContainText('max > min');
 });
+
+test('switching between WebGL smooth engine and Canvas 2D CPU fallback works seamlessly', async ({ page }) => {
+	await page.goto('/calculators/graph3d/');
+
+	const engineSelect = page.locator('#g3-engine');
+	await expect(engineSelect).toBeVisible();
+
+	// Switch to Canvas 2D CPU engine
+	await engineSelect.selectOption('canvas2d');
+	const canvas = canvasOf(page);
+	expect(await paintedPixels(canvas)).toBeGreaterThan(5000);
+
+	// Switch back to WebGL smooth engine
+	await engineSelect.selectOption('webgl');
+	expect(await paintedPixels(canvas)).toBeGreaterThan(5000);
+});
+

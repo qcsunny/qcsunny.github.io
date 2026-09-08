@@ -83,6 +83,13 @@
 				<option value="1000" data-text-en="1000 × 1000 (Max 1M)" data-text-zh="1000 × 1000 (百万点极限 1000²)">1000 × 1000 (Max 1M)</option>
 			</select>
 		</label>
+		<label class="g3-select">
+			<span class="i18n-en">Engine</span><span class="i18n-zh">引擎</span>
+			<select id="g3-engine">
+				<option value="webgl" selected data-text-en="WebGL (Smooth)" data-text-zh="WebGL (平滑光照)">WebGL (Smooth)</option>
+				<option value="canvas2d" data-text-en="Canvas 2D" data-text-zh="Canvas 2D (经典网格)">Canvas 2D</option>
+			</select>
+		</label>
 		<button
 			type="button"
 			id="g3-fs"
@@ -96,14 +103,18 @@
 		>
 	</div>
 
-	<canvas
-		id="g3-canvas"
-		tabindex="0"
-		role="img"
-		aria-label="3D surface plot; arrow keys rotate, plus and minus zoom, 0 resets the view"
-		data-aria-en="3D surface plot; arrow keys rotate, plus and minus zoom, 0 resets the view"
-		data-aria-zh="三维曲面图；方向键旋转，加减号缩放，按 0 复位视角"
-	></canvas>
+	<div class="g3-viewport">
+		<canvas id="g3-gl" class="g3-canvas-gl" aria-hidden="true"></canvas>
+		<canvas
+			id="g3-canvas"
+			class="g3-canvas-2d"
+			tabindex="0"
+			role="img"
+			aria-label="3D surface plot; arrow keys rotate, plus and minus zoom, 0 resets the view"
+			data-aria-en="3D surface plot; arrow keys rotate, plus and minus zoom, 0 resets the view"
+			data-aria-zh="三维曲面图；方向键旋转，加减号缩放，按 0 复位视角"
+		></canvas>
+	</div>
 
 	<p class="g3-hint">
 		<span class="i18n-en">drag to rotate · scroll to zoom · pinch on touch · arrow keys once focused</span>
@@ -274,15 +285,23 @@
 		background: var(--bg);
 		color: var(--fg);
 	}
-	#g3-canvas {
-		display: block;
+	.g3-viewport {
+		position: relative;
 		width: 100%;
 		height: clamp(300px, 60vw, 520px);
 		border: 1px solid var(--gridline);
 		border-radius: 10px;
 		background: var(--bg);
+		overflow: hidden;
 		touch-action: none;
 		cursor: grab;
+	}
+	.g3-viewport:active {
+		cursor: grabbing;
+	}
+	.g3-viewport:focus-within {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
 	}
 	.g3:fullscreen,
 	.g3.is-fullscreen {
@@ -299,18 +318,35 @@
 		flex-direction: column;
 		overflow-y: auto;
 	}
-	.g3:fullscreen #g3-canvas,
-	.g3.is-fullscreen #g3-canvas {
+	.g3:fullscreen .g3-viewport,
+	.g3.is-fullscreen .g3-viewport {
 		flex: 1 1 auto;
 		min-height: 360px;
 		height: calc(100vh - 240px);
+	}
+	#g3-gl,
+	#g3-canvas {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		display: block;
+	}
+	#g3-gl {
+		z-index: 1;
+		pointer-events: none;
+	}
+	#g3-canvas {
+		z-index: 2;
+		background: transparent;
+		touch-action: none;
+		cursor: grab;
 	}
 	#g3-canvas:active {
 		cursor: grabbing;
 	}
 	#g3-canvas:focus-visible {
-		outline: 2px solid var(--accent);
-		outline-offset: 2px;
+		outline: none;
 	}
 	.g3-hint {
 		margin: 0.5em 0 0;

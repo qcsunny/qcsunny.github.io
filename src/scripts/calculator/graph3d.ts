@@ -7,6 +7,7 @@
 
 import { CalcError, compile, errorText, type Scope } from './engine';
 import { isZh, langProp, onLang, setBilingual } from '../tools/i18n';
+import { createWebGLRenderer, type WebGLSurfaceRenderer } from './graph3d-gl';
 
 const DEG = Math.PI / 180;
 const DEFAULT_DOMAIN = { xMin: -5, xMax: 5, yMin: -5, yMax: 5 };
@@ -218,12 +219,46 @@ function sample(fn: (s: Scope) => number, scope: Scope, d: Domain, n: number): G
 
 export function initGraph3d(scope: Scope): void {
 	const canvas = document.querySelector<HTMLCanvasElement>('#g3-canvas');
+	const glCanvas = document.querySelector<HTMLCanvasElement>('#g3-gl');
 	const exprEl = document.querySelector<HTMLInputElement>('#g3-expr');
 	const errEl = document.querySelector<HTMLElement>('#g3-error');
 	const readoutEl = document.querySelector<HTMLElement>('#g3-readout');
+	const engineSelect = document.querySelector<HTMLSelectElement>('#g3-engine');
 	if (!canvas || !exprEl || !errEl || !readoutEl) return;
 	const ctx = canvas.getContext('2d');
 	if (!ctx) return;
+
+	const glRenderer: WebGLSurfaceRenderer | null = glCanvas ? createWebGLRenderer(glCanvas) : null;
+	let engine: 'webgl' | 'canvas2d' = glRenderer ? 'webgl' : 'canvas2d';
+
+	if (engineSelect) {
+		if (!glRenderer) {
+			engine = 'canvas2d';
+			engineSelect.value = 'canvas2d';
+			const opt = engineSelect.querySelector('option[value="webgl"]') as HTMLOptionElement | null;
+			if (opt) opt.disabled = true;
+		} else {
+			engineSelect.value = engine;
+			engineSelect.addEventListener('change', () => {
+				engine = engineSelect.value as 'webgl' | 'canvas2d';
+				render();
+			});
+		}
+	}
+
+	if (glCanvas) {
+		glCanvas.addEventListener('webglcontextlost', (e) => {
+			e.preventDefault();
+			console.warn('[WebGL] Context lost, falling back to CPU Canvas 2D software renderer');
+			engine = 'canvas2d';
+			if (engineSelect) {
+				engineSelect.value = 'canvas2d';
+				const opt = engineSelect.querySelector('option[value="webgl"]') as HTMLOptionElement | null;
+				if (opt) opt.disabled = true;
+			}
+			render();
+		});
+	}
 
 	// the one string here a span pair cannot hold
 	langProp(exprEl, 'placeholder', 'e.g. x^2 - y^2', '例如 x^2 - y^2');
@@ -261,6 +296,9 @@ export function initGraph3d(scope: Scope): void {
 
 	new MutationObserver(() => {
 		palette = readPalette();
+		if (grid && glRenderer) {
+			uploadGlFloorAndBox();
+		}
 		render();
 	}).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
@@ -272,6 +310,9 @@ export function initGraph3d(scope: Scope): void {
 		dpr = window.devicePixelRatio || 1;
 		canvas!.width = Math.round(cssW * dpr);
 		canvas!.height = Math.round(cssH * dpr);
+		if (glRenderer) {
+			glRenderer.resize(cssW, cssH, dpr);
+		}
 		render();
 	}
 	new ResizeObserver(resize).observe(canvas);
@@ -287,8 +328,30 @@ export function initGraph3d(scope: Scope): void {
 
 	const toU = (x: number): number => (x - cxDom()) / spanUV();
 	const toV = (y: number): number => (y - cyDom()) / spanUV();
-	const toW = (z: number, g: Grid): number =>
+	const toW = (z: number, g: { zLo: number; zHi: number }): number =>
 		(Math.min(g.zHi, Math.max(g.zLo, z)) - (g.zLo + g.zHi) / 2) / ((g.zHi - g.zLo) / 2) * Z_STRETCH;
+
+	const uMax = (): number => (domain.xMax - cxDom()) / spanUV();
+	const vMax = (): number => (domain.yMax - cyDom()) / spanUV();
+
+	/** Normalised coordinates of lattice column i / row j on an N-cell grid. */
+	const uOf = (i: number, N: number): number =>
+		toU(domain.xMin + ((domain.xMax - domain.xMin) * i) / N);
+	const vOf = (j: number, N: number): number =>
+		toV(domain.yMin + ((domain.yMax - domain.yMin) * j) / N);
+
+	function uploadGlFloorAndBox(): void {
+		if (!glRenderer) return;
+		glRenderer.uploadFloorAndBox(
+			palette,
+			ticks(domain.xMin, domain.xMax, 6),
+			ticks(domain.yMin, domain.yMax, 6),
+			uMax(),
+			vMax(),
+			toU,
+			toV,
+		);
+	}
 
 	interface Projected {
 		px: number;
@@ -322,23 +385,50 @@ export function initGraph3d(scope: Scope): void {
 		if (cssW < 2 || cssH < 2) return;
 		ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
 		ctx!.clearRect(0, 0, cssW, cssH);
-		if (!grid || !shading) return;
+		if (!grid) {
+			glRenderer?.clear();
+			return;
+		}
 		const p = projector();
+
+		if (engine === 'webgl' && glRenderer) {
+			try {
+				const cy = Math.cos(view.yaw);
+				const sy = Math.sin(view.yaw);
+				const cp = Math.cos(view.pitch);
+				const sp = Math.sin(view.pitch);
+				const scale = Math.min(cssW, cssH) * 0.36 * view.zoom;
+
+				const kx = (2 * scale) / cssW;
+				const ky = (2 * scale) / cssH;
+				const kz = 0.25;
+
+				const mvp = new Float32Array([
+					kx * cy,            ky * sy * sp,       kz * sy * cp,       0,
+					-kx * sy,           ky * cy * sp,       kz * cy * cp,       0,
+					0,                  ky * cp,            -kz * sp,           0,
+					0,                  0,                  0,                  1,
+				]);
+
+				glRenderer.render(mvp, style, palette);
+				drawTicks(p, grid);
+				drawColorbar(grid);
+				return;
+			} catch (err) {
+				console.warn('[WebGL] Render call threw an error, falling back to CPU Canvas 2D:', err);
+				engine = 'canvas2d';
+				if (engineSelect) engineSelect.value = 'canvas2d';
+			}
+		}
+
+		// CPU Canvas 2D fallback path
+		glRenderer?.clear();
 		drawFloor(p);
 		drawBox(p, 0.5);
-		drawSurface(grid, shading);
+		if (shading) drawSurface(grid, shading);
 		drawTicks(p, grid);
 		drawColorbar(grid);
 	}
-
-	const uMax = (): number => (domain.xMax - cxDom()) / spanUV();
-	const vMax = (): number => (domain.yMax - cyDom()) / spanUV();
-
-	/** Normalised coordinates of lattice column i / row j on an N-cell grid. */
-	const uOf = (i: number, N: number): number =>
-		toU(domain.xMin + ((domain.xMax - domain.xMin) * i) / N);
-	const vOf = (j: number, N: number): number =>
-		toV(domain.yMin + ((domain.yMax - domain.yMin) * j) / N);
 
 	type Proj = (u: number, v: number, w: number) => Projected;
 
@@ -735,6 +825,7 @@ export function initGraph3d(scope: Scope): void {
 		if (!fn) {
 			grid = null;
 			shading = null;
+			glRenderer?.clear();
 			setReadout(null);
 			render();
 			return;
@@ -743,12 +834,17 @@ export function initGraph3d(scope: Scope): void {
 		if (g.finite === 0) {
 			grid = null;
 			shading = null;
+			glRenderer?.clear();
 			setReadout(null);
 			if (g.err) showError(g.err.en, g.err.zh);
 			else showError('No finite value in this domain', '该定义域内没有有限值');
 		} else {
 			grid = g;
 			shading = shadeGrid(g);
+			if (glRenderer) {
+				glRenderer.uploadGeometry(g, domain, toU, toV, toW);
+				uploadGlFloorAndBox();
+			}
 			setReadout(g);
 			errEl!.textContent = '';
 		}
@@ -762,6 +858,7 @@ export function initGraph3d(scope: Scope): void {
 		if (!src) {
 			fn = null;
 			errEl!.textContent = '';
+			glRenderer?.clear();
 			resample();
 			return;
 		}
@@ -773,6 +870,7 @@ export function initGraph3d(scope: Scope): void {
 			showError(en, zh);
 			grid = null;
 			shading = null;
+			glRenderer?.clear();
 			setReadout(null);
 			render();
 			return;
