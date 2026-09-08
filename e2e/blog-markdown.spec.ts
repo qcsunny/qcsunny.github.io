@@ -25,6 +25,21 @@ test("heading code spans survive normalization in the heading and TOC", async ({
   );
 });
 
+test("negated congruence renders without a private-use fallback glyph", async ({
+  page,
+}) => {
+  await page.goto("/blog/prime-factorization-and-pollard-brent/");
+
+  const formula = page.locator('.prose annotation').filter({
+    hasText: String.raw`a^{n-1} \mathrel{\cancel{\equiv}} 1 \pmod n`,
+  });
+  await expect(formula).toHaveCount(1);
+
+  const katex = formula.locator('xpath=ancestor::span[contains(@class,"katex")]');
+  await expect(katex.locator('.katex-html')).not.toContainText('');
+  await expect(katex.locator('.katex-html svg line')).toHaveCount(1);
+});
+
 test("math heading fallbacks remain readable plain text", async ({ page }) => {
   await page.goto("/blog/prime-factorization-and-pollard-brent/");
 
