@@ -2,6 +2,7 @@
 title: 'GLM-5.3 和 Hy4 preview：两个 78 层 MoE 的对比'
 description: '把智谱 GLM-5.3 和腾讯混元 Hy4 preview 的 config、33 项公开基准、OpenRouter 实价和接入细节逐项摊开，包括两家自报数字互相矛盾的地方。'
 pubDate: 'Sep 01 2026'
+asOfDate: 'Sep 08 2026'
 category: ai
 topics: [ai, llm]
 searchTerms: ['GLM-5.3', 'Hy4', 'MoE']
@@ -10,13 +11,13 @@ relatedTools: []
 relatedPosts: []
 ---
 
-GLM-5.3 是 8 月 14 日发布的，Hy4 preview 是 8 月 28 日，隔了两周。都开源了权重，都是 1M 上下文，都在讲长程 Agent 和真实软件工程。
+GLM-5.3 是 8 月 14 日发布的，Hy4 preview 是 8 月 28 日，隔了两周。本文资料截至 **2026 年 9 月 8 日**；架构、接口和价格只按当日能访问的官方文档、模型仓库及 OpenRouter 页面记录，版本、端点和价格后续可能变化。下文把厂商自报、对手方复测和第三方平台数据分栏，厂商自报不等同于独立复现。
 
 先给个总印象。腾讯那份同 harness 的记分卡上，Hy4 preview 以 18 胜 14 负 1 平领先 GLM-5.3；把智谱自报的数字填回有分歧的格子，就变成 16:16。这个差距选不出赢家。真正会影响决定的是另外几件事：价格差四成、许可证一个 Apache-2.0 一个自定义、思考能不能关掉、以及安全审计方向 GLM 领先得比较多。
 
 ## 架构
 
-把 Hy4 preview 的规格表和 GLM-5.3 的 `config.json` 并排放，除了词表和 dense FFN 宽度，基本逐项对齐：
+GLM-5.3 方面，智谱官方文档明确写出：文本模型、1M 上下文、最高 128K 输出，思考不能关闭，`reasoning_effort` 支持 `low`、`high`、`max`。这些是厂商对自身模型/API 的说明，不是本文对所有部署形态的独立测量；Hy4 的架构、推理控制和已知限制则以其官方仓库 README 为准。
 
 | | GLM-5.3 | Hy4 preview |
 | --- | --- | --- |
@@ -189,8 +190,8 @@ Hy4 的 README 明写了 Known Limitations，也说了宁愿早发出来听哪�
 
 ## 来源
 
-- GLM-5.3：[官方文档](https://docs.bigmodel.cn/cn/guide/models/text/glm-5.3)、[HF 模型卡](https://huggingface.co/zai-org/GLM-5.3)（架构数字取自仓库 `config.json`）
-- Hy4 preview：[官方仓库](https://github.com/Tencent-Hunyuan/Hy4-preview)、[腾讯发布页](https://www.tencent.com/zh-cn/tencent-releases-and-open-sources-tencent-hy4-preview/)
+- GLM-5.3：[智谱官方模型文档](https://docs.bigmodel.cn/cn/guide/models/text/glm-5.3)、[官方 HF 模型卡](https://huggingface.co/zai-org/GLM-5.3)（架构数字取自仓库 `config.json`）
+- Hy4 preview：[官方仓库 README](https://github.com/Tencent-Hunyuan/Hy4-preview)、[腾讯发布页](https://www.tencent.com/zh-cn/tencent-releases-and-open-sources-tencent-hy4-preview/)
 - 逐项基准：Hy4-preview 仓库的 Benchmark Appendix；智谱自报数字取自 GLM-5.3 模型卡的 Benchmark 表
 - 价格、上下文、托管方、`tool_choice`：OpenRouter 的 `/api/v1/models` 与 `/endpoints`
 
