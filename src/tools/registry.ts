@@ -159,7 +159,11 @@ export interface TextTransform {
 	labelZh?: string;
 	/** `error` is shown in the English view, `errorZh` in the Chinese one; with
 	 *  errorZh missing the English text shows in both. */
-	run: (text: string) => { output: string; error?: string; errorZh?: string };
+	run: (
+		text: string,
+	) =>
+		| { output: string; error?: string; errorZh?: string }
+		| Promise<{ output: string; error?: string; errorZh?: string }>;
 }
 
 export interface TextConfig {
@@ -171,6 +175,8 @@ export interface TextConfig {
 	transforms?: TextTransform[];
 	/** monospace font for input/output (code-like tools) */
 	mono?: boolean;
+	/** whether the primary transform should run live on input (with debounce) */
+	live?: boolean;
 }
 
 // --- generator tools (password / uuid / random) ------------------------------------

@@ -2144,6 +2144,10 @@ const year = new Date().getFullYear();
 								const v = (zh ? el.dataset.titleZh : el.dataset.titleEn) || el.dataset.titleEn;
 								if (v) el.title = v;
 							}
+							for (const el of document.querySelectorAll('[data-placeholder-en]')) {
+								const v = (zh ? el.dataset.placeholderZh : el.dataset.placeholderEn) || el.dataset.placeholderEn;
+								if (v) el.placeholder = v;
+							}
 							// An <option> cannot hold the .i18n-en / .i18n-zh span pair, so its two
 							// texts ride on the element and get swapped here (see Graph3DTab.astro).
 							for (const el of document.querySelectorAll('[data-text-en]')) {

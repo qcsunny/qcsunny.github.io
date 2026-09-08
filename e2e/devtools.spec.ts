@@ -175,3 +175,27 @@ test('sql minify does not glue tokens across a dropped comment', async ({ page }
 	await expect(output).not.toHaveValue(/SELECT1/);
 	await expect(output).toHaveValue(/SELECT 1/);
 });
+
+test('hash generator computes SHA-256 live on input with Web Crypto', async ({ page }) => {
+	await page.goto('/devtools/hash-generator/');
+
+	const input = page.locator('textarea[data-role="input"]');
+	const output = page.locator('textarea[data-role="output"]');
+
+	// Standard NIST test vector: "abc" -> ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
+	await input.fill('abc');
+	await expect(output).toHaveValue(
+		'SHA-256 ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
+	);
+
+	// Verify stats update live
+	const stats = page.locator('.t-results');
+	await expect(stats).toContainText('3');
+
+	// Verify button also works
+	await input.fill('hello');
+	await page.getByRole('button', { name: /^(Generate SHA-256|生成哈希)$/ }).click();
+	await expect(output).toHaveValue(
+		'SHA-256 2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824',
+	);
+});

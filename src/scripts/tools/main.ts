@@ -6,6 +6,7 @@
 import { findEntry } from '../../tools/registry';
 import { initForm } from './form';
 import { initConverter } from './converter';
+import { initText } from './text';
 
 const root = document.documentElement;
 const kind = root.dataset.toolKind;
@@ -26,7 +27,7 @@ if (kind && kind !== 'redirect') {
 			initConverter(host, entry.config);
 			break;
 		case 'text':
-			void import('./text').then((m) => m.initText(host, entry.config));
+			initText(host, entry.config);
 			break;
 		case 'generator':
 			void import('./generators').then((m) => m.initGenerator(host, entry.config));

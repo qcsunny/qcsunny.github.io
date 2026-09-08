@@ -207,7 +207,7 @@ function rotr(x: number, n: number): number {
 	return (x >>> n) | (x << (32 - n));
 }
 
-function sha256Hex(msg: string): string {
+export function sha256Hex(msg: string): string {
 	const bytes = new TextEncoder().encode(msg);
 	const ml = bytes.length * 8;
 	const data = new Uint8Array((((bytes.length + 8) >> 6) + 1) * 64);
@@ -249,6 +249,20 @@ function sha256Hex(msg: string): string {
 		h4 = (h4 + e) >>> 0; h5 = (h5 + f) >>> 0; h6 = (h6 + g) >>> 0; h7 = (h7 + h) >>> 0;
 	}
 	return [h0, h1, h2, h3, h4, h5, h6, h7].map((x) => x.toString(16).padStart(8, '0')).join('');
+}
+
+export async function sha256Async(msg: string): Promise<string> {
+	if (typeof crypto !== 'undefined' && crypto.subtle && typeof crypto.subtle.digest === 'function') {
+		const bytes = new TextEncoder().encode(msg);
+		const hashBuf = await crypto.subtle.digest('SHA-256', bytes);
+		const arr = new Uint8Array(hashBuf);
+		let hex = '';
+		for (let i = 0; i < arr.length; i++) {
+			hex += arr[i].toString(16).padStart(2, '0');
+		}
+		return hex;
+	}
+	return sha256Hex(msg);
 }
 
 export const TEXT_TOOLS: ToolEntry[] = [
@@ -928,14 +942,37 @@ export const TEXT_TOOLS: ToolEntry[] = [
 			placeholder: 'Type or paste text to hash…',
 			placeholderZh: '输入或粘贴需要求哈希的文本…',
 			mono: true,
+			live: true,
+			stats: (text: string) => {
+				const charCount = text.length;
+				const byteCount = new TextEncoder().encode(text).length;
+				return [
+					{
+						label: 'Characters',
+						labelZh: '字符数',
+						value: String(charCount),
+					},
+					{
+						label: 'UTF-8 Bytes',
+						labelZh: '字节数 (UTF-8)',
+						value: String(byteCount),
+					},
+					{
+						label: 'Algorithm',
+						labelZh: '算法',
+						value: 'SHA-256 (256-bit)',
+					},
+				];
+			},
 			transforms: [
 				{
 					id: 'hash',
-					label: 'Hash',
+					label: 'Generate SHA-256',
 					labelZh: '生成哈希',
-					run: (text: string) => {
+					run: async (text: string) => {
 						if (!text) return { output: '—' };
-						return { output: `SHA-256 ${sha256Hex(text)}` };
+						const hash = await sha256Async(text);
+						return { output: `SHA-256 ${hash}` };
 					},
 				},
 			],
