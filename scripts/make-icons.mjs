@@ -26,6 +26,19 @@ const ROOT = path.resolve(import.meta.dirname, '..');
 const SRC = path.join(ROOT, 'public', 'favicon.svg');
 const svg = fs.readFileSync(SRC, 'utf8');
 
+const CHECK = process.argv.includes('--check');
+const ICO_PATH = path.join(ROOT, 'public', 'favicon.ico');
+const APPLE_PATH = path.join(ROOT, 'public', 'apple-touch-icon.png');
+
+const same = (file, expected) => fs.existsSync(file) && fs.readFileSync(file).equals(expected);
+const verifyOrWrite = (file, expected) => {
+	if (CHECK) {
+		if (!same(file, expected)) throw new Error(`${path.relative(ROOT, file)} is stale; run npm run icons`);
+	} else {
+		fs.writeFileSync(file, expected);
+	}
+};
+
 // Small frames get a flatter source: the `feGaussianBlur` glow and the two
 // 0.12/0.18-opacity backdrop halos blur everything into one another at 16–32px
 // and turn the solar core into a smudge, while at 48px and up they are what
@@ -93,16 +106,14 @@ const frames = await Promise.all(
 );
 
 const ico = encodeIco(frames);
-fs.writeFileSync(path.join(ROOT, 'public', 'favicon.ico'), ico);
-fs.writeFileSync(
-	path.join(ROOT, 'public', 'apple-touch-icon.png'),
-	await render(APPLE_TOUCH).toBuffer(),
-);
+const apple = await render(APPLE_TOUCH).toBuffer();
+verifyOrWrite(ICO_PATH, ico);
+verifyOrWrite(APPLE_PATH, apple);
 
-// Re-parse what we just wrote: a silently truncated ICO would ship a broken
+// Re-parse the expected ICO bytes: a silently truncated ICO would ship a broken
 // favicon with no error, which is exactly the class of silent failure this
 // script exists to catch.
-const written = fs.readFileSync(path.join(ROOT, 'public', 'favicon.ico'));
+const written = ico;
 const count = written.readUInt16LE(4);
 if (count !== ICO_SIZES.length) throw new Error(`ICO declares ${count} frames, expected ${ICO_SIZES.length}`);
 
@@ -117,5 +128,5 @@ for (const [i, { size }] of frames.entries()) {
 	}
 }
 
-console.log(`favicon.ico  ${ICO_SIZES.length} frames (${ICO_SIZES.join('/')})  ${ico.length} bytes`);
+console.log(`${CHECK ? 'verified' : 'wrote'} favicon.ico  ${ICO_SIZES.length} frames (${ICO_SIZES.join('/')})  ${ico.length} bytes`);
 console.log(`apple-touch-icon.png  ${APPLE_TOUCH}x${APPLE_TOUCH}`);

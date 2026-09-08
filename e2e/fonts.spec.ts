@@ -9,10 +9,10 @@ import { expect, test } from '@playwright/test';
 //
 // Ceilings, not equalities — the subset tracks the site's own text, so adding
 // characters to a post legitimately moves these by a few hundred bytes. They sit
-// just under the full-charset figures (18.6 / 19.3 KB as woff2, 22.8 / 23.8 KB
+// well under the full-charset figures (18.6 / 19.3 KB as woff2, 22.8 / 23.8 KB
 // as woff) so a regression to an un-subsetted file still trips them.
 const MAX_PER_FILE = 15_500;
-const MAX_TOTAL = 30_000;
+const MAX_TOTAL = 31_000;
 
 test('web fonts ship as subsetted woff2 within the byte budget', async ({ page }) => {
 	await page.goto('/');

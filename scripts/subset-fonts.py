@@ -29,10 +29,12 @@ the font.
 """
 
 import argparse
+import filecmp
 import glob
 import html
 import os
 import sys
+import tempfile
 
 from fontTools import subset
 from fontTools.ttLib import TTFont
@@ -100,6 +102,11 @@ def scan_site_text():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument(
+        '--check',
+        action='store_true',
+        help='generate into a temporary directory and fail if committed woff2 files differ',
+    )
+    ap.add_argument(
         '--no-hinting',
         action='store_true',
         help="drop ttfautohint's instructions: ~11.6 KB smaller, slightly softer "
@@ -112,32 +119,41 @@ def main():
     print(f'scanned {files} files → {len(site)} distinct codepoints in site text')
     total_before = total_after = 0
 
-    for src_rel, dst_rel in VARIANTS:
-        src, dst = os.path.join(ROOT, src_rel), os.path.join(ROOT, dst_rel)
-        with TTFont(src) as probe:
-            covered = set(probe.getBestCmap())
-        keep = (ASCII | SYMBOLS | {c for c in site if not is_cjk(c)}) & covered
+    temp = tempfile.TemporaryDirectory() if args.check else None
+    try:
+        for src_rel, dst_rel in VARIANTS:
+            src = os.path.join(ROOT, src_rel)
+            committed = os.path.join(ROOT, dst_rel)
+            dst = os.path.join(temp.name, os.path.basename(dst_rel)) if temp else committed
+            with TTFont(src) as probe:
+                covered = set(probe.getBestCmap())
+            keep = (ASCII | SYMBOLS | {c for c in site if not is_cjk(c)}) & covered
 
-        options = subset.Options()
-        options.flavor = 'woff2'
-        options.layout_features = ['*']  # kern/liga are NOT in pyftsubset's default set
-        options.name_IDs = ['*']  # nameID 0/13/14 carry the copyright and OFL grant
-        options.name_legacy = True
-        options.hinting = not args.no_hinting
-        font = subset.load_font(src, options)
-        subsetter = subset.Subsetter(options=options)
-        subsetter.populate(unicodes=keep)
-        subsetter.subset(font)
-        subset.save_font(font, dst, options)
-        font.close()
+            options = subset.Options()
+            options.flavor = 'woff2'
+            options.layout_features = ['*']
+            options.name_IDs = ['*']
+            options.name_legacy = True
+            options.hinting = not args.no_hinting
+            font = subset.load_font(src, options)
+            subsetter = subset.Subsetter(options=options)
+            subsetter.populate(unicodes=keep)
+            subsetter.subset(font)
+            subset.save_font(font, dst, options)
+            font.close()
 
-        before, after = os.path.getsize(src), os.path.getsize(dst)
-        total_before += before
-        total_after += after
-        print(
-            f'{os.path.basename(dst):24} {len(keep):4} of {len(covered)} codepoints  '
-            f'{before:6} B ttf → {after:6} B woff2'
-        )
+            if args.check and not filecmp.cmp(dst, committed, shallow=False):
+                sys.exit(f'error: {dst_rel} is stale; run python3 scripts/subset-fonts.py after npm run build')
+            before, after = os.path.getsize(src), os.path.getsize(dst)
+            total_before += before
+            total_after += after
+            print(
+                f'{os.path.basename(dst):24} {len(keep):4} of {len(covered)} codepoints  '
+                f'{before:6} B ttf → {after:6} B woff2'
+            )
+    finally:
+        if temp:
+            temp.cleanup()
 
     hint = 'no-hinting' if args.no_hinting else 'hinted'
     print(f'total ({hint}): {total_before} B upstream → {total_after} B shipped')

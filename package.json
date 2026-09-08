@@ -11,6 +11,8 @@
     "build": "node scripts/make-icons.mjs && astro build",
     "preview": "astro preview",
     "check": "astro check",
+    "check:generated": "node scripts/make-icons.mjs --check && python3 scripts/build-katex-css.py --check",
+    "check:fonts": "python3 scripts/subset-fonts.py --check",
     "test": "playwright test",
     "astro": "astro",
     "indexnow": "node scripts/indexnow.mjs",
