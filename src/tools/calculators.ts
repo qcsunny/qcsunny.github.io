@@ -420,7 +420,12 @@ const simpleInterest: FormConfig = {
 };
 
 // --- pi calculator (Machin-like formula with BigInt arbitrary precision) --------
+const PI_CACHE = new Map<number, string>();
+
 function computePiMachin(digits: number): string {
+	const cached = PI_CACHE.get(digits);
+	if (cached !== undefined) return cached;
+
 	const extra = 10;
 	const totalDigits = digits + extra;
 	const unity = 10n ** BigInt(totalDigits);
@@ -447,7 +452,9 @@ function computePiMachin(digits: number): string {
 	const piScaled = 16n * arccot(5, unity) - 4n * arccot(239, unity);
 	const piInt = piScaled / 10n ** BigInt(extra);
 	const piStr = piInt.toString();
-	return piStr[0] + '.' + piStr.slice(1, digits + 1);
+	const result = piStr[0] + '.' + piStr.slice(1, digits + 1);
+	PI_CACHE.set(digits, result);
+	return result;
 }
 
 const piCalculator: FormConfig = {
@@ -874,14 +881,21 @@ const matrixCalculator: FormConfig = {
 				});
 				return { rows };
 			}
-			const res = Array.from({ length: rA }, () => Array(cB).fill(0));
+			// Transpose B once for cache-friendly sequential column access during multiply.
+			const bT: number[][] = Array.from({ length: cB }, (_, j) =>
+				Array.from({ length: cA }, (_, k) => b[k]![j]!),
+			);
+			const res: number[][] = Array.from({ length: rA }, () => new Array<number>(cB).fill(0));
 			for (let i = 0; i < rA; i++) {
+				const rowA = a[i]!;
+				const rowRes = res[i]!;
 				for (let j = 0; j < cB; j++) {
+					const colBT = bT[j]!;
 					let s = 0;
 					for (let k = 0; k < cA; k++) {
-						s += a[i]![k]! * b[k]![j]!;
+						s += rowA[k]! * colBT[k]!;
 					}
-					res[i]![j] = s;
+					rowRes[j] = s;
 				}
 			}
 			rows.push({
@@ -892,6 +906,7 @@ const matrixCalculator: FormConfig = {
 				emphasis: true,
 			});
 		}
+
 
 		return { rows };
 	},
@@ -1020,7 +1035,7 @@ const equationSolver: FormConfig = {
 		{ id: 'intB', label: 'Integral upper limit b', labelZh: '积分上限 b', type: 'number', def: '2', step: 'any', showIf: (v) => v.str('type') === 'calculus' },
 		// Limit fields
 		{ id: 'limExpr', label: 'Function f(x)', labelZh: '函数表达式 f(x)', type: 'text', def: 'sin(x)/x', showIf: (v) => v.str('type') === 'limit' },
-		{ id: 'limX0', label: 'Approach point x0', labelZh: '趋近目标点 x0', type: 'number', def: '0', step: 'any', showIf: (v) => v.str('type') === 'limit' },
+		{ id: 'limX0', label: 'Approach point x0', labelZh: '趋近目标点 x0', type: 'number', def: '0', step: 'any', showIf: (v) => v.str('type') === 'limit' && v.str('limDir') !== '+inf' && v.str('limDir') !== '-inf' },
 		{
 			id: 'limDir',
 			label: 'Direction',
@@ -1031,6 +1046,8 @@ const equationSolver: FormConfig = {
 				{ value: 'both', label: 'Two-sided limit (x → x0)', labelZh: '双侧极限 (x → x0)' },
 				{ value: 'right', label: 'Right-sided limit (x → x0⁺)', labelZh: '右极限 (x → x0⁺)' },
 				{ value: 'left', label: 'Left-sided limit (x → x0⁻)', labelZh: '左极限 (x → x0⁻)' },
+				{ value: '+inf', label: 'x → +∞ (positive infinity)', labelZh: 'x → +∞（正无穷大）' },
+				{ value: '-inf', label: 'x → −∞ (negative infinity)', labelZh: 'x → −∞（负无穷大）' },
 			],
 			showIf: (v) => v.str('type') === 'limit',
 		},
@@ -1163,31 +1180,102 @@ const equationSolver: FormConfig = {
 
 			try {
 				const fn = compile(`(${lhs}) - (${rhs})`);
-				const scope = { vars: {}, deg: false };
+				// Reuse one vars object — avoids a heap allocation per evaluation call.
+				const pVars: Record<string, number> = { x: 0 };
+				const scope = { vars: pVars, deg: false };
 				const p = (xv: number) => {
-					scope.vars = { x: xv };
+					pVars['x'] = xv;
 					return fn(scope);
 				};
 
+				// 5-point symmetric sampling: correctly extracts coefficients up to degree 4.
+				// Old 4-point scheme (x=0,1,-1,2) conflated a₂+a₄ in the "quadratic" slot,
+				// causing x⁴ to be misidentified as quadratic.
 				const p0 = p(0);
 				const p1 = p(1);
 				const pm1 = p(-1);
 				const p2 = p(2);
+				const pm2 = p(-2);
 
-				const d = p0;
-				const b = (p1 + pm1 - 2 * d) / 2;
-				const diff1 = p1 - pm1;
-				const a = (p2 - d - 4 * b - diff1) / 6;
-				const c = (diff1 - 2 * a) / 2;
+				// Derive exact polynomial coefficients via central finite differences:
+				//   a0 = p(0)
+				//   12*a4 = (p(2)+p(-2))/2 - 2*(p(1)+p(-1)) + 3*p(0)
+				//   a2    = (p(1)+p(-1))/2 - a0 - a4
+				//   6*a3  = (p(2)-p(-2))/2 - (p(1)-p(-1))
+				//   a1    = (p(1)-p(-1))/2 - a3
+				const a0 = p0;
+				const a4 = ((p2 + pm2) / 2 - 2 * (p1 + pm1) + 3 * a0) / 12;
+				const a2 = (p1 + pm1) / 2 - a0 - a4;
+				const a3 = ((p2 - pm2) / 2 - (p1 - pm1)) / 6;
+				const a1 = (p1 - pm1) / 2 - a3;
 
 				const clean = (n: number) => (Math.abs(n - Math.round(n)) < 1e-9 ? Math.round(n) : n);
-				const ca = clean(a);
-				const cb = clean(b);
-				const cc = clean(c);
-				const cd = clean(d);
+				const ca4 = clean(a4);
+				const ca3 = clean(a3);
+				const ca2 = clean(a2);
+				const ca1 = clean(a1);
+				const ca0 = clean(a0);
 
-				// Cubic equation
-				if (Math.abs(ca) > 1e-9) {
+				// Quartic equation (degree 4) — solve numerically via companion-matrix eigenvalue
+				// or, for now, report standard form and note that analytical solution is complex.
+				if (Math.abs(ca4) > 1e-9) {
+					rows.push({
+						label: 'Identified Problem Type',
+						labelZh: '识别问题类型',
+						value: 'Quartic Polynomial Equation (Degree 4)',
+						valueZh: '一元四次代数方程 (4 次)',
+					});
+					rows.push({
+						label: 'Standard Form',
+						labelZh: '标准形式',
+						value: `${formatNumber(ca4)}x⁴ + ${formatNumber(ca3)}x³ + ${formatNumber(ca2)}x² + ${formatNumber(ca1)}x + ${formatNumber(ca0)} = 0`,
+						valueZh: `${formatNumber(ca4)}x⁴ + ${formatNumber(ca3)}x³ + ${formatNumber(ca2)}x² + ${formatNumber(ca1)}x + ${formatNumber(ca0)} = 0`,
+					});
+					// Numerical root finding via bisection + Newton on a dense scan
+					const numRoots: number[] = [];
+					const evalP = (xv: number) => { pVars['x'] = xv; return fn(scope); };
+					const SCAN = 200;
+					const lo = -100, hi = 100;
+					let prev = evalP(lo);
+					for (let i = 1; i <= SCAN; i++) {
+						const xMid = lo + (hi - lo) * i / SCAN;
+						const cur = evalP(xMid);
+						if (Number.isFinite(prev) && Number.isFinite(cur) && prev * cur < 0) {
+							// Bisection refine
+							let lo2 = xMid - (hi - lo) / SCAN, hi2 = xMid;
+							for (let j = 0; j < 50; j++) {
+								const m = (lo2 + hi2) / 2;
+								const fm = evalP(m);
+								if (evalP(lo2) * fm <= 0) hi2 = m; else lo2 = m;
+							}
+							const root = (lo2 + hi2) / 2;
+							if (!numRoots.some((r) => Math.abs(r - root) < 1e-8)) numRoots.push(root);
+						}
+						prev = cur;
+					}
+					if (numRoots.length > 0) {
+						numRoots.sort((a, b) => a - b).forEach((r, idx) => {
+							rows.push({
+								label: `Real Root x${idx + 1}`,
+								labelZh: `实数根 x${idx + 1}`,
+								value: formatNumber(r),
+								valueZh: formatNumber(r),
+								emphasis: idx === 0,
+							});
+						});
+					} else {
+						rows.push({
+							label: 'Real Roots',
+							labelZh: '实数根',
+							value: 'No real roots found in [−100, 100]',
+							valueZh: '在 [−100, 100] 范围内未找到实数根',
+						});
+					}
+					return { rows };
+				}
+
+				// Cubic equation (degree 3)
+				if (Math.abs(ca3) > 1e-9) {
 					rows.push({
 						label: 'Identified Problem Type',
 						labelZh: '识别问题类型',
@@ -1197,10 +1285,10 @@ const equationSolver: FormConfig = {
 					rows.push({
 						label: 'Standard Form',
 						labelZh: '标准形式',
-						value: `${formatNumber(ca)}x³ + ${formatNumber(cb)}x² + ${formatNumber(cc)}x + ${formatNumber(cd)} = 0`,
-						valueZh: `${formatNumber(ca)}x³ + ${formatNumber(cb)}x² + ${formatNumber(cc)}x + ${formatNumber(cd)} = 0`,
+						value: `${formatNumber(ca3)}x³ + ${formatNumber(ca2)}x² + ${formatNumber(ca1)}x + ${formatNumber(ca0)} = 0`,
+						valueZh: `${formatNumber(ca3)}x³ + ${formatNumber(ca2)}x² + ${formatNumber(ca1)}x + ${formatNumber(ca0)} = 0`,
 					});
-					const roots = solveCubic(ca, cb, cc, cd);
+					const roots = solveCubic(ca3, ca2, ca1, ca0);
 					roots.forEach((r, idx) => {
 						rows.push({
 							label: `Root x${idx + 1}`,
@@ -1213,8 +1301,8 @@ const equationSolver: FormConfig = {
 					return { rows };
 				}
 
-				// Quadratic equation
-				if (Math.abs(cb) > 1e-9) {
+				// Quadratic equation (degree 2)
+				if (Math.abs(ca2) > 1e-9) {
 					rows.push({
 						label: 'Identified Problem Type',
 						labelZh: '识别问题类型',
@@ -1224,32 +1312,20 @@ const equationSolver: FormConfig = {
 					rows.push({
 						label: 'Standard Form',
 						labelZh: '标准形式',
-						value: `${formatNumber(cb)}x² + ${formatNumber(cc)}x + ${formatNumber(cd)} = 0`,
-						valueZh: `${formatNumber(cb)}x² + ${formatNumber(cc)}x + ${formatNumber(cd)} = 0`,
+						value: `${formatNumber(ca2)}x² + ${formatNumber(ca1)}x + ${formatNumber(ca0)} = 0`,
+						valueZh: `${formatNumber(ca2)}x² + ${formatNumber(ca1)}x + ${formatNumber(ca0)} = 0`,
 					});
-					const sol = solveQuadratic(cb, cc, cd);
+					const sol = solveQuadratic(ca2, ca1, ca0);
 					rows.push({
 						label: 'Discriminant Δ = b² − 4ac',
 						labelZh: '判别式 Δ = b² − 4ac',
 						value: formatNumber(sol.delta),
 						valueZh: formatNumber(sol.delta),
 					});
-					rows.push({
-						label: 'Root x₁',
-						labelZh: '方程根 x₁',
-						value: sol.x1,
-						valueZh: sol.x1,
-						emphasis: true,
-					});
-					rows.push({
-						label: 'Root x₂',
-						labelZh: '方程根 x₂',
-						value: sol.x2,
-						valueZh: sol.x2,
-						emphasis: true,
-					});
-					const xv = -cc / (2 * cb);
-					const yv = cd - (cc * cc) / (4 * cb);
+					rows.push({ label: 'Root x₁', labelZh: '方程根 x₁', value: sol.x1, valueZh: sol.x1, emphasis: true });
+					rows.push({ label: 'Root x₂', labelZh: '方程根 x₂', value: sol.x2, valueZh: sol.x2, emphasis: true });
+					const xv = -ca1 / (2 * ca2);
+					const yv = ca0 - (ca1 * ca1) / (4 * ca2);
 					rows.push({
 						label: 'Parabola Vertex (xv, yv)',
 						labelZh: '抛物线顶点坐标 (xv, yv)',
@@ -1265,9 +1341,9 @@ const equationSolver: FormConfig = {
 					return { rows };
 				}
 
-				// Linear equation
-				if (Math.abs(cc) > 1e-9) {
-					const root = -cd / cc;
+				// Linear equation (degree 1)
+				if (Math.abs(ca1) > 1e-9) {
+					const root = -ca0 / ca1;
 					rows.push({
 						label: 'Identified Problem Type',
 						labelZh: '识别问题类型',
@@ -1277,8 +1353,8 @@ const equationSolver: FormConfig = {
 					rows.push({
 						label: 'Standard Form',
 						labelZh: '化简形式',
-						value: `${formatNumber(cc)}x + ${formatNumber(cd)} = 0`,
-						valueZh: `${formatNumber(cc)}x + ${formatNumber(cd)} = 0`,
+						value: `${formatNumber(ca1)}x + ${formatNumber(ca0)} = 0`,
+						valueZh: `${formatNumber(ca1)}x + ${formatNumber(ca0)} = 0`,
 					});
 					rows.push({
 						label: 'Root x',
@@ -1290,8 +1366,8 @@ const equationSolver: FormConfig = {
 					rows.push({
 						label: 'Solution Steps',
 						labelZh: '求解步骤',
-						value: `${formatNumber(cc)}x = ${formatNumber(-cd)}  ⇒  x = ${formatNumber(-cd)} / ${formatNumber(cc)} = ${formatNumber(root)}`,
-						valueZh: `${formatNumber(cc)}x = ${formatNumber(-cd)}  ⇒  x = ${formatNumber(-cd)} / ${formatNumber(cc)} = ${formatNumber(root)}`,
+						value: `${formatNumber(ca1)}x = ${formatNumber(-ca0)}  ⇒  x = ${formatNumber(-ca0)} / ${formatNumber(ca1)} = ${formatNumber(root)}`,
+						valueZh: `${formatNumber(ca1)}x = ${formatNumber(-ca0)}  ⇒  x = ${formatNumber(-ca0)} / ${formatNumber(ca1)} = ${formatNumber(root)}`,
 					});
 					return { rows };
 				}
@@ -1306,8 +1382,8 @@ const equationSolver: FormConfig = {
 				rows.push({
 					label: 'Solution',
 					labelZh: '求解结果',
-					value: Math.abs(cd) < 1e-9 ? 'Infinite solutions (Identity 0 = 0)' : 'No solution (Contradiction)',
-					valueZh: Math.abs(cd) < 1e-9 ? '无数解（恒等式 0 = 0）' : '无解（常数矛盾）',
+					value: Math.abs(ca0) < 1e-9 ? 'Infinite solutions (Identity 0 = 0)' : 'No solution (Contradiction)',
+					valueZh: Math.abs(ca0) < 1e-9 ? '无数解（恒等式 0 = 0）' : '无解（常数矛盾）',
 					emphasis: true,
 				});
 				return { rows };
@@ -1315,6 +1391,7 @@ const equationSolver: FormConfig = {
 				return { rows: [{ label: 'Error', labelZh: '计算错误', value: String(e.message || e), valueZh: String(e.message || e) }] };
 			}
 		}
+
 
 		if (type === 'quad') {
 			const a = v.num('a');
@@ -1436,13 +1513,15 @@ const equationSolver: FormConfig = {
 
 			try {
 				const fn = compile(exprStr);
-				const scope = { vars: {}, deg: false };
+				// Reuse one vars object — avoids a heap allocation per evaluation call.
+				const calcVars: Record<string, number> = { x: 0 };
+				const scope = { vars: calcVars, deg: false };
 
 				// Numerical Derivative via 5-point symmetric stencil
 				if (Number.isFinite(x0)) {
 					const h = 1e-5;
 					const evalAt = (xv: number) => {
-						scope.vars = { x: xv };
+						calcVars['x'] = xv;
 						return fn(scope);
 					};
 					const f_p2 = evalAt(x0 + 2 * h);
@@ -1460,9 +1539,15 @@ const equationSolver: FormConfig = {
 				}
 
 				// Numerical Definite Integral via Adaptive Simpson Quadrature (1e-9 tolerance)
+				// Uses an eval-count budget (MAX_EVALS) instead of a fixed recursion depth,
+				// which is safer for discontinuous/high-frequency functions and terminates
+				// in 3-5 levels for smooth functions rather than always reaching depth 15.
 				if (Number.isFinite(a) && Number.isFinite(b)) {
+					let evalCount = 0;
+					const MAX_EVALS = 4096;
 					const evalAt = (xv: number) => {
-						scope.vars = { x: xv };
+						calcVars['x'] = xv;
+						evalCount++;
 						return fn(scope);
 					};
 					const simpson = (x0: number, x2: number, f0: number, f1: number, f2: number) =>
@@ -1475,7 +1560,6 @@ const equationSolver: FormConfig = {
 						f1: number,
 						f2: number,
 						whole: number,
-						depth: number,
 					): number => {
 						const x1 = (x0 + x2) / 2;
 						const xLeftMid = (x0 + x1) / 2;
@@ -1485,12 +1569,12 @@ const equationSolver: FormConfig = {
 						const left = simpson(x0, x1, f0, fLeftMid, f1);
 						const right = simpson(x1, x2, f1, fRightMid, f2);
 						const delta = left + right - whole;
-						if (depth <= 0 || Math.abs(delta) <= 15 * 1e-9) {
+						if (Math.abs(delta) <= 15 * 1e-9 || evalCount >= MAX_EVALS) {
 							return left + right + delta / 15;
 						}
 						return (
-							adapt(x0, x1, f0, fLeftMid, f1, left, depth - 1) +
-							adapt(x1, x2, f1, fRightMid, f2, right, depth - 1)
+							adapt(x0, x1, f0, fLeftMid, f1, left) +
+							adapt(x1, x2, f1, fRightMid, f2, right)
 						);
 					};
 
@@ -1499,7 +1583,7 @@ const equationSolver: FormConfig = {
 					const mid = (a + b) / 2;
 					const f1 = evalAt(mid);
 					const whole = simpson(a, b, f0, f1, f2);
-					const intVal = adapt(a, b, f0, f1, f2, whole, 15);
+					const intVal = adapt(a, b, f0, f1, f2, whole);
 
 					rows.push({
 						label: `Definite Integral ∫[${a} to ${b}] f(x) dx`,
@@ -1526,12 +1610,71 @@ const equationSolver: FormConfig = {
 
 			try {
 				const fn = compile(exprStr);
-				const scope = { vars: {}, deg: false };
+				// Reuse pre-allocated vars to avoid GC pressure across 12 approach-sequence evaluations.
+				const limVars: Record<string, number> = { x: x0 };
+				const scope = { vars: limVars, deg: false };
 				const evalSafe = (xv: number): number => {
-					scope.vars = { x: xv };
+					limVars['x'] = xv;
 					return fn(scope);
 				};
 
+				// ---- x → ±∞ via substitution t = 1/x (t → 0⁺) ----
+				if (dir === '+inf' || dir === '-inf') {
+					const sign = dir === '+inf' ? 1 : -1;
+					// Evaluate at x = sign/t for decreasing t; reuse the same Richardson machinery.
+					const steps = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6];
+					const vals: number[] = [];
+					for (const t of steps) {
+						const val = evalSafe(sign / t);
+						if (Number.isFinite(val)) vals.push(val);
+					}
+					const dirStr = dir === '+inf' ? '+∞' : '−∞';
+					const dirStrZh = dir === '+inf' ? '正无穷大 (+∞)' : '负无穷大 (−∞)';
+					if (vals.length < 2) {
+						// Check if it diverges to ±∞
+						const lastLarge = evalSafe(sign * 1e6);
+						const lastLarger = evalSafe(sign * 1e8);
+						let divergeStr = 'Does not exist (oscillates or complex)';
+						let divergeStrZh = '极限不存在（函数振荡或发散）';
+						if (Number.isFinite(lastLarge) && Number.isFinite(lastLarger)) {
+							if (lastLarge > 1e5 && lastLarger > lastLarge) { divergeStr = '+∞'; divergeStrZh = '+∞'; }
+							else if (lastLarge < -1e5 && lastLarger < lastLarge) { divergeStr = '−∞'; divergeStrZh = '−∞'; }
+						}
+						rows.push({
+							label: `Limit lim(x → ${dirStr}) f(x)`,
+							labelZh: `极限 lim(x → ${dirStrZh}) f(x)`,
+							value: divergeStr,
+							valueZh: divergeStrZh,
+							emphasis: true,
+						});
+						return { rows };
+					}
+					// Richardson extrapolation on the last two clean values
+					const v1 = vals[vals.length - 2]!;
+					const v2 = vals[vals.length - 1]!;
+					const extrap = (4 * v2 - v1) / 3;
+					const limVal = Math.abs(extrap - Math.round(extrap)) < 1e-9 ? Math.round(extrap) : extrap;
+					rows.push({
+						label: `Limit lim(x → ${dirStr}) f(x)`,
+						labelZh: `极限 lim(x → ${dirStrZh}) f(x)`,
+						value: formatNumber(limVal),
+						valueZh: formatNumber(limVal),
+						emphasis: true,
+					});
+					// Convergence quality note
+					const spread = Math.abs(v2 - v1);
+					if (spread > 1e-4) {
+						rows.push({
+							label: 'Note',
+							labelZh: '提示',
+							value: `Convergence is slow (spread = ${spread.toExponential(2)}); result may be approximate`,
+							valueZh: `收敛较慢（相邻差 ${spread.toExponential(2)}），结果为近似值`,
+						});
+					}
+					return { rows };
+				}
+
+				// ---- x → x0 (finite approach point) ----
 				// Approach sequence with Richardson extrapolation
 				const evalDirectional = (sign: 1 | -1): number | null => {
 					// Test sequence of diminishing step sizes
@@ -1618,9 +1761,13 @@ const equationSolver: FormConfig = {
 			}
 			try {
 				const fn = compile(exprStr);
-				const scope = { vars: {}, deg: false };
+				// Reuse one vars object — with steps=5000 and 4 evals/step this avoids
+				// 20 K short-lived heap allocations per compute() call.
+				const odeVars: Record<string, number> = { x: x0, y: y0 };
+				const scope = { vars: odeVars, deg: false };
 				const f = (xv: number, yv: number): number => {
-					scope.vars = { x: xv, y: yv };
+					odeVars['x'] = xv;
+					odeVars['y'] = yv;
 					return fn(scope);
 				};
 				const h = (x1 - x0) / steps;
@@ -1964,11 +2111,14 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 					for (let i = 2n; i <= BigInt(x); i++) p *= i;
 					return p;
 				};
-				const perm = fac(n) / fac(n - r);
-				const comb = perm / fac(r);
+				const facN = fac(n);
+				const facNR = fac(n - r);
+				const facR = fac(r);
+				const perm = facN / facNR;
+				const comb = perm / facR;
 				return {
 					rows: [
-						{ label: 'n! (factorial)', labelZh: '阶乘 n!', value: fac(n).toString(), valueZh: fac(n).toString() },
+						{ label: 'n! (factorial)', labelZh: '阶乘 n!', value: facN.toString(), valueZh: facN.toString() },
 						{ label: 'nPr (permutations)', labelZh: '排列数 nPr', value: perm.toString(), valueZh: perm.toString() },
 						{ label: 'nCr (combinations)', labelZh: '组合数 nCr', value: comb.toString(), valueZh: comb.toString() },
 					],

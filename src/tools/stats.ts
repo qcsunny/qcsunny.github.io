@@ -31,8 +31,20 @@ export function parseNumbers(text: string): { nums: number[]; invalid: string[] 
 export function computeStats(nums: number[]): StatsResult | null {
 	const n = nums.length;
 	if (n === 0) return null;
-	const sum = nums.reduce((a, b) => a + b, 0);
-	const mean = sum / n;
+
+	// Welford online algorithm: single-pass mean + sum-of-squared deviations.
+	// Avoids catastrophic cancellation that affects the naive Σ(xᵢ−mean)² formula
+	// when the mean is large relative to the spread.
+	let mean = 0;
+	let M2 = 0;
+	let sum = 0;
+	for (let i = 0; i < n; i++) {
+		const x = nums[i]!;
+		sum += x;
+		const delta = x - mean;
+		mean += delta / (i + 1);
+		M2 += delta * (x - mean); // (x - newMean) for numerical stability
+	}
 
 	const sorted = [...nums].sort((a, b) => a - b);
 	const median =
@@ -45,9 +57,8 @@ export function computeStats(nums: number[]): StatsResult | null {
 	const modes =
 		maxFreq > 1 ? [...freq.entries()].filter(([, f]) => f === maxFreq).map(([v]) => v).sort((a, b) => a - b) : null;
 
-	const ss = nums.reduce((acc, v) => acc + (v - mean) ** 2, 0);
-	const varianceP = ss / n;
-	const varianceS = n >= 2 ? ss / (n - 1) : Number.NaN;
+	const varianceP = M2 / n;
+	const varianceS = n >= 2 ? M2 / (n - 1) : Number.NaN;
 
 	return {
 		count: n,
@@ -63,3 +74,4 @@ export function computeStats(nums: number[]): StatsResult | null {
 		sdP: Math.sqrt(varianceP),
 	};
 }
+

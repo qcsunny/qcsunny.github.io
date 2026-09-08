@@ -220,10 +220,13 @@ function sample(fn: (s: Scope) => number, scope: Scope, d: Domain, n: number): G
 	// height/colour range follows the 1st–99th percentile instead and the spike
 	// is drawn clamped. Well-behaved surfaces keep their exact range.
 	if (vals.length > 20) {
-		vals.sort((a, b) => a - b);
-		const q = (p: number): number => vals[Math.round(p * (vals.length - 1))] as number;
-		const lo = q(0.01);
-		const hi = q(0.99);
+		const subLen = Math.min(vals.length, 512);
+		const step = Math.floor(vals.length / subLen);
+		const subVals: number[] = [];
+		for (let idx = 0; idx < subLen; idx++) subVals.push(vals[idx * step] as number);
+		subVals.sort((a, b) => a - b);
+		const lo = subVals[Math.round(0.01 * (subLen - 1))] as number;
+		const hi = subVals[Math.round(0.99 * (subLen - 1))] as number;
 		if (hi > lo && zHi - zLo > (hi - lo) * 4) {
 			zLo = lo;
 			zHi = hi;
@@ -263,6 +266,9 @@ export function initGraph3d(scope: Scope): void {
 			engineSelect.value = engine;
 			engineSelect.addEventListener('change', () => {
 				engine = engineSelect.value as 'webgl' | 'canvas2d';
+				if (engine === 'canvas2d' && grid && !shading) {
+					shading = shadeGrid(grid);
+				}
 				render();
 			});
 		}
@@ -373,8 +379,10 @@ export function initGraph3d(scope: Scope): void {
 
 	const toU = (x: number): number => (x - cxDom()) / spanUV();
 	const toV = (y: number): number => (y - cyDom()) / spanUV();
-	const toW = (z: number, g: { zLo: number; zHi: number }): number =>
-		(Math.min(g.zHi, Math.max(g.zLo, z)) - (g.zLo + g.zHi) / 2) / ((g.zHi - g.zLo) / 2) * Z_STRETCH;
+	const toW = (z: number, g: { zLo: number; zHi: number }): number => {
+		const halfSpan = (g.zHi - g.zLo) / 2 || 1;
+		return ((Math.min(g.zHi, Math.max(g.zLo, z)) - (g.zLo + g.zHi) / 2) / halfSpan) * Z_STRETCH;
+	};
 
 	const uMax = (): number => (domain.xMax - cxDom()) / spanUV();
 	const vMax = (): number => (domain.yMax - cyDom()) / spanUV();
@@ -426,6 +434,16 @@ export function initGraph3d(scope: Scope): void {
 	}
 
 	// --- drawing -------------------------------------------------------------
+	let renderPending = false;
+	function scheduleRender(): void {
+		if (renderPending) return;
+		renderPending = true;
+		requestAnimationFrame(() => {
+			renderPending = false;
+			render();
+		});
+	}
+
 	function render(): void {
 		if (cssW < 2 || cssH < 2) return;
 		ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -669,7 +687,7 @@ export function initGraph3d(scope: Scope): void {
 		// to the same 8-bit triple, so skipping the repeats is free speed.
 		let last = '';
 		const isInteracting = pointers.size > 0;
-		const stepMult = isInteracting && N >= 120 ? Math.ceil(N / 60) : 1;
+		const stepMult = isInteracting && N >= 120 ? Math.ceil(N / 60) : (N > 88 ? Math.ceil(N / 88) : 1);
 		for (let jj = 0; jj < N; jj += stepMult) {
 			const j = jFrom + jj * jStep;
 			for (let ii = 0; ii < N; ii += stepMult) {
@@ -913,8 +931,8 @@ export function initGraph3d(scope: Scope): void {
 			else showError('No finite value in this domain', '该定义域内没有有限值');
 		} else {
 			grid = g;
-			shading = shadeGrid(g);
-			if (glRenderer) {
+			shading = engine === 'canvas2d' ? shadeGrid(g) : null;
+			if (glRenderer && engine === 'webgl') {
 				glRenderer.uploadGeometry(g, domain, toU, toV, toW);
 				uploadGlFloorAndBox();
 			}
@@ -1003,12 +1021,12 @@ export function initGraph3d(scope: Scope): void {
 	function rotate(dx: number, dy: number): void {
 		view.yaw += dx * 0.008;
 		view.pitch = clamp(view.pitch + dy * 0.006, -PITCH_LIMIT, PITCH_LIMIT);
-		render();
+		scheduleRender();
 	}
 
 	function zoomBy(factor: number): void {
 		view.zoom = clamp(view.zoom * factor, ZOOM_LIMIT.min, ZOOM_LIMIT.max);
-		render();
+		scheduleRender();
 	}
 
 	const pointers = new Map<number, { x: number; y: number }>();

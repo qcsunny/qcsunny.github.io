@@ -112,22 +112,44 @@ export function compileNode(node: Node): (scope: Scope) => number {
 				};
 			}
 			const argFns = node.args.map((a) => compileNode(a));
-			const name = node.name;
+			// Arity check at compile time — eliminates it from the hot sampling loop.
+			// (3D surface: ~25 K evals/frame, saves ~25 K branches + array allocs per frame.)
 			const arity = def.arity;
-			return (scope) => {
-				const ok =
-					typeof arity === 'number'
-						? argFns.length === arity
-						: argFns.length >= arity[0] && argFns.length <= arity[1];
-				if (!ok) {
-					const want = typeof arity === 'number' ? `${arity}` : `${arity[0]}–${arity[1]}`;
-					throw new CalcError(
-						`${name}() expects ${want} argument(s)`,
-						`${name}() 需要 ${want} 个参数`,
-					);
-				}
-				return def.fn(argFns.map((f) => f(scope)), scope);
-			};
+			const got = argFns.length;
+			const arityOk =
+				typeof arity === 'number' ? got === arity : got >= arity[0] && got <= arity[1];
+			if (!arityOk) {
+				const want = typeof arity === 'number' ? `${arity}` : `${arity[0]}–${arity[1]}`;
+				throw new CalcError(
+					`${node.name}() expects ${want} argument(s), got ${got}`,
+					`${node.name}() 需要 ${want} 个参数，实际给了 ${got} 个`,
+				);
+			}
+			const fn = def.fn;
+			// Avoid a new array allocation per call for the common single-arg and two-arg cases
+			// (sin/cos/ln/exp… all have arity 1; pow/atan2 have arity 2).
+			if (got === 0) {
+				const empty: number[] = [];
+				return (scope) => fn(empty, scope);
+			}
+			if (got === 1) {
+				const f0 = argFns[0]!;
+				const buf: [number] = [0];
+				return (scope) => {
+					buf[0] = f0(scope);
+					return fn(buf, scope);
+				};
+			}
+			if (got === 2) {
+				const f0 = argFns[0]!, f1 = argFns[1]!;
+				const buf: [number, number] = [0, 0];
+				return (scope) => {
+					buf[0] = f0(scope);
+					buf[1] = f1(scope);
+					return fn(buf, scope);
+				};
+			}
+			return (scope) => fn(argFns.map((f) => f(scope)), scope);
 		}
 		case 'bin': {
 			const lf = compileNode(node.l);
