@@ -25,6 +25,8 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Install font subset tooling
+        run: python3 -m pip install 'fonttools[woff]==4.63.0'
       # og-images.mjs rasterizes Chinese post titles through libvips/fontconfig,
       # which needs a CJK face on the runner or the cards come out as tofu.
       - name: Install CJK font for OG cards
