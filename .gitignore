@@ -6,6 +6,7 @@ dist/
 # local-only agent and planning docs
 AGENTS.md
 CLAUDE.md
+MEMORY.md
 TODO.md
 
 
