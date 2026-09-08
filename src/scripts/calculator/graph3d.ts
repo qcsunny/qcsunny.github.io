@@ -10,7 +10,7 @@ import { isZh, langProp, onLang, setBilingual } from '../tools/i18n';
 import { createWebGLRenderer, type WebGLSurfaceRenderer } from './graph3d-gl';
 
 const DEG = Math.PI / 180;
-const DEFAULT_DOMAIN = { xMin: -5, xMax: 5, yMin: -5, yMax: 5 };
+const DEFAULT_DOMAIN: Domain = { xMin: -5, xMax: 5, yMin: -5, yMax: 5, zMin: null, zMax: null };
 const DEFAULT_VIEW = { yaw: -38 * DEG, pitch: 26 * DEG, zoom: 1 };
 const PITCH_LIMIT = 88 * DEG;
 const ZOOM_LIMIT = { min: 0.35, max: 4 };
@@ -49,14 +49,15 @@ const RAMPS: Record<string, ReadonlyArray<readonly [number, number, number]>> = 
 	],
 	coolwarm: [
 		[59, 76, 192],
-		[141, 175, 252],
+		[141, 176, 254],
 		[221, 221, 221],
 		[244, 154, 123],
 		[180, 4, 38],
 	],
 	turbo: [
 		[48, 18, 59],
-		[40, 188, 235],
+		[70, 134, 251],
+		[27, 229, 181],
 		[164, 252, 60],
 		[251, 126, 33],
 		[122, 4, 3],
@@ -70,6 +71,8 @@ interface Domain {
 	xMax: number;
 	yMin: number;
 	yMax: number;
+	zMin: number | null;
+	zMax: number | null;
 }
 
 interface Extremum {
@@ -219,7 +222,7 @@ function sample(fn: (s: Scope) => number, scope: Scope, d: Domain, n: number): G
 	// everything else into one colour, so when the tails are that extreme the
 	// height/colour range follows the 1st–99th percentile instead and the spike
 	// is drawn clamped. Well-behaved surfaces keep their exact range.
-	if (vals.length > 20) {
+	if (vals.length > 20 && d.zMin === null && d.zMax === null) {
 		const subLen = Math.min(vals.length, 512);
 		const step = Math.floor(vals.length / subLen);
 		const subVals: number[] = [];
@@ -233,8 +236,19 @@ function sample(fn: (s: Scope) => number, scope: Scope, d: Domain, n: number): G
 			clipped = true;
 		}
 	}
+
+	// Apply user-specified z bounds if set
+	if (d.zMin !== null && Number.isFinite(d.zMin)) {
+		zLo = d.zMin;
+		if (min !== null && min.z < zLo) clipped = true;
+	}
+	if (d.zMax !== null && Number.isFinite(d.zMax)) {
+		zHi = d.zMax;
+		if (max !== null && max.z > zHi) clipped = true;
+	}
+
 	if (!(zHi > zLo)) {
-		// Constant surface: give it a range so normalisation stays finite.
+		// Constant surface or equal bounds: give it a range so normalisation stays finite.
 		const c = zLo;
 		zLo = c - 1;
 		zHi = c + 1;
@@ -901,11 +915,16 @@ export function initGraph3d(scope: Scope): void {
 			);
 		}
 		if (g.clipped) {
+			const hasCustomZ = domain.zMin !== null || domain.zMax !== null;
 			parts.push(
-				`<span class="g3-note">${bi(
-					'range clipped to the 1st–99th percentile (the surface has a spike)',
-					'高度与配色按 1%–99% 分位裁剪（曲面存在尖峰）',
-				)}</span>`,
+				`<span class="g3-note">${
+					hasCustomZ
+						? bi('z range clamped to specified bounds', 'Z 轴范围已截断至指定值域')
+						: bi(
+								'range clipped to the 1st–99th percentile (the surface has a spike)',
+								'高度与配色按 1%–99% 分位裁剪（曲面存在尖峰）',
+						  )
+				}</span>`,
 			);
 		}
 		readoutEl!.innerHTML = parts.join('');
@@ -976,33 +995,40 @@ export function initGraph3d(scope: Scope): void {
 		document.querySelector<HTMLInputElement>(id);
 
 	function writeDomainInputs(): void {
-		const pairs: Array<[string, number]> = [
+		const pairs: Array<[string, number | null]> = [
 			['#g3-xmin', domain.xMin],
 			['#g3-xmax', domain.xMax],
 			['#g3-ymin', domain.yMin],
 			['#g3-ymax', domain.yMax],
+			['#g3-zmin', domain.zMin],
+			['#g3-zmax', domain.zMax],
 		];
 		for (const [id, value] of pairs) {
 			const el = numInput(id);
-			if (el) el.value = String(value);
+			if (el) el.value = value !== null && value !== undefined && Number.isFinite(value) ? String(value) : '';
 		}
 	}
 
-	/** Read the four domain boxes. Rejects an empty or inverted range instead of
+	/** Read the domain & range boxes. Rejects an empty or inverted range instead of
 	 *  sampling a degenerate grid, and leaves the last good domain on screen. */
 	function readDomainInputs(): boolean {
 		const get = (id: string): number => {
 			const el = numInput(id);
-			return el ? Number.parseFloat(el.value) : Number.NaN;
+			return el && el.value.trim() !== '' ? Number.parseFloat(el.value) : Number.NaN;
 		};
+		const rawZmin = get('#g3-zmin');
+		const rawZmax = get('#g3-zmax');
 		const next = {
 			xMin: get('#g3-xmin'),
 			xMax: get('#g3-xmax'),
 			yMin: get('#g3-ymin'),
 			yMax: get('#g3-ymax'),
+			zMin: Number.isFinite(rawZmin) ? rawZmin : null,
+			zMax: Number.isFinite(rawZmax) ? rawZmax : null,
 		};
-		if (!Object.values(next).every((v) => Number.isFinite(v))) return false;
+		if (!Number.isFinite(next.xMin) || !Number.isFinite(next.xMax) || !Number.isFinite(next.yMin) || !Number.isFinite(next.yMax)) return false;
 		if (!(next.xMax > next.xMin) || !(next.yMax > next.yMin)) return false;
+		if (next.zMin !== null && next.zMax !== null && !(next.zMax > next.zMin)) return false;
 		Object.assign(domain, next);
 		return true;
 	}
@@ -1193,12 +1219,17 @@ export function initGraph3d(scope: Scope): void {
 
 	exprEl.addEventListener('input', apply);
 
-	for (const id of ['#g3-xmin', '#g3-xmax', '#g3-ymin', '#g3-ymax']) {
+	for (const id of ['#g3-xmin', '#g3-xmax', '#g3-ymin', '#g3-ymax', '#g3-zmin', '#g3-zmax']) {
 		numInput(id)?.addEventListener('change', () => {
 			if (readDomainInputs()) resample();
-			else showError('Needs max > min on both axes', '两个轴都需要满足最大值 > 最小值');
+			else showError('Needs max > min on all axes', '所有轴都需要满足最大值 > 最小值');
 		});
 	}
+
+	const zminEl = numInput('#g3-zmin');
+	const zmaxEl = numInput('#g3-zmax');
+	if (zminEl) langProp(zminEl, 'placeholder', 'auto', '自适应');
+	if (zmaxEl) langProp(zmaxEl, 'placeholder', 'auto', '自适应');
 
 	document.querySelector<HTMLSelectElement>('#g3-res')?.addEventListener('change', (e) => {
 		const v = Number.parseInt((e.target as HTMLSelectElement).value, 10);

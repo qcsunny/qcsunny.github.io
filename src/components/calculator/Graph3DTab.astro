@@ -143,7 +143,7 @@
 
 	<div class="g3-domain">
 		<span class="g3-domain-label">
-			<span class="i18n-en">Domain</span><span class="i18n-zh">定义域</span>
+			<span class="i18n-en">Domain & Range</span><span class="i18n-zh">坐标范围</span>
 		</span>
 		<span class="g3-range">
 			x ∈ [
@@ -188,6 +188,33 @@
 				aria-label="y maximum"
 				data-aria-en="y maximum"
 				data-aria-zh="y 最大值"
+			/>
+			]
+		</span>
+		<span class="g3-range">
+			z ∈ [
+			<input
+				id="g3-zmin"
+				type="number"
+				step="any"
+				placeholder="auto"
+				data-placeholder-en="auto"
+				data-placeholder-zh="自适应"
+				aria-label="z minimum (auto if empty)"
+				data-aria-en="z minimum (auto if empty)"
+				data-aria-zh="z 最小值（留空自适应）"
+			/>
+			,
+			<input
+				id="g3-zmax"
+				type="number"
+				step="any"
+				placeholder="auto"
+				data-placeholder-en="auto"
+				data-placeholder-zh="自适应"
+				aria-label="z maximum (auto if empty)"
+				data-aria-en="z maximum (auto if empty)"
+				data-aria-zh="z 最大值（留空自适应）"
 			/>
 			]
 		</span>

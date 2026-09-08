@@ -133,6 +133,26 @@ test('domain inputs resample and reject an inverted range', async ({ page }) => 
 	await page.locator('#g3-xmax').fill('-9');
 	await page.locator('#g3-xmax').blur();
 	await expect(page.locator('#g3-error')).toContainText('max > min');
+
+	// restore valid xmax and test z range controls
+	await page.locator('#g3-xmax').fill('3');
+	await page.locator('#g3-xmax').blur();
+	await expect(page.locator('#g3-error')).toBeHidden();
+
+	// inverted z range is rejected
+	await page.locator('#g3-zmin').fill('10');
+	await page.locator('#g3-zmin').blur();
+	await page.locator('#g3-zmax').fill('2');
+	await page.locator('#g3-zmax').blur();
+	await expect(page.locator('#g3-error')).toContainText('max > min');
+
+	// valid z range clears error and updates readout
+	await page.locator('#g3-zmin').fill('0');
+	await page.locator('#g3-zmin').blur();
+	await page.locator('#g3-zmax').fill('4');
+	await page.locator('#g3-zmax').blur();
+	await expect(page.locator('#g3-error')).toBeHidden();
+	await expect(page.locator('#g3-readout')).toContainText(/z range clamped|Z 轴范围已截断/);
 });
 
 test('switching between WebGL smooth engine and Canvas 2D CPU fallback works seamlessly', async ({ page }) => {
