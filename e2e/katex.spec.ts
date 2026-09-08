@@ -15,7 +15,7 @@ import { expect, test } from '@playwright/test';
 // the widest set of KaTeX fonts: fractions, \sum with a size-2 operator,
 // subscripts, \bar and CJK inside \text{}.
 const MATHY = '/blog/compound-interest-and-irr-guide/';
-const NO_MATH = '/blog/glm-5-3-vs-hy4-preview/';
+const NO_MATH = '/blog/five-flash-models-comparison/';
 
 const DIST = fileURLToPath(new URL('../dist', import.meta.url));
 
