@@ -49,13 +49,19 @@ All commands run from the project root:
 | `npm run build` | Build the production site to `./dist/` |
 | `npm run preview` | Preview the build locally |
 | `npm run check` | Type-check (`astro check`) |
+| `npm run check:generated` | Verify committed icons and vendored KaTeX assets match their sources |
+| `npm run check:fonts` | After a build, verify Atkinson subsets cover current site text |
+| `npm run icons` | Regenerate raster icons from `public/favicon.svg` |
+| `npm run vendor:katex` | Regenerate KaTeX CSS and woff2 assets after a KaTeX upgrade |
 | `npx playwright test` | Run the full E2E suite (reads `dist/`, so build first) |
 
 The dev server runs in the background: `astro dev --background`, then `astro dev status` / `astro dev logs` / `astro dev stop`.
 
 ## Deployment
 
-CI (`.github/workflows/deploy.yml`) builds the site, runs the full Playwright suite as a gate, and deploys the GitHub Pages mirror on green. Pushing to `main` triggers a deploy; non-`main` branches do not. `qcsunny.org` is served by Cloudflare Workers Static Assets (`wrangler.jsonc`, with `public/_headers` carrying the cache rules); GitHub Pages keeps the legacy mirror.
+CI (`.github/workflows/deploy.yml`) verifies committed generated assets, type-checks, builds the site, runs the full Playwright suite, and deploys the GitHub Pages mirror only on green. Pushing to `main` triggers deployment; pull requests run the same quality gate without publishing.
+
+`qcsunny.org` is the canonical Cloudflare Workers Static Assets deployment. `public/_headers` is consumed there: hashed `/_astro/*` assets receive long immutable caching, while stable OG/icon URLs use shorter caching and HTML revalidates. GitHub Pages is a build mirror and does **not** interpret the repository's `_headers`; its response headers are controlled by GitHub's CDN, so this repository does not promise identical cache behavior on the mirror.
 
 ## Credit
 

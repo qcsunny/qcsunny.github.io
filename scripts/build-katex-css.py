@@ -33,10 +33,13 @@ what a math page actually fetches — while a missing math glyph is a hole in an
 equation, not the graceful system-font substitution a missing text glyph gets.
 """
 
+import argparse
+import filecmp
 import os
 import re
 import shutil
 import sys
+import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC_CSS = os.path.join(ROOT, 'node_modules/katex/dist/katex.min.css')
@@ -88,32 +91,46 @@ def rewrite(css):
     return css, faces, legacy
 
 
-def main():
-    if not os.path.exists(SRC_CSS):
-        sys.exit('error: node_modules/katex missing -- run `npm install` first')
-
+def generate(dst_css, dst_fonts):
     with open(SRC_CSS, encoding='utf-8') as fh:
         original = fh.read()
     css, faces, legacy = rewrite(original)
-
-    os.makedirs(os.path.dirname(DST_CSS), exist_ok=True)
-    with open(DST_CSS, 'w', encoding='utf-8') as fh:
+    os.makedirs(os.path.dirname(dst_css), exist_ok=True)
+    with open(dst_css, 'w', encoding='utf-8') as fh:
         fh.write(HEADER.format(version=katex_version()))
         fh.write(css)
         if not css.endswith('\n'):
             fh.write('\n')
-
-    # Fonts referenced by the rewritten css, so a face dropped upstream stops
-    # being copied instead of lingering as an orphan.
     wanted = sorted(set(re.findall(re.escape(FONT_URL_PREFIX) + r'([^)]+\.woff2)', css)))
-    if os.path.isdir(DST_FONTS):
-        shutil.rmtree(DST_FONTS)
-    os.makedirs(DST_FONTS)
+    if os.path.isdir(dst_fonts):
+        shutil.rmtree(dst_fonts)
+    os.makedirs(dst_fonts)
     total = 0
     for name in wanted:
-        shutil.copy2(os.path.join(SRC_FONTS, name), os.path.join(DST_FONTS, name))
-        total += os.path.getsize(os.path.join(DST_FONTS, name))
-    shutil.copy2(os.path.join(ROOT, 'node_modules/katex/LICENSE'), os.path.join(DST_FONTS, 'LICENSE'))
+        shutil.copy2(os.path.join(SRC_FONTS, name), os.path.join(dst_fonts, name))
+        total += os.path.getsize(os.path.join(dst_fonts, name))
+    shutil.copy2(os.path.join(ROOT, 'node_modules/katex/LICENSE'), os.path.join(dst_fonts, 'LICENSE'))
+    return original, faces, legacy, wanted, total
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--check', action='store_true')
+    args = ap.parse_args()
+    if not os.path.exists(SRC_CSS):
+        sys.exit('error: node_modules/katex missing -- run `npm install` first')
+
+    if args.check:
+        with tempfile.TemporaryDirectory() as tmp:
+            css_path = os.path.join(tmp, 'katex.css')
+            fonts_path = os.path.join(tmp, 'fonts')
+            original, faces, legacy, wanted, total = generate(css_path, fonts_path)
+            if not filecmp.cmp(css_path, DST_CSS, shallow=False):
+                sys.exit('error: src/styles/katex.css is stale; run npm run vendor:katex')
+            if filecmp.dircmp(fonts_path, DST_FONTS).left_only or filecmp.dircmp(fonts_path, DST_FONTS).right_only or filecmp.dircmp(fonts_path, DST_FONTS).diff_files:
+                sys.exit('error: src/assets/fonts/katex is stale; run npm run vendor:katex')
+    else:
+        original, faces, legacy, wanted, total = generate(DST_CSS, DST_FONTS)
 
     upstream_fonts = sum(
         os.path.getsize(os.path.join(SRC_FONTS, f)) for f in os.listdir(SRC_FONTS)
