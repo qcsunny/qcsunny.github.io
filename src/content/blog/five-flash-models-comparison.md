@@ -31,7 +31,7 @@ relatedPosts: []
 | 官方权重许可证 | Apache-2.0 | MIT | 生产版未单独公开权重；架构版 Flash-Next 于 2026-08-26 开源（Qwen 社区许可证） | MIT | MIT |
 | 官方披露参数 | 770B 总计 / 49B 激活，另有 10B / 0.7B 激活 MTP | 约 320B / 18B 激活 | 生产版未单列；Flash-Next 预览为 125B core + 51B n-gram / 约 6B 激活 | 约 284B 总计 / 13B 激活（Pro 版为 1.6T / 49B） | 310B 总计 / 15B 激活（Pro 版为 1.02T / 42B） |
 | 上下文 | 1M | 1M（同一模型以 `[1m]` 调用标识启用） | 1M（官方注 1,000,000） | 1M | 1M |
-| 最大输出 | 未明确披露 | 128K（131,072） | 128K（131,072；thinking chain 另有上限） | 384K | 128K（131,072） |
+| 最大输出 | 未由官方卡明确；部分平台限制 64K | 128K（131,072） | 128K（131,072；thinking chain 另有上限） | 384K | 128K（131,072） |
 | 输入 / 输出 | 文本 → 文本 | 文本、图像、视频 → 文本 | 文本、图像、视频 → 文本 | 文本 → 文本（另有实验 ID 支持视觉） | 文本、图像、视频、音频 → 文本 |
 | 官方兼容接口 | OpenAI 兼容 serving | OpenAI 兼容及多种本地 serving | OpenAI、Anthropic 兼容 | OpenAI、Anthropic 兼容及多种本地 serving | OpenAI、Anthropic 兼容及多种本地 serving |
 | 官方价格口径 | TokenHub 美元价 | Z.ai 美元价，有限时折扣 | 按地域的人民币价 | 美元峰谷价 | 人民币与美元价 |
@@ -40,7 +40,7 @@ relatedPosts: []
 
 ## Hy4 preview：参数规模最大，部署门槛也最高
 
-腾讯官方模型卡给出 770B 总参数、49B 激活参数、78 层结构：第一层是 dense FFN，后 77 层为 MoE，每个 token 使用 8 个 routed experts 和 1 个 shared expert。它还列出 Gated DeepSeek Sparse Attention、IndexCache、iHC 四残差流，以及 10B 总计、0.7B 激活的 MTP 模块。上下文为 1M，当前模型卡将它描述为 text-only。
+腾讯官方模型卡给出 770B 总参数、49B 激活参数、78 层结构：第一层是 dense FFN，后 77 层为 MoE，每个 token 使用 8 个 routed experts 和 1 个 shared expert。它还列出 Gated DeepSeek Sparse Attention、IndexCache、iHC 四残差流，以及 10B 总计、0.7B 激活的 MTP 模块。上下文为 1M，当前模型卡将它描述为 text-only，且未由官方明确公布最大输出上限（部分第三方 API 平台如 TokenHub 目前将其单次生成限制为 64K）。
 
 权重可从 Hugging Face、ModelScope、GitCode 和 CNB 获取，许可证是 Apache-2.0，官方列出 Transformers、vLLM 和 SGLang 路线。这使它适合需要本地部署、可审计许可证或自定义推理服务的团队，但“49B 激活”不等于只需承载 49B 权重；770B 级主干仍决定显存、加载和并行成本。官方 local serving 名称为 `hy4-preview`，另有 `Hy4-preview-FP8` 权重。
 
