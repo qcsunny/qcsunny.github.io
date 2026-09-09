@@ -277,3 +277,25 @@ test('displays human-readable MathML formula preview in real-time', async ({ pag
 	await page.locator('.calc-keypad-standard button', { hasText: 'C' }).click();
 	await expect(formula).toBeEmpty();
 });
+
+test('/ fraction button works on keypad and renders fraction preview', async ({ page }) => {
+	await page.goto('/calculators/standard/');
+
+	const display = page.locator('#calc-display');
+	const key = (label: string) => page.locator('.calc-keypad-standard button', { hasText: label }).first();
+
+	// Click 3 then / then 4
+	await key('3').click();
+	await key('/').click();
+	await key('4').click();
+	await expect(display).toHaveValue('3/4');
+
+	// MathML formula preview renders fraction mfrac
+	const formula = page.locator('#calc-formula');
+	await expect(formula.locator('mfrac')).toBeVisible();
+
+	await key('=').click();
+	await expect(display).toHaveValue('0.75');
+	await expect(page.locator('#calc-preview')).toHaveText(/3\/4 = 0\.75/);
+});
+

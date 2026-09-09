@@ -214,10 +214,15 @@ function isCronError(x: ParsedField | ParsedCron | CronError): x is CronError {
 	return 'error' in x;
 }
 
+// The zh labels stay free of Latin product names. compute() rows are guarded
+// with a zero-tolerance /[A-Za-z]{3,}/ (e2e/i18n.spec.ts) — unlike the registry
+// fields, which tolerate an annotation under PROSE_MAX_CJK_SHARE — because a
+// short row cannot carry a share test: in "—（Quartz 要求…）" the name is 30% of
+// the line. Descriptive names say the same thing without the Latin.
 const DIALECT_FIELDS: Record<CronDialect, { count: number; hasSecond: boolean; hasYear: boolean; en: string; zh: string }> = {
-	linux: { count: 5, hasSecond: false, hasYear: false, en: 'Linux 5-field', zh: 'Linux 五段式' },
-	'spring-quartz': { count: 6, hasSecond: true, hasYear: false, en: 'Spring/Quartz 6-field', zh: 'Spring/Quartz 六段式' },
-	'quartz-7': { count: 7, hasSecond: true, hasYear: true, en: 'Quartz 7-field', zh: 'Quartz 七段式' },
+	linux: { count: 5, hasSecond: false, hasYear: false, en: 'Linux 5-field', zh: '标准五段式' },
+	'spring-quartz': { count: 6, hasSecond: true, hasYear: false, en: 'Spring/Quartz 6-field', zh: '秒级六段式' },
+	'quartz-7': { count: 7, hasSecond: true, hasYear: true, en: 'Quartz 7-field', zh: '含年七段式' },
 };
 
 /** Parse one cron field token set into a bitmask + value list, or null if invalid.
@@ -324,7 +329,7 @@ function parseCron(expr: string, dialect: CronDialect): ParsedCron | CronError {
 			if (tok.trim() === '?') {
 				return {
 					error: `— ('?' is not valid in Linux 5-field cron; use '*')`,
-					errorZh: `—（Linux 五段式不支持 '?'，请用 '*'）`,
+					errorZh: `—（标准五段式不支持 '?'，请用 '*'）`,
 				};
 			}
 			return {
@@ -352,13 +357,13 @@ function parseCron(expr: string, dialect: CronDialect): ParsedCron | CronError {
 		if (!dom.ignore && !dow.ignore) {
 			return {
 				error: `— (Quartz requires one of day-of-month / day-of-week to be '?')`,
-				errorZh: `—（Quartz 要求日与周字段其一为 '?'）`,
+				errorZh: `—（六/七段式要求日与周字段其一为 '?'）`,
 			};
 		}
 		if (dom.ignore && dow.ignore) {
 			return {
 				error: `— (Quartz requires exactly one of day-of-month / day-of-week to be '?', not both)`,
-				errorZh: `—（Quartz 要求日与周字段恰一为 '?'，不可都为 '?'）`,
+				errorZh: `—（六/七段式要求日与周字段恰一为 '?'，不可都为 '?'）`,
 			};
 		}
 	}
@@ -887,7 +892,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		name: 'Cron Expression Parser',
 		nameZh: 'Cron 表达式解析器',
 		description: 'Parse Linux 5-field and Quartz 6/7-field cron expressions, expand every field, and list the next execution times.',
-		descriptionZh: '解析 Linux 五段式与 Quartz 六/七段式 Cron 表达式，展开各字段取值并列出下次执行时间。',
+		descriptionZh: '解析标准五段式与秒级六/七段式 Cron 表达式，展开各字段取值并列出下次执行时间。',
 		kind: 'form',
 		config: {
 			fields: [
@@ -898,9 +903,9 @@ export const TEXT_TOOLS: ToolEntry[] = [
 					type: 'select',
 					def: 'linux',
 					options: [
-						{ value: 'linux', label: 'Linux 5-field (minute hour dom mon dow)', labelZh: 'Linux 五段式（分 时 日 月 周）' },
-						{ value: 'spring-quartz', label: 'Spring/Quartz 6-field (sec min hour dom mon dow)', labelZh: 'Spring/Quartz 六段式（秒 分 时 日 月 周）' },
-						{ value: 'quartz-7', label: 'Quartz 7-field (sec min hour dom mon dow year)', labelZh: 'Quartz 七段式（秒 分 时 日 月 周 年）' },
+						{ value: 'linux', label: 'Linux 5-field (minute hour dom mon dow)', labelZh: '标准五段式（分 时 日 月 周）' },
+						{ value: 'spring-quartz', label: 'Spring/Quartz 6-field (sec min hour dom mon dow)', labelZh: '秒级六段式（秒 分 时 日 月 周）' },
+						{ value: 'quartz-7', label: 'Quartz 7-field (sec min hour dom mon dow year)', labelZh: '含年七段式（秒 分 时 日 月 周 年）' },
 					],
 					hint: 'Spring and Quartz use six fields with a leading seconds field; Quartz seven-field appends a year. Quartz requires day-of-month and day-of-week to be exclusive — exactly one of them must be "?".',
 					hintZh: 'Spring 与 Quartz 用 6 段，最前面是秒；Quartz 7 段末尾再加年。Quartz 要求日与周字段互斥——恰一为 "?"。',
