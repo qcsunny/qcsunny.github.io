@@ -1473,6 +1473,120 @@ export const TEXT_TOOLS: ToolEntry[] = [
 			],
 		},
 	},
+	// --- JS / TS Code Formatter ---------------------------------------------------------
+	{
+		slug: 'js-formatter',
+		category: 'devtools',
+		name: 'JavaScript & TypeScript Code Formatter',
+		nameZh: 'JavaScript / TypeScript 代码格式化与压缩',
+		description: 'Format and beautify JavaScript & TypeScript code with 2-space indentation and block rules, or minify to a single line.',
+		descriptionZh: 'JavaScript 与 TypeScript 代码规范缩进格式化美化、单行 Minify 压缩与括号整理工具。',
+		kind: 'text',
+		config: {
+			placeholder: 'function calculateTotal(items){let sum=0;for(let i=0;i<items.length;i++){sum+=items[i].price;}return sum;}',
+			placeholderZh: '粘贴 JS / TS 代码，例如：function calculateTotal(items){let sum=0;for(let i=0;i<items.length;i++){sum+=items[i].price;}return sum;}',
+			mono: true,
+			live: true,
+			stats: (text: string) => {
+				const lines = text ? text.split('\n').length : 0;
+				const chars = text.length;
+				return [
+					{ label: 'Total Lines', labelZh: '总行数', value: String(lines) },
+					{ label: 'Character Count', labelZh: '字符总数', value: String(chars) },
+				];
+			},
+			transforms: [
+				{
+					id: 'format',
+					label: 'Format JS/TS',
+					labelZh: '格式化排版',
+					run: (text: string) => ({ output: formatJsTsCode(text, 'beautify') }),
+				},
+				{
+					id: 'minify',
+					label: 'Minify Code',
+					labelZh: '单行压缩',
+					run: (text: string) => ({ output: formatJsTsCode(text, 'minify') }),
+				},
+			],
+		},
+	},
+
+	// --- GraphQL Formatter --------------------------------------------------------------
+	{
+		slug: 'graphql-formatter',
+		category: 'devtools',
+		name: 'GraphQL Query & Schema Formatter',
+		nameZh: 'GraphQL 查询与 Schema 格式化工具',
+		description: 'Format GraphQL queries, mutations, subscriptions, and SDL schemas with clean indentation and directive alignment.',
+		descriptionZh: 'GraphQL 查询语句 (Query / Mutation) 与 Schema 声明规范格式化、层级缩进与单行压缩。',
+		kind: 'text',
+		config: {
+			placeholder: 'query GetUser($id: ID!){ user(id: $id){ id name email posts{ title content } } }',
+			placeholderZh: '粘贴 GraphQL 查询语句，例如：query GetUser($id: ID!){ user(id: $id){ id name email posts{ title content } } }',
+			mono: true,
+			live: true,
+			stats: (text: string) => {
+				const lines = text ? text.split('\n').length : 0;
+				const chars = text.length;
+				return [
+					{ label: 'Total Lines', labelZh: '总行数', value: String(lines) },
+					{ label: 'Character Count', labelZh: '字符总数', value: String(chars) },
+				];
+			},
+			transforms: [
+				{
+					id: 'format',
+					label: 'Format GraphQL',
+					labelZh: '格式化排版',
+					run: (text: string) => ({ output: formatGraphQL(text, 'beautify') }),
+				},
+				{
+					id: 'minify',
+					label: 'Minify Query',
+					labelZh: '单行压缩',
+					run: (text: string) => ({ output: formatGraphQL(text, 'minify') }),
+				},
+			],
+		},
+	},
+
+	// --- Markdown Table Formatter -------------------------------------------------------
+	{
+		slug: 'markdown-table-formatter',
+		category: 'utilities',
+		name: 'Markdown Table Auto-Align Formatter',
+		nameZh: 'Markdown 表格自动对齐与格式化',
+		description: 'Format messy Markdown tables into clean, readable, column-aligned ASCII markdown tables with Unicode-aware auto-fitted widths.',
+		descriptionZh: '自动对齐错乱的 Markdown 表格，支持中文全角与英文字符宽度自适应计算，一键格式化完美矩形网格。',
+		kind: 'text',
+		config: {
+			placeholder: '| Product | Category | Price | Status |\n|:---|:---:|---:|:---|\n| iPhone 16 Pro | Electronics | $999 | In Stock |\n| Mechanical Keyboard | Peripherals | $129 | Pre-order |',
+			placeholderZh: '粘贴 Markdown 表格，如：\n| 商品 | 分类 | 价格 |\n|:---|:---:|---:|\n| iPhone 16 Pro | 电子产品 | 7999元 |',
+			mono: true,
+			live: true,
+			stats: (text: string) => {
+				const lines = text ? text.split('\n').filter((l) => l.trim().startsWith('|') || l.trim().endsWith('|')).length : 0;
+				return [
+					{ label: 'Table Rows', labelZh: '表格行数', value: String(lines) },
+				];
+			},
+			transforms: [
+				{
+					id: 'align',
+					label: 'Align & Beautify Table',
+					labelZh: '等宽对齐美化',
+					run: (text: string) => ({ output: formatMarkdownTable(text, 'align') }),
+				},
+				{
+					id: 'compact',
+					label: 'Compact Table',
+					labelZh: '紧凑模式',
+					run: (text: string) => ({ output: formatMarkdownTable(text, 'compact') }),
+				},
+			],
+		},
+	},
 ];
 
 interface ParsedCurl {
@@ -1642,3 +1756,447 @@ function parseCidrCalc(input: string) {
 		scopeZh: isPrivate ? '私有网络 IP (RFC 1918 / 局域网)' : '公网 IP (Public Internet)',
 	};
 }
+
+function formatJsTsCode(code: string, mode: 'beautify' | 'minify'): string {
+	if (!code.trim()) return '';
+	if (mode === 'minify') {
+		let out = '';
+		let inStr = false;
+		let strChar = '';
+		let inComment = false;
+		let inBlockComment = false;
+
+		for (let i = 0; i < code.length; i++) {
+			const ch = code[i]!;
+			const next = code[i + 1] || '';
+
+			if (inComment) {
+				if (ch === '\n') inComment = false;
+				continue;
+			}
+			if (inBlockComment) {
+				if (ch === '*' && next === '/') {
+					inBlockComment = false;
+					i++;
+				}
+				continue;
+			}
+			if (inStr) {
+				out += ch;
+				if (ch === strChar && code[i - 1] !== '\\') {
+					inStr = false;
+				}
+				continue;
+			}
+			if (ch === '/' && next === '/') {
+				inComment = true;
+				i++;
+				continue;
+			}
+			if (ch === '/' && next === '*') {
+				inBlockComment = true;
+				i++;
+				continue;
+			}
+			if (ch === "'" || ch === '"' || ch === '`') {
+				inStr = true;
+				strChar = ch;
+				out += ch;
+				continue;
+			}
+
+			if (/\s/.test(ch)) {
+				const lastChar = out.slice(-1);
+				if (lastChar && /[a-zA-Z0-9_$]/.test(lastChar) && /[a-zA-Z0-9_$]/.test(next)) {
+					out += ' ';
+				}
+				continue;
+			}
+
+			out += ch;
+		}
+		return out.trim();
+	}
+
+	let indent = 0;
+	let out = '';
+	let inStr = false;
+	let strChar = '';
+	let inComment = false;
+	let inBlockComment = false;
+	let newLine = true;
+
+	const getIndent = () => '  '.repeat(indent);
+
+	for (let i = 0; i < code.length; i++) {
+		const ch = code[i]!;
+		const next = code[i + 1] || '';
+
+		if (inComment) {
+			out += ch;
+			if (ch === '\n') {
+				inComment = false;
+				newLine = true;
+			}
+			continue;
+		}
+		if (inBlockComment) {
+			out += ch;
+			if (ch === '*' && next === '/') {
+				out += '/';
+				i++;
+				inBlockComment = false;
+			}
+			continue;
+		}
+		if (inStr) {
+			out += ch;
+			if (ch === strChar && code[i - 1] !== '\\') {
+				inStr = false;
+			}
+			continue;
+		}
+
+		if (ch === '/' && next === '/') {
+			inComment = true;
+			if (newLine) {
+				out += getIndent();
+				newLine = false;
+			}
+			out += '//';
+			i++;
+			continue;
+		}
+		if (ch === '/' && next === '*') {
+			inBlockComment = true;
+			if (newLine) {
+				out += getIndent();
+				newLine = false;
+			}
+			out += '/*';
+			i++;
+			continue;
+		}
+		if (ch === "'" || ch === '"' || ch === '`') {
+			inStr = true;
+			strChar = ch;
+			if (newLine) {
+				out += getIndent();
+				newLine = false;
+			}
+			out += ch;
+			continue;
+		}
+
+		if (ch === '{' || ch === '[' || ch === '(') {
+			if (newLine) {
+				out += getIndent();
+				newLine = false;
+			}
+			out += ch;
+			if (ch === '{') {
+				indent++;
+				out += '\n';
+				newLine = true;
+			}
+			continue;
+		}
+
+		if (ch === '}' || ch === ']' || ch === ')') {
+			if (ch === '}') {
+				indent = Math.max(0, indent - 1);
+				if (!newLine) out += '\n';
+				out += getIndent() + '}';
+				newLine = false;
+			} else {
+				out += ch;
+			}
+			continue;
+		}
+
+		if (ch === ';') {
+			out += ';\n';
+			newLine = true;
+			continue;
+		}
+
+		if (ch === '\n') {
+			if (!newLine) {
+				out += '\n';
+				newLine = true;
+			}
+			continue;
+		}
+
+		if (/\s/.test(ch)) {
+			if (!newLine && !out.endsWith(' ')) {
+				out += ' ';
+			}
+			continue;
+		}
+
+		if (newLine) {
+			out += getIndent();
+			newLine = false;
+		}
+
+		out += ch;
+	}
+
+	return out.trim();
+}
+
+function formatGraphQL(code: string, mode: 'beautify' | 'minify'): string {
+	const trimmed = code.trim();
+	if (!trimmed) return '';
+
+	if (mode === 'minify') {
+		let out = '';
+		let inStr = false;
+		let inComment = false;
+		for (let i = 0; i < trimmed.length; i++) {
+			const ch = trimmed[i]!;
+			if (inComment) {
+				if (ch === '\n') inComment = false;
+				continue;
+			}
+			if (inStr) {
+				out += ch;
+				if (ch === '"' && trimmed[i - 1] !== '\\') inStr = false;
+				continue;
+			}
+			if (ch === '#') {
+				inComment = true;
+				continue;
+			}
+			if (ch === '"') {
+				inStr = true;
+				out += ch;
+				continue;
+			}
+			if (/\s/.test(ch)) {
+				const last = out.slice(-1);
+				const next = trimmed[i + 1] || '';
+				if (/[a-zA-Z0-9_$]/.test(last) && /[a-zA-Z0-9_$]/.test(next)) {
+					out += ' ';
+				}
+				continue;
+			}
+			out += ch;
+		}
+		return out.trim();
+	}
+
+	let indent = 0;
+	let out = '';
+	let inStr = false;
+	let inComment = false;
+	let newLine = true;
+
+	const getIndent = () => '  '.repeat(indent);
+
+	for (let i = 0; i < trimmed.length; i++) {
+		const ch = trimmed[i]!;
+
+		if (inComment) {
+			out += ch;
+			if (ch === '\n') {
+				inComment = false;
+				newLine = true;
+			}
+			continue;
+		}
+		if (inStr) {
+			out += ch;
+			if (ch === '"' && trimmed[i - 1] !== '\\') inStr = false;
+			continue;
+		}
+		if (ch === '#') {
+			inComment = true;
+			if (newLine) out += getIndent();
+			out += ch;
+			newLine = false;
+			continue;
+		}
+		if (ch === '"') {
+			inStr = true;
+			if (newLine) {
+				out += getIndent();
+				newLine = false;
+			}
+			out += ch;
+			continue;
+		}
+
+		if (ch === '{') {
+			if (newLine) {
+				out += getIndent();
+				newLine = false;
+			}
+			out += ' {\n';
+			indent++;
+			newLine = true;
+			continue;
+		}
+
+		if (ch === '}') {
+			indent = Math.max(0, indent - 1);
+			if (!newLine) out += '\n';
+			out += getIndent() + '}\n';
+			newLine = true;
+			continue;
+		}
+
+		if (ch === '\n') {
+			if (!newLine) {
+				out += '\n';
+				newLine = true;
+			}
+			continue;
+		}
+
+		if (/\s/.test(ch)) {
+			if (!newLine && !out.endsWith(' ') && !out.endsWith('\n')) {
+				out += ' ';
+			}
+			continue;
+		}
+
+		if (newLine) {
+			out += getIndent();
+			newLine = false;
+		}
+
+		out += ch;
+	}
+
+	return out.replace(/\n\s*\n/g, '\n').trim();
+}
+
+function getVisualWidth(str: string): number {
+	let len = 0;
+	for (const ch of str) {
+		const code = ch.codePointAt(0) || 0;
+		if (
+			(code >= 0x1100 && code <= 0x115f) ||
+			(code >= 0x2e80 && code <= 0xa4cf) ||
+			(code >= 0xac00 && code <= 0xd7a3) ||
+			(code >= 0xf900 && code <= 0xfaff) ||
+			(code >= 0xfe10 && code <= 0xfe19) ||
+			(code >= 0xfe30 && code <= 0xfe6f) ||
+			(code >= 0xff00 && code <= 0xff60) ||
+			(code >= 0xffe0 && code <= 0xffe6) ||
+			(code >= 0x20000 && code <= 0x323af)
+		) {
+			len += 2;
+		} else {
+			len += 1;
+		}
+	}
+	return len;
+}
+
+function formatMarkdownTable(text: string, mode: 'align' | 'compact'): string {
+	const lines = text.split(/\r?\n/);
+	const tableLines: { index: number; line: string }[] = [];
+
+	lines.forEach((line, index) => {
+		if (line.trim().startsWith('|') || (line.includes('|') && line.trim().endsWith('|'))) {
+			tableLines.push({ index, line: line.trim() });
+		}
+	});
+
+	if (tableLines.length < 2) {
+		return text.trim();
+	}
+
+	const parsedRows = tableLines.map((tl) => {
+		let raw = tl.line;
+		if (raw.startsWith('|')) raw = raw.slice(1);
+		if (raw.endsWith('|')) raw = raw.slice(0, -1);
+		return raw.split('|').map((cell) => cell.trim());
+	});
+
+	const colCount = Math.max(...parsedRows.map((r) => r.length));
+
+	const sepRow = parsedRows[1] || [];
+	const alignments: ('left' | 'right' | 'center')[] = [];
+	for (let c = 0; c < colCount; c++) {
+		const cell = sepRow[c] || '';
+		const starts = cell.startsWith(':');
+		const ends = cell.endsWith(':');
+		if (starts && ends) alignments.push('center');
+		else if (ends) alignments.push('right');
+		else alignments.push('left');
+	}
+
+	if (mode === 'compact') {
+		const resultLines = parsedRows.map((row, rIdx) => {
+			if (rIdx === 1) {
+				const seps = alignments.map((align) => {
+					if (align === 'center') return ':---:';
+					if (align === 'right') return '---:';
+					return ':---';
+				});
+				return `|${seps.join('|')}|`;
+			}
+			const cells = Array.from({ length: colCount }, (_, c) => row[c] || '');
+			return `|${cells.join('|')}|`;
+		});
+
+		const outLines = [...lines];
+		tableLines.forEach((tl, i) => {
+			outLines[tl.index] = resultLines[i] || '';
+		});
+		return outLines.join('\n').trim();
+	}
+
+	const colWidths: number[] = Array(colCount).fill(3);
+	parsedRows.forEach((row, rIdx) => {
+		if (rIdx === 1) return;
+		for (let c = 0; c < colCount; c++) {
+			const cellText = row[c] || '';
+			const w = getVisualWidth(cellText);
+			colWidths[c] = Math.max(colWidths[c]!, w);
+		}
+	});
+
+	const padString = (str: string, width: number, align: 'left' | 'right' | 'center') => {
+		const visW = getVisualWidth(str);
+		const totalPad = Math.max(0, width - visW);
+		if (align === 'right') {
+			return ' '.repeat(totalPad) + str;
+		}
+		if (align === 'center') {
+			const left = Math.floor(totalPad / 2);
+			const right = totalPad - left;
+			return ' '.repeat(left) + str + ' '.repeat(right);
+		}
+		return str + ' '.repeat(totalPad);
+	};
+
+	const formattedRows = parsedRows.map((row, rIdx) => {
+		if (rIdx === 1) {
+			const seps = alignments.map((align, c) => {
+				const w = colWidths[c]!;
+				if (align === 'center') return ':' + '-'.repeat(Math.max(1, w - 2)) + ':';
+				if (align === 'right') return '-'.repeat(Math.max(1, w - 1)) + ':';
+				return ':' + '-'.repeat(Math.max(1, w - 1));
+			});
+			return `| ${seps.join(' | ')} |`;
+		}
+		const cells = Array.from({ length: colCount }, (_, c) => {
+			const cellText = row[c] || '';
+			const align = alignments[c] || 'left';
+			return padString(cellText, colWidths[c]!, align);
+		});
+		return `| ${cells.join(' | ')} |`;
+	});
+
+	const outLines = [...lines];
+	tableLines.forEach((tl, i) => {
+		outLines[tl.index] = formattedRows[i] || '';
+	});
+	return outLines.join('\n').trim();
+}
+
