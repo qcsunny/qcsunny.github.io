@@ -28,7 +28,7 @@ export const GENERATOR_TOOLS: ToolEntry[] = [
 	},
 	{
 		slug: 'random-number',
-		category: 'devtools',
+		category: 'utilities',
 		name: 'Random Number Generator',
 		nameZh: '随机数生成器',
 		description: 'Draw random integers in any range, with or without duplicates.',

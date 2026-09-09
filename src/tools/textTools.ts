@@ -215,9 +215,9 @@ function isCronError(x: ParsedField | ParsedCron | CronError): x is CronError {
 }
 
 const DIALECT_FIELDS: Record<CronDialect, { count: number; hasSecond: boolean; hasYear: boolean; en: string; zh: string }> = {
-	linux: { count: 5, hasSecond: false, hasYear: false, en: 'Linux 5-field', zh: 'Linux 五段式' },
-	'spring-quartz': { count: 6, hasSecond: true, hasYear: false, en: 'Spring/Quartz 6-field', zh: 'Spring/Quartz 六段式' },
-	'quartz-7': { count: 7, hasSecond: true, hasYear: true, en: 'Quartz 7-field', zh: 'Quartz 七段式' },
+	linux: { count: 5, hasSecond: false, hasYear: false, en: 'Linux 5-field', zh: '标准五段式' },
+	'spring-quartz': { count: 6, hasSecond: true, hasYear: false, en: 'Spring/Quartz 6-field', zh: '六段式' },
+	'quartz-7': { count: 7, hasSecond: true, hasYear: true, en: 'Quartz 7-field', zh: '七段式' },
 };
 
 /** Parse one cron field token set into a bitmask + value list, or null if invalid.
@@ -641,7 +641,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 	},
 	{
 		slug: 'markdown-preview',
-		category: 'devtools',
+		category: 'utilities',
 		name: 'Markdown Live Editor & Previewer',
 		nameZh: 'Markdown 实时渲染与预览编辑器',
 		description: 'Live split-screen Markdown rendering with GitHub Flavored Markdown (GFM), tables, task lists, code syntax, KaTeX-typeset maths, and HTML export.',
@@ -718,7 +718,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 	},
 	{
 		slug: 'word-counter',
-		category: 'devtools',
+		category: 'utilities',
 		name: 'Word Counter',
 		nameZh: '在线字数统计',
 		description: 'Live word, character, sentence and paragraph counts plus reading time.',
@@ -732,7 +732,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 	},
 	{
 		slug: 'character-counter',
-		category: 'devtools',
+		category: 'utilities',
 		name: 'Character Counter',
 		nameZh: '字符计数器',
 		description: 'Count characters, letters, digits, spaces, symbols and UTF-8 bytes.',
@@ -1231,7 +1231,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 	},
 	{
 		slug: 'text-diff',
-		category: 'devtools',
+		category: 'utilities',
 		name: 'Text Diff',
 		nameZh: '文本差异对比',
 		description: 'Compare two texts line by line and report added, removed and unchanged lines plus similarity.',

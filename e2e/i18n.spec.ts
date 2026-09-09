@@ -107,8 +107,8 @@ test('every computed result row exists in both languages', () => {
 // Alias pages redirect with a meta refresh; measuring them races the navigation
 // and only re-measures the canonical tool anyway.
 function toolRoutes(): string[] {
-	const out = ['/', '/calculators/', '/finance/', '/tools/', '/converters/', '/devtools/'];
-	for (const cat of ['calculators', 'finance', 'tools', 'converters', 'devtools']) {
+	const out = ['/', '/calculators/', '/finance/', '/tools/', '/converters/', '/devtools/', '/utilities/'];
+	for (const cat of ['calculators', 'finance', 'tools', 'converters', 'devtools', 'utilities']) {
 		for (const d of readdirSync(join(DIST, cat), { withFileTypes: true })) {
 			if (!d.isDirectory()) continue;
 			const html = readFileSync(join(DIST, cat, d.name, 'index.html'), 'utf-8');
@@ -298,7 +298,7 @@ const PROBES: {
 		read: (page) => page.inputValue('textarea[data-role="output"]'),
 	},
 	{
-		route: '/devtools/markdown-preview/',
+		route: '/utilities/markdown-preview/',
 		what: 'the untouched sample document in the editor',
 		read: (page) => page.inputValue('textarea[data-role="input"]'),
 	},
@@ -329,7 +329,7 @@ const PROBES: {
 		read: (page) => page.getAttribute('.t-theme', 'title').then((v) => v ?? ''),
 	},
 	{
-		route: '/devtools/word-counter/',
+		route: '/utilities/word-counter/',
 		what: "the input placeholder (TextConfig.placeholderZh, which nothing read until 2026-09)",
 		read: (page) => page.getAttribute('textarea[data-role="input"]', 'placeholder').then((v) => v ?? ''),
 	},

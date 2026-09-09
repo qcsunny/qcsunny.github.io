@@ -82,7 +82,7 @@ test('sql minify keeps literals and drops comments', async ({ page }) => {
 // rejection loop into `while (true)` and freezing the tab with no allocation to
 // hint at it. `max 5000000000` is enough to hit it.
 test('random generator does not freeze on a range wider than 2^32', async ({ page }) => {
-	await page.goto('/devtools/random-number/');
+	await page.goto('/utilities/random-number/');
 
 	await page.getByLabel('Maximum (inclusive)').fill('5000000000');
 	// If the handler spins, this click never settles and the assertion below
@@ -104,7 +104,7 @@ test('random generator does not freeze on a range wider than 2^32', async ({ pag
 // array and shuffle it — a million-element allocation and a million crypto
 // draws to keep six. The virtual partial Fisher–Yates must stay distinct.
 test('random generator draws distinct values from a large range fast', async ({ page }) => {
-	await page.goto('/devtools/random-number/');
+	await page.goto('/utilities/random-number/');
 
 	await page.getByLabel('Maximum (inclusive)').fill('1000000');
 	await page.getByLabel('How many').fill('50');

@@ -6,14 +6,6 @@ import { compile, formatNumber } from '../scripts/calculator/engine';
 import { computeStats, parseNumbers } from './stats';
 
 const pct = (v: number): string => `${formatNumber(v)}%`;
-const money = (v: number): string => formatNumber(Math.round(v * 100) / 100);
-
-/** A money row: "$1,234.00" in the English view, "¥1,234.00" in the Chinese one,
- *  matching the suffix: '($)' / suffixZh: '(¥)' the inputs already declare. Same
- *  helper as src/tools/finance.ts, alongside the same local money().
- */
-const cash = (v: number | null): { value: string; valueZh: string } =>
-	v === null || !Number.isFinite(v) ? { value: '—', valueZh: '—' } : { value: `$${money(v)}`, valueZh: `¥${money(v)}` };
 
 // --- prime factorization (Miller–Rabin + Pollard rho) ------------------------
 // The mainstream route for a whole number up to 2^64−1: strip small primes by
@@ -392,32 +384,6 @@ const ratio: FormConfig = {
 	},
 };
 
-// --- simple interest ------------------------------------------------------------------
-
-const simpleInterest: FormConfig = {
-	intro: 'Interest computed on the principal only: I = P × r × t.',
-	introZh: '按单利公式 I = P × r × t 测算利息收益与到期总本息。',
-	fields: [
-		{ id: 'p', label: 'Principal', labelZh: '本金', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '10000', step: 'any', min: '0', required: true },
-		{ id: 'r', label: 'Annual rate', labelZh: '年利率', suffix: '(%)', type: 'number', def: '5', step: 'any', min: '0', required: true },
-		{ id: 't', label: 'Time', labelZh: '投资/借款期限', suffix: '(years)', suffixZh: '(年)', type: 'number', def: '3', step: 'any', min: '0', required: true },
-	],
-	compute: (v) => {
-		const p = v.num('p');
-		const r = v.num('r');
-		const t = v.num('t');
-		const interest = p * (r / 100) * t;
-		return {
-			rows: [
-				{ label: 'Simple interest', labelZh: '单利利息', ...cash(interest), emphasis: true },
-				{ label: 'Final amount (P + I)', labelZh: '到期本息总额 (本金 + 利息)', ...cash(p + interest) },
-				{ label: 'Interest per year', labelZh: '每年利息', ...cash(interest / (t || 1)) },
-			],
-			note: 'Unlike compound interest, the principal never grows — each period earns the same amount.',
-			noteZh: '与复利不同，单利的计息本金始终不变——每期利息完全相同。',
-		};
-	},
-};
 
 // --- pi calculator (Machin-like formula with BigInt arbitrary precision) --------
 const PI_CACHE = new Map<number, string>();
@@ -2051,17 +2017,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 		kind: 'form',
 		config: ratio,
 	},
-	{
-		slug: 'simple-interest',
-		category: 'calculators',
-		name: 'Simple Interest Calculator',
-		nameZh: '单利计算器',
-		description: 'Compute simple interest I = P × r × t with total amount and per-period interest.',
-		descriptionZh: '根据 I = P × r × t 计算单利利息、到期本息总额与逐期明细。',
-		kind: 'form',
-		config: simpleInterest,
-	},
-	// the three finance overlaps live on /finance/* — these paths redirect
+	// the finance overlaps live on /finance/*
 
 	{
 		slug: 'prime-factorization',

@@ -12,7 +12,7 @@ import { expect, test } from '@playwright/test';
 // surviving is the signal that typesetting did not happen — which these specs
 // use in both directions.
 
-const TOOL = '/devtools/markdown-preview/';
+const TOOL = '/utilities/markdown-preview/';
 
 test('inline and display formulas typeset, CJK inside them included', async ({ page }) => {
 	await page.goto(TOOL);

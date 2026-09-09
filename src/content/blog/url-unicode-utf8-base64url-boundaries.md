@@ -6,7 +6,7 @@ category: engineering
 topics: [web-platform, developer-tools, frontend, cryptography]
 searchTerms: ['percent-encoding', 'UTF-8', 'Base64URL', 'UTF-16', 'URLSearchParams', 'JWT']
 contentLang: 'zh-CN'
-relatedTools: ['devtools/url-parser', 'devtools/base64', 'devtools/jwt-decoder', 'devtools/text-diff']
+relatedTools: ['devtools/url-parser', 'devtools/base64', 'devtools/jwt-decoder', 'utilities/text-diff']
 relatedPosts: ['jwt-security-and-decoder-pitfalls', 'password-entropy-and-secure-random']
 ---
 

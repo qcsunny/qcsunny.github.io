@@ -117,7 +117,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '比可以有小数吗？', a: '输入可以，但化简结果一定是整数——2.5:1.5 会化简为 5:3。' },
 		],
 	},
-	'calculators/simple-interest': {
+	'finance/simple-interest': {
 		about: [
 			'Compute simple interest — interest that stays constant because it is always calculated on the original principal. Enter the principal, annual rate and time in years to get the interest, the total amount, and the per-year breakdown.',
 			'The formula is I = P × r × t. For example, $10,000 at 5% for 3 years earns $500 per year, $1,500 total. Compare with compound interest, where each period\'s interest joins the principal.',
@@ -475,27 +475,27 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '多重折扣叠加如何计算？', a: '叠加折扣是相乘而非相加：例如打 8 折再打 8 折，总折扣是 6.4 折（0.8 × 0.8 = 0.64），省 36% 而非 40%。' },
 		],
 	},
-	'devtools/word-counter': {
+	'utilities/word-counter': {
 		about: [
-			'Count words, characters, sentences, paragraphs and lines in real time as you type or paste — plus average word length and an estimated reading time based on a 220-words-per-minute pace.',
-			'Words are matched with Unicode rules, so it works for English, mixed-language and CJK text (a run of Chinese characters counts as one word). Reading time is a rough guide for blog posts and speeches.',
+			'Get live word, character, sentence and paragraph counts as you type. Words are counted by whitespace and punctuation boundaries; characters both with and without spaces are reported alongside reading time (at 200 words per minute) and speaking time (at 130 wpm).',
+			'Everything computes in your browser as you type — no text is ever sent to a server. Handy for essays, articles, blog posts and social media character limits.',
 		],
 		aboutZh: [
-			'输入或粘贴文本，实时统计词数、字符数、句子数、段落数和行数，另有平均词长和按每分钟 220 词估算的阅读时长。',
-			'分词遵循 Unicode 规则，适用于英文、混合语言及中日韩文本（连续的汉字串算作一个词）。阅读时长可用作博客文章和演讲稿的粗略参考。',
+			'边输入边实时统计单词数、字符数、句子数与段落数。单词按空白与标点边界切分；同时提供含空格与不含空格的字符数，以及预估阅读时长（按每分钟 200 词）和朗读时长（按每分钟 130 词）。',
+			'所有计算均在浏览器本地实时完成——文本绝不上传服务器。适合文章写作、论文、博客草稿与社交平台字数限制检查。',
 		],
 		faq: [
-			{ q: 'How is a word defined?', a: 'Any run of letters, digits, apostrophes or hyphens — "state-of-the-art" is one word, and so is a run of Chinese characters.' },
-			{ q: 'What reading speed is assumed?', a: '220 words per minute, a common silent-reading average for adults.' },
-			{ q: 'Does a limit of 5,000 words matter?', a: 'Writing guidelines, essay limits and submission rules usually count words exactly the way this page does.' },
+			{ q: 'How is reading time calculated?', a: 'Based on the average adult reading speed of 200 words per minute (wpm).' },
+			{ q: 'Does this count Chinese characters as words?', a: 'In Chinese text, each character is counted as a separate unit so the word count reflects character-based length accurately.' },
+			{ q: 'Is there a limit on text length?', a: 'No practical limit — everything runs in memory in your browser and handles tens of thousands of words smoothly.' },
 		],
 		faqZh: [
-			{ q: '"词"是怎么定义的？', a: '连续的字母、数字、撇号或连字符算一个词——"state-of-the-art"是一个词，连续汉字串也算一个词。' },
-			{ q: '阅读速度按多少算？', a: '按成年人默读的平均水平每分钟 220 词。' },
-			{ q: '统计结果能用于投稿字数要求吗？', a: '可以，本页的计数方式与常见的字数统计规则一致。' },
+			{ q: '阅读时间是怎么估算的？', a: '按成年人平均阅读速度每分钟 200 词计算。' },
+			{ q: '中文字符算作词还是字？', a: '在中文文本中，每个汉字独立计入词数与字数，贴合中文的阅读与字数统计习惯。' },
+			{ q: '输入文本有长度限制吗？', a: '没有实际限制——全部在浏览器内存中本地运算，轻松应对数万字长文。' },
 		],
 	},
-	'devtools/character-counter': {
+	'utilities/character-counter': {
 		about: [
 			'Break a text down by character type: total characters, characters without spaces, words, letters, digits, spaces, symbols and the exact UTF-8 byte size — the number that matters for SMS, tweets and database fields.',
 			'Each counter is live. The UTF-8 byte count uses a real encoder, so Chinese characters count as 3 bytes and emoji as 4, matching what servers and length-limited APIs actually see.',
@@ -665,7 +665,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '完全是在本地运行吗？', a: '是的，全部在你的浏览器本地 JavaScript 中执行，速度极快且零网络传输。' },
 		],
 	},
-	'devtools/markdown-preview': {
+	'utilities/markdown-preview': {
 		about: [
 			'Render and edit Markdown in real-time with comprehensive GitHub Flavored Markdown (GFM) support, including multi-level headings, bold, italic, tables, checklists, code blocks, blockquotes, and LaTeX maths typeset by KaTeX.',
 			'Runs entirely in your browser: the document is never uploaded and nothing is fetched from a third party. Supports one-click HTML/MD copying, file downloading, and word/character statistics.'
@@ -729,7 +729,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '两个 UUID 可能发生碰撞重复吗？', a: '概率微乎其微——即使在同一毫秒内也拥有 74 位的随机熵，需要每毫秒生成数十亿个才可能碰撞。' },
 		],
 	},
-	'devtools/random-number': {
+	'utilities/random-number': {
 		about: [
 			'Draw random integers in any range — for giveaways, sampling, games or picking who goes first. Choose the count, the minimum and maximum, and whether repeats are allowed.',
 			'Numbers come from the browser\'s cryptographic random source with rejection sampling, so every value in the range is exactly equally likely. With "no duplicates" the page uses a Fisher–Yates shuffle, like drawing cards from a deck.',
@@ -749,7 +749,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '为什么数量上限和范围有关？', a: '在不允许重复的模式下，去重抽取的数量不可能超过范围内的数字个数。' },
 		],
 	},
-	'devtools/qr-code-generator': {
+	'utilities/qr-code-generator': {
 		about: [
 			'Turn any text or URL into a QR code and download it as a PNG. Pick the error-correction level (L/M/Q/H) — higher levels survive more damage and are better for printing; the size and QR version adapt automatically to your input.',
 			'The encoder is written from scratch and runs entirely in your browser: no QR text ever leaves your device, which matters if you encode payment addresses, Wi-Fi credentials or private links.',
@@ -769,7 +769,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '二维码可以印多大？', a: '大致按扫描距离的十分之一取边长即可——10 厘米的码在约 1 米外可稳定扫描。' },
 		],
 	},
-	'devtools/color-converter': {
+	'utilities/color-converter': {
 		about: [
 			'Convert any color between HEX, RGB and HSL. Edit any of the three representations and the others follow instantly, with a live swatch and the complementary color (the hue 180° around the wheel) shown beside it.',
 			'HEX and RGB describe exactly which red, green and blue light to mix; HSL is human-friendly — hue (position on the color wheel), saturation (intensity) and lightness — which makes it the natural way to build palettes.',

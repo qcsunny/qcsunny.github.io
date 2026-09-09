@@ -1,0 +1,63 @@
+---
+// Utilities hub: daily productivity and text utilities, on their own page.
+// Mirrors the single-category views for finance, calculators, converters and devtools.
+import ToolShell from '../../components/tools/ToolShell.astro';
+import ToolSearchBar from '../../components/tools/ToolSearchBar.astro';
+import { REGISTRY } from '../../tools/registry';
+
+const featuredApps = [
+	{
+		slug: 'clock',
+		href: '/clock',
+		name: 'Full Screen Clock & Pomodoro',
+		nameZh: '全屏时钟与番茄钟',
+		description: 'Minimalist full-screen digital and analog clock with dark mode, fullscreen, and pomodoro timer.',
+		descriptionZh: '极简全屏数字与指针时钟，支持暗黑模式、全屏展示与番茄工作法计时。',
+	},
+	{
+		slug: 'calendar',
+		href: '/calendar',
+		name: 'Interactive Calendar & Week Numbers',
+		nameZh: '交互式日历与周数计算器',
+		description: 'Full-year and monthly calendar with ISO week numbers, leap year tracking, and date navigation.',
+		descriptionZh: '支持 ISO 周数计算、公历年份与月份快速跳转的极简交互日历。',
+	},
+];
+
+const registryEntries = REGISTRY.filter((e) => e.category === 'utilities' && e.kind !== 'redirect');
+const allEntries = [...featuredApps, ...registryEntries];
+---
+
+<ToolShell
+	title="Daily & Text Utilities"
+	titleZh="日常实用与文本工具"
+	description="Everyday productivity and text utilities: word counter, character counter, text diff, markdown preview, QR codes, and random numbers."
+>
+	<ToolSearchBar
+		category="utilities"
+		placeholder="Search utilities (e.g. word counter, text diff, markdown, QR, clock)..."
+		placeholderZh="搜索日常实用与文本工具 (如 字数统计、文本对比、Markdown、二维码、时钟)..."
+		totalCount={allEntries.length}
+	/>
+	<div class="t-cards">
+		{
+			allEntries.map((e) => (
+				<a
+					class="t-card"
+					href={'href' in e ? e.href : `/utilities/${e.slug}/`}
+					data-slug={e.slug}
+					data-cat="utilities"
+				>
+					<h2>
+						<span class="i18n-en">{e.name}</span>
+						<span class="i18n-zh">{e.nameZh || e.name}</span>
+					</h2>
+					<p>
+						<span class="i18n-en">{e.description}</span>
+						{e.descriptionZh && <span class="i18n-zh">{e.descriptionZh}</span>}
+					</p>
+				</a>
+			))
+		}
+	</div>
+</ToolShell>

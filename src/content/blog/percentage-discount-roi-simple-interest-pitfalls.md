@@ -6,7 +6,7 @@ category: finance
 topics: [finance, mathematics, investing]
 searchTerms: ['百分比变化', '折扣', 'ROI', '单利', '复利', 'IRR']
 contentLang: 'zh-CN'
-relatedTools: ['calculators/percentage-increase', 'finance/discount', 'finance/roi', 'calculators/simple-interest']
+relatedTools: ['calculators/percentage-increase', 'finance/discount', 'finance/roi', 'finance/simple-interest']
 relatedPosts: ['compound-interest-and-irr-guide', 'hidden-cost-of-installments-and-irr']
 ---
 
@@ -227,7 +227,7 @@ IRR 之所以明显高于“总手续费 ÷ 本金”，是因为本金从第一
 - [百分比变化计算器](/calculators/percentage-increase/)：检查基数、绝对变化和单次涨跌比例；
 - [折扣计算器](/finance/discount/)：计算折后价、节省额，并把“折扣率”与“实际支付额”分开；
 - [ROI 计算器](/finance/roi/)：核对单笔投入的利润率和回报倍数，但需自行注明时间与费用口径；
-- [单利计算器](/calculators/simple-interest/)：复核 $I=Prt$ 和 $A=P(1+rt)$，不把单利结果误当成复利或 IRR。
+- [单利计算器](/finance/simple-interest/)：复核 $I=Prt$ 和 $A=P(1+rt)$，不把单利结果误当成复利或 IRR。
 
 ## 6. 一张决策检查表
 

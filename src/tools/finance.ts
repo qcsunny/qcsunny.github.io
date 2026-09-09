@@ -93,6 +93,33 @@ function amortize(
 	return { rows: out, totalInterest };
 }
 
+// --- simple interest ------------------------------------------------------------------
+
+const simpleInterest: FormConfig = {
+	intro: 'Interest computed on the principal only: I = P × r × t.',
+	introZh: '按单利公式 I = P × r × t 测算利息收益与到期总本息。',
+	fields: [
+		{ id: 'p', label: 'Principal', labelZh: '本金', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '10000', step: 'any', min: '0', required: true },
+		{ id: 'r', label: 'Annual rate', labelZh: '年利率', suffix: '(%)', type: 'number', def: '5', step: 'any', min: '0', required: true },
+		{ id: 't', label: 'Time', labelZh: '投资/借款期限', suffix: '(years)', suffixZh: '(年)', type: 'number', def: '3', step: 'any', min: '0', required: true },
+	],
+	compute: (v) => {
+		const p = v.num('p');
+		const r = v.num('r');
+		const t = v.num('t');
+		const interest = p * (r / 100) * t;
+		return {
+			rows: [
+				{ label: 'Simple interest', labelZh: '单利利息', ...cash(interest), emphasis: true },
+				{ label: 'Final amount (P + I)', labelZh: '到期本息总额 (本金 + 利息)', ...cash(p + interest) },
+				{ label: 'Interest per year', labelZh: '每年利息', ...cash(interest / (t || 1)) },
+			],
+			note: 'Unlike compound interest, the principal never grows — each period earns the same amount.',
+			noteZh: '与复利不同，单利的计息本金始终不变——每期利息完全相同。',
+		};
+	},
+};
+
 // --- compound interest (incorporating investment return) ------------------------
 
 const compoundInterest: FormConfig = {
@@ -2579,6 +2606,16 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		descriptionZh: '支持自定义复利计息频率与每月定期定投，按年推演资产长期复利增值轨迹。',
 		kind: 'form',
 		config: compoundInterest,
+	},
+	{
+		slug: 'simple-interest',
+		category: 'finance',
+		name: 'Simple Interest Calculator',
+		nameZh: '单利计算器',
+		description: 'Compute simple interest I = P × r × t with total amount and per-period interest.',
+		descriptionZh: '根据 I = P × r × t 计算单利利息、到期本息总额与逐期明细。',
+		kind: 'form',
+		config: simpleInterest,
 	},
 	{
 		slug: 'roi',
