@@ -8,11 +8,13 @@ import { expect, test } from '@playwright/test';
 // woff2, rebuilds cleanly and silently doubles the budget. So pin the bytes.
 //
 // Ceilings, not equalities — the subset tracks the site's own text, so adding
-// characters to a post legitimately moves these by a few hundred bytes. They sit
-// well under the full-charset figures (18.6 / 19.3 KB as woff2, 22.8 / 23.8 KB
-// as woff) so a regression to an un-subsetted file still trips them.
-const MAX_PER_FILE = 15_500;
-const MAX_TOTAL = 31_000;
+// characters to a post legitimately moves these by a few hundred bytes. At 47
+// articles and 63 tools the subset reached 15.2 / 15.6 KB, so these sit at
+// 16 KB; they stay well under the full-charset figures (18.6 / 19.3 KB as
+// woff2, 22.8 / 23.8 KB as woff), so a regression to an un-subsetted file
+// still trips them.
+const MAX_PER_FILE = 16_000;
+const MAX_TOTAL = 32_000;
 
 test('web fonts ship as subsetted woff2 within the byte budget', async ({ page }) => {
 	await page.goto('/');
