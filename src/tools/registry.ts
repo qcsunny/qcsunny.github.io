@@ -427,7 +427,7 @@ export const TOOL_KEYWORDS: Record<string, string> = {
 	'vector': '向量 矢量 向量计算器 点积 数量积 叉积 向量积 模长 夹角 投影 单位向量 vector 2d 3d dot product cross product projection magnitude angle',
 	'number-base-converter': '进制转换 二进制 十六进制 base converter binary hex radix',
 	'unix-timestamp': '时间戳 unix时间戳 时间转换 timestamp unix epoch',
-	'cron-expression-parser': 'cron 定时任务 cron表达式 crontab schedule parser',
+	'cron-expression-parser': 'cron 定时任务 cron表达式 crontab schedule parser spring quartz 六段 七段 秒级 年字段 下次执行 下次触发 执行时间 时区 UTC next run next fire',
 	'regex-tester': '正则表达式 正则测试 regex tester pattern match',
 	'css-px-rem-converter': 'px rem 换算 像素 css px rem converter',
 	'text-diff': '文本对比 diff text diff compare',
