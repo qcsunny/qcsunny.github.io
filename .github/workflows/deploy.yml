@@ -28,17 +28,26 @@ jobs:
       # apt is the expensive half of both install steps below: this step runs
       # `apt-get update`, and `playwright install --with-deps` runs it again —
       # Playwright pushes "apt-get update" unconditionally (coreBundle.js), with
-      # no flag to skip it. Caching the index list is what turns that second
-      # update into a metadata check; the archives dir lets `apt-get install`
-      # reuse the .debs. apt compares each cached .deb against the freshly
-      # fetched index and redownloads on a version mismatch, so a stale entry
+      # no flag to skip it. Run 34324369010 measures the first update at 10.4s of
+      # the step's 14.0s, so the index cache is where the win is; the archives
+      # glob lets `apt-get install` reuse the .debs.
+      #
+      # The paths are globs, NOT the two directories, on purpose. A bare
+      # /var/lib/apt/lists made the post-job save fail the whole upload with
+      # exit code 2 — `partial/` and `lock` are root-only, so
+      #     tar: ../../../../../var/lib/apt/lists/partial: Cannot open: Permission denied
+      # and actions/cache aborts the tar instead of skipping those entries. The
+      # globs below select only the index data; lock/partial are apt internals it
+      # recreates on demand. apt compares each cached index against the freshly
+      # fetched one and redownloads on a version mismatch, so a stale entry
       # self-heals rather than pinning an old package.
       - name: Cache apt lists and archives
         uses: actions/cache@v4
         with:
           path: |
-            /var/lib/apt/lists
-            /var/cache/apt
+            /var/lib/apt/lists/*.lz4
+            /var/lib/apt/lists/*Release*
+            /var/cache/apt/archives/*.deb
           key: apt-${{ runner.os }}-${{ runner.arch }}
       - name: Install font subset tooling
         run: python3 -m pip install 'fonttools[woff]==4.63.0'
@@ -54,14 +63,17 @@ jobs:
         run: npm run build
       - name: Verify font subsets
         run: npm run check:fonts
-      # Playwright's own docs advise against caching browser binaries ("the
-      # amount of time it takes to restore the cache is comparable to the time
-      # it takes to download"), so this one is measured, not assumed to pay off
-      # — delete the step if the next run's cache-restore time is comparable to
-      # the download it replaces. Keyed on package-lock.json, which pins
-      # @playwright/test and therefore the browser revision Playwright looks for
-      # here; a wrong key is harmless, Playwright validates the installed browser
-      # against its expected revision hash and re-downloads on mismatch.
+      # Playwright's docs advise against caching browser binaries ("the amount of
+      # time it takes to restore the cache is comparable to the time it takes to
+      # download"), but that guidance does not hold on hosted runners: run
+      # 34324369010 restores 281.9 MB in 2.0s while the download it replaces cost
+      # 16.4s, and `Setup Playwright chromium` drops 18.0s → 7.0s — about 9s net.
+      # Keep it; the steady-state cost is only the 2.0s restore, since a cache
+      # already present for the key means no 281.9 MB upload at job end.
+      # Keyed on package-lock.json, which pins @playwright/test and therefore the
+      # browser revision Playwright looks for here; a wrong key is harmless,
+      # Playwright validates the installed browser against its expected revision
+      # hash and re-downloads on mismatch.
       - name: Cache Playwright chromium
         uses: actions/cache@v4
         with:
