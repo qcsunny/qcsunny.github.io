@@ -109,6 +109,9 @@ function normalizeHeadings(markdown) {
 			.replace(/\$2\^\{53\}\s*-\s*1\$/g, '2⁵³ - 1')
 			.replace(/2\^\{53\}\s*-\s*1/g, '2⁵³ - 1')
 			.replace(/\$C\(60,\s*30\)\$/g, 'C(60, 30)')
+			// \text{…} unwrap must run before the generic $…$ strip, or the raw
+			// \text{ Pa} source survives in the heading and TOC (the 101,325 h2).
+			.replace(/\\text\{([^}]*)\}/g, '$1')
 			.replace(/\$([^$]+)\$/g, '$1');
 	});
 }
