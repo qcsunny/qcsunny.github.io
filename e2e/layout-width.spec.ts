@@ -12,26 +12,32 @@ const CJK = /[㐀-䶿一-鿿]/;
 
 // [route, container selector, expected border-box width at 1440px]
 const MEASURES: [string, string, number][] = [
-	['/devtools/word-counter/', '.t-main', 1140], // --w-shell
+	['/utilities/word-counter/', '.t-main', 1140], // --w-shell
 	['/blog/uuid-v4-vs-v7-database-guide/', '.prose', 832], // --w-outer grid; text column 820 inside
 	['/calendar/', '.cal', 1000], // --w-wide
 	['/blog/', '.blog-container', 1140],
 	['/', 'nav', 1140], // frame matches the widest page container
 ];
 
-// Every category has its own hub route (/finance/, /calculators/, /converters/
-// and /devtools/ for the developer tools), so a category breadcrumb always
+// Every category has its own hub route (/finance/, /calculators/, /converters/,
+// /devtools/ and /utilities/), so a category breadcrumb always
 // lands on a page whose title is the category's name — never on /tools/ itself,
 // which the first crumb already links and which used to make the middle crumb
 // reload the same page (the pre-hub /tools/#cat-tools anchor was the stopgap).
 test('the category breadcrumb lands on each category’s own hub, never /tools/ itself', async ({ page }) => {
-	await page.goto('/devtools/word-counter/');
+	await page.goto('/devtools/json-formatter/');
 	const crumbs = page.locator('.t-crumbs a');
 	await expect(crumbs.nth(0)).toHaveAttribute('href', '/tools/');
 	await expect(crumbs.nth(1)).toHaveAttribute('href', '/devtools/');
 	// and that hub page really exists, titled by the category
 	await page.goto('/devtools/');
 	await expect(page.locator('h1')).toContainText('Developer');
+
+	await page.goto('/utilities/word-counter/');
+	const utilCrumbs = page.locator('.t-crumbs a');
+	await expect(utilCrumbs.nth(1)).toHaveAttribute('href', '/utilities/');
+	await page.goto('/utilities/');
+	await expect(page.locator('h1')).toContainText('Utilities');
 
 	await page.goto('/finance/mortgage/');
 	await expect(page.locator('.t-crumbs a').nth(1)).toHaveAttribute('href', '/finance/');

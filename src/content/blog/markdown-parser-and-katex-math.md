@@ -6,11 +6,11 @@ category: web
 topics: [frontend, web-platform]
 searchTerms: ['Markdown', 'KaTeX', '解析器']
 contentLang: 'zh-CN'
-relatedTools: ['devtools/markdown-preview']
+relatedTools: ['utilities/markdown-preview']
 relatedPosts: ['sql-tokenizer-and-code-formatter']
 ---
 
-[Markdown 实时预览](/devtools/markdown-preview/)这个工具里有两套完全不同的东西：Markdown 解析是从零手写的，一行第三方代码都没有；数学公式排版则是把 KaTeX 打包进了自己的产物。这篇文章讲清楚这条界线划在哪里、为什么划在那里，以及手写解析器里最容易写错的那一类 bug——**规则之间互相钻进对方的领地**。写这篇文章的过程中又抓到一个同源的、已经上线的实例，也一并记在下面。
+[Markdown 实时预览](/utilities/markdown-preview/)这个工具里有两套完全不同的东西：Markdown 解析是从零手写的，一行第三方代码都没有；数学公式排版则是把 KaTeX 打包进了自己的产物。这篇文章讲清楚这条界线划在哪里、为什么划在那里，以及手写解析器里最容易写错的那一类 bug——**规则之间互相钻进对方的领地**。写这篇文章的过程中又抓到一个同源的、已经上线的实例，也一并记在下面。
 
 ---
 
@@ -363,8 +363,8 @@ vite: {
 
 ## 12. 在线试试
 
-- **[Markdown 实时预览](/devtools/markdown-preview/)**：本文拆解的这份实现，双栏实时预览、`$inline$` 与 `$$display$$` 公式、导出 .md 与自包含 .html；
+- **[Markdown 实时预览](/utilities/markdown-preview/)**：本文拆解的这份实现，双栏实时预览、`$inline$` 与 `$$display$$` 公式、导出 .md 与自包含 .html；
 - **[JSON 格式化校验](/devtools/json-formatter/)** 与 **[SQL 格式化美化](/devtools/sql-formatter/)**：[另一篇](/blog/sql-tokenizer-and-code-formatter/)讲的"代码与数据只分离一次"在别的语法上的样子；
-- **[二维码生成器](/devtools/qr-code-generator/)**：另一个[从零手写](/blog/qr-code-reed-solomon-encoder/)的例子，那边连纠错码都没有借外力。
+- **[二维码生成器](/utilities/qr-code-generator/)**：另一个[从零手写](/blog/qr-code-reed-solomon-encoder/)的例子，那边连纠错码都没有借外力。
 
 文档全程留在你的浏览器里，不会上传到任何地方；KaTeX 也来自本站自己的产物，不经过任何第三方 CDN。

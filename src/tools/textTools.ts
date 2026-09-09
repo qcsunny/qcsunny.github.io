@@ -646,7 +646,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 	},
 	{
 		slug: 'markdown-preview',
-		category: 'devtools',
+		category: 'utilities',
 		name: 'Markdown Live Editor & Previewer',
 		nameZh: 'Markdown 实时渲染与预览编辑器',
 		description: 'Live split-screen Markdown rendering with GitHub Flavored Markdown (GFM), tables, task lists, code syntax, KaTeX-typeset maths, and HTML export.',
@@ -723,7 +723,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 	},
 	{
 		slug: 'word-counter',
-		category: 'devtools',
+		category: 'utilities',
 		name: 'Word Counter',
 		nameZh: '在线字数统计',
 		description: 'Live word, character, sentence and paragraph counts plus reading time.',
@@ -737,7 +737,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 	},
 	{
 		slug: 'character-counter',
-		category: 'devtools',
+		category: 'utilities',
 		name: 'Character Counter',
 		nameZh: '字符计数器',
 		description: 'Count characters, letters, digits, spaces, symbols and UTF-8 bytes.',
@@ -1236,7 +1236,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 	},
 	{
 		slug: 'text-diff',
-		category: 'devtools',
+		category: 'utilities',
 		name: 'Text Diff',
 		nameZh: '文本差异对比',
 		description: 'Compare two texts line by line and report added, removed and unchanged lines plus similarity.',

@@ -172,6 +172,13 @@ test('non-blog pages keep searching the tool registry', async ({ browser }) => {
 		for (const badge of await devBadges.all()) {
 			expect((await badge.textContent())?.trim()).toBe('Dev Tools');
 		}
+		await page.locator('#site-search-modal .sm-filter-pill[data-cat="utilities"]').click();
+		await expect(page.locator('#sm-results-list .sm-item').first()).toBeVisible();
+		const utilBadges = page.locator('#sm-results-list .sm-item-badge');
+		expect(await utilBadges.count()).toBeGreaterThan(0);
+		for (const badge of await utilBadges.all()) {
+			expect((await badge.textContent())?.trim()).toBe('Utilities');
+		}
 		await page.locator('#site-search-modal .sm-filter-pill[data-cat="all"]').click();
 		await page.keyboard.press('Escape');
 		await expect(page.locator('#site-search-modal')).toBeHidden();

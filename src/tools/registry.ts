@@ -13,7 +13,7 @@ import { FINANCE_TOOLS } from './finance';
 import { GENERATOR_TOOLS } from './generators';
 import { TEXT_TOOLS } from './textTools';
 
-export type ToolCategory = 'calculators' | 'converters' | 'finance' | 'tools' | 'devtools';
+export type ToolCategory = 'calculators' | 'converters' | 'finance' | 'tools' | 'devtools' | 'utilities';
 export type ToolKind =
 	| 'form'
 	| 'converter'
@@ -253,15 +253,22 @@ export const CATEGORIES: {
 		id: 'devtools',
 		label: 'Developer & Security Tools',
 		labelZh: '开发调试与安全工具',
-		blurb: 'JSON, SQL, JWT, URL, XML, CSS, HTML formatters, UUID v4/v7, QR code, and passwords.',
-		blurbZh: 'JSON/SQL 格式化、JWT 解码、UUID v4/v7、二维码生成、强密码生成与文本工具。',
+		blurb: 'JSON, SQL, JWT, URL, XML, CSS, HTML formatters, UUID v4/v7, and strong passwords.',
+		blurbZh: 'JSON/SQL 格式化、JWT 解码、UUID v4/v7、代码压缩美化与强密码生成。',
 	},
 	{
 		id: 'converters',
 		label: 'Unit Converters',
 		labelZh: '多功能单位换算',
-		blurb: 'Length, weight, temperature, area, volume, speed, time, data storage, and color conversion.',
-		blurbZh: '长度、重量、温度、面积、体积、速度、时间、数据存储以及 HEX/RGB/HSL 颜色换算。',
+		blurb: 'Length, weight, temperature, area, volume, speed, time, data storage, energy, power, and pressure.',
+		blurbZh: '长度、重量、温度、面积、体积、速度、时间、数据存储、能量热量、功率马力与压力压强换算。',
+	},
+	{
+		id: 'utilities',
+		label: 'Daily & Text Utilities',
+		labelZh: '日常实用与文本工具',
+		blurb: 'Word counter, character counter, text diff, markdown editor, QR code generator, random numbers, and color converter.',
+		blurbZh: '字数统计、字符计数、文本差异对比、Markdown 预览、二维码生成、随机数生成与颜色换算。',
 	},
 ];
 
@@ -314,13 +321,13 @@ export function categoryHref(id: ToolCategory): string {
 	return id === 'tools' ? '/devtools/' : `/${id}/`;
 }
 
-/** Registry entries for /devtools/qr-code-generator and /devtools/color-converter.
+/** Registry entries for /utilities/qr-code-generator and /utilities/color-converter.
  *  Their widgets live in src/scripts/tools/{qr,color}.ts and are loaded via
  *  dynamic import from the dispatcher. */
 export const TOOL_WIDGETS: ToolEntry[] = [
 	{
 		slug: 'qr-code-generator',
-		category: 'devtools',
+		category: 'utilities',
 		name: 'QR Code Generator',
 		nameZh: '二维码生成器',
 		description: 'Turn text or URLs into downloadable QR codes, generated entirely in your browser.',
@@ -329,7 +336,7 @@ export const TOOL_WIDGETS: ToolEntry[] = [
 	},
 	{
 		slug: 'color-converter',
-		category: 'devtools',
+		category: 'utilities',
 		name: 'Color Converter',
 		nameZh: '颜色换算工具',
 		description: 'Convert colors between HEX, RGB and HSL with a live swatch and complement.',

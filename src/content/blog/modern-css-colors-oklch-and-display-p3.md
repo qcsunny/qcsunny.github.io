@@ -6,7 +6,7 @@ category: web
 topics: [frontend, web-platform, numerical-computing]
 searchTerms: ['OKLCH', 'Display P3', 'CSS色彩空间', 'sRGB', '感知均匀', '无障碍对比度']
 contentLang: 'zh-CN'
-relatedTools: ['devtools/color-converter']
+relatedTools: ['utilities/color-converter']
 relatedPosts: ['canvas-2d-surface-plot']
 ---
 
@@ -19,7 +19,7 @@ relatedPosts: ['canvas-2d-surface-plot']
 
 为了彻底解决这些历史物理与生理感知缺陷，W3C 在 **CSS Color Module Level 4 & 5** 中引入了新一代基于人类视觉感知的色彩空间 —— **OKLCH** 与 **Display P3**。
 
-本文结合本站[色彩格式转换工具](/devtools/color-converter/)的底层换算逻辑，深入探讨这场从物理发光到人眼神经感知的色彩革命。
+本文结合本站[色彩格式转换工具](/utilities/color-converter/)的底层换算逻辑，深入探讨这场从物理发光到人眼神经感知的色彩革命。
 
 ---
 
