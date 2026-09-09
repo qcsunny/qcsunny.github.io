@@ -25,6 +25,14 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      # NOTE: do not cache apt here. /var/lib/apt/lists and /var/cache/apt/archives
+      # are root-owned; actions/cache runs as the non-root `runner` user, so it
+      # can read them into a tarball on save but cannot write them back on
+      # restore. `tar -xf` exits 2 ("Cannot open: File exists" on the runner's
+      # pre-existing indexes, "Permission denied" on the root-owned .debs) and
+      # actions/cache reports every restore as a miss (run 34325886955), leaving a
+      # 23.5 MB dead-weight blob. The Playwright cache below pays because its
+      # path ~/.cache/ms-playwright is user-writable; apt's system paths are not.
       - name: Install font subset tooling
         run: python3 -m pip install 'fonttools[woff]==4.63.0'
       # og-images.mjs rasterizes Chinese post titles through libvips/fontconfig,
@@ -39,6 +47,22 @@ jobs:
         run: npm run build
       - name: Verify font subsets
         run: npm run check:fonts
+      # Playwright's docs advise against caching browser binaries ("the amount of
+      # time it takes to restore the cache is comparable to the time it takes to
+      # download"), but that guidance does not hold on hosted runners: run
+      # 34324369010 restores 281.9 MB in 2.0s while the download it replaces cost
+      # 16.4s, and `Setup Playwright chromium` drops 18.0s → 7.0s — about 9s net.
+      # Keep it; the steady-state cost is only the 2.0s restore, since a cache
+      # already present for the key means no 281.9 MB upload at job end.
+      # Keyed on package-lock.json, which pins @playwright/test and therefore the
+      # browser revision Playwright looks for here; a wrong key is harmless,
+      # Playwright validates the installed browser against its expected revision
+      # hash and re-downloads on mismatch.
+      - name: Cache Playwright chromium
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
       - name: Setup Playwright chromium
         run: npx playwright install chromium --with-deps
       - name: Run E2E tests against the build
