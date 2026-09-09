@@ -91,7 +91,7 @@ function b64decode(text: string): string {
 
 function b64url(text: string): string {
 	// URL-safe alphabet (RFC 4648 §5): no padding, -/ instead of +/
-	return b64encode(text).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+	return b64encode(text).replace(/\s+/g, '').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
 // --- entries -------------------------------------------------------------------------------
@@ -103,7 +103,7 @@ const BASE_CHARS: Record<number, string> = {
 	2: '01',
 	8: '01234567',
 	10: '0123456789',
-	16: '0123456789abcdefABCDEF',
+	16: '0123456789abcdef',
 };
 
 /** Parse a string of digits in `base` into a BigInt, honouring a leading '-'. */
@@ -111,14 +111,15 @@ function parseBigInt(value: string, base: number): bigint | null {
 	const t = value.trim();
 	if (!t) return null;
 	const sign = t.startsWith('-') ? -1n : 1n;
-	const body = t.startsWith('-') || t.startsWith('+') ? t.slice(1) : t;
+	const body = (t.startsWith('-') || t.startsWith('+') ? t.slice(1) : t).toLowerCase();
 	if (!body) return null;
 	const chars = BASE_CHARS[base];
+	if (!chars) return null;
 	let out = 0n;
 	for (const ch of body) {
-		if (!chars.includes(ch)) return null;
-		const d = BigInt(chars.indexOf(ch));
-		out = out * BigInt(base) + d;
+		const idx = chars.indexOf(ch);
+		if (idx === -1) return null;
+		out = out * BigInt(base) + BigInt(idx);
 	}
 	return sign * out;
 }

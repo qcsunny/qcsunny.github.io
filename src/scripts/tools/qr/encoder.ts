@@ -265,8 +265,12 @@ export function encodeQr(text: string, ecc: Ecc = 'M', forcedMask?: number): QrC
 	// format info (dummy pass: reserves the areas), real bits drawn after masking
 	const drawFormat = (mask: number): void => {
 		const data = (ECC_LEVEL_BITS[ecc] << 3) | mask;
-		let rem = data;
-		for (let i = 0; i < 10; i++) rem = (rem << 1) ^ ((rem >>> 9) * 0x537);
+		let rem = data << 10;
+		for (let i = 4; i >= 0; i--) {
+			if ((rem >>> (i + 10)) & 1) {
+				rem ^= 0x537 << i;
+			}
+		}
 		const formatBits = ((data << 10) | rem) ^ 0x5412;
 		const bit = (i: number): boolean => ((formatBits >>> i) & 1) === 1;
 		for (let i = 0; i <= 5; i++) setFn(i, 8, bit(i));
@@ -282,9 +286,13 @@ export function encodeQr(text: string, ecc: Ecc = 'M', forcedMask?: number): QrC
 	drawFormat(0);
 
 	if (version >= 7) {
-		let rem = version;
-		for (let i = 0; i < 12; i++) rem = (rem << 1) ^ ((rem >>> 11) * 0x1f25);
-		const versionBits = (version << 12) | rem;
+		let remVer = version << 12;
+		for (let i = 5; i >= 0; i--) {
+			if ((remVer >>> (i + 12)) & 1) {
+				remVer ^= 0x1f25 << i;
+			}
+		}
+		const versionBits = (version << 12) | remVer;
 		for (let i = 0; i < 18; i++) {
 			const bit = ((versionBits >>> i) & 1) === 1;
 			const a = size - 11 + (i % 3);

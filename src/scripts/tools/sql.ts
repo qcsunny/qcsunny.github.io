@@ -117,8 +117,18 @@ function tokenizeSql(text: string): SqlToken[] {
 		// String literal '...', "..." or `...`
 		if (c === "'" || c === '"' || c === '`') {
 			let j = i + 1;
-			while (j < n && text[j] !== c) {
-				if (text[j] === '\\') j++;
+			while (j < n) {
+				if (text[j] === '\\') {
+					j += 2;
+					continue;
+				}
+				if (text[j] === c) {
+					if (j + 1 < n && text[j + 1] === c) {
+						j += 2;
+						continue;
+					}
+					break;
+				}
 				j++;
 			}
 			j = Math.min(j + 1, n);

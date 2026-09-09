@@ -107,8 +107,10 @@ export function initConverter(host: HTMLElement, config: ConverterConfig): void 
 
 		picker.append(searchBox, select);
 
+		let lastSelectedUnit = initialUnit;
+
 		function populate(filterText: string = ''): void {
-			const currentVal = select.value || initialUnit;
+			const currentVal = lastSelectedUnit;
 			const matched = names.filter((n) => matchesUnit(n, cat.units[n] as UnitDef, filterText));
 			select.innerHTML = '';
 
@@ -128,6 +130,7 @@ export function initConverter(host: HTMLElement, config: ConverterConfig): void 
 					select.value = currentVal;
 				} else {
 					select.value = matched[0] as string;
+					lastSelectedUnit = select.value;
 					onUnitChange(select.value);
 				}
 			}
@@ -153,6 +156,7 @@ export function initConverter(host: HTMLElement, config: ConverterConfig): void 
 		});
 
 		select.addEventListener('change', () => {
+			lastSelectedUnit = select.value;
 			onUnitChange(select.value);
 		});
 

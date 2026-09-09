@@ -78,7 +78,7 @@ export function initJwt(host: HTMLElement): void {
 	// whole decode whenever the language changes.
 	function doDecode() {
 		const zh = isZh();
-		const raw = wb.inputArea.value.trim();
+		const raw = wb.inputArea.value.trim().replace(/^Bearer\s+/i, '');
 		if (!raw) {
 			wb.outputArea.value = '';
 			wb.updateStatus('idle', READY_EN, READY_ZH);
