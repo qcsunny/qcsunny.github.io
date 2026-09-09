@@ -98,7 +98,7 @@ const allTools = getAllSearchItems();
 	</div>
 </div>
 
-<script is:inline define:vars={{ allTools, currentCategory: category }}>
+<script is:inline define:vars={{ allTools }}>
 	(() => {
 		const input = document.getElementById('tool-search-input');
 		const clearBtn = document.getElementById('tool-search-clear');
@@ -119,11 +119,18 @@ const allTools = getAllSearchItems();
 		let allSections = [];
 		let isComposing = false;
 
+		// Keys must match the registry category values: a miss falls back to
+		// printing the raw slug as the badge text with a ⚡ icon (see the
+		// lookup below). The 5-group refactor renamed devtools out of 'tools'
+		// and added 'utilities', and this map stayed on the old key — so both
+		// new categories rendered as bare slugs. ToolSearchModal.astro keeps
+		// the sibling map and was the one that had been updated.
 		const CAT_LABELS = {
 			finance: { en: 'Finance', zh: '金融工具', icon: '💰' },
 			calculators: { en: 'Calculator', zh: '计算器', icon: '📐' },
 			converters: { en: 'Converter', zh: '单位换算', icon: '🔄' },
-			tools: { en: 'Dev Tool', zh: '开发者工具', icon: '🛠️' },
+			devtools: { en: 'Dev Tool', zh: '开发者工具', icon: '🛠️' },
+			utilities: { en: 'Utilities', zh: '实用工具', icon: '🧰' },
 		};
 
 		// Safely collect all cards on the page (supports calling before or after DOMContentLoaded)

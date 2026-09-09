@@ -202,3 +202,63 @@ test('non-blog pages keep searching the tool registry', async ({ browser }) => {
 
 	await ctx.close();
 });
+
+// The category hubs use the inline ToolSearchBar rather than the Header overlay,
+// and it filters one category's cards. When a query matches nothing on the page
+// the bar instead offers cross-category suggestions — a block built from a string
+// template, so it cannot carry .i18n-* spans and is rebuilt on every language
+// switch.
+//
+// Its labels come from a map keyed by registry category, with a fallback that
+// prints the raw slug as the badge text and a ⚡ icon. The 5-group refactor
+// renamed dev tools out of 'tools' and added 'utilities' without updating the
+// map, so both categories hit that fallback and rendered as bare slugs. It was
+// invisible while typing and unguarded: nothing ever read a .t-cross-cat-badge.
+// ToolSearchModal.astro keeps the sibling map and the overlay path is covered
+// above; this pins the inline one.
+test('the inline category bar labels cross-category matches, never raw slugs', async ({ browser }) => {
+	const ctx = await browser.newContext();
+	await ctx.addInitScript(`try { localStorage.setItem('site:lang', 'en'); } catch {}`);
+	const page = await ctx.newPage();
+
+	// A badge carrying a registry category key is the fallback printing the slug.
+	// Compared case-sensitively on purpose: the fallback emits the raw key
+	// (already lowercase) while the labels are title case, and folding case would
+	// make the real 'Finance' / 'Utilities' labels look like their own keys.
+	const CAT_KEYS = new Set(['finance', 'calculators', 'converters', 'devtools', 'utilities']);
+
+	const checkAllBadges = async () => {
+		const badges = page.locator('.t-cross-cat-badge');
+		expect(await badges.count()).toBeGreaterThan(0);
+		for (const badge of await badges.all()) {
+			const text = (await badge.textContent())?.trim() ?? '';
+			expect(CAT_KEYS.has(text)).toBe(false);
+		}
+	};
+
+	// 'json' matches no finance card, so the cross-category block takes over and
+	// surfaces /devtools/json-formatter/ — the case that used to read 'devtools'.
+	await page.goto('/finance/');
+	await expect(page.locator('html')).toHaveAttribute('data-lang', 'en');
+	await page.locator('#tool-search-input').fill('json');
+	await expect(page.locator('.t-cross-cat-item[href*="/json-formatter/"]')).toBeVisible();
+	await expect(page.locator('.t-cross-cat-item[href*="/json-formatter/"] .t-cross-cat-badge')).toHaveText('Dev Tool');
+	await checkAllBadges();
+
+	// 'utilities' had no map entry at all, so it fell through the same way.
+	// 'qr' matches no devtools card, so this page also shows only cross-category rows.
+	await page.goto('/devtools/');
+	await page.locator('#tool-search-input').fill('qr');
+	await expect(page.locator('.t-cross-cat-item[href*="/qr-code-generator/"]')).toBeVisible();
+	await expect(page.locator('.t-cross-cat-item[href*="/qr-code-generator/"] .t-cross-cat-badge')).toHaveText('Utilities');
+	await checkAllBadges();
+
+	// ToolShell pages render no Header, so the toggle is .t-lang. Because the list
+	// is a rebuilt string, the switch has to re-render it rather than the CSS
+	// hiding half of a span pair.
+	await page.evaluate(() => document.querySelector<HTMLButtonElement>('.t-lang')?.click());
+	await expect(page.locator('html')).toHaveAttribute('data-lang', 'zh');
+	await expect(page.locator('.t-cross-cat-item[href*="/qr-code-generator/"] .t-cross-cat-badge')).toHaveText('实用工具');
+
+	await ctx.close();
+});

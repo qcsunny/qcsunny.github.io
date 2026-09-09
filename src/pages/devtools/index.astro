@@ -11,7 +11,7 @@ import { REGISTRY } from '../../tools/registry';
 const entries = REGISTRY.filter((e) => e.category === 'devtools' && e.kind !== 'redirect');
 ---
 <ToolShell title="Developer & Security Tools" titleZh="开发调试与安全工具" description="Developer utilities: JSON/SQL/HTML/CSS/XML formatters, JWT decoder, URL parser, Base64, generators and color tools.">
-	<ToolSearchBar category="tools" placeholder="Search developer tools (e.g. JSON, SQL, JWT, UUID, QR)..." placeholderZh="搜索开发调试与安全工具 (如 JSON、SQL、JWT、UUID、二维码)..." totalCount={entries.length} />
+	<ToolSearchBar category="devtools" placeholder="Search developer tools (e.g. JSON, SQL, JWT, UUID, QR)..." placeholderZh="搜索开发调试与安全工具 (如 JSON、SQL、JWT、UUID、二维码)..." totalCount={entries.length} />
 	<div class="t-cards">
 		{
 			entries.map((e) => (
