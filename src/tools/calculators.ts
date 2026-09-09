@@ -1978,8 +1978,274 @@ const vectorCalculator: FormConfig = {
 	},
 };
 
-// --- entries --------------------------------------------------------------------------
+// --- Normal Distribution & Hypothesis Testing Algorithms ----------------------------
 
+function normalCdf(z: number): number {
+	const b1 = 0.31938153;
+	const b2 = -0.356563782;
+	const b3 = 1.781477937;
+	const b4 = -1.821255978;
+	const b5 = 1.330274429;
+	const p = 0.2316419;
+	const c2 = 0.3989422804014327; // 1 / √(2π)
+
+	if (z < 0) return 1 - normalCdf(-z);
+	const t = 1 / (1 + p * z);
+	const poly = t * (b1 + t * (b2 + t * (b3 + t * (b4 + t * b5))));
+	return 1 - c2 * Math.exp(-0.5 * z * z) * poly;
+}
+
+// Continued fraction approximation for Incomplete Beta Function (used for t-distribution p-value)
+function betaIncomplete(a: number, b: number, x: number): number {
+	if (x <= 0) return 0;
+	if (x >= 1) return 1;
+
+	// Log-Gamma approximation via Lanczos formula
+	const logGamma = (z: number): number => {
+		const c = [
+			0.99999999999980993, 676.5203681218851, -1259.1392167224028,
+			771.32342877765313, -176.61502916214059, 12.507343278686905,
+			-0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7,
+		];
+		if (z < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * z)) - logGamma(1 - z);
+		z -= 1;
+		let xG = c[0]!;
+		for (let i = 1; i < 9; i++) xG += c[i]! / (z + i);
+		const tG = z + 7.5;
+		return 0.5 * Math.log(2 * Math.PI) + (z + 0.5) * Math.log(tG) - tG + Math.log(xG);
+	};
+
+	const bt = Math.exp(logGamma(a + b) - logGamma(a) - logGamma(b) + a * Math.log(x) + b * Math.log(1 - x));
+
+	if (x < (a + 1) / (a + b + 2)) {
+		return (bt * betaCf(a, b, x)) / a;
+	}
+	return 1 - (bt * betaCf(b, a, 1 - x)) / b;
+}
+
+function betaCf(a: number, b: number, x: number): number {
+	const maxIter = 100;
+	const eps = 3e-7;
+	let qab = a + b;
+	let qap = a + 1;
+	let qam = a - 1;
+	let c = 1;
+	let d = 1 - (qab * x) / qap;
+	if (Math.abs(d) < 1e-30) d = 1e-30;
+	d = 1 / d;
+	let h = d;
+
+	for (let m = 1; m <= maxIter; m++) {
+		const m2 = 2 * m;
+		let aa = (m * (b - m) * x) / ((qam + m2) * (a + m2));
+		d = 1 + aa * d;
+		if (Math.abs(d) < 1e-30) d = 1e-30;
+		c = 1 + aa / c;
+		if (Math.abs(c) < 1e-30) c = 1e-30;
+		d = 1 / d;
+		h *= d * c;
+		aa = (-(a + m) * (qab + m) * x) / ((a + m2) * (qap + m2));
+		d = 1 + aa * d;
+		if (Math.abs(d) < 1e-30) d = 1e-30;
+		c = 1 + aa / c;
+		if (Math.abs(c) < 1e-30) c = 1e-30;
+		d = 1 / d;
+		const del = d * c;
+		h *= del;
+		if (Math.abs(del - 1) < eps) break;
+	}
+	return h;
+}
+
+function tCdf(t: number, df: number): number {
+	const x = df / (df + t * t);
+	const prob = 0.5 * betaIncomplete(df / 2, 0.5, x);
+	return t >= 0 ? 1 - prob : prob;
+}
+
+const hypothesisTesting: FormConfig = {
+	intro: 'Perform Z-test and Student’s t-test for sample mean, calculate test statistics, one-sided/two-sided p-values, and 95%/99% confidence intervals.',
+	introZh: '进行单样本 Z 检验与 t 检验，计算检验统计量、单侧/双侧 p-value 显著性概率以及 95%/99% 置信区间。',
+	fields: [
+		{
+			id: 'testType',
+			label: 'Test Type',
+			labelZh: '检验方法类型',
+			type: 'select',
+			def: 't_test',
+			options: [
+				{ value: 't_test', label: 'One-Sample t-Test (Unknown Population Std Dev)', labelZh: '单样本 t 检验 (总体标准差 σ 未知 · 推荐)' },
+				{ value: 'z_test', label: 'One-Sample Z-Test (Known Population Std Dev σ)', labelZh: '单样本 Z 检验 (总体标准差 σ 已知)' },
+			],
+		},
+		{ id: 'sampleMean', label: 'Sample Mean (x̄)', labelZh: '样本平均值 (x̄)', type: 'number', def: '105', step: 'any', required: true },
+		{ id: 'nullMean', label: 'Hypothesized Null Mean (μ0)', labelZh: '原假设均值 (μ0)', type: 'number', def: '100', step: 'any', required: true },
+		{ id: 'sampleSd', label: 'Sample Std Dev (s) / Known σ', labelZh: '标准差 (样本 s 或已知 σ)', type: 'number', def: '15', step: 'any', min: '0.0001', required: true },
+		{ id: 'sampleSize', label: 'Sample Size (n)', labelZh: '样本容量 (n)', type: 'number', def: '25', step: '1', min: '2', required: true },
+	],
+	compute: (v) => {
+		const testType = v.str('testType');
+		const xbar = v.num('sampleMean');
+		const mu0 = v.num('nullMean');
+		const sd = v.num('sampleSd');
+		const n = Math.round(v.num('sampleSize'));
+
+		if (!Number.isFinite(xbar) || !Number.isFinite(mu0) || !(sd > 0) || !(n >= 2)) {
+			return { rows: [{ label: 'Error', labelZh: '错误', value: '— (invalid sample values or n < 2)', valueZh: '— (请输入有效样本数据与 n ≥ 2)' }] };
+		}
+
+		const se = sd / Math.sqrt(n);
+		const stat = (xbar - mu0) / se;
+		const df = n - 1;
+
+		let pTwo = 0;
+		let pRight = 0;
+		let pLeft = 0;
+		let zCrit95 = 1.95996;
+
+		if (testType === 'z_test') {
+			const cdf = normalCdf(stat);
+			pRight = 1 - cdf;
+			pLeft = cdf;
+			pTwo = 2 * (1 - normalCdf(Math.abs(stat)));
+		} else {
+			const cdf = tCdf(stat, df);
+			pRight = 1 - cdf;
+			pLeft = cdf;
+			pTwo = 2 * (1 - tCdf(Math.abs(stat), df));
+			zCrit95 = df >= 30 ? 1.96 : 2.0 + 3.0 / df;
+		}
+
+		const margin95 = zCrit95 * se;
+		const ci95Low = xbar - margin95;
+		const ci95High = xbar + margin95;
+
+		const fmtP = (p: number) => (p < 0.0001 ? '< 0.0001 (Highly Significant ***)' : `${(p * 100).toFixed(3)}% (p = ${formatNumber(p)})`);
+
+		return {
+			rows: [
+				{
+					label: testType === 'z_test' ? 'Z-Statistic' : `t-Statistic (df = ${df})`,
+					labelZh: testType === 'z_test' ? 'Z 统计量' : `t 统计量 (自由度 df = ${df})`,
+					value: formatNumber(stat),
+					emphasis: true,
+				},
+				{
+					label: 'Two-Tailed p-Value (H1: μ ≠ μ0)',
+					labelZh: '双侧 p 值 (H1: μ ≠ μ0)',
+					value: fmtP(pTwo),
+					emphasis: true,
+				},
+				{
+					label: 'Right-Tailed p-Value (H1: μ > μ0)',
+					labelZh: '右侧 p 值 (H1: μ > μ0)',
+					value: fmtP(pRight),
+				},
+				{
+					label: 'Left-Tailed p-Value (H1: μ < μ0)',
+					labelZh: '左侧 p 值 (H1: μ < μ0)',
+					value: fmtP(pLeft),
+				},
+				{
+					label: 'Standard Error (SE = s / √n)',
+					labelZh: '标准误 (SE)',
+					value: formatNumber(se),
+				},
+				{
+					label: '95% Confidence Interval for Mean',
+					labelZh: '总体均值 95% 置信区间',
+					value: `[${formatNumber(ci95Low)},  ${formatNumber(ci95High)}]`,
+				},
+			],
+			note: pTwo < 0.05
+				? `Statistically significant at α = 0.05 (p = ${formatNumber(pTwo)} < 0.05). Reject the null hypothesis H0.`
+				: `Not statistically significant at α = 0.05 (p = ${formatNumber(pTwo)} ≥ 0.05). Fail to reject the null hypothesis H0.`,
+			noteZh: pTwo < 0.05
+				? `在 α = 0.05 显著性水平下结果具有统计学意义 (p = ${formatNumber(pTwo)} < 0.05)，应拒绝原假设 H0。`
+				: `在 α = 0.05 显著性水平下结果无显著差异 (p = ${formatNumber(pTwo)} ≥ 0.05)，无法拒绝原假设 H0。`,
+		};
+	},
+};
+
+const normalDistribution: FormConfig = {
+	intro: 'Calculate Z-score, cumulative probability P(X ≤ x), right-tail probability P(X > x), and interval probability P(x1 ≤ X ≤ x2) for any normal distribution N(μ, σ²).',
+	introZh: '计算任意正态分布 N(μ, σ²) 下的 Z-Score、累积概率 P(X ≤ x)、右尾概率 P(X > x) 及区间概率 P(x1 ≤ X ≤ x2)。',
+	fields: [
+		{ id: 'mean', label: 'Mean (μ)', labelZh: '期望/均值 (μ)', type: 'number', def: '0', step: 'any', required: true },
+		{ id: 'sd', label: 'Std Dev (σ)', labelZh: '标准差 (σ)', type: 'number', def: '1', step: 'any', min: '0.0001', required: true },
+		{ id: 'x1', label: 'Value x (or x1)', labelZh: '输入数值 x (或区间下限 x1)', type: 'number', def: '1.96', step: 'any', required: true },
+		{ id: 'x2', label: 'Upper bound x2 (optional)', labelZh: '可选区间上限 x2', type: 'number', def: '', step: 'any' },
+	],
+	compute: (v) => {
+		const mu = v.num('mean');
+		const sigma = v.num('sd');
+		const x1 = v.num('x1');
+		const x2Val = v.str('x2').trim();
+		const hasX2 = x2Val !== '' && Number.isFinite(Number(x2Val));
+		const x2 = hasX2 ? Number(x2Val) : x1;
+
+		if (!Number.isFinite(mu) || !(sigma > 0) || !Number.isFinite(x1)) {
+			return { rows: [{ label: 'Error', labelZh: '错误', value: '— (invalid mean, std dev σ > 0, or x)', valueZh: '— (请输入有效均值、标准差 σ > 0 及 x)' }] };
+		}
+
+		const z1 = (x1 - mu) / sigma;
+		const p1 = normalCdf(z1);
+		const pRight = 1 - p1;
+
+		const rows: import('./registry').FormResultRow[] = [
+			{
+				label: `Z-Score for x = ${x1}`,
+				labelZh: `x = ${x1} 对应的 Z-Score`,
+				value: formatNumber(z1),
+				emphasis: true,
+			},
+			{
+				label: `Cumulative Probability P(X ≤ ${x1})`,
+				labelZh: `累积分布概率 P(X ≤ ${x1})`,
+				value: `${(p1 * 100).toFixed(4)}%  (p = ${formatNumber(p1)})`,
+				emphasis: true,
+			},
+			{
+				label: `Right-tail Probability P(X > ${x1})`,
+				labelZh: `右尾概率 P(X > ${x1})`,
+				value: `${(pRight * 100).toFixed(4)}%  (p = ${formatNumber(pRight)})`,
+			},
+		];
+
+		if (hasX2 && x2 > x1) {
+			const z2 = (x2 - mu) / sigma;
+			const p2 = normalCdf(z2);
+			const pInterval = p2 - p1;
+			rows.push(
+				{
+					label: `Z-Score for x2 = ${x2}`,
+					labelZh: `x2 = ${x2} 对应的 Z-Score`,
+					value: formatNumber(z2),
+				},
+				{
+					label: `Interval Probability P(${x1} ≤ X ≤ ${x2})`,
+					labelZh: `区间分布概率 P(${x1} ≤ X ≤ ${x2})`,
+					value: `${(pInterval * 100).toFixed(4)}%  (p = ${formatNumber(pInterval)})`,
+					emphasis: true,
+				},
+			);
+		}
+
+		rows.push(
+			{ label: '68-95-99.7 Rule [μ ± 1σ]', labelZh: '68-95-99.7 法则 [μ ± 1σ] (68.27%)', value: `[${formatNumber(mu - sigma)},  ${formatNumber(mu + sigma)}]` },
+			{ label: '68-95-99.7 Rule [μ ± 2σ]', labelZh: '68-95-99.7 法则 [μ ± 2σ] (95.45%)', value: `[${formatNumber(mu - 2 * sigma)},  ${formatNumber(mu + 2 * sigma)}]` },
+			{ label: '68-95-99.7 Rule [μ ± 3σ]', labelZh: '68-95-99.7 法则 [μ ± 3σ] (99.73%)', value: `[${formatNumber(mu - 3 * sigma)},  ${formatNumber(mu + 3 * sigma)}]` },
+		);
+
+		return {
+			rows,
+			note: `For N(${mu}, ${sigma}²), a value of ${x1} is ${Math.abs(z1).toFixed(2)} standard deviations ${z1 >= 0 ? 'above' : 'below'} the mean.`,
+			noteZh: `在正态分布 N(${mu}, ${sigma}²) 中，数值 ${x1} 位于均值 ${z1 >= 0 ? '右侧 (高于均值)' : '左侧 (低于均值)'} ${Math.abs(z1).toFixed(2)} 个标准差处。`,
+		};
+	},
+};
+
+// --- entries --------------------------------------------------------------------------
 
 export const CALCULATOR_TOOLS: ToolEntry[] = [
 	{
@@ -2275,6 +2541,26 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 		descriptionZh: '计算二维与三维向量的模长、点积、叉积、向量夹角、投影向量、向量加减及空间距离。',
 		kind: 'form',
 		config: vectorCalculator,
+	},
+	{
+		slug: 'hypothesis-testing',
+		category: 'calculators',
+		name: 'Hypothesis Testing & p-Value Calculator',
+		nameZh: '假设检验与 p 值计算器 (Z-Test / t-Test)',
+		description: 'Perform Z-test and Student’s t-test for sample means, calculate p-values, test statistics, and 95%/99% confidence intervals.',
+		descriptionZh: '支持单样本 Z 检验与 t 检验，精准计算检验统计量、单侧与双侧 p-value 显著性及置信区间。',
+		kind: 'form',
+		config: hypothesisTesting,
+	},
+	{
+		slug: 'normal-distribution',
+		category: 'calculators',
+		name: 'Normal Distribution & Z-Score Calculator',
+		nameZh: '正态分布与 Z-Score 分位数计算器',
+		description: 'Calculate Z-score, cumulative probability P(X ≤ x), interval probability P(x1 ≤ X ≤ x2), and percentiles for any mean μ and std dev σ.',
+		descriptionZh: '计算给定均值 μ 与标准差 σ 下的 Z-Score、累积分布概率 P(X ≤ x)、区间概率与标准百分位数。',
+		kind: 'form',
+		config: normalDistribution,
 	},
 ];
 

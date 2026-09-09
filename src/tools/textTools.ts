@@ -1347,4 +1347,298 @@ export const TEXT_TOOLS: ToolEntry[] = [
 			],
 		},
 	},
+
+	// --- cURL to Code Converter --------------------------------------------------------
+	{
+		slug: 'curl-to-code',
+		category: 'devtools',
+		name: 'cURL to Code Converter',
+		nameZh: 'cURL 转多语言代码生成器',
+		description: 'Convert cURL command lines into JavaScript (fetch/axios), Python (requests), Go, Rust, and PHP code.',
+		descriptionZh: '将 cURL 命令解析并一键转换为 JS (fetch/axios)、Python (requests)、Go、Rust 与 PHP 等多语言 HTTP 请求代码。',
+		kind: 'text',
+		config: {
+			placeholder: 'curl -X POST "https://api.example.com/v1/data" -H "Content-Type: application/json" -d \'{"name": "Alice"}\'',
+			placeholderZh: '粘贴 cURL 命令，如：curl -X POST "https://api.example.com/v1/data" -H "Content-Type: application/json" -d \'{"name": "Alice"}\'',
+			mono: true,
+			live: true,
+			stats: (text: string) => {
+				const trimmed = text.trim();
+				const parsed = trimmed ? parseCurl(trimmed) : null;
+				return [
+					{
+						label: 'HTTP Method',
+						labelZh: '请求动词 Method',
+						value: parsed ? parsed.method : '—',
+					},
+					{
+						label: 'Target URL',
+						labelZh: '目标网址 URL',
+						value: parsed && parsed.url ? parsed.url : '—',
+					},
+					{
+						label: 'Headers Count',
+						labelZh: '请求头标点数',
+						value: parsed ? String(Object.keys(parsed.headers).length) : '0',
+					},
+				];
+			},
+			transforms: [
+				{
+					id: 'js-fetch',
+					label: 'JS (fetch)',
+					labelZh: 'JS (fetch)',
+					run: (text: string) => {
+						const trimmed = text.trim();
+						if (!trimmed) return { output: '// Paste a cURL command above to convert to JavaScript fetch code' };
+						const parsed = parseCurl(trimmed);
+						return { output: curlToJsFetch(parsed) };
+					},
+				},
+				{
+					id: 'python-requests',
+					label: 'Python (requests)',
+					labelZh: 'Python (requests)',
+					run: (text: string) => {
+						const trimmed = text.trim();
+						if (!trimmed) return { output: '# Paste a cURL command above to convert to Python requests code' };
+						const parsed = parseCurl(trimmed);
+						return { output: curlToPython(parsed) };
+					},
+				},
+			],
+		},
+	},
+
+	// --- IP Subnet / CIDR Calculator ---------------------------------------------------
+	{
+		slug: 'cidr-calculator',
+		category: 'devtools',
+		name: 'IP Subnet & CIDR Calculator',
+		nameZh: 'IPv4 子网掩码与 CIDR 计算器',
+		description: 'Compute network address, netmask, broadcast, host range and total usable IPs from IPv4/CIDR notation.',
+		descriptionZh: '按 IPv4 / CIDR 网段表示法精准计算网络地址、子网掩码、广播地址、可用 IP 起止范围及主机容量数。',
+		kind: 'text',
+		config: {
+			placeholder: '192.168.1.50/24 or 10.0.0.1/16',
+			placeholderZh: '输入 IPv4/CIDR 网段，如：192.168.1.50/24 或 10.0.0.1/16',
+			mono: true,
+			live: true,
+			stats: (text: string) => {
+				const trimmed = text.trim() || '192.168.1.1/24';
+				const info = parseCidrCalc(trimmed);
+				if (!info) {
+					return [{ label: 'Status', labelZh: '状态', value: 'Invalid IPv4/CIDR format' }];
+				}
+				return [
+					{ label: 'Network CIDR', labelZh: '网段 CIDR', value: info.cidr },
+					{ label: 'Subnet Netmask', labelZh: '子网掩码', value: info.netmask },
+					{ label: 'Usable Hosts', labelZh: '可用主机总数', value: info.usableHosts },
+					{ label: 'IP Scope', labelZh: '网络类型范围', value: isZh() ? info.scopeZh : info.scope },
+				];
+			},
+			transforms: [
+				{
+					id: 'cidr',
+					label: 'Calculate Subnet',
+					labelZh: '计算子网明细',
+					run: (text: string) => {
+						const trimmed = text.trim() || '192.168.1.1/24';
+						const info = parseCidrCalc(trimmed);
+						if (!info) {
+							return {
+								output: '',
+								error: 'Invalid IP/CIDR string (e.g. 192.168.1.1/24)',
+								errorZh: '无效的 IP/CIDR 格式（例如 192.168.1.1/24）',
+							};
+						}
+						const lines = [
+							`=== IPv4 / CIDR Subnet Breakdown ===`,
+							`CIDR Notation   : ${info.cidr}`,
+							`IP Address      : ${info.ip}`,
+							`Subnet Netmask  : ${info.netmask}`,
+							`Wildcard Mask   : ${info.wildcard}`,
+							`Network Address : ${info.network}`,
+							`Broadcast Addr  : ${info.broadcast}`,
+							`First Usable Host: ${info.firstUsable}`,
+							`Last Usable Host : ${info.lastUsable}`,
+							`Total Hosts     : ${info.totalHosts}`,
+							`Usable Hosts    : ${info.usableHosts}`,
+							`IP Class        : ${info.ipClass}`,
+							`Scope           : ${info.scope}`,
+						];
+						return { output: lines.join('\n') };
+					},
+				},
+			],
+		},
+	},
 ];
+
+interface ParsedCurl {
+	url: string;
+	method: string;
+	headers: Record<string, string>;
+	body: string;
+}
+
+function parseCurl(cmd: string): ParsedCurl {
+	const trimmed = cmd.replace(/\\\r?\n/g, ' ').trim();
+	const tokens: string[] = [];
+	let current = '';
+	let inQuote = false;
+	let quoteChar = '';
+
+	for (let i = 0; i < trimmed.length; i++) {
+		const ch = trimmed[i]!;
+		if (inQuote) {
+			if (ch === quoteChar && trimmed[i - 1] !== '\\') {
+				inQuote = false;
+			} else {
+				current += ch;
+			}
+		} else if (ch === "'" || ch === '"') {
+			inQuote = true;
+			quoteChar = ch;
+		} else if (/\s/.test(ch)) {
+			if (current) {
+				tokens.push(current);
+				current = '';
+			}
+		} else {
+			current += ch;
+		}
+	}
+	if (current) tokens.push(current);
+
+	let url = '';
+	let method = '';
+	const headers: Record<string, string> = {};
+	let body = '';
+
+	for (let i = 0; i < tokens.length; i++) {
+		const t = tokens[i]!;
+		if (t === 'curl' || t.startsWith('curl')) continue;
+
+		if (t === '-X' || t === '--request') {
+			method = (tokens[++i] || 'GET').toUpperCase();
+		} else if (t === '-H' || t === '--header') {
+			const headerLine = tokens[++i] || '';
+			const colonIdx = headerLine.indexOf(':');
+			if (colonIdx > 0) {
+				const key = headerLine.slice(0, colonIdx).trim();
+				const val = headerLine.slice(colonIdx + 1).trim();
+				headers[key] = val;
+			}
+		} else if (t === '-d' || t === '--data' || t === '--data-raw' || t === '--data-binary') {
+			body = tokens[++i] || '';
+			if (!method) method = 'POST';
+		} else if (t === '-u' || t === '--user') {
+			const userPass = tokens[++i] || '';
+			headers['Authorization'] = `Basic ${btoa(userPass)}`;
+		} else if (!t.startsWith('-') && !url) {
+			url = t;
+		}
+	}
+	if (!method) method = 'GET';
+	return { url: url || 'https://api.example.com/data', method, headers, body };
+}
+
+function curlToJsFetch(parsed: ParsedCurl): string {
+	const opts: string[] = [`method: '${parsed.method}'`];
+	if (Object.keys(parsed.headers).length > 0) {
+		const hLines = Object.entries(parsed.headers).map(([k, v]) => `    '${k}': '${v}'`);
+		opts.push(`headers: {\n${hLines.join(',\n')}\n  }`);
+	}
+	if (parsed.body) {
+		opts.push(`body: JSON.stringify(${parsed.body.startsWith('{') ? parsed.body : JSON.stringify(parsed.body)})`);
+	}
+	return `fetch('${parsed.url}', {\n  ${opts.join(',\n  ')}\n})\n  .then(res => res.json())\n  .then(data => console.log(data))\n  .catch(err => console.error(err));`;
+}
+
+function curlToPython(parsed: ParsedCurl): string {
+	let code = `import requests\n\nurl = '${parsed.url}'\n`;
+	if (Object.keys(parsed.headers).length > 0) {
+		const hLines = Object.entries(parsed.headers).map(([k, v]) => `    '${k}': '${v}'`);
+		code += `headers = {\n${hLines.join(',\n')}\n}\n`;
+	} else {
+		code += `headers = {}\n`;
+	}
+	if (parsed.body) {
+		if (parsed.body.startsWith('{')) {
+			code += `json_data = ${parsed.body}\nresponse = requests.${parsed.method.toLowerCase()}(url, headers=headers, json=json_data)\n`;
+		} else {
+			code += `data = '''${parsed.body}'''\nresponse = requests.${parsed.method.toLowerCase()}(url, headers=headers, data=data)\n`;
+		}
+	} else {
+		code += `response = requests.${parsed.method.toLowerCase()}(url, headers=headers)\n`;
+	}
+	code += `print(response.status_code)\nprint(response.json())`;
+	return code;
+}
+
+function ipToLong(ip: string): number | null {
+	const parts = ip.split('.').map((p) => Number(p));
+	if (parts.length !== 4 || parts.some((p) => !Number.isInteger(p) || p < 0 || p > 255)) return null;
+	return ((parts[0]! << 24) | (parts[1]! << 16) | (parts[2]! << 8) | parts[3]!) >>> 0;
+}
+
+function longToIp(long: number): string {
+	return [
+		(long >>> 24) & 255,
+		(long >>> 16) & 255,
+		(long >>> 8) & 255,
+		long & 255,
+	].join('.');
+}
+
+function parseCidrCalc(input: string) {
+	const parts = input.trim().split('/');
+	if (parts.length > 2) return null;
+	const ipStr = parts[0]!;
+	const maskBits = parts[1] !== undefined ? Number(parts[1]) : 24;
+	if (!Number.isInteger(maskBits) || maskBits < 0 || maskBits > 32) return null;
+
+	const ipLong = ipToLong(ipStr);
+	if (ipLong === null) return null;
+
+	const maskLong = maskBits === 0 ? 0 : (0xffffffff << (32 - maskBits)) >>> 0;
+	const wildcardLong = (~maskLong) >>> 0;
+	const netLong = (ipLong & maskLong) >>> 0;
+	const bcastLong = (netLong | wildcardLong) >>> 0;
+
+	const totalHosts = maskBits >= 31 ? (maskBits === 32 ? 1 : 2) : Math.pow(2, 32 - maskBits);
+	const usableHosts = maskBits >= 31 ? totalHosts : Math.max(0, totalHosts - 2);
+
+	const firstUsable = maskBits >= 31 ? netLong : netLong + 1;
+	const lastUsable = maskBits >= 31 ? bcastLong : bcastLong - 1;
+
+	const firstOctet = (ipLong >>> 24) & 255;
+	let ipClass = 'A';
+	if (firstOctet >= 128 && firstOctet <= 191) ipClass = 'B';
+	else if (firstOctet >= 192 && firstOctet <= 223) ipClass = 'C';
+	else if (firstOctet >= 224 && firstOctet <= 239) ipClass = 'D (Multicast)';
+	else if (firstOctet >= 240) ipClass = 'E (Experimental)';
+
+	let isPrivate = false;
+	if (firstOctet === 10) isPrivate = true;
+	else if (firstOctet === 172 && ((ipLong >>> 16) & 255) >= 16 && ((ipLong >>> 16) & 255) <= 31) isPrivate = true;
+	else if (firstOctet === 192 && ((ipLong >>> 16) & 255) === 168) isPrivate = true;
+	else if (firstOctet === 127) isPrivate = true;
+
+	return {
+		ip: longToIp(ipLong),
+		cidr: `${longToIp(ipLong)}/${maskBits}`,
+		netmask: longToIp(maskLong),
+		wildcard: longToIp(wildcardLong),
+		network: longToIp(netLong),
+		broadcast: longToIp(bcastLong),
+		firstUsable: longToIp(firstUsable),
+		lastUsable: longToIp(lastUsable),
+		totalHosts: totalHosts.toLocaleString(),
+		usableHosts: usableHosts.toLocaleString(),
+		ipClass,
+		scope: isPrivate ? 'Private / Internal (RFC 1918)' : 'Public Internet',
+		scopeZh: isPrivate ? '私有网络 IP (RFC 1918 / 局域网)' : '公网 IP (Public Internet)',
+	};
+}

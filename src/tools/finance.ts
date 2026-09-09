@@ -2530,6 +2530,122 @@ const tax: FormConfig = {
 // reads mortgage → prepayment → loan payment → tax, the four highest-demand
 // finance pages.
 
+// --- Rent vs Buy Calculator Algorithm -----------------------------------------------
+
+const rentVsBuy: FormConfig = {
+	intro: 'Compare net wealth accumulated after N years between buying a home (mortgage, home appreciation, debt payoff) vs renting (investing down payment & monthly savings in stocks/funds).',
+	introZh: '对比 N 年后买房（房贷本息、房价增值、结清残值）与租房（首付及每月省下的钱用于理财定投）的最终净资产沉淀总额。',
+	fields: [
+		{ id: 'homePrice', label: 'Home Purchase Price ($/¥)', labelZh: '房屋购买总价 ($/¥)', type: 'number', def: '1000000', step: '10000', required: true },
+		{ id: 'downPercent', label: 'Down Payment (%)', labelZh: '首付比例 (%)', type: 'number', def: '30', step: '1', min: '0', max: '100', required: true },
+		{ id: 'loanRate', label: 'Mortgage Rate (%)', labelZh: '房贷年利率 (%)', type: 'number', def: '4.0', step: '0.1', min: '0', required: true },
+		{ id: 'loanYears', label: 'Loan Term (Years)', labelZh: '房贷年限 (年)', type: 'number', def: '30', step: '1', min: '1', max: '50', required: true },
+		{ id: 'homeAppreciation', label: 'Annual Home Appreciation (%)', labelZh: '预期房价年化涨幅 (%)', type: 'number', def: '2.5', step: '0.1', required: true },
+		{ id: 'monthlyRent', label: 'Current Monthly Rent ($/¥)', labelZh: '当前月租金 ($/¥)', type: 'number', def: '2500', step: '100', required: true },
+		{ id: 'rentInflation', label: 'Annual Rent Inflation (%)', labelZh: '预期租金年涨幅 (%)', type: 'number', def: '2.0', step: '0.1', required: true },
+		{ id: 'investReturn', label: 'Investment Return Rate (%)', labelZh: '备选理财/股市年化收益率 (%)', type: 'number', def: '6.0', step: '0.1', required: true },
+		{ id: 'horizonYears', label: 'Comparison Horizon (Years)', labelZh: '对比分析年限 (年)', type: 'number', def: '15', step: '1', min: '1', max: '50', required: true },
+	],
+	compute: (v) => {
+		const price = v.num('homePrice');
+		const downPct = v.num('downPercent') / 100;
+		const rate = v.num('loanRate');
+		const loanYears = Math.round(v.num('loanYears'));
+		const homeApprec = v.num('homeAppreciation') / 100;
+		const initRent = v.num('monthlyRent');
+		const rentInfl = v.num('rentInflation') / 100;
+		const rInvest = v.num('investReturn') / 100;
+		const horizon = Math.round(v.num('horizonYears'));
+
+		if (!Number.isFinite(price) || price <= 0 || horizon <= 0 || loanYears <= 0) {
+			return { rows: [{ label: 'Error', labelZh: '错误', value: '— (invalid price or parameters)', valueZh: '— (请输入有效房屋总价与对比参数)' }] };
+		}
+
+		const downPayment = price * downPct;
+		const loanAmount = price - downPayment;
+		const totalMonths = loanYears * 12;
+		const monthlyRate = rate / 100 / 12;
+		const origPayment = monthlyPayment(loanAmount, rate, totalMonths);
+
+		const monthsEvaluated = Math.min(horizon * 12, totalMonths);
+		let remainingLoan = loanAmount;
+		if (monthlyRate > 0) {
+			const powN = (1 + monthlyRate) ** monthsEvaluated;
+			remainingLoan = Math.max(0, loanAmount * powN - origPayment * ((powN - 1) / monthlyRate));
+		} else {
+			remainingLoan = Math.max(0, loanAmount - (loanAmount / totalMonths) * monthsEvaluated);
+		}
+
+		const homeValueAtHorizon = price * Math.pow(1 + homeApprec, horizon);
+		const buyNetWealth = homeValueAtHorizon - remainingLoan;
+
+		let rentInvestPool = downPayment;
+		const monthlyInvestRate = rInvest / 12;
+
+		for (let m = 1; m <= horizon * 12; m++) {
+			const yearIndex = Math.floor((m - 1) / 12);
+			const currentMonthlyRent = initRent * Math.pow(1 + rentInfl, yearIndex);
+			const monthSavings = origPayment - currentMonthlyRent;
+			rentInvestPool = rentInvestPool * (1 + monthlyInvestRate) + monthSavings;
+		}
+
+		const rentNetWealth = rentInvestPool;
+		const diff = buyNetWealth - rentNetWealth;
+
+		const winner = diff >= 0 ? 'Buying a Home' : 'Renting & Investing';
+		const winnerZh = diff >= 0 ? '买房方案胜出 (Buying Home)' : '租房+理财方案胜出 (Renting & Investing)';
+
+		return {
+			rows: [
+				{
+					label: 'Financially Advantageous Option',
+					labelZh: '更具优势的资产方案',
+					value: winner,
+					valueZh: winnerZh,
+					emphasis: true,
+				},
+				{
+					label: `Net Asset Advantage after ${horizon} Years`,
+					labelZh: `${horizon} 年后胜出方净资产领先优势`,
+					...cash(Math.abs(diff)),
+					emphasis: true,
+				},
+				{
+					label: `Buying Path: Net Home Equity after ${horizon} Years`,
+					labelZh: `买房路径：${horizon} 年后房屋扣除残余房贷净值`,
+					...cash(buyNetWealth),
+				},
+				{
+					label: `Renting Path: Investment Portfolio after ${horizon} Years`,
+					labelZh: `租房路径：${horizon} 年后首付与每月差额理财总资产`,
+					...cash(rentNetWealth),
+				},
+				{
+					label: 'Projected Home Value',
+					labelZh: `${horizon} 年后预估房屋总价值`,
+					...cash(homeValueAtHorizon),
+				},
+				{
+					label: 'Remaining Mortgage Balance',
+					labelZh: `${horizon} 年后剩余未还房贷本金`,
+					...cash(remainingLoan),
+				},
+				{
+					label: 'Initial Down Payment Amount',
+					labelZh: '买房初始首付投入金额',
+					...cash(downPayment),
+				},
+			],
+			note: diff >= 0
+				? `After ${horizon} years, buying is projected to leave you with $${formatNumber(diff)} more net wealth than renting.`
+				: `After ${horizon} years, renting and investing the savings is projected to leave you with $${formatNumber(Math.abs(diff))} more net wealth than buying.`,
+			noteZh: diff >= 0
+				? `经过 ${horizon} 年测算，买房沉淀的净资产预计比租房+理财高出 ¥${formatNumber(diff)}。`
+				: `经过 ${horizon} 年测算，租房并将资金投向理财预计比买房沉淀的净资产高出 ¥${formatNumber(Math.abs(diff))}。`,
+		};
+	},
+};
+
 export const FINANCE_TOOLS: ToolEntry[] = [
 	{
 		slug: 'mortgage',
@@ -2671,4 +2787,15 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		kind: 'form',
 		config: discount,
 	},
+	{
+		slug: 'rent-vs-buy',
+		category: 'finance',
+		name: 'Rent vs Buy Home Calculator',
+		nameZh: '买房 vs 租房收益对比计算器',
+		description: 'Compare accumulated net wealth after N years between buying a home vs renting and investing the savings.',
+		descriptionZh: '综合测算 N 年后买房（房贷本息、房屋增值、剩余贷款残值）与租房（首付与每月差额定投理财）的最终净资产沉淀对比。',
+		kind: 'form',
+		config: rentVsBuy,
+	},
 ];
+

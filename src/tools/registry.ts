@@ -378,6 +378,7 @@ export function findEntry(category: string, slug: string): ToolEntry | undefined
 /** Comprehensive searchable aliases and keywords for tools across EN & ZH */
 export const TOOL_KEYWORDS: Record<string, string> = {
 	'mortgage': '房贷 房贷计算器 等额本息 等额本金 商业贷款 公积金贷款 组合贷款 成本平衡点 首付 月供 利率 LPR 买房 home loan mortgage payment crossover',
+	'rent-vs-buy': '买房 租房 买房还是租房 收益对比 房价涨幅 租金涨幅 首付机会成本 复利对比 rent vs buy home equity investment net worth',
 	'mortgage-prepayment': '提前还贷 提前还款 缩短年限 减少月供 结清 房贷省息 利息计算 mortgage prepayment balance payoff',
 	'loan-payment': '贷款月供 贷款本金 个人贷款 等额本息 借款额度 每月预算 还款计划 loan payment installment amortization',
 	'irr-calculator': 'irr apr 真实年化利率 真实利率 信用卡分期 综合费率 手续费 名义费率 internal rate return true apr installment',
@@ -425,6 +426,8 @@ export const TOOL_KEYWORDS: Record<string, string> = {
 	'simple-interest': '单利 利息计算 本息和 simple interest p r t principal',
 	'fraction': '分数 约分 化简 最简分数 小数转分数 分数转小数 fraction simplify decimal continued',
 	'descriptive-statistics': '平均数 中位数 众数 统计 标准差 方差 线性回归 mean median average statistics variance',
+	'hypothesis-testing': '假设检验 p值 t检验 z检验 显著性概率 显著性水平 检验统计量 置信区间 hypothesis testing p value t test z test confidence interval',
+	'normal-distribution': '正态分布 z score 高斯分布 概率密度 累积分布 68 95 99法则 分位数 normal distribution gaussian probability cdf z score',
 	'prime-factorization': '质因数分解 质数 素数 分解质因数 prime factorization factors',
 	'combinatorics': '排列组合 组合数 排列数 阶乘 combinations permutations factorial',
 	'pi': '圆周率 pi π 祖冲之 密率 约率 弧度 面积 周长 梅钦公式 machin digits circle',
@@ -439,6 +442,8 @@ export const TOOL_KEYWORDS: Record<string, string> = {
 	'css-px-rem-converter': 'px rem 换算 像素 css px rem converter',
 	'text-diff': '文本对比 diff text diff compare',
 	'hash-generator': '哈希 散列 sha256 md5 hash generator checksum',
+	'curl-to-code': 'curl 代码转换 代码生成 请求转换 fetch axios python requests go rust php curl code converter API',
+	'cidr-calculator': 'cidr 子网掩码 ip计算器 广播地址 网络地址 可用主机 ip范围 subnet netmask wildcard broadcast usable hosts',
 	'standard': '科学计算器 计算器 算术函数 根号 三角函数 次方 scientific calculator standard math sqrt sin cos',
 	'graph': '函数图像 曲线绘制 坐标系 绘图 函数可视化 function grapher plotting curves calculus',
 	'graph3d': '三维函数 空间曲面 3D曲面 3d surface plotter mesh',
