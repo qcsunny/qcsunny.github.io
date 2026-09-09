@@ -166,26 +166,6 @@ function stamp(ms: number, tz: string, zh: boolean): string {
 
 // --- cron expression parser (devtools) ------------------------------------------------
 
-/** Parse one cron field token set into a sorted list of values, or null if invalid. */
-function cronField(token: string, min: number, max: number): number[] | null {
-	const out: number[] = [];
-	for (const part of token.split(',')) {
-		const m = /^(\*|\d+)(?:-(\d+))?(?:\/(\d+))?$/.exec(part.trim());
-		if (!m) return null;
-		let lo = min;
-		let hi = max;
-		if (m[1] !== '*') {
-			lo = Number(m[1]);
-			hi = m[2] !== undefined ? Number(m[2]) : lo;
-		}
-		const step = m[3] !== undefined ? Number(m[3]) : 1;
-		if (step < 1 || lo < min || hi > max || lo > hi) return null;
-		for (let v = lo; v <= hi; v += step) out.push(v);
-	}
-	if (!out.length) return null;
-	return [...new Set(out)].sort((a, b) => a - b);
-}
-
 /** Collapse a value list back into compact cron tokens ('0-5,10,15'). */
 function compactCron(vals: number[], full: boolean): string {
 	if (full) return '*';
@@ -198,6 +178,354 @@ function compactCron(vals: number[], full: boolean): string {
 		i = j + 1;
 	}
 	return runs.join(',');
+}
+
+// --- cron dialects --------------------------------------------------------------------
+// Linux 5-field: minute hour day month weekday
+// Spring/Quartz 6-field: second minute hour day month weekday
+// Quartz 7-field: second minute hour day month weekday year
+type CronDialect = 'linux' | 'spring-quartz' | 'quartz-7';
+
+interface ParsedField {
+	mask: bigint;
+	vals: number[];
+	full: boolean;
+	ignore: boolean;
+}
+
+interface ParsedCron {
+	sec?: ParsedField;
+	min: ParsedField;
+	hour: ParsedField;
+	dom: ParsedField;
+	mon: ParsedField;
+	dow: ParsedField;
+	year?: ParsedField;
+}
+
+interface CronError {
+	error: string;
+	errorZh: string;
+}
+
+/** Type guard: parseCron's mk() returns ParsedField on success, CronError on
+ *  failure; the guard narrows the field results so no `as` casts are needed. */
+function isCronError(x: ParsedField | ParsedCron | CronError): x is CronError {
+	return 'error' in x;
+}
+
+const DIALECT_FIELDS: Record<CronDialect, { count: number; hasSecond: boolean; hasYear: boolean; en: string; zh: string }> = {
+	linux: { count: 5, hasSecond: false, hasYear: false, en: 'Linux 5-field', zh: 'Linux 五段式' },
+	'spring-quartz': { count: 6, hasSecond: true, hasYear: false, en: 'Spring/Quartz 6-field', zh: 'Spring/Quartz 六段式' },
+	'quartz-7': { count: 7, hasSecond: true, hasYear: true, en: 'Quartz 7-field', zh: 'Quartz 七段式' },
+};
+
+/** Parse one cron field token set into a bitmask + value list, or null if invalid.
+ *  Supports `*`, `a-b`, `a-b/n`, `a/n`, `*`/n and comma lists. `a/n` follows the
+ *  POSIX convention of meaning `a-max/n`. `?` is accepted only when allowQuestion
+ *  is true (Quartz day-of-month/day-of-week) and yields ignore:true. L/W/#
+ *  modifiers do not match the token regex and are rejected as malformed. */
+function parseCronField(token: string, min: number, max: number, allowQuestion: boolean): ParsedField | null {
+	if (allowQuestion && token.trim() === '?') {
+		return { mask: 0n, vals: [], full: false, ignore: true };
+	}
+	const out: number[] = [];
+	for (const part of token.split(',')) {
+		const m = /^(\*|\d+)(?:-(\d+))?(?:\/(\d+))?$/.exec(part.trim());
+		if (!m) return null;
+		let lo = min;
+		let hi = max;
+		if (m[1] !== '*') {
+			lo = Number(m[1]);
+			hi = m[2] !== undefined ? Number(m[2]) : m[3] !== undefined ? max : lo;
+		}
+		const step = m[3] !== undefined ? Number(m[3]) : 1;
+		if (step < 1 || lo < min || hi > max || lo > hi) return null;
+		for (let v = lo; v <= hi; v += step) out.push(v);
+	}
+	if (!out.length) return null;
+	const vals = [...new Set(out)].sort((a, b) => a - b);
+	let mask = 0n;
+	for (const v of vals) mask |= 1n << BigInt(v);
+	return { mask, vals, full: vals.length === max - min + 1, ignore: false };
+}
+
+/** Normalise a day-of-week mask to internal 0-6 (0=Sunday). Linux allows 0 and 7
+ *  both meaning Sunday, so bit 7 is merged into bit 0 and cleared; Quartz uses
+ *  1-7 with 1=Sunday, so the whole mask shifts right by one. */
+function normalizeDowMask(raw: bigint, dialect: CronDialect): bigint {
+	if (dialect === 'linux') {
+		let m = raw;
+		if ((m >> 7n) & 1n) m = (m | 1n) & ~(1n << 7n);
+		return m;
+	}
+	return raw >> 1n;
+}
+
+/** Days in a Gregorian month (month is 1-12). */
+function daysInMonth(year: number, month: number): number {
+	const dim = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+	if (month === 2 && (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0))) return 29;
+	return dim[month - 1];
+}
+
+/** Weekday 0-6 (0=Sunday) of a Gregorian date. Only the date part is used, so it
+ *  is unaffected by DST gaps. */
+function weekdayOf(year: number, month: number, day: number, utc: boolean): number {
+	const d = utc ? new Date(Date.UTC(year, month - 1, day)) : new Date(year, month - 1, day);
+	return utc ? d.getUTCDay() : d.getDay();
+}
+
+/** Smallest set bit index >= from, or -1 when none. */
+function nextSetBit(mask: bigint, from: number): number {
+	const start = from < 0 ? 0 : from;
+	const shifted = mask >> BigInt(start);
+	if (shifted === 0n) return -1;
+	let idx = start;
+	let s = shifted;
+	while ((s & 1n) === 0n) {
+		s >>= 1n;
+		idx++;
+	}
+	return idx;
+}
+
+function firstSet(mask: bigint): number {
+	return nextSetBit(mask, 0);
+}
+
+/** Parse a cron expression for the given dialect into per-field masks, or an
+ *  error. Day-of-month/day-of-week keep Vixie's OR semantics (see dayMatches);
+ *  Quartz 6/7-field enforces exactly one of them to be '?'. */
+function parseCron(expr: string, dialect: CronDialect): ParsedCron | CronError {
+	const parts = expr.trim().split(/\s+/);
+	const spec = DIALECT_FIELDS[dialect];
+	if (parts.length !== spec.count) {
+		return {
+			error: `— (expected ${spec.count} fields for ${spec.en}, got ${parts.length})`,
+			errorZh: `—（${spec.zh}应为 ${spec.count} 段，实际输入 ${parts.length} 段）`,
+		};
+	}
+	const idx: Record<'sec' | 'min' | 'hour' | 'dom' | 'mon' | 'dow' | 'year', number> = {
+		sec: spec.hasSecond ? 0 : -1,
+		min: spec.hasSecond ? 1 : 0,
+		hour: spec.hasSecond ? 2 : 1,
+		dom: spec.hasSecond ? 3 : 2,
+		mon: spec.hasSecond ? 4 : 3,
+		dow: spec.hasSecond ? 5 : 4,
+		year: spec.hasYear ? 6 : -1,
+	};
+	const allowQ = spec.hasSecond; // '?' is legal only in 6/7-field Quartz
+	const dowLo = dialect === 'linux' ? 0 : 1;
+	const mk = (i: number, lo: number, hi: number, dowNorm: boolean): ParsedField | CronError => {
+		const tok = parts[i];
+		const f = parseCronField(tok, lo, hi, allowQ);
+		if (!f) {
+			if (tok.trim() === '?') {
+				return {
+					error: `— ('?' is not valid in Linux 5-field cron; use '*')`,
+					errorZh: `—（Linux 五段式不支持 '?'，请用 '*'）`,
+				};
+			}
+			return {
+				error: `— (field ${i + 1} "${tok}" is out of range or malformed)`,
+				errorZh: `—（第 ${i + 1} 段 "${tok}" 越界或格式错误）`,
+			};
+		}
+		return dowNorm && !f.ignore ? { ...f, mask: normalizeDowMask(f.mask, dialect) } : f;
+	};
+	const sec = spec.hasSecond ? mk(idx.sec, 0, 59, false) : undefined;
+	if (sec && isCronError(sec)) return sec;
+	const min = mk(idx.min, 0, 59, false);
+	if (isCronError(min)) return min;
+	const hour = mk(idx.hour, 0, 23, false);
+	if (isCronError(hour)) return hour;
+	const dom = mk(idx.dom, 1, 31, false);
+	if (isCronError(dom)) return dom;
+	const mon = mk(idx.mon, 1, 12, false);
+	if (isCronError(mon)) return mon;
+	const dow = mk(idx.dow, dowLo, 7, true);
+	if (isCronError(dow)) return dow;
+	const year = spec.hasYear ? mk(idx.year, 1970, 2099, false) : undefined;
+	if (year && isCronError(year)) return year;
+	if (spec.hasSecond) {
+		if (!dom.ignore && !dow.ignore) {
+			return {
+				error: `— (Quartz requires one of day-of-month / day-of-week to be '?')`,
+				errorZh: `—（Quartz 要求日与周字段其一为 '?'）`,
+			};
+		}
+		if (dom.ignore && dow.ignore) {
+			return {
+				error: `— (Quartz requires exactly one of day-of-month / day-of-week to be '?', not both)`,
+				errorZh: `—（Quartz 要求日与周字段恰一为 '?'，不可都为 '?'）`,
+			};
+		}
+	}
+	const result: ParsedCron = { min, hour, dom, mon, dow };
+	if (sec) result.sec = sec;
+	if (year) result.year = year;
+	return result;
+}
+
+/** Vixie day-of-month/day-of-week semantics: both present → OR, but a 'full'
+ *  field matches every day and yields to the restricted one. A '?' (ignore)
+ *  field drops out entirely. */
+function dayMatches(dom: ParsedField, dow: ParsedField, d: number, wd: number): boolean {
+	if (dom.ignore) return ((dow.mask >> BigInt(wd)) & 1n) === 1n;
+	if (dow.ignore) return ((dom.mask >> BigInt(d)) & 1n) === 1n;
+	if (dom.full && dow.full) return true;
+	if (dom.full) return ((dow.mask >> BigInt(wd)) & 1n) === 1n;
+	if (dow.full) return ((dom.mask >> BigInt(d)) & 1n) === 1n;
+	return ((dom.mask >> BigInt(d)) & 1n) === 1n || ((dow.mask >> BigInt(wd)) & 1n) === 1n;
+}
+
+const MAX_YEAR = 2099;
+
+interface NextFireResult {
+	times: number[];
+	error?: string;
+	errorZh?: string;
+}
+
+/** Greedy carry scan from startMs: year → month → day → hour → minute → second,
+ *  each field jumping to its next set bit and cascading resets upward. Local
+ *  wall-clock times that do not exist (a spring-forward DST gap) are skipped by
+ *  read-back comparison; a fall-back duplicate hour yields a single timestamp. */
+function nextFire(parsed: ParsedCron, startMs: number, tz: 'local' | 'UTC', count: number): NextFireResult {
+	const utc = tz === 'UTC';
+	const hasSecond = parsed.sec !== undefined;
+	const hasYear = parsed.year !== undefined;
+	const sec = parsed.sec!;
+	const year = parsed.year;
+	const start = new Date(startMs);
+	let y: number, mo: number, d: number, h: number, mi: number, s: number;
+	if (utc) {
+		y = start.getUTCFullYear();
+		mo = start.getUTCMonth() + 1;
+		d = start.getUTCDate();
+		h = start.getUTCHours();
+		mi = start.getUTCMinutes();
+		s = start.getUTCSeconds();
+	} else {
+		y = start.getFullYear();
+		mo = start.getMonth() + 1;
+		d = start.getDate();
+		h = start.getHours();
+		mi = start.getMinutes();
+		s = start.getSeconds();
+	}
+	// strictly after now
+	if (hasSecond) s += 1;
+	else {
+		s = 0;
+		mi += 1;
+	}
+	const construct = (yy: number, mm: number, dd: number, hh: number, mmm: number, ss: number) =>
+		utc ? new Date(Date.UTC(yy, mm - 1, dd, hh, mmm, ss)) : new Date(yy, mm - 1, dd, hh, mmm, ss);
+	const readBack = (dt: Date): number[] =>
+		utc
+			? [dt.getUTCFullYear(), dt.getUTCMonth() + 1, dt.getUTCDate(), dt.getUTCHours(), dt.getUTCMinutes(), dt.getUTCSeconds()]
+			: [dt.getFullYear(), dt.getMonth() + 1, dt.getDate(), dt.getHours(), dt.getMinutes(), dt.getSeconds()];
+	const resetTime = () => {
+		h = firstSet(parsed.hour.mask);
+		mi = firstSet(parsed.min.mask);
+		s = hasSecond ? firstSet(sec.mask) : 0;
+	};
+	const times: number[] = [];
+	let guard = 0;
+	while (times.length < count) {
+		if (++guard > 2_000_000) {
+			return { times, error: '— (iteration limit reached; the expression may be unsatisfiable)', errorZh: '—（迭代超限，表达式可能无法触发）' };
+		}
+		if (hasYear && year) {
+			if (((year.mask >> BigInt(y)) & 1n) === 0n) {
+				const nb = nextSetBit(year.mask, y);
+				if (nb < 0) {
+					return { times, error: '— (no execution time before 2100; the year field has no matching year)', errorZh: '—（年字段范围内已无匹配年份，表达式不可能再触发）' };
+				}
+				y = nb;
+				mo = firstSet(parsed.mon.mask);
+				d = 1;
+				resetTime();
+				continue;
+			}
+		} else if (y > MAX_YEAR) {
+			return { times, error: '— (no execution time before 2100; check for an impossible day such as Feb 30)', errorZh: '—（2100 年前无可执行时刻，请检查是否存在不可能的日期如 2 月 30 日）' };
+		}
+		// MONTH
+		if (((parsed.mon.mask >> BigInt(mo)) & 1n) === 0n) {
+			const nb = nextSetBit(parsed.mon.mask, mo);
+			if (nb < 0) {
+				y += 1;
+				mo = firstSet(parsed.mon.mask);
+			} else mo = nb;
+			d = 1;
+			resetTime();
+			continue;
+		}
+		// DAY
+		if (d > daysInMonth(y, mo)) {
+			d = 1;
+			mo += 1;
+			resetTime();
+			continue;
+		}
+		if (!dayMatches(parsed.dom, parsed.dow, d, weekdayOf(y, mo, d, utc))) {
+			d += 1;
+			resetTime();
+			continue;
+		}
+		// HOUR
+		if (((parsed.hour.mask >> BigInt(h)) & 1n) === 0n) {
+			const nb = nextSetBit(parsed.hour.mask, h);
+			if (nb < 0) {
+				d += 1;
+				resetTime();
+				continue;
+			}
+			h = nb;
+			mi = firstSet(parsed.min.mask);
+			s = hasSecond ? firstSet(sec.mask) : 0;
+			continue;
+		}
+		// MINUTE
+		if (((parsed.min.mask >> BigInt(mi)) & 1n) === 0n) {
+			const nb = nextSetBit(parsed.min.mask, mi);
+			if (nb < 0) {
+				h += 1;
+				mi = firstSet(parsed.min.mask);
+				s = hasSecond ? firstSet(sec.mask) : 0;
+				continue;
+			}
+			mi = nb;
+			s = hasSecond ? firstSet(sec.mask) : 0;
+			continue;
+		}
+		// SECOND
+		if (hasSecond && ((sec.mask >> BigInt(s)) & 1n) === 0n) {
+			const nb = nextSetBit(sec.mask, s);
+			if (nb < 0) {
+				mi += 1;
+				s = firstSet(sec.mask);
+				continue;
+			}
+			s = nb;
+		}
+		// all fields matched — verify the wall clock actually exists
+		const cand = construct(y, mo, d, h, mi, s);
+		const back = readBack(cand);
+		if (back[0] !== y || back[1] !== mo || back[2] !== d || back[3] !== h || back[4] !== mi || back[5] !== s) {
+			// non-existent wall clock (spring-forward DST gap): skip
+			if (hasSecond) s += 1;
+			else mi += 1;
+			continue;
+		}
+		times.push(cand.getTime());
+		if (hasSecond) s += 1;
+		else mi += 1;
+	}
+	return { times };
 }
 
 
@@ -558,11 +886,25 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		category: 'devtools',
 		name: 'Cron Expression Parser',
 		nameZh: 'Cron 表达式解析器',
-		description: 'Explain a 5-field cron expression — minute hour day month weekday — as readable text, and expand each field.',
-		descriptionZh: '把五段式 Cron 表达式（分 时 日 月 周）展开为可读说明与各字段取值。',
+		description: 'Parse Linux 5-field and Quartz 6/7-field cron expressions, expand every field, and list the next execution times.',
+		descriptionZh: '解析 Linux 五段式与 Quartz 六/七段式 Cron 表达式，展开各字段取值并列出下次执行时间。',
 		kind: 'form',
 		config: {
 			fields: [
+				{
+					id: 'dialect',
+					label: 'Dialect',
+					labelZh: '方言',
+					type: 'select',
+					def: 'linux',
+					options: [
+						{ value: 'linux', label: 'Linux 5-field (minute hour dom mon dow)', labelZh: 'Linux 五段式（分 时 日 月 周）' },
+						{ value: 'spring-quartz', label: 'Spring/Quartz 6-field (sec min hour dom mon dow)', labelZh: 'Spring/Quartz 六段式（秒 分 时 日 月 周）' },
+						{ value: 'quartz-7', label: 'Quartz 7-field (sec min hour dom mon dow year)', labelZh: 'Quartz 七段式（秒 分 时 日 月 周 年）' },
+					],
+					hint: 'Spring and Quartz use six fields with a leading seconds field; Quartz seven-field appends a year. Quartz requires day-of-month and day-of-week to be exclusive — exactly one of them must be "?".',
+					hintZh: 'Spring 与 Quartz 用 6 段，最前面是秒；Quartz 7 段末尾再加年。Quartz 要求日与周字段互斥——恰一为 "?"。',
+				},
 				{
 					id: 'expr',
 					label: 'Cron expression',
@@ -572,114 +914,135 @@ export const TEXT_TOOLS: ToolEntry[] = [
 					placeholder: 'minute hour day month weekday',
 					placeholderZh: '分 时 日 月 周',
 					required: true,
-					hint: 'Five fields: minute (0-59), hour (0-23), day of month (1-31), month (1-12), weekday (0-7, 0 and 7 are Sunday).',
-					hintZh: '五段依次为：分 (0-59)、时 (0-23)、日 (1-31)、月 (1-12)、周 (0-7，0 与 7 都代表周日)。',
+					hint: 'Fields are minute (0-59), hour (0-23), day of month (1-31), month (1-12) and weekday (Linux 0-7 with 0 and 7 both Sunday; Quartz 1-7 with 1=Sunday). Supports "*", ranges a-b, steps (a/n means a-max/n) and comma lists. The L/W/# modifiers are not supported.',
+					hintZh: '字段依次为：分 (0-59)、时 (0-23)、日 (1-31)、月 (1-12)、周（Linux 0-7，0 与 7 均为周日；Quartz 1-7，1 为周日）。支持 *、区间 a-b、步长（a/n 意为 a-max/n）与逗号列表。不支持 L/W/# 扩展语法。',
+				},
+				{
+					id: 'tz',
+					label: 'Time zone',
+					labelZh: '时区',
+					type: 'select',
+					def: 'local',
+					options: [
+						{ value: 'local', label: 'Local (browser)', labelZh: '本地时区（浏览器）' },
+						{ value: 'UTC', label: 'UTC', labelZh: 'UTC' },
+					],
+					hint: 'Next-fire times are computed against this wall clock. UTC has no daylight-saving transitions.',
+					hintZh: '下次执行时间按此时区的墙钟计算。UTC 无夏令时跳变。',
+				},
+				{
+					id: 'count',
+					label: 'How many runs',
+					labelZh: '执行次数',
+					type: 'select',
+					def: '7',
+					options: [
+						{ value: '1', label: '1', labelZh: '1' },
+						{ value: '3', label: '3', labelZh: '3' },
+						{ value: '5', label: '5', labelZh: '5' },
+						{ value: '7', label: '7', labelZh: '7' },
+						{ value: '10', label: '10', labelZh: '10' },
+					],
 				},
 			],
 			compute: (v) => {
-				const parts = v.str('expr').trim().split(/\s+/);
-				if (parts.length !== 5) {
-					return {
-						rows: [
-							{
-								label: 'Result',
-								labelZh: '计算结果',
-								value: `— (expected 5 fields, got ${parts.length})`,
-								valueZh: `— (应为 5 段，实际输入了 ${parts.length} 段)`,
-							},
-						],
-					};
+				const dialect = v.str('dialect') as CronDialect;
+				const expr = v.str('expr');
+				const tz: 'local' | 'UTC' = v.str('tz') === 'UTC' ? 'UTC' : 'local';
+				const count = Number(v.str('count')) || 7;
+				const spec = DIALECT_FIELDS[dialect];
+
+				const parsed = parseCron(expr, dialect);
+				if (isCronError(parsed)) {
+					return { rows: [{ label: 'Result', labelZh: '计算结果', value: parsed.error, valueZh: parsed.errorZh }] };
 				}
-				const specs = [
-					{ lo: 0, hi: 59, en: 'Minute', zh: '分钟' },
-					{ lo: 0, hi: 23, en: 'Hour', zh: '小时' },
-					{ lo: 1, hi: 31, en: 'Day of month', zh: '日' },
-					{ lo: 1, hi: 12, en: 'Month', zh: '月份' },
-					{ lo: 0, hi: 7, en: 'Weekday', zh: '星期' },
-				];
-				const expanded = parts.map((tok, i) => {
-					const sp = specs[i];
-					const vals = cronField(tok, sp.lo, sp.hi);
-					if (vals === null)
-						return {
-							ok: false,
-							en: `invalid field "${tok}"`,
-							zh: `第 ${i + 1} 段“${tok}”不合法`,
-						} as const;
-					return {
-						ok: true,
-						vals,
-						full: vals.length === sp.hi - sp.lo + 1,
-						tok,
-						en: sp.en,
-						zh: sp.zh,
-					} as const;
+
+				// Field display rows, in dialect order.
+				const fieldSpecs: { f: ParsedField; en: string; zh: string }[] = [];
+				if (spec.hasSecond) fieldSpecs.push({ f: parsed.sec!, en: 'Second', zh: '秒' });
+				fieldSpecs.push({ f: parsed.min, en: 'Minute', zh: '分钟' });
+				fieldSpecs.push({ f: parsed.hour, en: 'Hour', zh: '小时' });
+				fieldSpecs.push({ f: parsed.dom, en: 'Day of month', zh: '日' });
+				fieldSpecs.push({ f: parsed.mon, en: 'Month', zh: '月份' });
+				fieldSpecs.push({ f: parsed.dow, en: 'Weekday', zh: '星期' });
+				if (spec.hasYear) fieldSpecs.push({ f: parsed.year!, en: 'Year', zh: '年份' });
+				const display = fieldSpecs.map((fs) => {
+					const compact = fs.f.ignore ? '?' : compactCron(fs.f.vals, fs.f.full);
+					return { label: fs.en, labelZh: fs.zh, value: compact, valueZh: compact };
 				});
-				const bad = expanded.find((e) => !e.ok);
-				if (bad) {
-					return {
-						rows: [
-							{
-								label: 'Result',
-								labelZh: '计算结果',
-								value: `— (${parts[expanded.indexOf(bad)]} is out of range or malformed)`,
-								valueZh: bad.ok ? '' : (bad as { zh: string }).zh,
-							},
-						],
-					};
-				}
-				const ok = expanded as Exclude<(typeof expanded)[number], { ok: false }>[];
-				const isFull = (i: number) => ok[i].full;
-				const compactAt = (i: number) => compactCron(ok[i].vals, ok[i].full);
-				// Human summary: single minute+hour gets a clock phrase, otherwise list
-				// every non-* field.
-				const min = ok[0], hr = ok[1];
+
+				// Human-readable summary: a single minute+hour becomes a clock phrase,
+				// otherwise every restricted field is listed.
+				const all = (f: ParsedField) => f.full || f.ignore;
 				let en: string;
 				let zh: string;
-				if (isFull(0) && isFull(1) && isFull(2) && isFull(3) && isFull(4)) {
-					en = 'every minute';
-					zh = '每分钟执行一次';
-				} else if (min.vals.length === 1 && hr.vals.length === 1 && isFull(2) && isFull(3) && isFull(4)) {
-					const h = String(hr.vals[0]).padStart(2, '0');
-					const m = String(min.vals[0]).padStart(2, '0');
-					en = `at ${h}:${m}`;
-					zh = `在每天 ${Number(hr.vals[0])} 点 ${m} 分执行`;
+				if (parsed.min.full && parsed.hour.full && all(parsed.dom) && parsed.mon.full && all(parsed.dow) && (!spec.hasSecond || parsed.sec!.full) && (!spec.hasYear || parsed.year!.full)) {
+					en = spec.hasSecond ? 'every second' : 'every minute';
+					zh = spec.hasSecond ? '每秒执行一次' : '每分钟执行一次';
+				} else if (parsed.min.vals.length === 1 && parsed.hour.vals.length === 1 && all(parsed.dom) && parsed.mon.full && all(parsed.dow) && (!spec.hasSecond || parsed.sec!.vals.length === 1)) {
+					const hh = String(parsed.hour.vals[0]).padStart(2, '0');
+					const mm = String(parsed.min.vals[0]).padStart(2, '0');
+					const ss = spec.hasSecond ? `:${String(parsed.sec!.vals[0]).padStart(2, '0')}` : '';
+					en = `at ${hh}:${mm}${ss}`;
+					zh = `在每天 ${parsed.hour.vals[0]} 点 ${mm} 分${spec.hasSecond ? ` ${parsed.sec!.vals[0]} 秒` : ''}执行`;
 				} else {
 					const partsEn: string[] = [];
 					const partsZh: string[] = [];
-					if (!isFull(0)) {
-						partsEn.push(`minute ${compactAt(0)}`);
-						partsZh.push(`第 ${compactAt(0)} 分`);
+					if (spec.hasSecond && !parsed.sec!.full) {
+						partsEn.push(`second ${compactCron(parsed.sec!.vals, false)}`);
+						partsZh.push(`第 ${compactCron(parsed.sec!.vals, false)} 秒`);
 					}
-					if (!isFull(1)) {
-						partsEn.push(`hour ${compactAt(1)}`);
-						partsZh.push(`第 ${compactAt(1)} 时`);
+					if (!parsed.min.full) {
+						partsEn.push(`minute ${compactCron(parsed.min.vals, false)}`);
+						partsZh.push(`第 ${compactCron(parsed.min.vals, false)} 分`);
 					}
-					if (!isFull(2)) {
-						partsEn.push(`day-of-month ${compactAt(2)}`);
-						partsZh.push(`每月 ${compactAt(2)} 日`);
+					if (!parsed.hour.full) {
+						partsEn.push(`hour ${compactCron(parsed.hour.vals, false)}`);
+						partsZh.push(`第 ${compactCron(parsed.hour.vals, false)} 时`);
 					}
-					if (!isFull(3)) {
-						partsEn.push(`month ${compactAt(3)}`);
-						partsZh.push(`${compactAt(3)} 月`);
+					if (!parsed.dom.ignore && !parsed.dom.full) {
+						partsEn.push(`day-of-month ${compactCron(parsed.dom.vals, false)}`);
+						partsZh.push(`每月 ${compactCron(parsed.dom.vals, false)} 日`);
 					}
-					if (!isFull(4)) {
-						partsEn.push(`weekday ${compactAt(4)}`);
-						partsZh.push(`星期 ${compactAt(4)}`);
+					if (!parsed.mon.full) {
+						partsEn.push(`month ${compactCron(parsed.mon.vals, false)}`);
+						partsZh.push(`${compactCron(parsed.mon.vals, false)} 月`);
+					}
+					if (!parsed.dow.ignore && !parsed.dow.full) {
+						partsEn.push(`weekday ${compactCron(parsed.dow.vals, false)}`);
+						partsZh.push(`星期 ${compactCron(parsed.dow.vals, false)} 周`);
+					}
+					if (spec.hasYear && parsed.year && !parsed.year.full) {
+						partsEn.push(`year ${compactCron(parsed.year.vals, false)}`);
+						partsZh.push(`${compactCron(parsed.year.vals, false)} 年`);
 					}
 					en = partsEn.join(', ');
 					zh = partsZh.join('，') + ' 执行';
 				}
+
+				// Next-fire table.
+				const fire = nextFire(parsed, Date.now(), tz, count);
+				const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+				const table = fire.times.length
+					? {
+							columns: tz === 'UTC' ? ['#', 'UTC'] : ['#', 'Local time', 'UTC'],
+							columnsZh: tz === 'UTC' ? ['#', 'UTC'] : ['#', '本地时间', 'UTC'],
+							rows: fire.times.map((ms, i) => (tz === 'UTC' ? [String(i + 1), stamp(ms, 'UTC', false)] : [String(i + 1), stamp(ms, localTz, false), stamp(ms, 'UTC', false)])),
+							rowsZh: fire.times.map((ms, i) => (tz === 'UTC' ? [String(i + 1), stamp(ms, 'UTC', true)] : [String(i + 1), stamp(ms, localTz, true), stamp(ms, 'UTC', true)])),
+						}
+					: undefined;
+
+				const rows = [
+					...display,
+					{ label: 'Schedule', labelZh: '执行时间', value: en, valueZh: zh },
+				];
+				if (fire.error) rows.push({ label: 'Next runs', labelZh: '下次执行', value: fire.error, valueZh: fire.errorZh! });
+
 				return {
-					rows: [
-						...ok.map((f, i) => ({
-							label: f.en,
-							labelZh: f.zh,
-							value: compactAt(i),
-							valueZh: compactAt(i),
-						})),
-						{ label: 'Schedule', labelZh: '执行时间', value: en, valueZh: zh },
-					],
+					rows,
+					table,
+					note: 'Next-fire times follow this wall clock. An hour that does not exist because of a spring-forward DST gap is skipped, and a fall-back duplicate hour appears once. The L/W/# modifiers are not supported.',
+					noteZh: '下次执行时间按此时区的墙钟计算。因夏令时春季快进而不存在的小时会被跳过，秋季回拨的重复小时只出现一次。不支持 L/W/# 扩展语法。',
 				};
 			},
 		},

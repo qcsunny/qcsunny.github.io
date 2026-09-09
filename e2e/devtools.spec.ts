@@ -199,3 +199,133 @@ test('hash generator computes SHA-256 live on input with Web Crypto', async ({ p
 		'SHA-256 2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824',
 	);
 });
+
+
+// --- cron expression parser ---------------------------------------------------------
+// cron-expression-parser is a form-kind tool: it recomputes on every input event,
+// so the interaction is fill + Enter (no Compute button). It expands each field
+// of a Linux 5-field or Quartz 6/7-field expression and then runs the greedy
+// bit-mask carry of nextFire() to list the next execution times.
+//
+// Two harness notes that shape the assertions:
+//   * innerText, not textContent — bilingual() emits a .i18n-en/.i18n-zh span
+//     pair that global.css hides one half of, so textContent glues both halves
+//     into "Second秒0,30" and no readable substring matches.
+//   * Next-fire timestamps depend on Date.now(), so every assertion pins
+//     structure (row counts, column counts, month names) and never a year.
+
+test('cron parser expands the default 5-field expression and lists next runs', async ({ page }) => {
+	await page.goto('/devtools/cron-expression-parser/');
+
+	const expr = page.locator('#t-f-expr');
+	await expr.fill('0 12 * * *');
+	await expr.press('Enter');
+
+	// A lone minute+hour collapses into a clock phrase rather than a field list.
+	await expect(page.locator('.t-results')).toHaveText(/at 12:00/, { useInnerText: true });
+
+	const rows = page.locator('.t-table tbody tr');
+	await expect(rows).toHaveCount(7);
+	await expect(rows.first().locator('td').nth(0)).toHaveText('1', { useInnerText: true });
+	// en-US formats the local column with a 4-digit year.
+	await expect(rows.first().locator('td').nth(1)).toHaveText(/\d{4}/, { useInnerText: true });
+});
+
+test('cron parser accepts a 6-field second-level Quartz expression', async ({ page }) => {
+	await page.goto('/devtools/cron-expression-parser/');
+
+	await page.locator('#t-f-dialect').selectOption('spring-quartz');
+	const expr = page.locator('#t-f-expr');
+	await expr.fill('0/30 * * * * ?');
+	await expr.press('Enter');
+
+	// POSIX `a/n` means a-max/n, so 0/30 over 0-59 is 0 and 30.
+	await expect(page.locator('.t-results')).toHaveText(/Second[\s\S]*?0,30/, { useInnerText: true });
+	// The '?' day-of-month drops out of the expansion entirely.
+	await expect(page.locator('.t-results')).toHaveText(/Day of month[\s\S]*?\?/, { useInnerText: true });
+	await expect(page.locator('.t-table tbody tr')).toHaveCount(7);
+});
+
+test('cron parser handles a 7-field Quartz expression with a year', async ({ page }) => {
+	await page.goto('/devtools/cron-expression-parser/');
+
+	await page.locator('#t-f-dialect').selectOption('quartz-7');
+	const expr = page.locator('#t-f-expr');
+	await expr.fill('0 0 0 1 1 ? 2027');
+	await expr.press('Enter');
+
+	await expect(page.locator('.t-results')).toHaveText(/Year[\s\S]*?2027/, { useInnerText: true });
+	// A pinned year with a fixed month and day fires exactly once, so the
+	// run-count selector cannot pad the table — one row carrying 2027 is the
+	// year field actually being honoured, not a parse that ignored it.
+	const rows = page.locator('.t-table tbody tr');
+	await expect(rows).toHaveCount(1);
+	await expect(rows.first().locator('td').nth(1)).toHaveText(/2027/, { useInnerText: true });
+});
+
+test('cron parser rejects a Quartz expression whose day fields are both concrete', async ({ page }) => {
+	await page.goto('/devtools/cron-expression-parser/');
+
+	await page.locator('#t-f-dialect').selectOption('spring-quartz');
+	const expr = page.locator('#t-f-expr');
+	await expr.fill('0 0 0 1 1 1');
+	await expr.press('Enter');
+
+	await expect(page.locator('.t-results')).toHaveText(
+		/one of day-of-month \/ day-of-week to be '\?'/,
+		{ useInnerText: true },
+	);
+});
+
+test('cron parser rejects a question mark in a 5-field expression', async ({ page }) => {
+	await page.goto('/devtools/cron-expression-parser/');
+
+	const expr = page.locator('#t-f-expr');
+	await expr.fill('0 12 ? * *');
+	await expr.press('Enter');
+
+	await expect(page.locator('.t-results')).toHaveText(
+		/'\?' is not valid in Linux 5-field cron/,
+		{ useInnerText: true },
+	);
+});
+
+test('cron parser honours the run-count selector', async ({ page }) => {
+	await page.goto('/devtools/cron-expression-parser/');
+
+	await page.locator('#t-f-count').selectOption('3');
+	await expect(page.locator('.t-table tbody tr')).toHaveCount(3);
+});
+
+test('cron parser rolls a January-only expression into the next year', async ({ page }) => {
+	await page.goto('/devtools/cron-expression-parser/');
+
+	const expr = page.locator('#t-f-expr');
+	await expr.fill('0 0 1 1 *');
+	await expr.press('Enter');
+
+	// stamp() formats the English local column with a long month name.
+	await expect(page.locator('.t-table tbody tr').first().locator('td').nth(1)).toHaveText(/January/, {
+		useInnerText: true,
+	});
+});
+
+test('cron parser rejects the unsupported L/W/# modifiers', async ({ page }) => {
+	await page.goto('/devtools/cron-expression-parser/');
+
+	const expr = page.locator('#t-f-expr');
+	await expr.fill('0 0 15W * *');
+	await expr.press('Enter');
+
+	// 'W' is not in the token grammar, so the field parser reports malformed
+	// rather than a dedicated L/W/# message; the field hint is what tells the
+	// user the extension syntax is out of scope.
+	await expect(page.locator('.t-results')).toHaveText(/out of range or malformed/, { useInnerText: true });
+});
+
+test('cron parser drops the local column when the time zone is UTC', async ({ page }) => {
+	await page.goto('/devtools/cron-expression-parser/');
+
+	await page.locator('#t-f-tz').selectOption('UTC');
+	await expect(page.locator('.t-table thead th')).toHaveCount(2);
+});
