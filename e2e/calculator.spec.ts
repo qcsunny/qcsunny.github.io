@@ -258,5 +258,22 @@ test('2D grapher supports implicit curves, complex domain coloring, and vector f
 	await expect(modeSelect).toHaveValue('vector');
 });
 
+test('displays human-readable MathML formula preview in real-time', async ({ page }) => {
+	await page.goto('/calculators/standard/');
 
+	const display = page.locator('#calc-display');
+	const formula = page.locator('#calc-formula');
 
+	// Initially empty
+	await expect(formula).toBeEmpty();
+
+	// Typing fractions and radicals renders MathML elements
+	await display.fill('(1 + sqrt(5)) / 2');
+	await expect(formula.locator('math')).toBeVisible();
+	await expect(formula.locator('mfrac')).toBeVisible();
+	await expect(formula.locator('msqrt')).toBeVisible();
+
+	// Clearing removes the formula preview
+	await page.locator('.calc-keypad-standard button', { hasText: 'C' }).click();
+	await expect(formula).toBeEmpty();
+});

@@ -89,6 +89,13 @@ const scientificKeys: Key[] = [
 		spellcheck="false"
 		placeholder="Type an expression, e.g. 2+3*4 or a=2"
 	/>
+	<div
+		id="calc-formula"
+		class="calc-formula"
+		aria-label="Formula rendering"
+		data-aria-en="Formula rendering"
+		data-aria-zh="公式排版渲染"
+	></div>
 	<div id="calc-preview" class="calc-preview" aria-live="polite"></div>
 
 	<div id="calc-vars" class="calc-vars"></div>
@@ -180,6 +187,27 @@ const scientificKeys: Key[] = [
 	.calc-display:focus {
 		outline: 2px solid var(--accent);
 		outline-offset: -1px;
+	}
+	.calc-formula {
+		min-height: 2.2em;
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		margin: 0.35em 0.2em 0.15em;
+		padding: 0.4em 0.75em;
+		background: rgba(var(--gray), 6%);
+		border: 1px dashed var(--gridline);
+		border-radius: 8px;
+		overflow-x: auto;
+		color: var(--fg);
+		font-size: clamp(1.15rem, 3.2vw, 1.4rem);
+	}
+	.calc-formula:empty {
+		display: none;
+	}
+	.calc-formula math {
+		font-family: 'KaTeX_Math', 'KaTeX_Main', 'Cambria Math', 'STIX Two Math', 'Latin Modern Math', math, serif;
+		direction: ltr;
 	}
 	.calc-preview {
 		min-height: 1.6em;

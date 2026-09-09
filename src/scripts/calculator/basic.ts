@@ -1,4 +1,4 @@
-import { CalcError, errorText, evaluate, formatNumber, toFraction, tryAssign, type Scope } from './engine';
+import { CalcError, errorText, evaluate, formatExpressionToMathML, formatNumber, toFraction, tryAssign, type Scope } from './engine';
 import { isZh, langProp, onLang, setBilingual } from '../tools/i18n';
 import {
 	clearHistory,
@@ -16,6 +16,7 @@ const PREVIEW_DEBOUNCE_MS = 150;
 
 export function initBasic(scope: Scope, hooks: BasicHooks = {}): void {
 	const display = document.querySelector<HTMLInputElement>('#calc-display');
+	const formula = document.querySelector<HTMLElement>('#calc-formula');
 	const preview = document.querySelector<HTMLElement>('#calc-preview');
 	const varsHost = document.querySelector<HTMLElement>('#calc-vars');
 	const historyList = document.querySelector<HTMLUListElement>('#calc-history-list');
@@ -78,7 +79,12 @@ export function initBasic(scope: Scope, hooks: BasicHooks = {}): void {
 		const src = display!.value.trim();
 		if (!src) {
 			showPreview('');
+			if (formula) formula.innerHTML = '';
 			return;
+		}
+		if (formula) {
+			const mathml = formatExpressionToMathML(src);
+			formula.innerHTML = mathml ?? '';
 		}
 		try {
 			const res = evaluate(src, scope);
@@ -115,6 +121,10 @@ export function initBasic(scope: Scope, hooks: BasicHooks = {}): void {
 			const name = tryAssign(src, scope);
 			if (name) {
 				const value = scope.vars[name] as number;
+				if (formula) {
+					const mathml = formatExpressionToMathML(src, formatNumber(value));
+					formula.innerHTML = mathml ?? '';
+				}
 				showPreview(`${name} = ${formatNumber(value)}`);
 				takeResult(formatNumber(value));
 				pushHistory({ expr: src, result: formatNumber(value), ts: Date.now() });
@@ -128,6 +138,10 @@ export function initBasic(scope: Scope, hooks: BasicHooks = {}): void {
 				const text = formatNumber(result);
 				const frac = toFraction(result);
 				scope.vars['ans'] = result;
+				if (formula) {
+					const mathml = formatExpressionToMathML(src, text);
+					formula.innerHTML = mathml ?? '';
+				}
 				// The expression moves to the preview line as the box takes the
 				// result — otherwise pressing = would erase what was computed.
 				// If the decimal has a neat simple fraction (e.g. 0.375 = 3/8), show both.
@@ -138,6 +152,7 @@ export function initBasic(scope: Scope, hooks: BasicHooks = {}): void {
 				renderHistory();
 			}
 		} catch (err) {
+			if (formula) formula.innerHTML = '';
 			const { en, zh } = errorText(err);
 			showError(en, zh);
 		}
@@ -217,6 +232,7 @@ export function initBasic(scope: Scope, hooks: BasicHooks = {}): void {
 				case 'clear':
 					display!.value = '';
 					showPreview('');
+					if (formula) formula.innerHTML = '';
 					justEvaluated = false;
 					display!.focus();
 					break;

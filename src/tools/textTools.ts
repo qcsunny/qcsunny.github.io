@@ -428,16 +428,6 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		config: {
 			fields: [
 				{
-					id: 'number',
-					label: 'Number in source base',
-					labelZh: '源进制下的数字',
-					type: 'text',
-					def: 'ff',
-					placeholder: 'e.g. ff, 255, 11111111',
-					placeholderZh: '例如 ff、255、11111111',
-					required: true,
-				},
-				{
 					id: 'base',
 					label: 'Source base',
 					labelZh: '源进制',
@@ -449,6 +439,16 @@ export const TEXT_TOOLS: ToolEntry[] = [
 						{ value: '10', label: 'Decimal (10)', labelZh: '十进制 (10)' },
 						{ value: '16', label: 'Hexadecimal (16)', labelZh: '十六进制 (16)' },
 					],
+				},
+				{
+					id: 'number',
+					label: 'Number in source base',
+					labelZh: '源进制下的数字',
+					type: 'text',
+					def: 'ff',
+					placeholder: 'e.g. ff, 255, 11111111',
+					placeholderZh: '例如 ff、255、11111111',
+					required: true,
 				},
 			],
 			compute: (v) => {

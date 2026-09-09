@@ -5,6 +5,7 @@ import { parse } from './parser';
 export { CalcError, errorText } from './errors';
 export type { Scope } from './functions';
 export { formatNumber, toFraction };
+export { formatExpressionToMathML, nodeToMathML } from './formatMath';
 
 /** Evaluate an expression string, throwing CalcError on syntax/semantic errors. */
 export function evaluate(src: string, scope: Scope): number {

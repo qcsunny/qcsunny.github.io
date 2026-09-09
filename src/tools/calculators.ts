@@ -1035,7 +1035,7 @@ const equationSolver: FormConfig = {
 		{ id: 'intB', label: 'Integral upper limit b', labelZh: '积分上限 b', type: 'number', def: '2', step: 'any', showIf: (v) => v.str('type') === 'calculus' },
 		// Limit fields
 		{ id: 'limExpr', label: 'Function f(x)', labelZh: '函数表达式 f(x)', type: 'text', def: 'sin(x)/x', showIf: (v) => v.str('type') === 'limit' },
-		{ id: 'limX0', label: 'Approach point x0', labelZh: '趋近目标点 x0', type: 'number', def: '0', step: 'any', showIf: (v) => v.str('type') === 'limit' && v.str('limDir') !== '+inf' && v.str('limDir') !== '-inf' },
+		{ id: 'limX0', label: 'Approach point x0', labelZh: '趋近目标点 x0', type: 'number', def: '0', step: 'any', showIf: (v) => v.str('type') === 'limit' && !v.str('limDir').includes('inf') },
 		{
 			id: 'limDir',
 			label: 'Direction',
@@ -1046,6 +1046,7 @@ const equationSolver: FormConfig = {
 				{ value: 'both', label: 'Two-sided limit (x → x0)', labelZh: '双侧极限 (x → x0)' },
 				{ value: 'right', label: 'Right-sided limit (x → x0⁺)', labelZh: '右极限 (x → x0⁺)' },
 				{ value: 'left', label: 'Left-sided limit (x → x0⁻)', labelZh: '左极限 (x → x0⁻)' },
+				{ value: 'inf', label: 'x → ∞ (unsigned / both infinities)', labelZh: 'x → ∞（无符号/双侧无穷）' },
 				{ value: '+inf', label: 'x → +∞ (positive infinity)', labelZh: 'x → +∞（正无穷大）' },
 				{ value: '-inf', label: 'x → −∞ (negative infinity)', labelZh: 'x → −∞（负无穷大）' },
 			],
@@ -1618,57 +1619,105 @@ const equationSolver: FormConfig = {
 					return fn(scope);
 				};
 
-				// ---- x → ±∞ via substitution t = 1/x (t → 0⁺) ----
-				if (dir === '+inf' || dir === '-inf') {
-					const sign = dir === '+inf' ? 1 : -1;
-					// Evaluate at x = sign/t for decreasing t; reuse the same Richardson machinery.
+				// Helper for x → ±∞ evaluation via substitution t = 1/x (t → 0⁺)
+				const calcInf = (sign: 1 | -1) => {
 					const steps = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6];
 					const vals: number[] = [];
 					for (const t of steps) {
 						const val = evalSafe(sign / t);
 						if (Number.isFinite(val)) vals.push(val);
 					}
-					const dirStr = dir === '+inf' ? '+∞' : '−∞';
-					const dirStrZh = dir === '+inf' ? '正无穷大 (+∞)' : '负无穷大 (−∞)';
 					if (vals.length < 2) {
-						// Check if it diverges to ±∞
 						const lastLarge = evalSafe(sign * 1e6);
 						const lastLarger = evalSafe(sign * 1e8);
-						let divergeStr = 'Does not exist (oscillates or complex)';
-						let divergeStrZh = '极限不存在（函数振荡或发散）';
 						if (Number.isFinite(lastLarge) && Number.isFinite(lastLarger)) {
-							if (lastLarge > 1e5 && lastLarger > lastLarge) { divergeStr = '+∞'; divergeStrZh = '+∞'; }
-							else if (lastLarge < -1e5 && lastLarger < lastLarge) { divergeStr = '−∞'; divergeStrZh = '−∞'; }
+							if (lastLarge > 1e5 && lastLarger > lastLarge) return { num: null, str: '+∞', strZh: '+∞', spread: 0 };
+							if (lastLarge < -1e5 && lastLarger < lastLarge) return { num: null, str: '−∞', strZh: '−∞', spread: 0 };
 						}
-						rows.push({
-							label: `Limit lim(x → ${dirStr}) f(x)`,
-							labelZh: `极限 lim(x → ${dirStrZh}) f(x)`,
-							value: divergeStr,
-							valueZh: divergeStrZh,
-							emphasis: true,
-						});
-						return { rows };
+						return { num: null, str: 'Does not exist (oscillates or complex)', strZh: '极限不存在（函数振荡或发散）', spread: 0 };
 					}
-					// Richardson extrapolation on the last two clean values
 					const v1 = vals[vals.length - 2]!;
 					const v2 = vals[vals.length - 1]!;
 					const extrap = (4 * v2 - v1) / 3;
 					const limVal = Math.abs(extrap - Math.round(extrap)) < 1e-9 ? Math.round(extrap) : extrap;
+					return { num: limVal, str: formatNumber(limVal), strZh: formatNumber(limVal), spread: Math.abs(v2 - v1) };
+				};
+
+				// ---- x → ±∞ (signed) ----
+				if (dir === '+inf' || dir === '-inf') {
+					const sign = dir === '+inf' ? 1 : -1;
+					const res = calcInf(sign);
+					const dirStr = dir === '+inf' ? '+∞' : '−∞';
+					const dirStrZh = dir === '+inf' ? '正无穷大 (+∞)' : '负无穷大 (−∞)';
 					rows.push({
 						label: `Limit lim(x → ${dirStr}) f(x)`,
 						labelZh: `极限 lim(x → ${dirStrZh}) f(x)`,
-						value: formatNumber(limVal),
-						valueZh: formatNumber(limVal),
+						value: res.str,
+						valueZh: res.strZh,
 						emphasis: true,
 					});
-					// Convergence quality note
-					const spread = Math.abs(v2 - v1);
-					if (spread > 1e-4) {
+					if (res.spread > 1e-4) {
 						rows.push({
 							label: 'Note',
 							labelZh: '提示',
-							value: `Convergence is slow (spread = ${spread.toExponential(2)}); result may be approximate`,
-							valueZh: `收敛较慢（相邻差 ${spread.toExponential(2)}），结果为近似值`,
+							value: `Convergence is slow (spread = ${res.spread.toExponential(2)}); result may be approximate`,
+							valueZh: `收敛较慢（相邻差 ${res.spread.toExponential(2)}），结果为近似值`,
+						});
+					}
+					return { rows };
+				}
+
+				// ---- x → ∞ (unsigned / both directions) ----
+				if (dir === 'inf') {
+					const resPos = calcInf(1);
+					const resNeg = calcInf(-1);
+					const bothNumeric = resPos.num !== null && resNeg.num !== null;
+					const equalNumeric = bothNumeric && Math.abs(resPos.num! - resNeg.num!) < 1e-4;
+					const equalDiverge = resPos.num === null && resNeg.num === null && resPos.str === resNeg.str && (resPos.str === '+∞' || resPos.str === '−∞');
+
+					if (equalNumeric) {
+						const avg = (resPos.num! + resNeg.num!) / 2;
+						const valStr = formatNumber(avg);
+						rows.push({
+							label: 'Unsigned Limit lim(x → ∞) f(x)',
+							labelZh: '双侧无穷极限 lim(x → ∞) f(x)',
+							value: valStr,
+							valueZh: valStr,
+							emphasis: true,
+						});
+						rows.push({
+							label: 'Note',
+							labelZh: '说明',
+							value: `Both directions converge to the same value: lim(x → +∞) = ${resPos.str}, lim(x → −∞) = ${resNeg.str}`,
+							valueZh: `正负无穷两侧极限一致：lim(x → +∞) = ${resPos.strZh}，lim(x → −∞) = ${resNeg.strZh}`,
+						});
+					} else if (equalDiverge) {
+						rows.push({
+							label: 'Unsigned Limit lim(x → ∞) f(x)',
+							labelZh: '双侧无穷极限 lim(x → ∞) f(x)',
+							value: resPos.str!,
+							valueZh: resPos.strZh!,
+							emphasis: true,
+						});
+						rows.push({
+							label: 'Note',
+							labelZh: '说明',
+							value: `Both directions diverge to ${resPos.str}`,
+							valueZh: `正负两侧无穷大均趋于 ${resPos.strZh}`,
+						});
+					} else {
+						rows.push({
+							label: 'Unsigned Limit lim(x → ∞) f(x)',
+							labelZh: '双侧无穷极限 lim(x → ∞) f(x)',
+							value: 'Does not exist (differs at +∞ and −∞)',
+							valueZh: '极限不存在（正负无穷两端极限不一致）',
+							emphasis: true,
+						});
+						rows.push({
+							label: 'Breakdown',
+							labelZh: '两侧分别情况',
+							value: `lim(x → +∞) = ${resPos.str}, lim(x → −∞) = ${resNeg.str}`,
+							valueZh: `lim(x → +∞) = ${resPos.strZh}，lim(x → −∞) = ${resNeg.strZh}`,
 						});
 					}
 					return { rows };
