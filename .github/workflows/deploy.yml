@@ -25,30 +25,14 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      # apt is the expensive half of both install steps below: this step runs
-      # `apt-get update`, and `playwright install --with-deps` runs it again —
-      # Playwright pushes "apt-get update" unconditionally (coreBundle.js), with
-      # no flag to skip it. Run 34324369010 measures the first update at 10.4s of
-      # the step's 14.0s, so the index cache is where the win is; the archives
-      # glob lets `apt-get install` reuse the .debs.
-      #
-      # The paths are globs, NOT the two directories, on purpose. A bare
-      # /var/lib/apt/lists made the post-job save fail the whole upload with
-      # exit code 2 — `partial/` and `lock` are root-only, so
-      #     tar: ../../../../../var/lib/apt/lists/partial: Cannot open: Permission denied
-      # and actions/cache aborts the tar instead of skipping those entries. The
-      # globs below select only the index data; lock/partial are apt internals it
-      # recreates on demand. apt compares each cached index against the freshly
-      # fetched one and redownloads on a version mismatch, so a stale entry
-      # self-heals rather than pinning an old package.
-      - name: Cache apt lists and archives
-        uses: actions/cache@v4
-        with:
-          path: |
-            /var/lib/apt/lists/*.lz4
-            /var/lib/apt/lists/*Release*
-            /var/cache/apt/archives/*.deb
-          key: apt-${{ runner.os }}-${{ runner.arch }}
+      # NOTE: do not cache apt here. /var/lib/apt/lists and /var/cache/apt/archives
+      # are root-owned; actions/cache runs as the non-root `runner` user, so it
+      # can read them into a tarball on save but cannot write them back on
+      # restore. `tar -xf` exits 2 ("Cannot open: File exists" on the runner's
+      # pre-existing indexes, "Permission denied" on the root-owned .debs) and
+      # actions/cache reports every restore as a miss (run 34325886955), leaving a
+      # 23.5 MB dead-weight blob. The Playwright cache below pays because its
+      # path ~/.cache/ms-playwright is user-writable; apt's system paths are not.
       - name: Install font subset tooling
         run: python3 -m pip install 'fonttools[woff]==4.63.0'
       # og-images.mjs rasterizes Chinese post titles through libvips/fontconfig,
