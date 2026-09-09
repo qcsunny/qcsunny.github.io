@@ -242,16 +242,20 @@ const mortgagePrepayment: FormConfig = {
 		const i = rate / 100 / 12;
 		const origPayment = monthlyPayment(loan, rate, totalMonths);
 
-		// calculate balance after paidMonths
-		let balance = loan;
+		// calculate balance after paidMonths in O(1) closed form
+		let balanceBefore = loan;
 		let interestPaidSoFar = 0;
-		for (let m = 0; m < paidMonths; m++) {
-			const int = balance * i;
-			const pr = Math.min(origPayment - int, balance);
-			balance -= pr;
-			interestPaidSoFar += int;
+		if (paidMonths > 0) {
+			if (i <= 0) {
+				const monthlyPrinc = loan / totalMonths;
+				balanceBefore = Math.max(0, loan - monthlyPrinc * paidMonths);
+				interestPaidSoFar = 0;
+			} else {
+				const powN = (1 + i) ** paidMonths;
+				balanceBefore = Math.max(0, loan * powN - origPayment * ((powN - 1) / i));
+				interestPaidSoFar = origPayment * paidMonths - (loan - balanceBefore);
+			}
 		}
-		const balanceBefore = balance;
 		const prepayActual = Math.min(prepay, balanceBefore);
 		const balanceAfter = Math.max(balanceBefore - prepayActual, 0);
 

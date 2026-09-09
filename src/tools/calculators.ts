@@ -72,7 +72,7 @@ function pollardRho(n: bigint): bigint {
 	// Brent's cycle detection + batch GCD. Powers of 2 steps with batch GCD
 	// save ~25% steps vs Floyd and drop GCD calls by >95%. Retries with c+1 if
 	// the batch collapses onto n.
-	for (let c = 1n; ; c++) {
+	for (let c = 1n; c <= 100n; c++) {
 		const f = (z: bigint): bigint => (z * z + c) % n;
 		let y = 2n;
 		let d = 1n;
@@ -110,6 +110,7 @@ function pollardRho(n: bigint): bigint {
 		}
 		if (d !== n && d > 1n) return d;
 	}
+	return n;
 }
 
 /** n is composite here — callers run isPrime first. Collects n's prime factors. */
@@ -890,7 +891,7 @@ function solveQuadratic(a: number, b: number, c: number): { x1: string; x2: stri
 		return { x1: formatNumber(x1), x2: formatNumber(x2), delta };
 	}
 	const real = formatNumber(-b / (2 * a));
-	const imag = formatNumber(Math.sqrt(-delta) / (2 * a));
+	const imag = formatNumber(Math.sqrt(-delta) / (2 * Math.abs(a)));
 	return {
 		x1: `${real} + ${imag}i`,
 		x2: `${real} - ${imag}i`,
@@ -931,7 +932,8 @@ function solveCubic(a: number, b: number, c: number, d: number): string[] {
 	} else {
 		// Three distinct real roots via trigonometry
 		const r = Math.sqrt(-(p ** 3) / 27);
-		const phi = Math.acos(-q / (2 * r));
+		const cosArg = Math.max(-1, Math.min(1, -q / (2 * r)));
+		const phi = Math.acos(cosArg);
 		const m = 2 * Math.cbrt(r);
 		const r1 = m * Math.cos(phi / 3) + shift;
 		const r2 = m * Math.cos((phi + 2 * Math.PI) / 3) + shift;
@@ -1198,11 +1200,14 @@ const equationSolver: FormConfig = {
 						value: `${formatNumber(ca4)}x⁴ + ${formatNumber(ca3)}x³ + ${formatNumber(ca2)}x² + ${formatNumber(ca1)}x + ${formatNumber(ca0)} = 0`,
 						valueZh: `${formatNumber(ca4)}x⁴ + ${formatNumber(ca3)}x³ + ${formatNumber(ca2)}x² + ${formatNumber(ca1)}x + ${formatNumber(ca0)} = 0`,
 					});
-					// Numerical root finding via bisection + Newton on a dense scan
+					// Numerical root finding via bisection + Newton on a dense scan using Cauchy's bound
 					const numRoots: number[] = [];
 					const evalP = (xv: number) => { pVars['x'] = xv; return fn(scope); };
-					const SCAN = 200;
-					const lo = -100, hi = 100;
+					const maxCoeff = Math.max(Math.abs(ca3), Math.abs(ca2), Math.abs(ca1), Math.abs(ca0));
+					const cauchyBound = 1 + maxCoeff / Math.abs(ca4);
+					const bound = Math.max(100, Math.min(1e6, cauchyBound));
+					const SCAN = 400;
+					const lo = -bound, hi = bound;
 					let prev = evalP(lo);
 					for (let i = 1; i <= SCAN; i++) {
 						const xMid = lo + (hi - lo) * i / SCAN;

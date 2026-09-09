@@ -53,7 +53,8 @@ export function computeStats(nums: number[]): StatsResult | null {
 	// mode: most frequent value(s); only when frequency > 1
 	const freq = new Map<number, number>();
 	for (const v of nums) freq.set(v, (freq.get(v) ?? 0) + 1);
-	const maxFreq = Math.max(...freq.values());
+	let maxFreq = 0;
+	for (const f of freq.values()) if (f > maxFreq) maxFreq = f;
 	const modes =
 		maxFreq > 1 ? [...freq.entries()].filter(([, f]) => f === maxFreq).map(([v]) => v).sort((a, b) => a - b) : null;
 
