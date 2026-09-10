@@ -44,6 +44,23 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 			host.append(btnRow);
 		}
 
+		// Clear button: wipes input, output and error. Class t-clear also keeps it
+		// OUT of the pre-rendered .t-btn sequence below — those are matched to
+		// transforms by index, and the clearing button is no transform.
+		const clearBtn = document.createElement('button');
+		clearBtn.type = 'button';
+		clearBtn.className = 't-btn t-clear';
+		clearBtn.append(bilingual('✕ Clear', '✕ 清空'));
+		clearBtn.addEventListener('click', () => {
+			if (!input) return;
+			input.value = '';
+			if (out) out.value = '';
+			if (errEl) errEl.textContent = '';
+			update();
+			input.focus();
+		});
+		btnRow.insertBefore(clearBtn, btnRow.firstChild);
+
 		let outLabel = host.querySelector<HTMLElement>('.t-out-label');
 		if (!outLabel) {
 			outLabel = document.createElement('span');
@@ -97,7 +114,8 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 		};
 
 		if (isPreRenderedBtns) {
-			const btns = btnRow.querySelectorAll<HTMLButtonElement>('.t-btn');
+			// :not(.t-clear) — the clear button above is no transform (see there).
+			const btns = btnRow.querySelectorAll<HTMLButtonElement>('.t-btn:not(.t-clear)');
 			(config.transforms ?? []).forEach((t, i) => {
 				const btn = btns[i];
 				if (btn) {
@@ -127,6 +145,28 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 				executeTransform(config.transforms[0]);
 			}
 		}
+	}
+
+	// Stats-only tools (word counter, …) have no transform button row; give
+	// them a slim one so clearing is just as easy.
+	if (!config.transforms?.length) {
+		const clearRow = document.createElement('div');
+		clearRow.className = 't-btnrow t-clearrow';
+		const clearBtn = document.createElement('button');
+		clearBtn.type = 'button';
+		clearBtn.className = 't-btn t-clear';
+		clearBtn.append(bilingual('✕ Clear', '✕ 清空'));
+		clearBtn.addEventListener('click', () => {
+			if (!input) return;
+			input.value = '';
+			update();
+			input.focus();
+		});
+		clearRow.append(clearBtn);
+		// Above the statistics block (and its label) when there is one, else at the end.
+		const statsAnchor = host.querySelector('.t-stats-label') ?? statsHost;
+		if (statsAnchor && statsAnchor.parentElement === host) host.insertBefore(clearRow, statsAnchor);
+		else host.append(clearRow);
 	}
 
 	function statRow(stat: TextStat): HTMLElement {

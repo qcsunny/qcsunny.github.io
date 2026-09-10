@@ -562,6 +562,16 @@ const year = new Date().getFullYear();
 				gap: 0.6em;
 				margin-bottom: 1em;
 			}
+			/* Clear / reset: a destructive-adjacent action, visually quieter than
+			   the transforms it sits next to. */
+			.t-btn.t-clear {
+				font-size: 0.85rem;
+				padding: 0.4em 0.9em;
+				opacity: 0.72;
+			}
+			.t-btn.t-clear:hover {
+				opacity: 1;
+			}
 
 			/* --- export bar (print + PNG); shown only once results render --- */
 			.t-export-bar {
@@ -1114,6 +1124,23 @@ const year = new Date().getFullYear();
 	background: var(--bg);
 }
 /* --- WCAG Contrast Card (reuses the gamut card frame) --- */
+.t-alpharow {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+}
+.t-alpharow input[type='range'] {
+	flex: 1;
+	min-width: 6em;
+}
+.t-alphaval {
+	flex: none;
+	min-width: 3.2em;
+	text-align: right;
+	font-family: ui-monospace, Consolas, monospace;
+	font-size: 0.82rem;
+	color: var(--dim);
+}
 .t-contrast-preview {
 	display: flex;
 	align-items: center;
@@ -1158,6 +1185,27 @@ const year = new Date().getFullYear();
 	background: #0f1218;
 	touch-action: none;
 	cursor: crosshair;
+}
+.t-gamut-controls {
+	display: flex;
+	align-items: center;
+	gap: 0.6em;
+	margin-top: 0.6em;
+	font-size: 0.82rem;
+}
+.t-gamut-controls label {
+	flex: none;
+	color: var(--dim);
+}
+.t-gamut-controls input[type='range'] {
+	flex: 1;
+}
+.t-gamut-lval {
+	flex: none;
+	min-width: 3.2em;
+	text-align: right;
+	font-family: ui-monospace, Consolas, monospace;
+	color: var(--dim);
 }
 .t-gamut-gl,
 .t-gamut-2d {

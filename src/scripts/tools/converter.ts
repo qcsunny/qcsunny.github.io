@@ -172,7 +172,10 @@ export function initConverter(host: HTMLElement, config: ConverterConfig): void 
 		cat.defaultSource ?? (names[0] as string),
 		() => convert('from'),
 	);
-	const toPicker = createSearchablePicker(names[1] ?? (names[0] as string), () => convert('from'));
+	const toPicker = createSearchablePicker(
+		cat.defaultTarget ?? names[1] ?? (names[0] as string),
+		() => convert('from'),
+	);
 
 	const fromInput = document.createElement('input');
 	fromInput.type = 'number';

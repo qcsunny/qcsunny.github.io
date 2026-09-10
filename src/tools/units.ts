@@ -26,6 +26,14 @@ export interface UnitCategory {
 	 * declaration order still rules for any category without a preference.
 	 */
 	defaultSource?: string;
+	/**
+	 * Default target unit; falls back to the SECOND declared unit when unset.
+	 * Only the data category sets it: its second unit is the kilobit (a
+	 * bandwidth measure), which made "1 GB → Kb" the landing view — the least
+	 * useful pairing on the page. GiB instead answers the question people
+	 * actually arrive with: how big is this disk in binary units.
+	 */
+	defaultTarget?: string;
 	units: Record<string, UnitDef>;
 }
 
@@ -368,6 +376,7 @@ export const UNIT_CATEGORIES: UnitCategory[] = [
 		label: 'Data Size & Bandwidth',
 		labelZh: '数据存储与带宽',
 		defaultSource: 'GB',
+		defaultTarget: 'GiB',
 		units: {
 			// Bits (Bandwidth)
 			b: lin('bit (b)', 0.125, '比特 (1/8 字节，网络带宽通信标准)', 'b'),

@@ -1704,6 +1704,398 @@ const discount: FormConfig = {
 	},
 };
 
+// --- retirement drawdown ---------------------------------------------------------------
+
+const retirementDrawdown: FormConfig = {
+	intro: 'How long will your nest egg last in retirement? Simulate monthly withdrawals, optionally growing with inflation.',
+	introZh: '退休后的养老资产能支撑多久？按月提取模拟，可选随通胀逐年上调的提取策略。',
+	fields: [
+		{ id: 'nestEgg', label: 'Retirement nest egg', labelZh: '退休时的资产总额', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '1200000', step: 'any', min: '0', required: true },
+		{ id: 'spend', label: 'Monthly living expenses', labelZh: '每月生活开支', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '4000', step: 'any', min: '0', required: true },
+		{ id: 'ret', label: 'Expected annual return', labelZh: '资产预期年化收益率', suffix: '(%)', type: 'number', def: '5', step: 'any', required: true },
+		{ id: 'infl', label: 'Annual inflation', labelZh: '年均通货膨胀率', suffix: '(%)', type: 'number', def: '3', step: 'any', min: '0', required: true },
+		{
+			id: 'mode',
+			label: 'Withdrawal strategy',
+			labelZh: '提取策略',
+			type: 'select',
+			def: 'inflation',
+			options: [
+				{ value: 'fixed', label: 'Fixed amount (nominal)', labelZh: '固定金额提取 (名义值)' },
+				{ value: 'inflation', label: 'Grow with inflation (real spending constant)', labelZh: '随通胀逐年上调 (实际购买力不变)' },
+			],
+		},
+	],
+	compute: (v) => {
+		const nestEgg = v.num('nestEgg');
+		const spend = v.num('spend');
+		const retPct = v.num('ret');
+		const inflPct = v.num('infl');
+		const inflate = v.str('mode') === 'inflation';
+		if (!(nestEgg > 0) || !(spend > 0)) {
+			return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (nest egg and expenses must be > 0)', valueZh: '— (资产总额与每月开支需大于 0)' }] };
+		}
+		// 600 months = 50 years, the horizon the simulation is capped at.
+		const MAX_MONTHS = 600;
+		const i = retPct / 100 / 12;
+		let balance = nestEgg;
+		let withdrawn = 0;
+		let earned = 0;
+		let months = 0;
+		const snapshots: string[][] = [];
+		let lastSnapshotYear = 0;
+		while (balance > 0 && months < MAX_MONTHS) {
+			const interest = balance * i;
+			balance += interest;
+			earned += interest;
+			// In the inflation mode the withdrawal grows by infl every 12 months,
+			// keeping its purchasing power flat in real terms.
+			const w = inflate ? spend * (1 + inflPct / 100) ** Math.floor(months / 12) : spend;
+			const take = Math.min(w, balance);
+			balance -= take;
+			withdrawn += take;
+			months++;
+			if (months % 60 === 0 || (balance <= 0 && months % 12 === 0)) {
+				const year = Math.ceil(months / 12);
+				if (year !== lastSnapshotYear) {
+					snapshots.push([String(year), money(w * 12), cash(balance).value]);
+					lastSnapshotYear = year;
+				}
+			}
+		}
+		const depleted = balance <= 0;
+		const yearsOut = months / 12;
+		// A 4% annual (≈0.327% monthly) withdrawal is the classic safe-harbour
+		// rate; show where the input lands against it.
+		const monthlyRatePct = (spend / nestEgg) * 100;
+		const rows: FormResultRow[] = [];
+		if (depleted) {
+			rows.push({ label: 'Nest egg lasts', labelZh: '资产可支撑时长', value: `${Math.floor(yearsOut)} years ${Math.round((yearsOut % 1) * 12)} months`, valueZh: `${Math.floor(yearsOut)} 年 ${Math.round((yearsOut % 1) * 12)} 个月`, emphasis: true });
+		} else {
+			rows.push({ label: 'Nest egg lasts', labelZh: '资产可支撑时长', value: '50+ years — never depleted', valueZh: '50 年以上 —— 未耗尽', emphasis: true });
+		}
+		rows.push({ label: 'Total withdrawn', labelZh: '累计提取总额', ...cash(withdrawn) });
+		rows.push({ label: 'Total investment income', labelZh: '期间投资收益累计', ...cash(earned) });
+		if (!depleted) rows.push({ label: 'Balance after 50 years', labelZh: '50 年后剩余资产', ...cash(balance) });
+		rows.push({ label: 'Initial monthly withdrawal rate', labelZh: '初始月提款率', value: `${percent(monthlyRatePct)}% / month (≈ ${percent(monthlyRatePct * 12)}% / year)`, valueZh: `${percent(monthlyRatePct)}% / 月 (≈ ${percent(monthlyRatePct * 12)}% / 年)` });
+		return {
+			rows,
+			table: snapshots.length
+				? {
+						columns: ['Year', 'Annual Withdrawal ($)', 'Ending Balance ($)'],
+						columnsZh: ['年份', '当年提取金额 (¥)', '年末资产余额 (¥)'],
+						rows: snapshots,
+					}
+				: undefined,
+			note: depleted
+				? `At ${percent(retPct)}% return${inflate ? ` with withdrawals growing at ${percent(inflPct)}% inflation` : ''}, the portfolio is depleted after ${Math.floor(yearsOut)} years. A withdrawal rate above ~4% per year historically risks running out of money.`
+				: `At ${percent(retPct)}% return${inflate ? ` with withdrawals growing at ${percent(inflPct)}% inflation` : ''}, the portfolio survives the full 50-year horizon.`,
+			noteZh: depleted
+				? `在年化 ${percent(retPct)}% 收益${inflate ? `、提取额随 ${percent(inflPct)}% 通胀逐年上调` : ''}的假设下，资产将在 ${Math.floor(yearsOut)} 年后耗尽。年提款率超过约 4% 时，历史上大概率出现本金枯竭风险。`
+				: `在年化 ${percent(retPct)}% 收益${inflate ? `、提取额随 ${percent(inflPct)}% 通胀逐年上调` : ''}的假设下，资产足以支撑整个 50 年模拟期。`,
+		};
+	},
+};
+
+// --- mortgage refinance comparison ------------------------------------------------
+
+const refinance: FormConfig = {
+	intro: 'Compare your current mortgage against a refinanced loan: monthly savings, break-even months, and lifetime interest.',
+	introZh: '对比现有房贷与再融资（转按揭）方案：月供节省、成本回本月数与全周期利息变化。',
+	fields: [
+		{ id: 'balance', label: 'Current loan balance', labelZh: '当前剩余贷款本金', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '800000', step: 'any', min: '0', required: true },
+		{ id: 'oldRate', label: 'Current interest rate', labelZh: '现有房贷利率', suffix: '(%)', type: 'number', def: '5.2', step: 'any', min: '0', required: true },
+		{ id: 'remainYears', label: 'Remaining term', labelZh: '剩余还款年限', suffix: '(years)', suffixZh: '(年)', type: 'number', def: '25', step: 'any', min: '0.1', required: true },
+		{ id: 'newRate', label: 'New refinanced rate', labelZh: '再融资新利率', suffix: '(%)', type: 'number', def: '3.9', step: 'any', min: '0', required: true },
+		{ id: 'newYears', label: 'New loan term', labelZh: '新贷款期限', suffix: '(years)', suffixZh: '(年)', type: 'number', def: '25', step: 'any', min: '0.1', required: true },
+		{ id: 'cost', label: 'Refinancing closing costs', labelZh: '再融资手续费 / 过桥成本', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '8000', step: 'any', min: '0', required: true },
+	],
+	compute: (v) => {
+		const balance = v.num('balance');
+		const oldRate = v.num('oldRate');
+		const remainYears = v.num('remainYears');
+		const newRate = v.num('newRate');
+		const newYears = v.num('newYears');
+		const cost = v.num('cost');
+		if (!(balance > 0)) {
+			return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (balance must be > 0)', valueZh: '— (剩余贷款本金需大于 0)' }] };
+		}
+		if (!(remainYears > 0) || !(newYears > 0) || remainYears > MAX_TERM_YEARS || newYears > MAX_TERM_YEARS) {
+			return overlongTerm();
+		}
+		const remainMonths = Math.round(remainYears * 12);
+		const newMonths = Math.round(newYears * 12);
+		const oldPay = monthlyPayment(balance, oldRate, remainMonths);
+		const newPay = monthlyPayment(balance, newRate, newMonths);
+		// Same-remaining-term payment isolates the pure rate cut: if the new loan
+		// stretches the term, the lower payment partly comes from re-amortising,
+		// not from the cheaper rate.
+		const newPaySameTerm = monthlyPayment(balance, newRate, remainMonths);
+		const monthlySaving = oldPay - newPay;
+		const sameTermSaving = oldPay - newPaySameTerm;
+		const oldInterest = oldPay * remainMonths - balance;
+		const newInterest = newPay * newMonths - balance;
+		const sameTermInterest = newPaySameTerm * remainMonths - balance;
+		const breakEven = monthlySaving > 0 && cost > 0 ? cost / monthlySaving : null;
+		const yearsLabel = (m: number): string => `${Math.floor(m / 12)} yr ${m % 12} mo`;
+		const rows: FormResultRow[] = [
+			{ label: `Current payment (${yearsLabel(remainMonths)} left)`, labelZh: `现有月供 (剩余 ${yearsLabel(remainMonths)})`, ...cash(oldPay) },
+			{ label: `New payment (${yearsLabel(newMonths)} term)`, labelZh: `新月供 (新期限 ${yearsLabel(newMonths)})`, ...cash(newPay) },
+			{ label: 'Monthly saving', labelZh: '每月节省月供', ...cash(monthlySaving), emphasis: monthlySaving > 0 },
+		];
+		if (breakEven !== null) {
+			const beMonths = Math.ceil(breakEven);
+			rows.push({ label: 'Break-even point', labelZh: '手续费回本点', value: `${beMonths} months (${yearsLabel(beMonths)})`, valueZh: `${beMonths} 个月 (${yearsLabel(beMonths)})`, emphasis: true });
+		} else if (monthlySaving > 0) {
+			rows.push({ label: 'Break-even point', labelZh: '手续费回本点', value: 'Immediate — no closing costs', valueZh: '立省 —— 无手续费' });
+		} else {
+			rows.push({ label: 'Break-even point', labelZh: '手续费回本点', value: '— (new payment is not lower)', valueZh: '— (新月供并未降低)' });
+		}
+		rows.push({ label: `Same-term payment (new rate, ${yearsLabel(remainMonths)})`, labelZh: `同剩余期限月供 (新利率, ${yearsLabel(remainMonths)})`, ...cash(newPaySameTerm) });
+		rows.push({ label: 'Same-term monthly saving', labelZh: '同期限口径每月节省', ...cash(sameTermSaving) });
+		rows.push({ label: `Remaining interest — current loan`, labelZh: '现有贷款剩余利息', ...cash(oldInterest) });
+		rows.push({ label: `Total interest — new loan (${yearsLabel(newMonths)})`, labelZh: `新贷款全周期利息 (${yearsLabel(newMonths)})`, ...cash(newInterest) });
+		rows.push({ label: 'Interest saved (same-term basis)', labelZh: '利息节省 (同期限口径)', ...cash(oldInterest - sameTermInterest) });
+		return {
+			rows,
+			note: newMonths > remainMonths
+				? `The new term is longer than what is left on the current loan, so the lower payment partly comes from re-spreading the balance, not just the rate cut. The same-term rows isolate the pure saving from the rate itself. Refinancing pays off if you stay past the break-even point of ${breakEven !== null ? `${Math.ceil(breakEven)} months` : '—'}.`
+				: `Refinancing to ${percent(newRate)}% saves ${cash(monthlySaving).value} per month; the closing costs pay for themselves${breakEven !== null ? ` after ${Math.ceil(breakEven)} months` : ' immediately'}.`,
+			noteZh: newMonths > remainMonths
+				? `新贷款期限长于现有贷款剩余年限，月供下降有一部分来自"重新摊还本金"而非利率优惠。同期限口径的两行才是纯利率差带来的节省。只有计划持有超过回本点（${breakEven !== null ? `${Math.ceil(breakEven)} 个月` : '—'}）再融资才划算。`
+				: `转按至 ${percent(newRate)}% 每月可省 ${cash(monthlySaving).valueZh}；手续费${breakEven !== null ? `需 ${Math.ceil(breakEven)} 个月回本` : '为零、立即回本'}。`,
+		};
+	},
+};
+
+// --- rental yield -----------------------------------------------------------------------
+
+const rentalYield: FormConfig = {
+	intro: 'Evaluate a rental property as an investment: gross yield, net operating income (NOI), cap rate and price-to-rent ratio.',
+	introZh: '把出租房产当作投资品评估：毛租金收益率、净营业收入 (NOI)、资本化率与租售比。',
+	fields: [
+		{ id: 'price', label: 'Property purchase price', labelZh: '房产购入总价', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '1200000', step: 'any', min: '0', required: true },
+		{ id: 'rent', label: 'Monthly rent', labelZh: '每月租金收入', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '4500', step: 'any', min: '0', required: true },
+		{ id: 'vacancy', label: 'Vacancy & collection loss', labelZh: '空置与收租损失率', suffix: '(%)', type: 'number', def: '5', step: 'any', min: '0', max: '100', required: true },
+		{ id: 'expenses', label: 'Annual operating expenses', labelZh: '年持有运营成本 (物业/维修/保险/税费)', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '12000', step: 'any', min: '0', required: true },
+	],
+	compute: (v) => {
+		const price = v.num('price');
+		const rent = v.num('rent');
+		const vacancyPct = v.num('vacancy');
+		const expenses = v.num('expenses');
+		if (!(price > 0)) {
+			return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (purchase price must be > 0)', valueZh: '— (购入总价需大于 0)' }] };
+		}
+		const annualRent = rent * 12;
+		const effectiveRent = annualRent * (1 - vacancyPct / 100);
+		const noi = effectiveRent - expenses;
+		const grossYield = (annualRent / price) * 100;
+		const netYield = (noi / price) * 100;
+		// The Chinese price-to-rent ratio: how many years of rent one purchase equals.
+		const priceToRent = annualRent > 0 ? price / annualRent : null;
+		const paybackYears = noi > 0 ? price / noi : null;
+		const rows: FormResultRow[] = [
+			{ label: 'Gross rental yield', labelZh: '毛租金收益率', value: `${percent(grossYield)}%`, valueZh: `${percent(grossYield)}%`, emphasis: true },
+			{ label: 'Net operating income (NOI)', labelZh: '净营业收入 (NOI)', ...cash(noi) },
+			{ label: 'Net yield / Cap rate', labelZh: '净收益率 / 资本化率 (Cap Rate)', value: `${percent(netYield)}%`, valueZh: `${percent(netYield)}%`, emphasis: true },
+			{ label: 'Effective annual rent (after vacancy)', labelZh: '扣除空置后年有效租金收入', ...cash(effectiveRent) },
+			{ label: 'Monthly cash flow (unleveraged)', labelZh: '月净现金流 (全款无贷款)', ...cash(noi / 12) },
+		];
+		if (priceToRent !== null) {
+			rows.push({ label: 'Price-to-rent ratio', labelZh: '租售比', value: `1 : ${formatNumber(Math.round(priceToRent * 10) / 10)}`, valueZh: `1 : ${formatNumber(Math.round(priceToRent * 10) / 10)}` });
+		}
+		if (paybackYears !== null) {
+			rows.push({ label: 'Payback period (NOI basis)', labelZh: '租金回本年限 (按 NOI 静态)', value: `${formatNumber(Math.round(paybackYears * 10) / 10)} years`, valueZh: `${formatNumber(Math.round(paybackYears * 10) / 10)} 年` });
+		}
+		// Vacancy sensitivity: NOI and net yield at four loss levels so the
+		// single input's leverage on the bottom line is visible.
+		const tableRows = [0, 5, 10, 15].map((p) => {
+			const eff = annualRent * (1 - p / 100);
+			const n = eff - expenses;
+			return [`-${p}%`, money(eff), money(n), `${percent((n / price) * 100)}%`];
+		});
+		return {
+			rows,
+			table: {
+				columns: ['Vacancy Loss', 'Effective Rent ($)', 'NOI ($)', 'Net Yield'],
+				columnsZh: ['空置损失率', '年有效租金 (¥)', 'NOI (¥)', '净收益率'],
+				rows: tableRows,
+			},
+			note: `A net yield above 4–5% is generally considered a healthy rental investment; below 2%, returns rely almost entirely on price appreciation. This is an unleveraged all-cash view — mortgage payments are financing costs, not operating expenses.`,
+			noteZh: `净收益率高于 4%~5% 通常视为健康的收租型投资；低于 2% 时回报几乎完全依赖房价上涨。本测算为全款无杠杆口径——房贷月供属于融资成本，不计入运营费用。`,
+		};
+	},
+};
+
+// --- credit card minimum payment ------------------------------------------------
+
+const creditCardMinimum: FormConfig = {
+	intro: 'See the true cost of paying only the minimum: months to freedom, interest paid, versus a fixed monthly payment.',
+	introZh: '看清只还最低还款额的真实代价：清偿时长与利息总额，并与固定月还款方案对比。',
+	fields: [
+		{ id: 'balance', label: 'Current card balance', labelZh: '信用卡当前欠款本金', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '20000', step: 'any', min: '0', required: true },
+		{ id: 'apr', label: 'Card APR', labelZh: '信用卡年化利率 (APR)', suffix: '(%)', type: 'number', def: '18.25', step: 'any', min: '0', required: true },
+		{ id: 'minPct', label: 'Minimum payment rate', labelZh: '最低还款比例', suffix: '(%)', type: 'number', def: '2.5', step: 'any', min: '0.1', required: true },
+		{ id: 'floor', label: 'Minimum payment floor', labelZh: '最低还款绝对下限', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '50', step: 'any', min: '0', required: true },
+		{ id: 'fixed', label: 'Fixed payment to compare', labelZh: '对比用固定月还款额', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '1000', step: 'any', min: '0', required: true },
+	],
+	compute: (v) => {
+		const balance = v.num('balance');
+		const apr = v.num('apr');
+		const minPct = v.num('minPct');
+		const floorAmt = v.num('floor');
+		const fixed = v.num('fixed');
+		if (!(balance > 0) || !(minPct > 0)) {
+			return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (balance and minimum rate must be > 0)', valueZh: '— (欠款本金与最低还款比例需大于 0)' }] };
+		}
+		const i = apr / 100 / 12;
+		// 600 months = 50 years, plenty for any realistic payoff and a hard stop
+		// for the pathological cases below.
+		const MAX_MONTHS = 600;
+		/** Simulate one repayment rule. Returns null when the balance never
+		 *  amortises (payment ≤ monthly interest — the debt snowballs forever). */
+		function simulate(payOf: (b: number) => number): { months: number; interest: number; yearly: string[][] } | null {
+			let b = balance;
+			let interest = 0;
+			let months = 0;
+			const yearly: string[][] = [];
+			while (b > 0.005 && months < MAX_MONTHS) {
+				const int = b * i;
+				b += int;
+				interest += int;
+				const pay = Math.min(b, payOf(b));
+				b -= pay;
+				months++;
+				if (months % 12 === 0) yearly.push([String(months / 12), money(pay), money(Math.max(0, b))]);
+			}
+			return b <= 0.005 ? { months, interest, yearly } : null;
+		}
+		const minSim = simulate((b) => Math.max(b * (minPct / 100), floorAmt));
+		// The fixed payment must at least cover the interest plus a little
+		// principal, otherwise it never lands — surfaced as its own guard row.
+		const fixedSim = fixed > 0 ? simulate(() => fixed) : null;
+		const minFirst = Math.max(balance * (minPct / 100), floorAmt);
+		const duration = (m: number): { value: string; valueZh: string } => ({
+			value: `${Math.floor(m / 12)} yr ${m % 12} mo (${m} months)`,
+			valueZh: `${Math.floor(m / 12)} 年 ${m % 12} 个月 (共 ${m} 期)`,
+		});
+		const rows: FormResultRow[] = [
+			{ label: 'First minimum payment', labelZh: '首月最低还款额', ...cash(Math.min(minFirst, balance * (1 + i))) },
+		];
+		if (minSim === null) {
+			rows.push({ label: 'Minimum-only payoff time', labelZh: '只还最低额的清偿时长', value: 'Never — payment does not cover interest', valueZh: '永远还不清 —— 还款额不足以覆盖利息', emphasis: true });
+		} else {
+			rows.push({ label: 'Minimum-only payoff time', labelZh: '只还最低额的清偿时长', ...duration(minSim.months), emphasis: true });
+			rows.push({ label: 'Total interest (minimum only)', labelZh: '只还最低额的总利息', ...cash(minSim.interest) });
+			rows.push({ label: 'Interest as share of principal', labelZh: '利息占本金比例', value: `${percent((minSim.interest / balance) * 100)}%`, valueZh: `${percent((minSim.interest / balance) * 100)}%` });
+		}
+		if (fixed > 0) {
+			if (fixedSim === null) {
+				rows.push({ label: `Fixed ${cash(fixed).value}/mo payoff time`, labelZh: `固定月还 ${cash(fixed).valueZh} 的清偿时长`, value: 'Never — payment does not cover interest', valueZh: '永远还不清 —— 还款额不足以覆盖利息' });
+			} else {
+				rows.push({ label: `Fixed ${cash(fixed).value}/mo payoff time`, labelZh: `固定月还 ${cash(fixed).valueZh} 的清偿时长`, ...duration(fixedSim.months) });
+				rows.push({ label: 'Total interest (fixed payment)', labelZh: '固定月还的总利息', ...cash(fixedSim.interest) });
+				if (minSim !== null) {
+					rows.push({ label: 'Interest saved by fixing payments', labelZh: '改固定月还可省利息', ...cash(minSim.interest - fixedSim.interest), emphasis: true });
+				}
+			}
+		}
+		return {
+			rows,
+			table: minSim && minSim.yearly.length
+				? {
+						columns: ['Year', 'Representative Payment ($)', 'Balance ($)'],
+						columnsZh: ['年份', '当年代表还款额 (¥)', '期末欠款余额 (¥)'],
+						rows: minSim.yearly.slice(0, 15),
+					}
+				: undefined,
+			note: minSim === null
+				? `A minimum payment of ${percent(minPct)}% does not even cover the monthly interest at ${percent(apr)}% APR — the balance grows every month. Pay more than ${cash(balance * i).value} per month just to stop the debt from increasing.`
+				: `Paying only the minimum stretches ${cash(balance).value} of debt over years and multiplies the interest. Every extra amount above the minimum goes straight to principal.`,
+			noteZh: minSim === null
+				? `按 ${percent(minPct)}% 的最低还款比例，在 ${percent(apr)}% 年化利率下连当月利息都覆盖不了——欠款会越滚越多。每月至少需还 ${cash(balance * i).valueZh} 才能止住债务增长。`
+				: `只还最低额会把 ${cash(balance).valueZh} 的欠款拖成数年长债，利息翻倍。超出最低额的每一分钱都直接冲抵本金。`,
+		};
+	},
+};
+
+// --- annuity present & future value ------------------------------------------------
+
+const annuityCalculator: FormConfig = {
+	intro: 'Present and future value of an annuity — evaluate pension payouts, insurance products and structured settlements.',
+	introZh: '年金现值与终值测算——评估养老金领取、年金保险产品与分期给付方案的价值。',
+	fields: [
+		{ id: 'payment', label: 'Payment per period', labelZh: '每期给付金额', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '2000', step: 'any', min: '0', required: true },
+		{
+			id: 'freq',
+			label: 'Payment frequency',
+			labelZh: '给付频率',
+			type: 'select',
+			def: 'monthly',
+			options: [
+				{ value: 'monthly', label: 'Monthly', labelZh: '每月' },
+				{ value: 'yearly', label: 'Yearly', labelZh: '每年' },
+			],
+		},
+		{ id: 'years', label: 'Duration', labelZh: '给付年限', suffix: '(years)', suffixZh: '(年)', type: 'number', def: '20', step: 'any', min: '0.1', required: true },
+		{ id: 'rate', label: 'Discount / growth rate (annual)', labelZh: '折现 / 增值年化利率', suffix: '(%)', type: 'number', def: '4', step: 'any', required: true },
+		{
+			id: 'type',
+			label: 'Annuity type',
+			labelZh: '年金类型',
+			type: 'select',
+			def: 'ordinary',
+			options: [
+				{ value: 'ordinary', label: 'Ordinary (end of period)', labelZh: '普通年金 (期末给付)' },
+				{ value: 'due', label: 'Annuity due (beginning of period)', labelZh: '先付年金 (期初给付)' },
+			],
+		},
+	],
+	compute: (v) => {
+		const payment = v.num('payment');
+		const yearly = v.str('freq') === 'yearly';
+		const years = v.num('years');
+		const ratePct = v.num('rate');
+		const due = v.str('type') === 'due';
+		if (!(payment > 0)) {
+			return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (payment must be > 0)', valueZh: '— (每期给付金额需大于 0)' }] };
+		}
+		if (!(years > 0) || years > MAX_TERM_YEARS) {
+			return overlongTerm();
+		}
+		const n = Math.round(years * (yearly ? 1 : 12));
+		const i = ratePct / 100 / (yearly ? 1 : 12);
+		// i === 0 is legal input (a 0% discount rate); the formulas degenerate
+		// to plain multiplication, which the branches below handle.
+		let pv: number;
+		let fv: number;
+		if (i === 0) {
+			pv = payment * n;
+			fv = payment * n;
+		} else {
+			pv = (payment * (1 - (1 + i) ** -n)) / i;
+			fv = (payment * ((1 + i) ** n - 1)) / i;
+			if (due) {
+				pv *= 1 + i;
+				fv *= 1 + i;
+			}
+		}
+		const totalPaid = payment * n;
+		return {
+			rows: [
+				{ label: `Present value (${due ? 'annuity due' : 'ordinary'})`, labelZh: `年金现值 (${due ? '先付年金' : '普通年金'})`, ...cash(pv), emphasis: true },
+				{ label: 'Future value at the end', labelZh: '期满终值 (FV)', ...cash(fv) },
+				{ label: 'Total payments received', labelZh: '累计给付总额', ...cash(totalPaid) },
+				{ label: 'Payments count', labelZh: '给付期数', value: `${n} ${yearly ? 'years' : 'months'}`, valueZh: `共 ${n} ${yearly ? '期 (年付)' : '期 (月付)'}` },
+				{ label: 'Discount vs face value', labelZh: '现值相对面值折价', value: pv < totalPaid ? `-${percent(((totalPaid - pv) / totalPaid) * 100)}%` : `${percent(((pv - totalPaid) / totalPaid) * 100)}%`, valueZh: pv < totalPaid ? `折价 ${percent(((totalPaid - pv) / totalPaid) * 100)}%` : `溢价 ${percent(((pv - totalPaid) / totalPaid) * 100)}%` },
+			],
+			note: `The ${n} payments of ${cash(payment).value} each are worth ${cash(pv).value} today at a ${percent(ratePct)}% discount rate. When comparing an insurance or pension product, its price should not exceed this present value.`,
+			noteZh: `每期 ${cash(payment).valueZh}、共 ${n} 期的给付，按 ${percent(ratePct)}% 折现率折算，今天的价值是 ${cash(pv).valueZh}。评估年金保险或养老金产品时，产品价格不应高于这一现值。`,
+		};
+	},
+};
+
 // --- salary ----------------------------------------------------------------------------------
 
 const salary: FormConfig = {
@@ -2836,6 +3228,56 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		descriptionZh: '根据打折折扣百分比计算优惠后价格与节省金额，支持单件或批量核算。',
 		kind: 'form',
 		config: discount,
+	},
+	{
+		slug: 'retirement-drawdown',
+		category: 'finance',
+		name: 'Retirement Drawdown Calculator',
+		nameZh: '退休资产提取与耗尽模拟计算器',
+		description: 'Simulate how long your nest egg lasts with monthly withdrawals, fixed or growing with inflation.',
+		descriptionZh: '按月提取模拟退休资产的支撑年限，支持固定金额与随通胀逐年上调两种提取策略。',
+		kind: 'form',
+		config: retirementDrawdown,
+	},
+	{
+		slug: 'refinance',
+		category: 'finance',
+		name: 'Mortgage Refinance Calculator',
+		nameZh: '房贷再融资 (转按揭) 对比计算器',
+		description: 'Compare refinancing against your current mortgage: monthly savings, break-even point and lifetime interest.',
+		descriptionZh: '对比再融资方案与现有房贷：月供节省额、手续费回本月数与全周期利息变化。',
+		kind: 'form',
+		config: refinance,
+	},
+	{
+		slug: 'rental-yield',
+		category: 'finance',
+		name: 'Rental Yield & Cap Rate Calculator',
+		nameZh: '租金收益率与租售比计算器',
+		description: 'Gross yield, net operating income (NOI), cap rate, price-to-rent ratio and vacancy sensitivity for a rental property.',
+		descriptionZh: '测算出租房产的毛租金收益率、净营业收入 NOI、资本化率、租售比与空置率敏感性分析。',
+		kind: 'form',
+		config: rentalYield,
+	},
+	{
+		slug: 'credit-card-minimum',
+		category: 'finance',
+		name: 'Credit Card Minimum Payment Calculator',
+		nameZh: '信用卡最低还款代价计算器',
+		description: 'How long minimum-only payments take to clear a balance, total interest paid, versus a fixed payment plan.',
+		descriptionZh: '揭示只还信用卡最低还款额的清偿时长与利息代价，并与固定月还款方案对比省息。',
+		kind: 'form',
+		config: creditCardMinimum,
+	},
+	{
+		slug: 'annuity-calculator',
+		category: 'finance',
+		name: 'Annuity Present & Future Value Calculator',
+		nameZh: '年金现值与终值计算器',
+		description: 'Present and future value of ordinary annuities and annuities due, monthly or yearly — for pension and insurance payout evaluation.',
+		descriptionZh: '普通年金与先付年金的现值/终值测算，支持月付年付，评估养老金与年金保险给付价值。',
+		kind: 'form',
+		config: annuityCalculator,
 	},
 ];
 

@@ -1,16 +1,21 @@
 // Hand-written QR code encoder — zero dependencies.
 //
-// Supports: byte mode, versions 1–10, ECC levels L/M/Q/H, all 8 data masks
-// with ISO penalty scoring. Reed–Solomon EC over GF(256) (poly 0x11D).
+// Supports: numeric / alphanumeric / byte modes (auto-picked, no mixed-mode
+// segmentation), versions 1–40, ECC levels L/M/Q/H, all 8 data masks with ISO
+// penalty scoring. Reed–Solomon EC over GF(256) (poly 0x11D).
 //
-// Layout: encode() → { size, modules } where modules is row-major, 1 = dark.
+// Layout: encodeQr() → QrCode { size, modules, mode } where modules is
+// row-major, 1 = dark.
 
 export type Ecc = 'L' | 'M' | 'Q' | 'H';
+export type QrMode = 'numeric' | 'alnum' | 'byte';
 
 export interface QrCode {
 	size: number;
 	/** row-major, 1 = dark, 0 = light */
 	modules: Uint8Array;
+	/** the encoding mode auto-picked for the input (for the page's readout) */
+	mode: QrMode;
 }
 
 export function getModule(qr: QrCode, row: number, col: number): boolean {
@@ -62,59 +67,183 @@ function rsRemainder(data: number[], degree: number): number[] {
 
 // --- version tables (1–10) -----------------------------------------------------------
 
+// The full ISO/IEC 18004 error-correction block table, versions 1–40,
+// extracted from the widely-used qrcode-generator reference and
+// cross-checked entry-by-entry against the previous hand-written v1–10
+// table (40/40 identical).
 /** [ecCodewordsPerBlock, [blockCount, dataCodewordsPerBlock][]] indexed by version-1. */
 const EC_BLOCKS: Record<Ecc, [number, [number, number][]][]> = {
 	L: [
-		[7, [[1, 19]]],
-		[10, [[1, 34]]],
-		[15, [[1, 55]]],
-		[20, [[1, 80]]],
-		[26, [[1, 108]]],
-		[18, [[2, 68]]],
-		[20, [[2, 78]]],
-		[24, [[2, 97]]],
-		[30, [[2, 116]]],
-		[18, [[2, 68], [2, 69]]],
+			[7, [[1, 19]]],
+			[10, [[1, 34]]],
+			[15, [[1, 55]]],
+			[20, [[1, 80]]],
+			[26, [[1, 108]]],
+			[18, [[2, 68]]],
+			[20, [[2, 78]]],
+			[24, [[2, 97]]],
+			[30, [[2, 116]]],
+			[18, [[2, 68], [2, 69]]],
+			[20, [[4, 81]]],
+			[24, [[2, 92], [2, 93]]],
+			[26, [[4, 107]]],
+			[30, [[3, 115], [1, 116]]],
+			[22, [[5, 87], [1, 88]]],
+			[24, [[5, 98], [1, 99]]],
+			[28, [[1, 107], [5, 108]]],
+			[30, [[5, 120], [1, 121]]],
+			[28, [[3, 113], [4, 114]]],
+			[28, [[3, 107], [5, 108]]],
+			[28, [[4, 116], [4, 117]]],
+			[28, [[2, 111], [7, 112]]],
+			[30, [[4, 121], [5, 122]]],
+			[30, [[6, 117], [4, 118]]],
+			[26, [[8, 106], [4, 107]]],
+			[28, [[10, 114], [2, 115]]],
+			[30, [[8, 122], [4, 123]]],
+			[30, [[3, 117], [10, 118]]],
+			[30, [[7, 116], [7, 117]]],
+			[30, [[5, 115], [10, 116]]],
+			[30, [[13, 115], [3, 116]]],
+			[30, [[17, 115]]],
+			[30, [[17, 115], [1, 116]]],
+			[30, [[13, 115], [6, 116]]],
+			[30, [[12, 121], [7, 122]]],
+			[30, [[6, 121], [14, 122]]],
+			[30, [[17, 122], [4, 123]]],
+			[30, [[4, 122], [18, 123]]],
+			[30, [[20, 117], [4, 118]]],
+			[30, [[19, 118], [6, 119]]],
 	],
 	M: [
-		[10, [[1, 16]]],
-		[16, [[1, 28]]],
-		[26, [[1, 44]]],
-		[18, [[2, 32]]],
-		[24, [[2, 43]]],
-		[16, [[4, 27]]],
-		[18, [[4, 31]]],
-		[22, [[2, 38], [2, 39]]],
-		[22, [[3, 36], [2, 37]]],
-		[26, [[4, 43], [1, 44]]],
+			[10, [[1, 16]]],
+			[16, [[1, 28]]],
+			[26, [[1, 44]]],
+			[18, [[2, 32]]],
+			[24, [[2, 43]]],
+			[16, [[4, 27]]],
+			[18, [[4, 31]]],
+			[22, [[2, 38], [2, 39]]],
+			[22, [[3, 36], [2, 37]]],
+			[26, [[4, 43], [1, 44]]],
+			[30, [[1, 50], [4, 51]]],
+			[22, [[6, 36], [2, 37]]],
+			[22, [[8, 37], [1, 38]]],
+			[24, [[4, 40], [5, 41]]],
+			[24, [[5, 41], [5, 42]]],
+			[28, [[7, 45], [3, 46]]],
+			[28, [[10, 46], [1, 47]]],
+			[26, [[9, 43], [4, 44]]],
+			[26, [[3, 44], [11, 45]]],
+			[26, [[3, 41], [13, 42]]],
+			[26, [[17, 42]]],
+			[28, [[17, 46]]],
+			[28, [[4, 47], [14, 48]]],
+			[28, [[6, 45], [14, 46]]],
+			[28, [[8, 47], [13, 48]]],
+			[28, [[19, 46], [4, 47]]],
+			[28, [[22, 45], [3, 46]]],
+			[28, [[3, 45], [23, 46]]],
+			[28, [[21, 45], [7, 46]]],
+			[28, [[19, 47], [10, 48]]],
+			[28, [[2, 46], [29, 47]]],
+			[28, [[10, 46], [23, 47]]],
+			[28, [[14, 46], [21, 47]]],
+			[28, [[14, 46], [23, 47]]],
+			[28, [[12, 47], [26, 48]]],
+			[28, [[6, 47], [34, 48]]],
+			[28, [[29, 46], [14, 47]]],
+			[28, [[13, 46], [32, 47]]],
+			[28, [[40, 47], [7, 48]]],
+			[28, [[18, 47], [31, 48]]],
 	],
 	Q: [
-		[13, [[1, 13]]],
-		[22, [[1, 22]]],
-		[18, [[2, 17]]],
-		[26, [[2, 24]]],
-		[18, [[2, 15], [2, 16]]],
-		[24, [[4, 19]]],
-		[18, [[2, 14], [4, 15]]],
-		[22, [[4, 18], [2, 19]]],
-		[20, [[4, 16], [4, 17]]],
-		[24, [[6, 19], [2, 20]]],
+			[13, [[1, 13]]],
+			[22, [[1, 22]]],
+			[18, [[2, 17]]],
+			[26, [[2, 24]]],
+			[18, [[2, 15], [2, 16]]],
+			[24, [[4, 19]]],
+			[18, [[2, 14], [4, 15]]],
+			[22, [[4, 18], [2, 19]]],
+			[20, [[4, 16], [4, 17]]],
+			[24, [[6, 19], [2, 20]]],
+			[28, [[4, 22], [4, 23]]],
+			[26, [[4, 20], [6, 21]]],
+			[24, [[8, 20], [4, 21]]],
+			[20, [[11, 16], [5, 17]]],
+			[30, [[5, 24], [7, 25]]],
+			[24, [[15, 19], [2, 20]]],
+			[28, [[1, 22], [15, 23]]],
+			[28, [[17, 22], [1, 23]]],
+			[26, [[17, 21], [4, 22]]],
+			[30, [[15, 24], [5, 25]]],
+			[28, [[17, 22], [6, 23]]],
+			[30, [[7, 24], [16, 25]]],
+			[30, [[11, 24], [14, 25]]],
+			[30, [[11, 24], [16, 25]]],
+			[30, [[7, 24], [22, 25]]],
+			[28, [[28, 22], [6, 23]]],
+			[30, [[8, 23], [26, 24]]],
+			[30, [[4, 24], [31, 25]]],
+			[30, [[1, 23], [37, 24]]],
+			[30, [[15, 24], [25, 25]]],
+			[30, [[42, 24], [1, 25]]],
+			[30, [[10, 24], [35, 25]]],
+			[30, [[29, 24], [19, 25]]],
+			[30, [[44, 24], [7, 25]]],
+			[30, [[39, 24], [14, 25]]],
+			[30, [[46, 24], [10, 25]]],
+			[30, [[49, 24], [10, 25]]],
+			[30, [[48, 24], [14, 25]]],
+			[30, [[43, 24], [22, 25]]],
+			[30, [[34, 24], [34, 25]]],
 	],
 	H: [
-		[17, [[1, 9]]],
-		[28, [[1, 16]]],
-		[22, [[2, 13]]],
-		[16, [[4, 9]]],
-		[22, [[2, 11], [2, 12]]],
-		[28, [[4, 15]]],
-		[26, [[4, 13], [1, 14]]],
-		[26, [[4, 14], [2, 15]]],
-		[24, [[4, 12], [4, 13]]],
-		[28, [[6, 15], [2, 16]]],
+			[17, [[1, 9]]],
+			[28, [[1, 16]]],
+			[22, [[2, 13]]],
+			[16, [[4, 9]]],
+			[22, [[2, 11], [2, 12]]],
+			[28, [[4, 15]]],
+			[26, [[4, 13], [1, 14]]],
+			[26, [[4, 14], [2, 15]]],
+			[24, [[4, 12], [4, 13]]],
+			[28, [[6, 15], [2, 16]]],
+			[24, [[3, 12], [8, 13]]],
+			[28, [[7, 14], [4, 15]]],
+			[22, [[12, 11], [4, 12]]],
+			[24, [[11, 12], [5, 13]]],
+			[24, [[11, 12], [7, 13]]],
+			[30, [[3, 15], [13, 16]]],
+			[28, [[2, 14], [17, 15]]],
+			[28, [[2, 14], [19, 15]]],
+			[26, [[9, 13], [16, 14]]],
+			[28, [[15, 15], [10, 16]]],
+			[30, [[19, 16], [6, 17]]],
+			[24, [[34, 13]]],
+			[30, [[16, 15], [14, 16]]],
+			[30, [[30, 16], [2, 17]]],
+			[30, [[22, 15], [13, 16]]],
+			[30, [[33, 16], [4, 17]]],
+			[30, [[12, 15], [28, 16]]],
+			[30, [[11, 15], [31, 16]]],
+			[30, [[19, 15], [26, 16]]],
+			[30, [[23, 15], [25, 16]]],
+			[30, [[23, 15], [28, 16]]],
+			[30, [[19, 15], [35, 16]]],
+			[30, [[11, 15], [46, 16]]],
+			[30, [[59, 16], [1, 17]]],
+			[30, [[22, 15], [41, 16]]],
+			[30, [[2, 15], [64, 16]]],
+			[30, [[24, 15], [46, 16]]],
+			[30, [[42, 15], [32, 16]]],
+			[30, [[10, 15], [67, 16]]],
+			[30, [[20, 15], [61, 16]]],
 	],
 };
 
-/** Alignment pattern centers by version-1 index. */
+/** Alignment pattern centers by version-1 index (v1 has none). */
 const ALIGNMENT: number[][] = [
 	[],
 	[6, 18],
@@ -126,6 +255,36 @@ const ALIGNMENT: number[][] = [
 	[6, 24, 42],
 	[6, 26, 46],
 	[6, 28, 50],
+	[6, 30, 54],
+	[6, 32, 58],
+	[6, 34, 62],
+	[6, 26, 46, 66],
+	[6, 26, 48, 70],
+	[6, 26, 50, 74],
+	[6, 30, 54, 78],
+	[6, 30, 56, 82],
+	[6, 30, 58, 86],
+	[6, 34, 62, 90],
+	[6, 28, 50, 72, 94],
+	[6, 26, 50, 74, 98],
+	[6, 30, 54, 78, 102],
+	[6, 28, 54, 80, 106],
+	[6, 32, 58, 84, 110],
+	[6, 30, 58, 86, 114],
+	[6, 34, 62, 90, 118],
+	[6, 26, 50, 74, 98, 122],
+	[6, 30, 54, 78, 102, 126],
+	[6, 26, 52, 78, 104, 130],
+	[6, 30, 56, 82, 108, 134],
+	[6, 34, 60, 86, 112, 138],
+	[6, 30, 58, 86, 114, 142],
+	[6, 34, 62, 90, 118, 146],
+	[6, 30, 54, 78, 102, 126, 150],
+	[6, 24, 50, 76, 102, 128, 154],
+	[6, 28, 54, 80, 106, 132, 158],
+	[6, 32, 58, 84, 110, 136, 162],
+	[6, 26, 54, 82, 110, 138, 166],
+	[6, 30, 58, 86, 114, 142, 170],
 ];
 
 const ECC_LEVEL_BITS: Record<Ecc, number> = { L: 1, M: 0, Q: 3, H: 2 };
@@ -134,10 +293,51 @@ function dataCodewords(version: number, ecc: Ecc): number {
 	return EC_BLOCKS[ecc][version - 1]![1].reduce((sum, [count, dc]) => sum + count * dc, 0);
 }
 
-/** Byte-mode capacity: 4-bit mode + 8-bit (v1–9) or 16-bit (v10+) length header. */
-function byteCapacity(version: number, ecc: Ecc): number {
-	const bits = dataCodewords(version, ecc) * 8 - (version < 10 ? 12 : 20);
-	return Math.floor(bits / 8);
+// --- modes ---------------------------------------------------------------------------
+// The whole input is encoded in one mode, auto-picked as the cheapest that
+// covers it. No mixed-mode segmentation: a URL that is mostly alphanumeric
+// with a "://" pair still shrinks less by switching than the 4-bit header +
+// widened length field per extra segment costs, and every mainstream scanner
+// handles all three modes.
+
+const ALNUM_CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:';
+const ALNUM_VALUE: Record<string, number> = {};
+for (let i = 0; i < ALNUM_CHARS.length; i++) ALNUM_VALUE[ALNUM_CHARS[i]!] = i;
+
+const MODE_BITS: Record<QrMode, number> = { numeric: 0b0001, alnum: 0b0010, byte: 0b0100 };
+
+function detectMode(text: string): QrMode {
+	if (/^[0-9]+$/.test(text)) return 'numeric';
+	for (const ch of text) if (!(ch in ALNUM_VALUE)) return 'byte';
+	return 'alnum';
+}
+
+/** Character-count indicator width; the spec widens it twice, at v10 and v27. */
+function charCountBits(mode: QrMode, version: number): number {
+	const range = version < 10 ? 0 : version < 27 ? 1 : 2;
+	return (
+		{
+			numeric: [10, 12, 14],
+			alnum: [9, 11, 13],
+			byte: [8, 16, 16],
+		} as Record<QrMode, [number, number, number]>
+	)[mode]![range]!;
+}
+
+/** Max characters of this mode that fit the version's data area. */
+function charCapacity(mode: QrMode, version: number, ecc: Ecc): number {
+	const D = dataCodewords(version, ecc) * 8 - 4 - charCountBits(mode, version);
+	if (mode === 'numeric') {
+		const groups = Math.floor(D / 10);
+		const r = D - groups * 10;
+		return groups * 3 + (r >= 7 ? 2 : r >= 4 ? 1 : 0);
+	}
+	if (mode === 'alnum') {
+		const groups = Math.floor(D / 11);
+		const r = D - groups * 11;
+		return groups * 2 + (r >= 6 ? 1 : 0);
+	}
+	return Math.floor(D / 8);
 }
 
 // --- encoding --------------------------------------------------------------------------
@@ -146,31 +346,35 @@ function byteCapacity(version: number, ecc: Ecc): number {
  * @param forcedMask 0–7 to force a specific data mask (testing); omit to
  *        let ISO penalty scoring choose.
  */
-/** The text does not fit even the largest version this encoder supports. */
+/** The text does not fit even version 40 (the largest QR code) at this ECC. */
 export class QrCapacityError extends Error {
 	constructor(
-		readonly bytes: number,
+		readonly units: number,
 		readonly capacity: number,
 		readonly ecc: Ecc,
+		readonly mode: QrMode,
 	) {
-		super(`${bytes} bytes exceeds the ${capacity}-byte capacity of version 10 at ECC ${ecc}`);
+		super(`${units} ${mode === 'byte' ? 'bytes' : 'characters'} exceed the ${capacity}-${mode === 'byte' ? 'byte' : 'character'} capacity of version 40 at ECC ${ecc}`);
 		this.name = 'QrCapacityError';
 	}
 }
 
 export function encodeQr(text: string, ecc: Ecc = 'M', forcedMask?: number): QrCode {
-	const bytes = Array.from(new TextEncoder().encode(text));
+	// One mode covers the whole input; the unit of capacity is characters for
+	// numeric/alnum and bytes for byte mode.
+	const mode = detectMode(text);
+	const units = mode === 'byte' ? new TextEncoder().encode(text).length : text.length;
 
 	// pick the smallest version that fits
 	let version = 0;
-	for (let v = 1; v <= 10; v++) {
-		if (bytes.length <= byteCapacity(v, ecc)) {
+	for (let v = 1; v <= 40; v++) {
+		if (units <= charCapacity(mode, v, ecc)) {
 			version = v;
 			break;
 		}
 	}
 	if (!version) {
-		throw new QrCapacityError(bytes.length, byteCapacity(10, ecc), ecc);
+		throw new QrCapacityError(units, charCapacity(mode, 40, ecc), ecc, mode);
 	}
 
 	// --- bit stream: mode | length | data | terminator | padding ---
@@ -178,9 +382,26 @@ export function encodeQr(text: string, ecc: Ecc = 'M', forcedMask?: number): QrC
 	const appendBits = (val: number, len: number): void => {
 		for (let i = len - 1; i >= 0; i--) bits.push((val >>> i) & 1);
 	};
-	appendBits(0b0100, 4); // byte mode
-	appendBits(bytes.length, version < 10 ? 8 : 16);
-	for (const b of bytes) appendBits(b, 8);
+	appendBits(MODE_BITS[mode], 4);
+	appendBits(units, charCountBits(mode, version));
+	if (mode === 'numeric') {
+		// 3 digits → 10 bits (value 0–999), 2 → 7 bits, 1 → 4 bits
+		for (let i = 0; i < text.length; i += 3) {
+			const chunk = text.slice(i, i + 3);
+			appendBits(Number(chunk), chunk.length === 3 ? 10 : chunk.length === 2 ? 7 : 4);
+		}
+	} else if (mode === 'alnum') {
+		// 2 chars → 11 bits (first×45 + second), 1 → 6 bits
+		for (let i = 0; i < text.length; i += 2) {
+			if (i + 1 < text.length) {
+				appendBits(ALNUM_VALUE[text[i]!]! * 45 + ALNUM_VALUE[text[i + 1]!]!, 11);
+			} else {
+				appendBits(ALNUM_VALUE[text[i]!]!, 6);
+			}
+		}
+	} else {
+		for (const b of new TextEncoder().encode(text)) appendBits(b, 8);
+	}
 
 	const capacityBits = dataCodewords(version, ecc) * 8;
 	appendBits(0, Math.min(4, capacityBits - bits.length));
@@ -428,5 +649,5 @@ export function encodeQr(text: string, ecc: Ecc = 'M', forcedMask?: number): QrC
 	// real format bits with the chosen mask
 	drawFormat(bestMask);
 
-	return { size, modules };
+	return { size, modules, mode };
 }

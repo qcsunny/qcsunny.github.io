@@ -407,6 +407,96 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: 'Lean FIRE 与 Fat FIRE 有什么区别？', a: 'Lean FIRE 为极简生活主义（按基准支出 75% 测算）；Fat FIRE 为宽裕奢华生活（按基准支出 125% 以上测算），满足更高品质的休闲与旅行需求。' },
 		],
 	},
+	'finance/retirement-drawdown': {
+		about: [
+			'The FIRE calculator answers "how much do I need"; this one answers "how long will it last". Enter your nest egg, monthly expenses, expected return and an optional inflation adjustment to simulate the drawdown phase year by year.',
+			'The simulation applies your return to the remaining balance each month, withdraws your living expenses, and — in the inflation mode — grows the withdrawal every year so your purchasing power stays constant in real terms.',
+		],
+		aboutZh: [
+			'FIRE 计算器回答"要攒多少钱"，本工具回答"这笔钱够花多久"。输入退休资产总额、每月开支、预期收益率与通胀率，即可逐年模拟退休后的资产消耗轨迹。',
+			'模拟器每月先对剩余资产计息、再扣除当月生活开支；选择通胀调整模式时，提取额每年随通胀率上调，保证实际购买力不缩水。',
+		],
+		faq: [
+			{ q: 'What withdrawal rate is safe?', a: 'The Trinity study popularised the 4% rule: withdrawing about 4% of the portfolio per year (roughly 0.327% per month) has historically survived 30+ years in most market conditions.' },
+			{ q: 'Why does the inflation mode deplete faster?', a: 'A fixed nominal withdrawal shrinks in real terms each year, so you effectively spend less over time. Growing the withdrawal with inflation keeps spending constant and is the honest way to model a multi-decade retirement.' },
+		],
+		faqZh: [
+			{ q: '多高的提款率是安全的？', a: 'Trinity Study 提出著名的 4% 法则：每年提取资产总额的约 4%（折合每月约 0.327%），在绝大多数历史市场环境下都能支撑 30 年以上。' },
+			{ q: '为什么通胀调整模式更快耗尽资产？', a: '固定金额提取的实际购买力逐年缩水，相当于越花越省；随通胀上调才保持了恒定的实际消费水平，这也是数十年跨度退休规划的诚实口径。' },
+		],
+	},
+	'finance/refinance': {
+		about: [
+			'When rates fall, refinancing (转按揭) replaces your current mortgage with a new one at a lower rate — for a price. This calculator compares both loans side by side: monthly payment, interest over each lifetime, and the break-even point where the closing costs pay for themselves.',
+			'The same-term rows isolate the pure effect of the rate cut. If the new loan also stretches the term, part of the monthly saving is just re-amortising the same debt over more months — the same-term comparison strips that out.',
+		],
+		aboutZh: [
+			'利率下行时，再融资（转按揭）用一笔低息新贷款置换存量房贷——但需要付出手续费。本计算器并排对比两笔贷款：月供、全周期利息，以及手续费多久能靠月供节省回本。',
+			'"同剩余期限口径"两行专门剥离纯利率差的影响：若新贷款同时拉长了期限，月供下降有一部分只是把同一笔债务摊到了更多月份，同期限对比才能看出利率优惠本身的价值。',
+		],
+		faq: [
+			{ q: 'When is refinancing worth it?', a: 'Rule of thumb: when the rate drop saves more per month than the closing costs divided by the months you expect to keep the loan — i.e. you will stay past the break-even point. A 0.5–1 percentage point drop on a long remaining term usually clears the bar.' },
+			{ q: 'Should I reset to a fresh 30-year term?', a: 'A fresh term lowers the payment most but can increase lifetime interest. If cash flow allows, ask the new lender for a term matching your remaining years and keep the savings purely from the rate.' },
+		],
+		faqZh: [
+			{ q: '什么情况下转按揭划算？', a: '经验法则：月供节省 × 预计持有月数 > 手续费总成本，即持有时间超过"回本月数"才划算。剩余年限较长时，利率下降 0.5~1 个百分点通常就能越过门槛。' },
+			{ q: '要不要重新按 30 年期限摊还？', a: '重置成完整 30 年期月供最低，但全周期总利息可能不降反升。若现金流允许，建议新贷款期限对齐原贷款剩余年限，让节省完全来自利率优惠本身。' },
+		],
+	},
+	'finance/rental-yield': {
+		about: [
+			'Evaluate a rental property the way an investor does: not by price appreciation hopes, but by the income it produces. Gross yield, net operating income (NOI) and the cap rate treat the property as a cash-flow asset.',
+			'The vacancy sensitivity table shows how fragile the net yield is to empty months — a 10% vacancy on a thin-margin property can flip the NOI negative.',
+		],
+		aboutZh: [
+			'用投资者的眼光评估出租房产：不靠房价上涨的预期，而看资产本身产出的现金流。毛收益率、净营业收入 (NOI) 与资本化率 (Cap Rate) 把房产当作一只"会下蛋的资产"来定价。',
+			'空置率敏感性表格展示净收益率对空置月的脆弱程度——薄利房产遇上 10% 空置，NOI 就可能由正转负。',
+		],
+		faq: [
+			{ q: 'What is a good cap rate?', a: 'It depends on the market: 4–6% is common in expensive gateway cities, 8%+ in cheaper regions. Compare against mortgage rates — cap rate below financing cost means negative leverage.' },
+			{ q: 'Why are mortgage payments excluded from NOI?', a: 'NOI measures the property\'s operating performance before financing. Two identical buildings with different loans have the same NOI and cap rate; the loan affects cash flow, not the asset itself.' },
+		],
+		faqZh: [
+			{ q: '资本化率多高算好？', a: '因城市而异：一线核心城市常见 4%~6%，低房价区域可达 8% 以上。关键是与贷款利率比较——Cap Rate 低于融资成本意味着"负杠杆"，借得越多亏得越多。' },
+			{ q: '为什么 NOI 不扣除房贷月供？', a: 'NOI 衡量的是资产本身在融资之前的运营表现。两栋完全相同的楼即使贷款不同，NOI 与 Cap Rate 也相同；贷款只影响现金流，不影响资产质量本身。' },
+		],
+	},
+	'finance/credit-card-minimum': {
+		about: [
+			'Paying "just the minimum" feels cheap but is the most expensive money you will ever borrow: interest keeps accruing on nearly the full balance every month, while the required payment shrinks as the balance does.',
+			'This calculator simulates the real payoff month by month at your card\'s APR and minimum-payment formula, then contrasts it with a fixed monthly payment — the difference in both years and interest is usually startling.',
+		],
+		aboutZh: [
+			'"只还最低"看似轻松，实则是你能借到的最贵的钱：利息每个月都按几乎全部欠款本金计息，而最低还款额却随本金减少而越降越低。',
+			'本计算器按信用卡真实年化利率与最低还款规则逐月模拟清偿过程，并与固定月还款方案对照——两者在时长和利息上的差距通常令人吃惊。',
+		],
+		faq: [
+			{ q: 'How do card issuers set the minimum?', a: 'Commonly the larger of a percentage of the balance (1%–3%) plus the month\'s interest, or a small absolute floor (e.g. $35–50). The exact formula varies by issuer; the percentage-only simplification here errs on the optimistic side.' },
+			{ q: 'Why is paying a fixed amount so much faster?', a: 'A fixed payment keeps the principal reduction constant instead of shrinking with the balance, so each month less interest accrues. The same budget, allocated steadily, can cut the payoff time by years.' },
+		],
+		faqZh: [
+			{ q: '银行是怎么算最低还款额的？', a: '常见规则为"欠款的一定比例 (1%~3%) + 当月利息 与小额绝对下限 (如 35~50 元) 取较大者"。各行公式略有差异；本工具采用纯比例口径，结果已属乐观估计。' },
+			{ q: '为什么固定月还款能快这么多？', a: '固定月还使每月冲抵的本金保持恒定，而不是随欠款减少而缩水，利息因此逐月递减。同样的预算总额，只要稳定投入，就能把清偿时间缩短数年。' },
+		],
+	},
+	'finance/annuity-calculator': {
+		about: [
+			'An annuity is a series of equal payments over time — a pension payout, an insurance product, or a structured settlement. Its present value is what that stream is worth today at a given discount rate.',
+			'Ordinary annuities pay at the end of each period; annuities due pay at the beginning (each payment therefore earns/discounts one extra period, worth exactly 1+i more). Compare a product\'s asking price against the present value before buying.',
+		],
+		aboutZh: [
+			'年金是按期等额的一系列给付——养老金领取、年金保险产品或分期给付协议都属此类。其现值回答的问题是：按给定折现率，这条现金流在今天值多少钱。',
+			'普通年金期末给付；先付年金期初给付（每期给付因此多计一期利息，价值恰为普通年金的 1+i 倍）。购买产品前，把报价与现值对比一下再决定。',
+		],
+		faq: [
+			{ q: 'What discount rate should I use?', a: 'A common choice is the risk-free long-term rate (what the payments could earn elsewhere with comparable safety). Higher rates shrink the present value — the same annuity is worth less when safe yields are high.' },
+			{ q: 'Annuity due vs ordinary annuity?', a: 'Annuity due pays at the start of each period, so every payment is discounted one period less (and compounds one more when valuing the future value) — it is always worth slightly more than the ordinary annuity.' },
+		],
+		faqZh: [
+			{ q: '折现率应该取多少？', a: '常见做法取长期无风险利率——即这笔钱在同等安全程度下另投他处能获得的收益。折现率越高现值越小：安全收益率高企时，同一份年金反而不值钱。' },
+			{ q: '先付年金与普通年金有什么区别？', a: '先付年金在每期期初给付，每笔给付少折现一期（算终值时多复利一期），因此价值恒略高于普通年金。' },
+		],
+	},
 	'finance/tax': {
 		about: [
 			'Accurately compute net take-home salary, progressive tax brackets, Five Insurances & Housing Fund contributions, 7 Special Additional Deductions, and Year-End Bonus tax schemes (Separate vs Combined). Supports Chinese Individual Income Tax (新个税综合所得七级累进), US Federal Income Tax (Single), and customizable Flat Tax rates.',
@@ -759,12 +849,12 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			'编码器完全手写并在浏览器本地运行：二维码内容不会离开你的设备——在编码收款地址、Wi-Fi 凭据或私密链接时这一点尤为重要。',
 		],
 		faq: [
-			{ q: 'How much text fits in one QR code?', a: 'Up to 271 characters at the lowest error correction (L) in this generator — shorter for higher ECC levels.' },
+			{ q: 'How much text fits in one QR code?', a: 'Version 40 at the lowest error correction (L) holds up to 7,089 digits, 4,296 alphanumeric characters, or 2,953 bytes; higher ECC levels trade capacity for damage resistance.' },
 			{ q: 'Which error-correction level should I pick?', a: 'M is the everyday default; use Q or H for stickers, packaging or anything that might get scratched.' },
 			{ q: 'How big can I print it?', a: 'A QR scans reliably at roughly one-tenth of the scanning distance — a 10 cm code works from about a meter away.' },
 		],
 		faqZh: [
-			{ q: '一个二维码能放多少字？', a: '本生成器在最低纠错级别（L）下最多 271 字符，纠错级别越高容量越小。' },
+			{ q: '一个二维码能放多少字？', a: '最大版本 40 在最低纠错（L）下可容纳 7,089 位纯数字、4,296 个字母数字字符或 2,953 字节；纠错级别越高容量越小。' },
 			{ q: '纠错级别怎么选？', a: '日常用 M 即可；贴纸、包装等可能磨损的场景建议 Q 或 H。' },
 			{ q: '二维码可以印多大？', a: '大致按扫描距离的十分之一取边长即可——10 厘米的码在约 1 米外可稳定扫描。' },
 		],
@@ -1137,6 +1227,80 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '数字会保持数字类型吗？', a: 'CSV 本身没有类型——JSON 输出里每个单元格都是字符串，请在自己的代码里转换，或对 JSON 做后处理。' },
 			{ q: 'JSON 某行多了字段怎么办？', a: '表头取自第一个对象；后续行的多余字段被忽略，缺失字段输出为空单元格。' },
 			{ q: '能处理 Excel 导出的文件吗？', a: '标准 CSV 导出可以；.xlsx 是二进制格式，请先另存为 CSV。' },
+		],
+	},
+	'devtools/toml-formatter': {
+		about: [
+			'Format and validate TOML — the config format of Cargo.toml, pyproject.toml and many modern tools — or convert it to JSON and back, all locally in your browser.',
+			'The parser covers tables, arrays of tables, dotted and quoted keys, every scalar type (multiline strings included), and multiline arrays. Duplicate keys and tables are rejected with the exact line number; unquoted strings — the classic habit carried over from YAML — are flagged with a hint.',
+		],
+		aboutZh: [
+			'格式化并校验 TOML——Cargo.toml、pyproject.toml 等现代工具的配置格式——也可与 JSON 双向互转，全部在浏览器本地完成。',
+			'解析器覆盖表、数组表、点分与带引号的键、全部标量类型（含多行字符串）以及跨行数组。重复的键与表会带精确行号报错；未加引号的字符串——从 YAML 带来的经典习惯——会附带提示地报错。',
+		],
+		faq: [
+			{ q: 'Why is my date not a string in the output?', a: 'RFC 3339 date-times are legal TOML scalars; they are kept as their original text, so JSON conversion yields strings that a date library can parse.' },
+			{ q: 'How are arrays of tables formatted?', a: 'Every item of an object array is re-emitted as its own [[header]] section — the canonical TOML way; scalar arrays stay inline.' },
+			{ q: 'Can it parse Cargo.toml?', a: 'Yes — workspace members, dependency tables and [[bin]] sections are all within the supported subset. Very exotic constructs may still be reported as errors rather than guessed at.' },
+		],
+		faqZh: [
+			{ q: '为什么日期在输出里不是特殊类型？', a: 'RFC 3339 日期时间本身就是合法的 TOML 标量；解析后保留原文，转 JSON 时就是可直接交给日期库解析的字符串。' },
+			{ q: '数组表是怎么格式化的？', a: '对象数组的每个元素都会重新输出为独立的 [[表头]] 小节——这是 TOML 的规范写法；标量数组则保持行内形式。' },
+			{ q: '能解析 Cargo.toml 吗？', a: '可以——workspace 的 members、依赖表和 [[bin]] 小节都在支持范围内。极少数冷门语法仍会明确报错，而不是猜测着解析。' },
+		],
+	},
+	'devtools/json-to-typescript': {
+		about: [
+			'Paste a JSON response and get clean TypeScript interfaces: nested objects become their own named interfaces, and object arrays merge into a single interface where keys missing from some items are marked optional.',
+			'Nulls map to null, empty arrays to unknown[], and mixed-type arrays become a union — matching what a real API returns rather than what a schema wishes it returned.',
+		],
+		aboutZh: [
+			'粘贴一段 JSON 响应，即可得到干净的 TypeScript 接口定义：嵌套对象生成独立命名的 interface，对象数组自动合并为单一接口，部分元素缺失的键会标注为可选字段。',
+			'null 映射为 null、空数组映射为 unknown[]、混合类型数组生成联合类型——忠实反映 API 的真实返回，而不是 schema 的美好愿望。',
+		],
+		faq: [
+			{ q: 'Why are some fields optional?', a: 'A key that appears in some array items but not all is marked with ?. This is inference from evidence: the sample shows the key can be absent.' },
+			{ q: 'What about JSON Schema or OpenAPI?', a: 'Those describe intent; this tool describes the data you actually have. For API contracts, prefer generating from the schema; for poking at a live response, this is faster.' },
+		],
+		faqZh: [
+			{ q: '为什么有些字段是可选的？', a: '数组中部分元素有、部分没有的键会标注 ?。这是基于证据的推断：样本证明了这个键可能缺失。' },
+			{ q: '和 JSON Schema / OpenAPI 生成有什么区别？', a: 'Schema 描述"意图"，本工具描述"实际拿到的数据"。定义 API 契约请用 schema 生成；临时看一个线上响应，这里更快。' },
+		],
+	},
+	'devtools/xml-json-converter': {
+		about: [
+			'Convert XML to JSON and back using the classic xml2js convention: attributes become "@key" entries, mixed text becomes "#text", and repeated elements become JSON arrays. A single text-only child collapses to a plain string.',
+			'The parser handles comments, CDATA sections, entity references and processing instructions locally in your browser — no server round trip.',
+		],
+		aboutZh: [
+			'按经典的 xml2js 约定实现 XML 与 JSON 双向互转：属性映射为 "@键"、混排文本为 "#text"、重复元素合并为数组，纯文本子元素直接折叠为字符串。',
+			'解析器支持注释、CDATA 节、实体引用与处理指令，全部在浏览器本地完成，不经服务器。',
+		],
+		faq: [
+			{ q: 'Is the JSON → XML conversion lossless?', a: 'Round trips are lossless for elements, attributes and text. Namespace prefixes (like soap:) are kept verbatim as part of the tag name, not expanded.' },
+			{ q: 'What JSON converts to XML?', a: 'The root must be an object with exactly one key — it becomes the root element. Nested objects become child elements, arrays become repeated elements, and "@key" / "#text" entries become attributes / text.' },
+		],
+		faqZh: [
+			{ q: 'JSON 转 XML 是无损的吗？', a: '元素、属性与文本往返无损。命名空间前缀（如 soap:）作为标签名的一部分原样保留，不做展开。' },
+			{ q: '什么样的 JSON 能转 XML？', a: '根必须是恰好一个键的对象——它就是根元素。嵌套对象变成子元素、数组变成重复元素，"@键" 与 "#text" 分别映射为属性与文本。' },
+		],
+	},
+	'devtools/env-json-converter': {
+		about: [
+			'Convert .env files to JSON and back: export prefixes, single- and double-quoted values, escaped newlines, inline comments and duplicate-key detection are all handled.',
+			'.env has no types — numbers and booleans stay strings in the JSON output, so the round trip back to .env is always lossless.',
+		],
+		aboutZh: [
+			'.env 文件与 JSON 互转：export 前缀、单双引号值、转义换行、行内注释与重复键检测全部支持。',
+			'.env 没有类型——数字与布尔在 JSON 输出中保持字符串，因此转回 .env 永远无损。',
+		],
+		faq: [
+			{ q: 'How are inline comments handled?', a: 'An " #" after an unquoted value starts a comment (matching dotenv behaviour); inside quotes the # stays part of the value.' },
+			{ q: 'Can it convert nested JSON?', a: 'No — .env is a flat KEY=VALUE format; nested objects and arrays are rejected with the exact key named.' },
+		],
+		faqZh: [
+			{ q: '行内注释怎么处理？', a: '未加引号的值后面出现 " #" 即视为注释（与 dotenv 行为一致）；引号内的 # 保留为值的一部分。' },
+			{ q: '能转换嵌套 JSON 吗？', a: '不能——.env 是扁平的 KEY=VALUE 格式；嵌套对象与数组会被拒绝，并指出具体的键名。' },
 		],
 	},
 };
