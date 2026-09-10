@@ -219,6 +219,22 @@ const indexUrl = config?.indexUrl ?? '/search-index.json';
 					idx = data.rows.map(function (r) {
 						return { href: r[0], name: r[1], nameZh: r[2] || r[1], desc: r[3], descZh: r[4] || r[3], category: r[5], keywords: r[6], slug: r[7] };
 					});
+					// Per-pill counts from the loaded rows: the build-time total only
+					// covers "All" (and only the registry), while this modal also serves
+					// the blog index — counting here is correct for both.
+					const counts = {};
+					for (const item of idx) counts[item.category] = (counts[item.category] || 0) + 1;
+					for (const pill of filterPills) {
+						const key = pill.getAttribute('data-cat');
+						const n = key === 'all' ? idx.length : counts[key] || 0;
+						let num = pill.querySelector('.sm-pill-num');
+						if (!num) {
+							num = document.createElement('span');
+							num.className = 'sm-pill-num';
+							pill.appendChild(num);
+						}
+						num.textContent = '(' + n + ')';
+					}
 					renderResults(input.value);
 				})
 				.catch(() => {
@@ -588,7 +604,10 @@ const indexUrl = config?.indexUrl ?? '/search-index.json';
 	.sm-panel {
 		position: relative;
 		width: 100%;
-		max-width: 640px;
+		/* 780 rather than the old 640: at 640 the category row and long
+		   bilingual titles both cramp; 780 sits between Linear (640) and
+		   Raycast (~800) and still fits a 1024px viewport with margin. */
+		max-width: 780px;
 		background: var(--card, #ffffff);
 		color: var(--fg, #1e293b);
 		border-radius: 12px;
@@ -679,14 +698,13 @@ const indexUrl = config?.indexUrl ?? '/search-index.json';
 	}
 	.sm-filter-row {
 		display: flex;
-		gap: 0.4rem;
+		/* wrap instead of the old hidden-scrollbar overflow-x: pills that
+		   did not fit were technically scrollable but looked cut off —
+		   nobody discovers an invisible scroll. */
+		flex-wrap: wrap;
+		gap: 0.3rem 0.4rem;
 		padding: 0.55rem 1rem;
 		border-bottom: 1px solid var(--gridline, #e2e8f0);
-		overflow-x: auto;
-		scrollbar-width: none;
-	}
-	.sm-filter-row::-webkit-scrollbar {
-		display: none;
 	}
 	.sm-filter-pill {
 		border: none;
