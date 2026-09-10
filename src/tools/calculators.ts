@@ -2245,6 +2245,202 @@ const normalDistribution: FormConfig = {
 	},
 };
 
+const confidenceInterval: FormConfig = {
+	intro: 'Calculate 90%, 95%, or 99% confidence intervals for sample means (t-distribution / Z-distribution) and sample proportions.',
+	introZh: '计算 90%、95% 或 99% 置信水平下的样本均值（t 分布 / Z 分布）与样本比例置信区间及抽样误差范围。',
+	fields: [
+		{
+			id: 'mode',
+			label: 'Confidence Interval Type',
+			labelZh: '置信区间类型',
+			type: 'select',
+			def: 'mean_t',
+			options: [
+				{ value: 'mean_t', label: 'Sample Mean (Unknown Population Std Dev - t Distribution)', labelZh: '样本均值 (总体标准差未知 · Student’s t 分布)' },
+				{ value: 'mean_z', label: 'Sample Mean (Known Population Std Dev σ - Z Distribution)', labelZh: '样本均值 (总体标准差 σ 已知 · Z 分布)' },
+				{ value: 'proportion', label: 'Sample Proportion (Binomial / A/B Test Conversion)', labelZh: '样本比例 (A/B 测试转化率 / 二项分布)' },
+			],
+		},
+		{
+			id: 'confLevel',
+			label: 'Confidence Level (%)',
+			labelZh: '置信水平 Confidence Level',
+			type: 'select',
+			def: '95',
+			options: [
+				{ value: '90', label: '90% Confidence Level', labelZh: '90% 置信水平 (α = 0.10)' },
+				{ value: '95', label: '95% Confidence Level', labelZh: '95% 置信水平 (α = 0.05)' },
+				{ value: '99', label: '99% Confidence Level', labelZh: '99% 置信水平 (α = 0.01)' },
+			],
+		},
+		{ id: 'val1', label: 'Sample Mean (x̄) / Success Count (x)', labelZh: '样本均值 (x̄) 或 成功事件数 (x)', type: 'number', def: '100', step: 'any', required: true },
+		{ id: 'val2', label: 'Sample Std Dev (s) / Known σ / Total n', labelZh: '标准差 (s 或已知 σ) 或 总体容量 n', type: 'number', def: '15', step: 'any', min: '0.0001', required: true },
+		{ id: 'val3', label: 'Sample Size n (for mean modes)', labelZh: '样本容量 n (仅均值模式需要)', type: 'number', def: '30', step: '1', min: '2' },
+	],
+	compute: (v) => {
+		const mode = v.str('mode');
+		const confLevel = v.str('confLevel');
+		const v1 = v.num('val1');
+		const v2 = v.num('val2');
+		const v3 = v.num('val3');
+
+		const zCritMap: Record<string, number> = {
+			'90': 1.64485,
+			'95': 1.95996,
+			'99': 2.57583,
+		};
+		const zCrit = zCritMap[confLevel] || 1.95996;
+
+		if (mode === 'proportion') {
+			const x = v1;
+			const n = Math.round(v2);
+			if (n < 1 || x < 0 || x > n) {
+				return { rows: [{ label: 'Error', labelZh: '错误', value: '— (x must be between 0 and n, n ≥ 1)', valueZh: '— (成功数 x 须在 0 至 n 之间，n ≥ 1)' }] };
+			}
+			const p = x / n;
+			const se = Math.sqrt((p * (1 - p)) / n);
+			const me = zCrit * se;
+			const low = Math.max(0, p - me);
+			const high = Math.min(1, p + me);
+
+			return {
+				rows: [
+					{ label: 'Sample Proportion (p̂)', labelZh: '样本比例 (p̂)', value: `${(p * 100).toFixed(3)}% (${formatNumber(p)})`, emphasis: true },
+					{ label: `${confLevel}% Confidence Interval`, labelZh: `${confLevel}% 置信区间`, value: `[${(low * 100).toFixed(3)}%,  ${(high * 100).toFixed(3)}%]  ([${formatNumber(low)}, ${formatNumber(high)}])`, emphasis: true },
+					{ label: 'Margin of Error (ME)', labelZh: '抽样误差范围 (ME)', value: `±${(me * 100).toFixed(3)}% (±${formatNumber(me)})` },
+					{ label: 'Standard Error (SE)', labelZh: '标准误 (SE)', value: formatNumber(se) },
+					{ label: 'Sample Size (n)', labelZh: '样本容量 (n)', value: String(n) },
+				],
+				note: `We are ${confLevel}% confident that the true population proportion lies between ${(low * 100).toFixed(2)}% and ${(high * 100).toFixed(2)}%.`,
+				noteZh: `在 ${confLevel}% 置信水平下，总体真实比例预计落在 ${(low * 100).toFixed(2)}% 至 ${(high * 100).toFixed(2)}% 之间。`,
+			};
+		}
+
+		const xbar = v1;
+		const sd = v2;
+		const n = Math.round(v3);
+
+		if (!Number.isFinite(xbar) || !(sd > 0) || !(n >= 2)) {
+			return { rows: [{ label: 'Error', labelZh: '错误', value: '— (invalid mean, std dev > 0, or n ≥ 2)', valueZh: '— (请输入有效均值、标准差 > 0 及 n ≥ 2)' }] };
+		}
+
+		const df = n - 1;
+		const se = sd / Math.sqrt(n);
+		let crit = zCrit;
+
+		if (mode === 'mean_t') {
+			crit = df >= 30 ? zCrit : zCrit + (confLevel === '95' ? 3.0 / df : 4.0 / df);
+		}
+
+		const me = crit * se;
+		const low = xbar - me;
+		const high = xbar + me;
+
+		return {
+			rows: [
+				{ label: 'Sample Mean (x̄)', labelZh: '样本均值 (x̄)', value: formatNumber(xbar), emphasis: true },
+				{ label: `${confLevel}% Confidence Interval`, labelZh: `${confLevel}% 置信区间`, value: `[${formatNumber(low)},  ${formatNumber(high)}]`, emphasis: true },
+				{ label: 'Margin of Error (ME = Critical × SE)', labelZh: '抽样误差范围 (ME)', value: `±${formatNumber(me)}` },
+				{ label: 'Standard Error (SE = s / √n)', labelZh: '标准误 (SE)', value: formatNumber(se) },
+				{ label: mode === 'mean_t' ? `Critical t-Value (df = ${df})` : 'Critical Z-Value', labelZh: mode === 'mean_t' ? `临界 t 值 (df = ${df})` : '临界 Z 值', value: formatNumber(crit) },
+				{ label: 'Sample Size (n)', labelZh: '样本容量 (n)', value: String(n) },
+			],
+			note: `We are ${confLevel}% confident that the true population mean μ lies within [${formatNumber(low)}, ${formatNumber(high)}].`,
+			noteZh: `在 ${confLevel}% 置信水平下，总体真实均值 μ 预计在 [${formatNumber(low)}, ${formatNumber(high)}] 范围内。`,
+		};
+	},
+};
+
+const anovaCalculator: FormConfig = {
+	intro: 'Perform One-Way Analysis of Variance (ANOVA) to test whether 3 or 4 sample group means differ significantly.',
+	introZh: '进行单因素方差分析 (One-Way ANOVA)，检验 3 或 4 组样本数据的总体均值是否存在统计学显著差异。',
+	fields: [
+		{ id: 'g1', label: 'Group 1 Data (comma or space separated)', labelZh: '第 1 组样本数据 (逗号或空格分隔)', type: 'text', def: '23, 25, 29, 31, 30', required: true },
+		{ id: 'g2', label: 'Group 2 Data', labelZh: '第 2 组样本数据', type: 'text', def: '18, 20, 22, 24, 21', required: true },
+		{ id: 'g3', label: 'Group 3 Data', labelZh: '第 3 组样本数据', type: 'text', def: '35, 38, 40, 42, 39', required: true },
+		{ id: 'g4', label: 'Group 4 Data (optional)', labelZh: '第 4 组样本数据 (可选)', type: 'text', def: '' },
+	],
+	compute: (v) => {
+		const parseData = (str: string) =>
+			str
+				.split(/[\s,]+/)
+				.map((x) => Number(x.trim()))
+				.filter((x) => Number.isFinite(x));
+
+		const groups = [parseData(v.str('g1')), parseData(v.str('g2')), parseData(v.str('g3')), parseData(v.str('g4'))].filter(
+			(g) => g.length > 0,
+		);
+
+		if (groups.length < 2) {
+			return { rows: [{ label: 'Error', labelZh: '错误', value: '— (at least 2 non-empty groups required)', valueZh: '— (请至少输入 2 组非空样本数据)' }] };
+		}
+
+		const k = groups.length;
+		const groupMeans = groups.map((g) => g.reduce((a, b) => a + b, 0) / g.length);
+		const N = groups.reduce((a, g) => a + g.length, 0);
+
+		if (N <= k) {
+			return { rows: [{ label: 'Error', labelZh: '错误', value: '— (total sample size N must be > group count k)', valueZh: '— (总样本容量 N 必须大于分组数 k)' }] };
+		}
+
+		const grandTotal = groups.reduce((a, g) => a + g.reduce((b, c) => b + c, 0), 0);
+		const grandMean = grandTotal / N;
+
+		let ssb = 0;
+		groups.forEach((g, i) => {
+			const m = groupMeans[i]!;
+			ssb += g.length * (m - grandMean) ** 2;
+		});
+
+		let ssw = 0;
+		groups.forEach((g, i) => {
+			const m = groupMeans[i]!;
+			g.forEach((x) => {
+				ssw += (x - m) ** 2;
+			});
+		});
+
+		const sst = ssb + ssw;
+		const dfb = k - 1;
+		const dfw = N - k;
+
+		const msb = ssb / dfb;
+		const msw = ssw / dfw;
+
+		const fStat = msw > 0 ? msb / msw : 0;
+
+		let pValue = 0;
+		if (fStat > 0 && dfb > 0 && dfw > 0) {
+			const x = dfw / (dfw + dfb * fStat);
+			pValue = betaIncomplete(dfw / 2, dfb / 2, x);
+		} else {
+			pValue = 1;
+		}
+
+		const fmtP = (p: number) => (p < 0.0001 ? '< 0.0001 (Highly Significant ***)' : `${(p * 100).toFixed(3)}% (p = ${formatNumber(p)})`);
+
+		return {
+			rows: [
+				{ label: 'F-Statistic', labelZh: 'F 检验统计量', value: formatNumber(fStat), emphasis: true },
+				{ label: 'p-Value', labelZh: 'p-value 显著性概率', value: fmtP(pValue), emphasis: true },
+				{ label: 'Between-Groups SS (SSB)', labelZh: '组间平方和 (SSB)', value: formatNumber(ssb) },
+				{ label: 'Within-Groups SS (SSW)', labelZh: '组内平方和 (SSW / 残差)', value: formatNumber(ssw) },
+				{ label: 'Total Sum of Squares (SST)', labelZh: '总平方和 (SST)', value: formatNumber(sst) },
+				{ label: 'Degrees of Freedom (dfB / dfW)', labelZh: '自由度 (组间 dfB / 组内 dfW)', value: `${dfb} / ${dfw}` },
+				{ label: 'Between-Groups MS (MSB)', labelZh: '组间均方 (MSB)', value: formatNumber(msb) },
+				{ label: 'Within-Groups MS (MSW)', labelZh: '组内均方 (MSW)', value: formatNumber(msw) },
+				{ label: 'Group Means', labelZh: '各组样本均值', value: groupMeans.map((m, i) => `G${i + 1}: ${formatNumber(m)}`).join('  |  ') },
+			],
+			note: pValue < 0.05
+				? `Statistically significant difference between groups at α = 0.05 (F = ${formatNumber(fStat)}, p = ${formatNumber(pValue)} < 0.05). Reject H0.`
+				: `No statistically significant difference between groups at α = 0.05 (F = ${formatNumber(fStat)}, p = ${formatNumber(pValue)} ≥ 0.05). Fail to reject H0.`,
+			noteZh: pValue < 0.05
+				? `在 α = 0.05 显著性水平下，各组总体均值差异具有统计学意义 (F = ${formatNumber(fStat)}, p = ${formatNumber(pValue)} < 0.05)，应拒绝原假设 H0。`
+				: `在 α = 0.05 显著性水平下，未发现各组总体均值存在显著差异 (F = ${formatNumber(fStat)}, p = ${formatNumber(pValue)} ≥ 0.05)，无法拒绝原假设 H0。`,
+		};
+	},
+};
+
 // --- entries --------------------------------------------------------------------------
 
 export const CALCULATOR_TOOLS: ToolEntry[] = [
@@ -2561,6 +2757,26 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 		descriptionZh: '计算给定均值 μ 与标准差 σ 下的 Z-Score、累积分布概率 P(X ≤ x)、区间概率与标准百分位数。',
 		kind: 'form',
 		config: normalDistribution,
+	},
+	{
+		slug: 'confidence-interval',
+		category: 'calculators',
+		name: 'Confidence Interval Calculator',
+		nameZh: '均值与比例置信区间计算器',
+		description: 'Calculate 90%, 95%, or 99% confidence intervals for sample means (t / Z distribution) and sample proportions with margin of error.',
+		descriptionZh: '计算 90%、95% 或 99% 置信水平下的样本均值（t 分布 / Z 分布）与样本比例置信区间及抽样误差范围。',
+		kind: 'form',
+		config: confidenceInterval,
+	},
+	{
+		slug: 'anova-calculator',
+		category: 'calculators',
+		name: 'One-Way ANOVA Calculator (Analysis of Variance)',
+		nameZh: '单因素方差分析计算器 (One-Way ANOVA)',
+		description: 'Perform One-Way ANOVA across 3 or 4 sample groups, with F-statistic, p-value, sum of squares (SSB/SSW), and mean squares.',
+		descriptionZh: '多组样本数据的单因素方差分析 (ANOVA)，计算 F 检验统计量、p-value 显著性概率、组间/组内平方和与均方。',
+		kind: 'form',
+		config: anovaCalculator,
 	},
 ];
 

@@ -427,6 +427,8 @@ export const TOOL_KEYWORDS: Record<string, string> = {
 	'fraction': '分数 约分 化简 最简分数 小数转分数 分数转小数 fraction simplify decimal continued',
 	'descriptive-statistics': '平均数 中位数 众数 统计 标准差 方差 线性回归 mean median average statistics variance',
 	'hypothesis-testing': '假设检验 p值 t检验 z检验 显著性概率 显著性水平 检验统计量 置信区间 hypothesis testing p value t test z test confidence interval',
+	'confidence-interval': '置信区间 均值置信区间 比例置信区间 总体均值 总体比例 区间估计 样本均值 边际误差 置信水平 t分布 z分布 confidence interval mean proportion margin of error sample mean',
+	'anova-calculator': '方差分析 单因素方差分析 ANOVA F检验 组间方差 组内方差 显著性水平 p值 均方 自由度 one way anova f test mean square variance hypothesis',
 	'normal-distribution': '正态分布 z score 高斯分布 概率密度 累积分布 68 95 99法则 分位数 normal distribution gaussian probability cdf z score',
 	'prime-factorization': '质因数分解 质数 素数 分解质因数 prime factorization factors',
 	'combinatorics': '排列组合 组合数 排列数 阶乘 combinations permutations factorial',
