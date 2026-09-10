@@ -35,6 +35,20 @@ for (const post of posts) {
 }
 const filterableCategories = BLOG_CATEGORIES.filter((c) => (countByCategory.get(c.key) ?? 0) > 0);
 
+// Fine-grained topic chips for the second filter row: multi-select, so they
+// carry build-time counts like the category chips and zero-count topics are
+// left out entirely. Sorted by count so the frequent tags lead.
+const countByTopic = new Map<string, number>();
+for (const post of posts) {
+	for (const topic of post.data.topics) {
+		countByTopic.set(topic, (countByTopic.get(topic) ?? 0) + 1);
+	}
+}
+const filterableTopics = [...countByTopic.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+
+// Year selector: every year that actually has posts, newest first.
+const years = [...new Set(posts.map((post) => post.data.pubDate.getFullYear()))].sort((a, b) => b - a);
+
 // The page reads as a magazine top and an archive tail: the newest posts get
 // display space (featured 1+2, then a card grid), everything older collapses
 // into per-year single-line rows. 47 identical two-column cards was a wall;
@@ -90,20 +104,64 @@ const shortDate = (d: Date) => ({
 			</div>
 
 			<form class="blog-category-filter" data-blog-category-filter action="/blog/" method="get">
-				<span class="filter-label">
-					<span class="i18n-zh">按主题筛选</span>
-					<span class="i18n-en">Filter by topic</span>
-				</span>
-				<button type="submit" name="category" value="" data-blog-category="all" aria-pressed="true" aria-current="true">
-					<span class="i18n-zh">全部</span><span class="i18n-en">All</span>
-					<span class="count-badge">{posts.length}</span>
-				</button>
-				{filterableCategories.map((category) => (
-					<button type="submit" name="category" value={category.key} data-blog-category={category.key} aria-pressed="false" aria-current="false">
-						<span class="i18n-zh">{category.labelZh}</span><span class="i18n-en">{category.labelEn}</span>
-						<span class="count-badge">{countByCategory.get(category.key)}</span>
+				<div class="filter-row">
+					<span class="filter-label">
+						<span class="i18n-zh">按主题筛选</span>
+						<span class="i18n-en">Filter by topic</span>
+					</span>
+					<button type="submit" name="category" value="" data-blog-category="all" aria-pressed="true" aria-current="true">
+						<span class="i18n-zh">全部</span><span class="i18n-en">All</span>
+						<span class="count-badge">{posts.length}</span>
 					</button>
-				))}
+					{filterableCategories.map((category) => (
+						<button type="submit" name="category" value={category.key} data-blog-category={category.key} aria-pressed="false" aria-current="false">
+							<span class="i18n-zh">{category.labelZh}</span><span class="i18n-en">{category.labelEn}</span>
+							<span class="count-badge">{countByCategory.get(category.key)}</span>
+						</button>
+					))}
+				</div>
+				<div class="filter-row filter-row-tags">
+					<label class="filter-label" for="blog-filter-keyword">
+						<span class="i18n-zh">关键词 / 标签 / 年份</span>
+						<span class="i18n-en">Keyword / tags / year</span>
+					</label>
+					<input
+						id="blog-filter-keyword"
+						class="filter-keyword"
+						type="search"
+						placeholder="title / description…"
+						data-blog-keyword
+						autocomplete="off"
+					/>
+					{filterableTopics.map(([topic, count]) => (
+						<button type="button" data-blog-topic={topic} aria-pressed="false">
+							{topic}
+							<span class="count-badge">{count}</span>
+						</button>
+					))}
+					<label class="filter-year-label" for="blog-filter-year">
+						<span class="i18n-zh">年份</span>
+						<span class="i18n-en">Year</span>
+					</label>
+					<select id="blog-filter-year" class="filter-year" data-blog-year>
+						{/* An <option> holds text, not elements — the script below rewrites
+						    this label on load and on every language switch (only === 'zh'
+						    counts as Chinese; see the i18n notes in CLAUDE.md). */}
+						<option value="all" selected>All</option>
+						{years.map((year) => (
+							<option value={year}>{year}</option>
+						))}
+					</select>
+					<button type="button" class="filter-reset" data-blog-reset hidden>
+						<span class="i18n-zh">✕ 清除筛选</span>
+						<span class="i18n-en">✕ Clear filters</span>
+					</button>
+				</div>
+				<!-- Result count: pre-rendered bilingual, the script fills only the numbers. -->
+				<p class="filter-result" data-filter-result hidden>
+					<span class="i18n-zh">显示 <span data-count>0</span> / {posts.length} 篇</span>
+					<span class="i18n-en">Showing <span data-count>0</span> of {posts.length}</span>
+				</p>
 			</form>
 
 			<!-- Featured: newest post large + the next two compact -->
@@ -111,7 +169,7 @@ const shortDate = (d: Date) => ({
 				hero && (
 					<section class="featured-section" data-blog-card-container>
 						<div class="featured-grid">
-							<a class="featured-card" href={`/blog/${hero.id}/`} data-blog-card data-cat={getBlogCategory(hero.data.category).key}>
+							<a class="featured-card" href={`/blog/${hero.id}/`} data-blog-card data-cat={getBlogCategory(hero.data.category).key} data-topics={hero.data.topics.join(' ')} data-title={hero.data.title} data-desc={hero.data.description} data-year={hero.data.pubDate.getFullYear()}>
 								<div class="featured-badge-row">
 									<span class="featured-tag">
 										<span class="i18n-zh">最新发布</span><span class="i18n-en">Latest</span>
@@ -145,7 +203,7 @@ const shortDate = (d: Date) => ({
 								{minis.map((post) => {
 									const cat = getBlogCategory(post.data.category);
 									return (
-										<a class="featured-mini" href={`/blog/${post.id}/`} data-blog-card data-cat={cat.key} style={`--cat-color: ${cat.color};`}>
+										<a class="featured-mini" href={`/blog/${post.id}/`} data-blog-card data-cat={cat.key} data-topics={post.data.topics.join(' ')} data-title={post.data.title} data-desc={post.data.description} data-year={post.data.pubDate.getFullYear()} style={`--cat-color: ${cat.color};`}>
 											<div class="mini-top">
 												<span class="cat-pill" style={`--cat-color: ${cat.color};`}>
 													<span class="i18n-zh">{cat.labelZh}</span>
@@ -182,7 +240,7 @@ const shortDate = (d: Date) => ({
 							{recent.map((post) => {
 								const cat = getBlogCategory(post.data.category);
 								return (
-									<article class="article-card" data-blog-card data-cat={cat.key} style={`--cat-color: ${cat.color};`}>
+									<article class="article-card" data-blog-card data-cat={cat.key} data-topics={post.data.topics.join(' ')} data-title={post.data.title} data-desc={post.data.description} data-year={post.data.pubDate.getFullYear()} style={`--cat-color: ${cat.color};`}>
 										<a href={`/blog/${post.id}/`} class="article-card-link">
 											<div class="article-meta-row">
 												<span class="cat-pill" style={`--cat-color: ${cat.color};`}>
@@ -226,7 +284,7 @@ const shortDate = (d: Date) => ({
 								const d = shortDate(post.data.pubDate);
 								return (
 									<li>
-										<a class="archive-row" href={`/blog/${post.id}/`} data-blog-card data-cat={cat.key} style={`--cat-color: ${cat.color};`}>
+										<a class="archive-row" href={`/blog/${post.id}/`} data-blog-card data-cat={cat.key} data-topics={post.data.topics.join(' ')} data-title={post.data.title} data-desc={post.data.description} data-year={post.data.pubDate.getFullYear()} style={`--cat-color: ${cat.color};`}>
 											<span class="row-date">
 												<span class="i18n-en">{d.en}</span>
 												<span class="i18n-zh">{d.zh}</span>
@@ -244,6 +302,13 @@ const shortDate = (d: Date) => ({
 					</section>
 				))
 			}
+
+			<!-- Empty state: only reachable with an active keyword/topic/year filter
+			     (a bare category filter always has its build-time count behind it). -->
+			<div class="filter-empty" data-filter-empty hidden>
+				<span class="i18n-zh">没有匹配的文章 —— 试试清空关键词、减少标签或换个年份。</span>
+				<span class="i18n-en">No matching posts — try clearing the keyword, fewer topics, or another year.</span>
+			</div>
 
 			<!-- Bottom Tools Promotion Box -->
 			<section class="tools-cta-box">
@@ -268,24 +333,51 @@ const shortDate = (d: Date) => ({
 			(() => {
 				const filter = document.querySelector('[data-blog-category-filter]');
 				if (!filter) return;
-				const buttons = Array.from(filter.querySelectorAll('[data-blog-category]'));
+				const catButtons = Array.from(filter.querySelectorAll('[data-blog-category]'));
+				const topicButtons = Array.from(filter.querySelectorAll('[data-blog-topic]'));
+				const kwInput = filter.querySelector('[data-blog-keyword]');
+				const yearSelect = filter.querySelector('[data-blog-year]');
+				const resetBtn = filter.querySelector('[data-blog-reset]');
+				const resultEl = document.querySelector('[data-filter-result]');
+				const countEls = resultEl ? resultEl.querySelectorAll('[data-count]') : [];
+				const emptyEl = document.querySelector('[data-filter-empty]');
 				const cards = Array.from(document.querySelectorAll('[data-blog-card]'));
 				const containers = Array.from(document.querySelectorAll('[data-blog-card-container]'));
-				const validCategories = new Set(buttons.map((button) => button.dataset.blogCategory));
+				const validCategories = new Set(catButtons.map((button) => button.dataset.blogCategory));
 
-				const applyCategory = (category, updateUrl = false) => {
-					const selected = validCategories.has(category) ? category : 'all';
-					buttons.forEach((button) => {
-						const active = button.dataset.blogCategory === selected;
+				let selectedCat = 'all';
+				const selectedTopics = new Set();
+				let keyword = '';
+				let selectedYear = 'all';
+
+				const apply = (updateUrl = false) => {
+					catButtons.forEach((button) => {
+						const active = button.dataset.blogCategory === selectedCat;
 						button.setAttribute('aria-pressed', String(active));
 						button.setAttribute('aria-current', String(active));
 					});
+					topicButtons.forEach((button) => {
+						button.setAttribute('aria-pressed', String(selectedTopics.has(button.dataset.blogTopic)));
+					});
+					const kw = keyword.trim().toLowerCase();
+					let visibleCount = 0;
 					cards.forEach((card) => {
-						card.hidden = selected !== 'all' && card.dataset.cat !== selected;
+						const catOk = selectedCat === 'all' || card.dataset.cat === selectedCat;
+						// Topics are fine-grained: several selected topics widen the
+						// match (a post needs ANY of them), while every other
+						// dimension intersects.
+						const topics = (card.dataset.topics || '').split(' ').filter(Boolean);
+						const topicOk = selectedTopics.size === 0 || [...selectedTopics].some((t) => topics.includes(t));
+						const yearOk = selectedYear === 'all' || card.dataset.year === selectedYear;
+						const hay = `${card.dataset.title ?? ''} ${card.dataset.desc ?? ''}`.toLowerCase();
+						const kwOk = !kw || hay.includes(kw);
+						const show = catOk && topicOk && yearOk && kwOk;
+						card.hidden = !show;
+						if (show) visibleCount++;
 					});
 					containers.forEach((container) => {
 						if (container.dataset.cat) {
-							container.hidden = selected !== 'all' && container.dataset.cat !== selected;
+							container.hidden = selectedCat !== 'all' && container.dataset.cat !== selectedCat;
 						} else {
 							// Mixed-content containers (featured grid, recent grid, a
 							// year group) have no single category: they show while
@@ -294,24 +386,97 @@ const shortDate = (d: Date) => ({
 								container.querySelectorAll('[data-blog-card]:not([hidden])').length === 0;
 						}
 					});
+					const filtering = selectedCat !== 'all' || selectedTopics.size > 0 || selectedYear !== 'all' || kw.length > 0;
+					if (resultEl) {
+						resultEl.hidden = !filtering;
+						countEls.forEach((el) => (el.textContent = String(visibleCount)));
+					}
+					if (emptyEl) emptyEl.hidden = !(filtering && visibleCount === 0);
+					if (resetBtn) resetBtn.hidden = !filtering;
 					if (updateUrl) {
-						const url = new URL(window.location.href);
-						if (selected === 'all') url.searchParams.delete('category');
-						else url.searchParams.set('category', selected);
-						window.history.pushState({}, '', url.pathname + (url.search ? url.search : '') + url.hash);
+						const params = new URLSearchParams();
+						if (selectedCat !== 'all') params.set('category', selectedCat);
+						if (selectedTopics.size > 0) params.set('topic', [...selectedTopics].sort().join(','));
+						if (selectedYear !== 'all') params.set('year', selectedYear);
+						if (kw) params.set('q', keyword.trim());
+						const qs = params.toString();
+						window.history.pushState({}, '', '/blog/' + (qs ? `?${qs}` : ''));
 					}
 				};
 
-				const initial = new URLSearchParams(window.location.search).get('category') || 'all';
-				applyCategory(initial);
+				const readUrl = () => {
+					const params = new URLSearchParams(window.location.search);
+					selectedCat = params.get('category') || 'all';
+					if (!validCategories.has(selectedCat)) selectedCat = 'all';
+					selectedTopics.clear();
+					for (const t of (params.get('topic') || '').split(',').filter(Boolean)) selectedTopics.add(t);
+					selectedYear = params.get('year') || 'all';
+					keyword = params.get('q') || '';
+					if (kwInput) kwInput.value = keyword;
+					if (yearSelect) yearSelect.value = yearsHas(selectedYear) ? selectedYear : 'all';
+					selectedYear = yearSelect?.value ?? 'all';
+				};
+				const yearsHas = (y) => !!(yearSelect && [...yearSelect.options].some((o) => o.value === y));
+
 				filter.addEventListener('submit', (event) => {
 					event.preventDefault();
 					const submitter = event.submitter;
-					applyCategory(submitter?.dataset.blogCategory || 'all', true);
+					selectedCat = submitter?.dataset.blogCategory || 'all';
+					apply(true);
 				});
+				topicButtons.forEach((button) => {
+					button.addEventListener('click', () => {
+						const topic = button.dataset.blogTopic;
+						if (selectedTopics.has(topic)) selectedTopics.delete(topic);
+						else selectedTopics.add(topic);
+						apply(true);
+					});
+				});
+				if (kwInput) {
+					let debounce = null;
+					kwInput.addEventListener('input', () => {
+						if (debounce) clearTimeout(debounce);
+						debounce = setTimeout(() => {
+							keyword = kwInput.value;
+							apply(true);
+						}, 120);
+					});
+				}
+				if (yearSelect) {
+					yearSelect.addEventListener('change', () => {
+						selectedYear = yearSelect.value;
+						apply(true);
+					});
+				}
+				if (resetBtn) {
+					resetBtn.addEventListener('click', () => {
+						selectedCat = 'all';
+						selectedTopics.clear();
+						selectedYear = 'all';
+						keyword = '';
+						if (kwInput) kwInput.value = '';
+						if (yearSelect) yearSelect.value = 'all';
+						apply(true);
+					});
+				}
 				window.addEventListener('popstate', () => {
-					applyCategory(new URLSearchParams(window.location.search).get('category') || 'all');
+					readUrl();
+					apply(false);
 				});
+
+				// The year select's "All" label: an <option> cannot hold an
+				// .i18n-en/.i18n-zh span pair, so it is rewritten here on load and
+				// on every language change (only === 'zh' counts as Chinese).
+				const yearAllOption = yearSelect?.querySelector('option[value="all"]');
+				const applyLang = () => {
+					if (yearAllOption) yearAllOption.textContent = document.documentElement.dataset.lang === 'zh' ? '全部' : 'All';
+				};
+				applyLang();
+				new MutationObserver(applyLang).observe(document.documentElement, { attributes: true, attributeFilter: ['data-lang'] });
+				window.addEventListener('site:lang-change', applyLang);
+
+				readUrl();
+				apply(false);
 			})();
 		</script>
 	</body>
@@ -382,10 +547,16 @@ const shortDate = (d: Date) => ({
 
 	.blog-category-filter {
 		display: flex;
+		flex-direction: column;
+		gap: 0.55rem;
+		margin: -1.1rem 0 2.6rem;
+	}
+
+	.filter-row {
+		display: flex;
 		align-items: center;
 		gap: 0.45rem;
 		flex-wrap: wrap;
-		margin: -1.1rem 0 2.6rem;
 	}
 
 	.filter-label {
@@ -393,6 +564,81 @@ const shortDate = (d: Date) => ({
 		font-size: 0.84rem;
 		font-weight: 600;
 		margin-right: 0.2rem;
+	}
+
+	.filter-keyword {
+		border: 1px solid var(--gridline);
+		border-radius: 999px;
+		background: var(--card);
+		color: var(--fg);
+		font: inherit;
+		font-size: 0.82rem;
+		padding: 0.38rem 0.85rem;
+		width: clamp(10rem, 22vw, 15rem);
+	}
+
+	.filter-keyword:focus-visible {
+		outline: none;
+		border-color: var(--accent);
+	}
+
+	.filter-keyword::-webkit-search-cancel-button {
+		cursor: pointer;
+	}
+
+	.filter-year-label {
+		color: var(--dim);
+		font-size: 0.84rem;
+		font-weight: 600;
+		margin-left: 0.35rem;
+	}
+
+	.filter-year {
+		border: 1px solid var(--gridline);
+		border-radius: 999px;
+		background: var(--card);
+		color: var(--dim);
+		font: inherit;
+		font-size: 0.82rem;
+		padding: 0.34rem 0.55rem;
+		cursor: pointer;
+	}
+
+	.filter-year:focus-visible {
+		outline: none;
+		border-color: var(--accent);
+	}
+
+	.filter-reset {
+		border: none;
+		background: none;
+		color: var(--dim);
+		font: inherit;
+		font-size: 0.8rem;
+		cursor: pointer;
+		text-decoration: underline dotted;
+		padding: 0.3rem 0.4rem;
+	}
+
+	.filter-reset:hover {
+		color: var(--accent);
+	}
+
+	.filter-result {
+		color: var(--dim);
+		font-size: 0.82rem;
+		font-family: var(--font-mono);
+		margin: 0.15rem 0 0;
+	}
+
+	.filter-empty {
+		border: 1px dashed var(--gridline);
+		border-radius: 12px;
+		padding: 2.2rem 1.5rem;
+		text-align: center;
+		color: var(--dim);
+		font-size: 0.95rem;
+		margin-bottom: 2.6rem;
 	}
 
 	.blog-category-filter button {
