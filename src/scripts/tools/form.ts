@@ -25,6 +25,37 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 	for (const field of config.fields) {
 		form.append(fieldEl(field));
 	}
+
+	// Reset button: every control back to its declared default, the saved
+	// localStorage draft removed, results recomputed. It lives after the fields
+	// so it reads as an action on the whole form, not on any one field.
+	const resetRow = document.createElement('div');
+	resetRow.className = 't-btnrow t-clearrow';
+	const resetBtn = document.createElement('button');
+	resetBtn.type = 'button';
+	resetBtn.className = 't-btn t-clear';
+	resetBtn.append(bilingual('↺ Reset to defaults', '↺ 重置为默认值'));
+	resetBtn.addEventListener('click', () => {
+		for (const f of config.fields) {
+			const ctrl = controlsMap.get(f.id);
+			if (!ctrl) continue;
+			if (ctrl instanceof HTMLInputElement && ctrl.type === 'checkbox') {
+				ctrl.checked = f.def === 'true';
+			} else {
+				ctrl.value = f.def ?? '';
+			}
+		}
+		if (slug) {
+			try {
+				localStorage.removeItem(`tool-draft:${slug}`);
+			} catch {
+				// localStorage may be disabled; the reset itself still happened
+			}
+		}
+		update();
+	});
+	resetRow.append(resetBtn);
+	form.append(resetRow);
 	host.append(form);
 
 	const results = document.createElement('div');
