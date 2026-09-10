@@ -48,6 +48,64 @@ export function initUrl(host: HTMLElement): void {
 		'Ready: paste a URL to inspect its components, decode parameters and strip tracking tokens.';
 	const READY_ZH = '准备就绪：输入 URL 后将自动解析组件、拆解参数并提供清洗导出功能。';
 
+	// Batch helpers: one URL per line — the data-cleaning case (a list of links
+	// to domain-audit or de-track). One bad line is ✗, the rest keep going.
+	function batchInputLines(): string[] {
+		return wb.inputArea.value
+			.split('\n')
+			.map((l) => l.trim())
+			.filter((l) => l.length > 0);
+	}
+
+	function doBatchDomains(): void {
+		const lines = batchInputLines();
+		if (!lines.length) {
+			wb.outputArea.value = '';
+			wb.updateStatus('idle', READY_EN, READY_ZH);
+			return;
+		}
+		wb.outputArea.value = lines
+			.map((line) => {
+				const u = tryParseUrl(line);
+				return u ? `${line} → ${u.hostname}` : `${line} → ✗`;
+			})
+			.join('\n');
+		wb.updateStatus(
+			'valid',
+			`✓ Domains extracted from ${lines.length} URL(s)`,
+			`✓ 已从 ${lines.length} 条 URL 提取域名`
+		);
+	}
+
+	function doBatchStrip(): void {
+		const lines = batchInputLines();
+		if (!lines.length) {
+			wb.outputArea.value = '';
+			wb.updateStatus('idle', READY_EN, READY_ZH);
+			return;
+		}
+		let removed = 0;
+		wb.outputArea.value = lines
+			.map((line) => {
+				const u = tryParseUrl(line);
+				if (!u) return `${line} → ✗`;
+				const cleaned = new URL(u.toString());
+				for (const p of TRACKING_PARAMS) {
+					if (cleaned.searchParams.has(p)) {
+						cleaned.searchParams.delete(p);
+						removed++;
+					}
+				}
+				return cleaned.toString();
+			})
+			.join('\n');
+		wb.updateStatus(
+			'valid',
+			`✓ Cleaned ${lines.length} URL(s), removed ${removed} tracking parameter(s)`,
+			`✓ 已清洗 ${lines.length} 条 URL，去除 ${removed} 个跟踪参数`
+		);
+	}
+
 	// The breakdown is plain text in a <textarea> and cannot hold an
 	// .i18n-en/.i18n-zh pair, so it is rebuilt from the input; onLang at the
 	// bottom of this function re-runs the parse on every language change.
@@ -207,7 +265,9 @@ export function initUrl(host: HTMLElement): void {
 			{ label: 'Strip Tracking', labelZh: '去除追踪参数', primary: false, onClick: doStripTracking },
 			{ label: 'Sort Params (A-Z)', labelZh: '参数排序 (A-Z)', primary: false, onClick: doSortParams },
 			{ label: 'URL Decode', labelZh: 'URL 解码', primary: false, onClick: doDecodeUri },
-			{ label: 'URL Encode', labelZh: 'URL 编码', primary: false, onClick: doEncodeUri }
+			{ label: 'URL Encode', labelZh: 'URL 编码', primary: false, onClick: doEncodeUri },
+			{ label: 'Domains (per line)', labelZh: '批量提取域名', primary: false, onClick: doBatchDomains },
+			{ label: 'Strip Tracking (per line)', labelZh: '批量去追踪参数', primary: false, onClick: doBatchStrip }
 		],
 		onInput: doParse,
 		onSample: () => {
