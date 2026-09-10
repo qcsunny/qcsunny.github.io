@@ -791,6 +791,186 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '有了 og:description 还需要 meta description 吗？', a: '需要——og:* 面向社交抓取器；搜索引擎读的是普通 meta description。生成的标签块两者都含。' },
 		],
 	},
+	'finance/net-worth': {
+		about: [
+			'Assets minus liabilities, the one number that describes a household\u2019s finances. List items as "label, amount" per line on each side — accounts, funds, property on one side; mortgages, loans, credit-card balances on the other.',
+			'The debt-to-asset ratio comes along: below 50% is comfortable, above that and the balance sheet is doing most of its work with other people\u2019s money.',
+		],
+		aboutZh: [
+			'资产减负债，一个数字概括家庭财务。两边逐行列 "名称, 金额"——一边是存款、基金、房产，另一边是房贷、车贷、信用卡。',
+			'顺带算出资产负债率：低于 50% 算稳健，再高就是在大量借别人的钱做事了。',
+		],
+		faq: [
+			{ q: 'What counts as an asset?', a: 'Anything with a market value you could realistically sell: deposits, funds, stocks, property, a car (at resale value, not purchase price). Personal-use items worth little resell are usually left out.' },
+			{ q: 'How often should I compute it?', a: 'Quarterly is plenty — the number moves with markets, and tracking it daily turns investing into anxiety.' },
+		],
+		faqZh: [
+			{ q: '什么算资产？', a: '任何有市价、现实可变现的东西：存款、基金、股票、房产、汽车（按残值而非购入价）。几乎卖不掉的私人物品通常不计。' },
+			{ q: '多久算一次？', a: '每季度足够——数字随市场波动，天天盯只会徒增焦虑。' },
+		],
+	},
+	'finance/lump-sum-vs-dca': {
+		about: [
+			'Invest everything today, or spread the same total over monthly installments? Both sides contribute exactly the same money; only the timing differs, so the comparison is honest. The year-by-year table shows the gap widening with compounding.',
+			'The uncomfortable truth the tool shows: with a positive expected return, lump sum wins on average (markets rise more often than they fall — historically about two years in three). DCA wins in falling markets, reduces regret, and enforces discipline.',
+		],
+		aboutZh: [
+			'今天一次全投，还是把同样的总额按月分批？两边投入完全相同，差别只在时间——这样的对比才诚实。逐年表格能看到复利把差距越拉越大。',
+			'工具会展示一个不太舒服的事实：预期收益为正时，一次性投入平均而言胜出（市场涨多跌少——历史上约三年里有两年）。下跌市里定投占优，还能减少懊悔、强制纪律。',
+		],
+		faq: [
+			{ q: 'So DCA is pointless?', a: 'No — it is a risk-management tool, not a return maximizer. If a lump sum would keep you up at night, the peace of mind is worth the statistical cost.' },
+			{ q: 'Does it account for volatility?', a: 'The math assumes a steady average return. Real markets wobble, which widens the spread of DCA outcomes without changing its average much.' },
+		],
+		faqZh: [
+			{ q: '所以定投没意义？', a: '不是——它是风险管理工具，不是收益最大化工具。如果一次性投入让你睡不着觉，这份心安值得那个统计上的代价。' },
+			{ q: '考虑波动吗？', a: '计算假设收益率恒定。真实市场会震荡，这会拉大定投结果的分散度，但不太改变其均值。' },
+		],
+	},
+	'finance/real-return': {
+		about: [
+			'A 5% nominal return with 3% inflation is a 1.94% real return, not 2% — the Fisher equation divides the ratios because both compound. The tool also shows what an amount actually buys after N years, the number a savings account statement never prints.',
+			'It pairs with the existing inflation calculator: that one projects how prices erode cash; this one strips inflation out of a return you were promised.',
+		],
+		aboutZh: [
+			'名义收益 5%、通胀 3%，真实收益是 1.94% 而不是 2%——费雪方程算的是比值，因为两者都在复利。工具还会算出这笔钱 N 年后实际能买什么，这是存折上永远不会印的数字。',
+			'它与现有的通胀计算器互补：那个算现金购买力如何被侵蚀，这个把承诺给你的收益率剥掉通胀。',
+		],
+		faq: [
+			{ q: 'When is the naive subtraction wrong by a lot?', a: 'With high numbers: 50% return against 45% inflation is 3.45% real, not 5%. At everyday 2-8% rates the gap is small but real.' },
+			{ q: 'Which inflation number should I use?', a: 'Your personal basket matters more than the CPI headline — rent, education and healthcare usually outrun the average.' },
+		],
+		faqZh: [
+			{ q: '简单相减什么时候错得多？', a: '数字大的时候：收益 50%、通胀 45%，真实收益是 3.45% 而非 5%。日常 2–8% 的区间误差小但确实存在。' },
+			{ q: '该用哪个通胀数字？', a: '你自己的消费篮子比 CPI 头条更重要——房租、教育、医疗通常跑赢平均。' },
+		],
+	},
+	'devtools/port-lookup': {
+		about: [
+			'The well-known ports a server room or a cloud security group actually deals with — SSH and mail, the database cluster (MySQL, Postgres, Redis, Mongo, Elastic), Kubernetes, plus the ones with a history (Memcached\u2019s amplification, Docker\u2019s unencrypted 2375, RDP\u2019s brute-force magnetism).',
+			'Search by number or service name; security notes ride along where they matter.',
+		],
+		aboutZh: [
+			'机房与云安全组真正会遇到的常用端口——SSH 与邮件、数据库全家（MySQL、Postgres、Redis、Mongo、Elastic）、Kubernetes，以及那些"有故事"的端口（Memcached 的放大攻击、Docker 未加密的 2375、RDP 的暴力破解体质）。',
+			'按端口号或服务名搜索，该带安全提示的地方都带了。',
+		],
+		faq: [
+			{ q: 'Why does my scanner show a service on a nonstandard port?', a: 'Nothing forces SSH onto 22 — admins move services to high ports for obscurity or to dodge scans. A port number is a strong hint, not proof of what is listening.' },
+			{ q: 'TCP vs UDP on the same number?', a: 'They are separate namespaces: DNS uses both (53), NTP is UDP-only (123). A firewall rule for one does not cover the other.' },
+		],
+		faqZh: [
+			{ q: '为什么扫描器在非标准端口上发现服务？', a: '没有谁规定 SSH 必须在 22——管理员常把服务挪到高位端口避扫描。端口号是强提示，不是监听内容的证据。' },
+			{ q: '同端口号的 TCP 和 UDP？', a: '它们是两个独立命名空间：DNS 两者都用（53），NTP 只有 UDP（123）。防火墙放行一个不等于放行另一个。' },
+		],
+	},
+	'utilities/timezone-converter': {
+		about: [
+			'Convert any moment between two zones and read it across 12 world cities in one table — meeting planning, on-call handoffs, flight sanity checks. DST transitions are handled by the browser\u2019s own IANA tz database, so the same converter is correct in every country and every hemisphere.',
+			'The world-clock table doubles as the "is that hour civilized there" check: the weekday travels with the date across the midnight line.',
+		],
+		aboutZh: [
+			'在任意两个时区间转换一个时刻，并在一张表里读出全球 12 个城市的时间——排会议、交接班、核对航班都合适。夏令时切换由浏览器内置的 IANA 时区数据库处理，任何国家、任何半球都正确。',
+			'世界时钟表格还能顺手回答"那个点当地方不方便"：星期几会跟着日期一起跨过午夜线。',
+		],
+		faq: [
+			{ q: 'Why does the difference say +12.5 h?', a: 'True half-hour offsets exist — India (+5:30), Nepal (+5:45), parts of Australia. The difference is computed from the actual zones, not rounded to hours.' },
+			{ q: 'Does it handle DST switching days?', a: 'Yes — the instant is computed through the zone rules, so a 14:30 in London on the switch day lands correctly in New York even though that day has 23 or 25 hours there.' },
+		],
+		faqZh: [
+			{ q: '为什么时差显示 +12.5 小时？', a: '真实存在半小时偏移——印度（+5:30）、尼泊尔（+5:45）、澳大利亚部分地区。时差按真实时区算，不取整。' },
+			{ q: '夏令时切换当天准吗？', a: '准——时刻是按时区规则算出的，伦敦切换日的 14:30 换算到纽约依然正确，哪怕纽约那天只有 23 或 25 小时。' },
+		],
+	},
+	'devtools/css-clamp': {
+		about: [
+			'Fluid typography with a floor and a ceiling: sizes scale linearly between your min and max viewports and clamp() guarantees they never leave the range. The tool emits both the px form and the rem form, plus the effective size at 320, 768 and 1920 px so you can see the floor and ceiling bite.',
+			'The rem form keeps user font-size preferences working: the px in the middle term scales the viewport, the rem endpoints respect the reader.',
+		],
+		aboutZh: [
+			'带下限与上限的流式字号：字号在最小/最大视口间线性变化，clamp() 保证永不越界。工具同时输出 px 版与 rem 版，并给出 320、768、1920 px 的实际取值，让你看到上下限生效的时刻。',
+			'rem 版保留了用户的字号偏好：中项的 px 随视口缩放，两端的 rem 尊重读者设置。',
+		],
+		faq: [
+			{ q: 'Why is the rem version more verbose?', a: 'It avoids baking a px intercept (which would ignore the user\u2019s root font size); instead it computes the slope as a ratio between the rem endpoints. Verbose, but respects accessibility settings.' },
+			{ q: 'Should everything be fluid?', a: 'Body copy benefits; tiny labels and buttons usually want fixed sizes — fluid 11-13px UI text often becomes unreadable on phones.' },
+		],
+		faqZh: [
+			{ q: '为什么 rem 版更长？', a: '它避免写死 px 截距（那会无视用户的根字号），而是用 rem 端点之间的比值表达斜率。啰嗦，但尊重无障碍设置。' },
+			{ q: '所有字号都该流式吗？', a: '正文受益最大；小标签和按钮通常要固定字号——11–13px 的界面文字流式化后在手机上常变得不可读。' },
+		],
+	},
+	'devtools/wcag-contrast': {
+		about: [
+			'The exact WCAG 2.1 contrast ratio for a foreground/background pair, with pass/fail for every threshold: AA and AAA on normal text, AA and AAA on large text, and the 3:1 line for UI components and focus indicators.',
+			'The luminance math is the spec\u2019s own (sRGB linearization, then the 0.2126/0.7152/0.0722 weighting), so the number matches what auditors compute.',
+		],
+		aboutZh: [
+			'给出前景/背景组合的精确 WCAG 2.1 对比度，并对每条阈值逐一判定：正文与大字号的 AA 和 AAA，以及界面组件与焦点指示的 3:1 线。',
+			'亮度算法用的就是规范本身（sRGB 线性化后按 0.2126/0.7152/0.0722 加权），数字与审计工具一致。',
+		],
+		faq: [
+			{ q: 'What counts as large text?', a: '18.66px bold or 24px regular and above — those only need 3:1 for AA.' },
+			{ q: 'Does 4.5:1 guarantee readability?', a: 'It guarantees distinguishability for normal vision. Low-vision users benefit from more; aim for AAA (7:1) on body copy when you can.' },
+		],
+		faqZh: [
+			{ q: '多大算大字号？', a: '粗体 18.66px 或常规 24px 及以上——这些只需 3:1 即可过 AA。' },
+			{ q: '4.5:1 就一定可读吗？', a: '它保证正常视力的可分辨。低视力用户需要更高；正文尽量做到 AAA（7:1）。' },
+		],
+	},
+	'devtools/color-palette': {
+		about: [
+			'One base color in, five swatches out, on classic color-wheel harmonies: analogous for calm, complementary for punch, triadic for playgrounds, split-complementary for punch-with-an-escape-hatch, monochrome for a single voice.',
+			'The swatches render as real color blocks with hex codes underneath — pick with your eyes, copy with your keyboard.',
+		],
+		aboutZh: [
+			'一个基准色进去，五个色块出来，基于经典色轮和谐：邻近色求稳、互补色求冲击、三角色求活泼、分裂互补留退路、单色一个声音说话。',
+			'色板以真实色块渲染、下方标注十六进制——用眼睛挑，用键盘抄。',
+		],
+		faq: [
+			{ q: 'Are the lightness values from a system?', a: 'They are practical defaults (a near-white tint, two brand-adjacent steps, a near-black shade), tuned for UI use rather than color theory orthodoxy — adjust the hexes to taste.' },
+			{ q: 'How do I know the palette is accessible?', a: 'Run the pairs through the WCAG Contrast Checker — a palette can be harmonious and still fail every text pairing.' },
+		],
+		faqZh: [
+			{ q: '明度值有什么依据？', a: '是面向 UI 的实用默认（一个近白浅调、两个品牌邻近步、一个近深阴影），为好用服务而非色彩理论正统——不满意直接改色值。' },
+			{ q: '怎么判断配色可访问？', a: '把组合丢进 WCAG 对比度检查器——一套配色可以很和谐，同时文字组合全部不及格。' },
+		],
+	},
+		'devtools/browser-info': {
+		about: [
+			'Everything the browser knows about the machine it is running on, printed in one report: browser and engine, CPU core count, device memory (browsers cap the reported value at 8 GB), GPU via WebGL, screen geometry and pixel ratio, network class, storage quota, and preference signals like dark mode.',
+			'The codec-support section answers the question people actually come with: can this browser decode HEVC, AV1, VP9, FLAC, Opus — each marked with an honest ✓ / (maybe) / ✗ straight from canPlayType.',
+		],
+		aboutZh: [
+			'浏览器所知的本机信息，一份报告全打出：浏览器与引擎、CPU 核心数、设备内存（浏览器上报值上限 8 GB）、WebGL 读出的 GPU、屏幕几何与像素比、网络等级、存储配额，以及深色模式等偏好信号。',
+			'解码支持区回答大家真正带着来的问题：这台浏览器能不能解 HEVC、AV1、VP9、FLAC、Opus——每项都由 canPlayType 给出诚实的 ✓ / (maybe) / ✗。',
+		],
+		faq: [
+			{ q: 'Is this a privacy risk?', a: 'No data leaves the page — the report is the page reading its own standard APIs and printing them for you to copy. Close the tab and nothing persists anywhere.' },
+			{ q: 'Why does memory say ~8 GB when I have 16?', a: 'The deviceMemory API is deliberately coarse and clamped to 8 GB maximum — it is an anti-fingerprinting measure, not a bug in the tool.' },
+		],
+		faqZh: [
+			{ q: '这有隐私风险吗？', a: '没有任何数据离开页面——报告就是页面读取自己的标准接口再打印给你复制。关掉标签页，什么都不会留下。' },
+			{ q: '为什么内存显示 ~8 GB，我明明有 16 GB？', a: 'deviceMemory 接口刻意粗粒度并封顶 8 GB——这是反指纹追踪的措施，不是工具的 bug。' },
+		],
+	},
+'devtools/lossless-checker': {
+		about: [
+			'A "lossless" file that was transcoded from MP3 or AAC carries the lossy codec\u2019s signature: a frequency ceiling around 16-20 kHz where the encoder low-passed. Genuine CD rips carry content up to 22.05 kHz. This tool decodes the file locally, FFTs its loudest windows, and reports the ceiling.',
+			'Be fair to the music: some genuine masters genuinely have little energy up high (old recordings, quiet acoustic genres). The report always shows the raw cutoff frequencies — judge with them, not only the verdict.',
+		],
+		aboutZh: [
+			'从 MP3/AAC 转码而来的"无损"文件会带上原编码器的签名：16–20 kHz 附近的频率天花板。真 CD 抓轨的内容应延伸到 22.05 kHz。本工具在本地解码文件、对最响片段做 FFT，报告截止频率。',
+			'也要对音乐公平：部分真无损母带的高频确实本来就少（老录音、安静的原声曲风）。报告始终给出各窗口的原始截止频率——请结合它们判断，而非只看结论。',
+		],
+		faq: [
+			{ q: 'Which cutoff means fake?', a: 'A hard stop at 16 kHz smells like 128 kbps MP3; ~19.5-20.5 kHz matches 256-320 kbps. Content right up to 22 kHz is consistent with true lossless — but quiet masters can blur every line.' },
+			{ q: 'What about hi-res (96/24)?', a: 'The ceiling test still works (Nyquist is just higher); a 48 kHz ceiling on a 96 kHz file is a loud tell that the source was 44.1 kHz.' },
+		],
+		faqZh: [
+			{ q: '截止频率多少算假？', a: '16 kHz 整齐截断像 128 kbps MP3；19.5–20.5 kHz 对应 256–320 kbps。能量直达 22 kHz 与真无损相符——但安静的母带可能让界线模糊。' },
+			{ q: 'Hi-res（96/24）呢？', a: '判定方法依然适用（奈奎斯特频率更高）；96 kHz 文件的频谱止步 48 kHz，就是源是 44.1 kHz 的响亮证据。' },
+		],
+	},
 'devtools/json-schema': {
 		about: [
 			'Generate a draft-07 JSON Schema from a sample document, then validate other documents against it. Generation preloads the schema box, so the natural flow — paste, Generate, break the document, Validate — is two clicks.',

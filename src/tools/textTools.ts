@@ -14,6 +14,7 @@ import type { TextConfig, ToolEntry } from './registry';
 import { HTTP_STATUSES } from './httpStatus';
 import { MIME_MAP } from './mimeTypes';
 import { parseUa } from './useragent';
+import { PORTS } from './ports';
 
 /** YAML transforms share the same bilingual error shape: the parser throws
  *  Error("line N: message"), which we surface verbatim in both views. */
@@ -123,6 +124,15 @@ function matchStatuses(text: string) {
 	if (/^\d{3}$/.test(q)) return HTTP_STATUSES.filter((e) => String(e.code) === q);
 	if (/^\d+$/.test(q)) return HTTP_STATUSES.filter((e) => String(e.code).startsWith(q));
 	const hits = HTTP_STATUSES.filter((e) => `${e.name} ${e.nameZh} ${e.meaning} ${e.meaningZh} ${e.cause} ${e.causeZh}`.toLowerCase().includes(q));
+	return hits;
+}
+
+/** Match ports by number, prefix, or service keyword. */
+function matchPorts(text: string) {
+	const q = text.trim().toLowerCase();
+	if (!q) return [];
+	if (/^\d+$/.test(q)) return PORTS.filter((p) => String(p.port) === q);
+	const hits = PORTS.filter((p) => p.port.toString().startsWith(q) || `${p.service} ${p.serviceZh}`.toLowerCase().includes(q));
 	return hits;
 }
 
@@ -2396,6 +2406,390 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 		description: 'Fill in title, description, URL and image — get the full <head> tag block (meta + Open Graph + Twitter) with a live social share card preview.',
 		descriptionZh: '填写标题、描述、URL 与图片——生成完整 <head> 标签块（meta + Open Graph + Twitter），并实时预览社交分享卡片。',
 		kind: 'meta',
+	},
+
+	{
+		slug: 'port-lookup',
+		category: 'devtools',
+		name: 'Port Lookup (TCP / UDP)',
+		nameZh: '网络端口查询',
+		description: 'Look up well-known ports by number or service name — SSH, MySQL, Redis, Kubernetes — with security notes on the ones that get you pwned.',
+		descriptionZh: '按端口号或服务名查询常用端口——SSH、MySQL、Redis、Kubernetes——并给高危端口附安全提示。',
+		kind: 'text',
+		config: {
+			def: '6379',
+			placeholder: 'A port (6379) or a service name (mysql, ssh…)',
+			placeholderZh: '端口号（6379）或服务名（mysql、ssh…）',
+			mono: true,
+			stats: (text: string) => [
+				{ label: 'Matching ports', labelZh: '匹配的端口', value: String(matchPorts(text).length) },
+				{ label: 'Ports in reference', labelZh: '收录端口', value: String(PORTS.length) },
+			],
+			transforms: [
+				{
+					id: 'lookup',
+					label: 'Look up',
+					labelZh: '查询',
+					run: (t) => {
+						const found = matchPorts(t);
+						if (!found.length)
+							return { output: '', error: 'No port matches — try a number (1-65535) or a service name like "mysql".', errorZh: '没有匹配的端口——试试数字（1–65535）或服务名，如 "mysql"。' };
+						return {
+							output: found
+								.slice(0, 10)
+								.map(
+									(p) =>
+										`${String(p.port).padEnd(6)} ${p.proto.padEnd(4)} ${p.service} ${p.serviceZh}` +
+										(p.note ? `\n              ${p.note} · ${p.noteZh}` : ''),
+								)
+								.join('\n'),
+						};
+					},
+				},
+			],
+		},
+	},
+	{
+		slug: 'lossless-checker',
+		category: 'devtools',
+		name: 'Fake-Lossless Detector (Audio Spectrum)',
+		nameZh: '真假无损音乐判别（频谱分析）',
+		description: 'Drop a FLAC/WAV file and check whether it is truly lossless: lossy MP3/AAC transcodes leave a frequency ceiling that a real CD rip does not have.',
+		descriptionZh: '拖入 FLAC/WAV 文件判别是否真无损：MP3/AAC 有损转码会留下频率天花板，真 CD 抓轨则延伸到奈奎斯特频率。',
+		kind: 'text',
+		config: {
+			placeholder: 'Drop an audio file onto this box — or pick one below…',
+			placeholderZh: '把音频文件拖到此框——或点击下方按钮选择…',
+			mono: true,
+			// The file is decoded by the browser's own audio stack and FFT'd in
+			// the page; nothing is uploaded.
+			fileTransform: async (data, name) => {
+				const { losslessCheck } = await import('../scripts/tools/lossless');
+				return losslessCheck(data, name);
+			},
+			transforms: [
+				{
+					id: 'how',
+					label: 'How it works',
+					labelZh: '工作原理',
+					run: () => ({
+						output:
+							'Drop a file (or use the 📄 button). The audio is decoded locally and the loudest windows are FFT-analysed:\n' +
+							'  · true lossless: energy reaches ~22 kHz (the CD Nyquist limit)\n' +
+							'  · MP3/AAC transcode: a hard ceiling at ~16-20 kHz (lower bitrate = lower ceiling)\n' +
+							'\nHeuristic 判定为启发式：部分真无损母带高频本就偏少，请结合截止频率本身判断。文件全程本地解码，绝不上传。',
+					}),
+				},
+			],
+		},
+	},
+	{
+		slug: 'css-clamp',
+		category: 'devtools',
+		name: 'CSS clamp() Calculator',
+		nameZh: 'CSS clamp() 计算器',
+		description: 'Generate a responsive clamp() from min/max viewport widths and font sizes — fluid type with hard floors and ceilings, in px or rem, with sample values at real breakpoints.',
+		descriptionZh: '由最小/最大视口与字号生成响应式 clamp()——带下限上限的流式字号，支持 px 或 rem，附真实断点的取值示例。',
+		kind: 'form',
+		config: {
+			intro: 'Sizes scale linearly between the two viewports and never leave the [min, max] range.',
+			introZh: '字号在两个视口之间线性变化，且永远不超出 [最小, 最大] 区间。',
+			fields: [
+				{ id: 'minVw', label: 'Min viewport', labelZh: '最小视口', suffix: '(px)', type: 'number', def: '375', step: 'any', required: true },
+				{ id: 'maxVw', label: 'Max viewport', labelZh: '最大视口', suffix: '(px)', type: 'number', def: '1440', step: 'any', required: true },
+				{ id: 'minSize', label: 'Font size at min viewport', labelZh: '最小视口字号', suffix: '(px)', type: 'number', def: '16', step: 'any', required: true },
+				{ id: 'maxSize', label: 'Font size at max viewport', labelZh: '最大视口字号', suffix: '(px)', type: 'number', def: '24', step: 'any', required: true },
+			],
+			compute: (v) => {
+				const row = (label: string, labelZh: string, value: string, valueZh = value) => ({ label, labelZh, value, valueZh });
+				const minVw = v.num('minVw');
+				const maxVw = v.num('maxVw');
+				const minSize = v.num('minSize');
+				const maxSize = v.num('maxSize');
+				if (!(maxVw > minVw) || !Number.isFinite(minSize) || !Number.isFinite(maxSize))
+					return { rows: [row('Result', '结果', '— (max viewport must exceed min viewport)', '—（最大视口需大于最小视口）')] };
+				const slope = (maxSize - minSize) / (maxVw - minVw);
+				const px = `clamp(${minSize}px, calc(${(minSize - slope * minVw).toFixed(2)}px + ${(slope * 100).toFixed(4)}vw), ${maxSize}px)`;
+				const rem16 = (n: number): string => (n / 16).toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
+				const rem = `clamp(${rem16(minSize)}rem, calc(${rem16(minSize)}rem + ${(rem16(maxSize - minSize))} * (100vw - ${minVw}px) / ${maxVw - minVw}), ${rem16(maxSize)}rem)`;
+				const at = (vw: number): string => `${Math.round(minSize + slope * (vw - minVw))}px @ ${vw}px`;
+				return {
+					rows: [
+						row('At 320px', '320px 时', at(320)),
+						row('At 768px', '768px 时', at(768)),
+						row('At 1920px', '1920px 时', at(1920)),
+						row('Slope', '斜率', `${(slope * 100).toFixed(4)}vw / 100px`),
+					],
+					// The generated CSS is code — identical in both views, so it
+					// rides in the note (which allows same-content halves) rather
+					// than a value row (whose zh half must not carry Latin words).
+					note: `${px}\n${rem}`,
+					noteZh: `${px}\n${rem}`,
+				};
+			},
+		},
+	},
+	{
+		slug: 'wcag-contrast',
+		category: 'devtools',
+		name: 'WCAG Contrast Checker',
+		nameZh: 'WCAG 颜色对比度检查',
+		description: 'Check a foreground/background pair against WCAG 2.1: the exact contrast ratio plus pass/fail for AA and AAA on normal text, large text and UI components.',
+		descriptionZh: '检查前景/背景色组合是否满足 WCAG 2.1：精确对比度，以及正文、大字号、界面组件的 AA 与 AAA 判定。',
+		kind: 'form',
+		config: {
+			intro: 'AA needs 4.5:1 (normal text) or 3:1 (large text); AAA needs 7:1 or 4.5:1. UI components and focus rings need 3:1.',
+			introZh: 'AA 要求 4.5:1（正文）或 3:1（大字号）；AAA 要求 7:1 或 4.5:1。界面组件与焦点框要求 3:1。',
+			fields: [
+				{ id: 'fg', label: 'Foreground color', labelZh: '前景色', type: 'text', def: '#767676', placeholder: '#767676 or 767676', required: true },
+				{ id: 'bg', label: 'Background color', labelZh: '背景色', type: 'text', def: '#ffffff', placeholder: '#ffffff', required: true },
+			],
+			compute: (v) => {
+				const row = (label: string, labelZh: string, value: string, valueZh = value) => ({ label, labelZh, value, valueZh });
+				const parse = (s: string): [number, number, number] | null => {
+					const h = s.trim().replace(/^#/, '');
+					if (/^[0-9a-f]{3}$/i.test(h))
+						return [parseInt(h[0]! + h[0]!, 16), parseInt(h[1]! + h[1]!, 16), parseInt(h[2]! + h[2]!, 16)];
+					if (/^[0-9a-f]{6}$/i.test(h))
+						return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+					return null;
+				};
+				const fg = parse(v.str('fg'));
+				const bg = parse(v.str('bg'));
+				if (!fg || !bg)
+					return { rows: [row('Result', '结果', '— (colors must be hex, e.g. #767676)', '—（颜色须为十六进制，如 #767676）')] };
+				const lum = ([r, g, b]: [number, number, number]): number => {
+					const lin = (c: number): number => {
+						const s = c / 255;
+						return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+					};
+					return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+				};
+				const l1 = lum(fg);
+				const l2 = lum(bg);
+				const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+				const r = Math.round(ratio * 100) / 100;
+				const verdict = (need: number, en: string, zh: string) =>
+					ratio >= need
+						? { label: en, labelZh: zh, value: `✓ pass (${r}:1 ≥ ${need}:1)`, valueZh: `✓ 通过（${r}:1 ≥ ${need}:1）` }
+						: { label: en, labelZh: zh, value: `✗ fail (${r}:1 < ${need}:1)`, valueZh: `✗ 未通过（${r}:1 < ${need}:1）` };
+				return {
+					rows: [
+						{ label: 'Contrast ratio', labelZh: '对比度', value: `${r}:1`, emphasis: true },
+						verdict(4.5, 'AA — normal text', 'AA——正文'),
+						verdict(3, 'AA — large text (≥18.7px bold / 24px)', 'AA——大字号（≥18.7px 粗体 / 24px）'),
+						verdict(7, 'AAA — normal text', 'AAA——正文'),
+						verdict(4.5, 'AAA — large text', 'AAA——大字号'),
+						verdict(3, 'UI components & focus indicators', '界面组件与焦点指示'),
+					],
+				};
+			},
+		},
+	},
+	{
+		slug: 'color-palette',
+		category: 'devtools',
+		name: 'Color Palette Generator',
+		nameZh: '配色方案生成器',
+		description: 'Build a five-swatch palette from one base color: complementary, analogous, triadic, split-complementary or monochrome — shown as actual swatches with hex codes.',
+		descriptionZh: '从一个基准色生成五色配色：互补、邻近、三角、分裂互补或单色——以真实色块展示并附十六进制码。',
+		kind: 'form',
+		config: {
+			intro: 'The base color is always the middle swatch; the harmony rotates hue and adjusts lightness/saturation around it.',
+			introZh: '基准色固定为中间色块；其余颜色按和谐规则旋转色相并调整明度饱和度。',
+			fields: [
+				{ id: 'base', label: 'Base color', labelZh: '基准色', type: 'text', def: '#3b82f6', placeholder: '#3b82f6', required: true },
+				{
+					id: 'harmony',
+					label: 'Harmony',
+					labelZh: '配色和谐',
+					type: 'select',
+					def: 'analogous',
+					options: [
+						{ value: 'analogous', label: 'Analogous (±30°)' },
+						{ value: 'complementary', label: 'Complementary (180°)' },
+						{ value: 'triadic', label: 'Triadic (±120°)' },
+						{ value: 'split', label: 'Split-complementary (150°/210°)' },
+						{ value: 'monochrome', label: 'Monochrome' },
+					],
+				},
+			],
+			compute: (v) => {
+				const row = (label: string, labelZh: string, value: string, valueZh = value) => ({ label, labelZh, value, valueZh });
+				const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(v.str('base').trim());
+				if (!m) return { rows: [row('Result', '结果', '— (base color must be hex, e.g. #3b82f6)', '—（基准色须为十六进制，如 #3b82f6）')] };
+				const h = m[1]!;
+				const rgb: [number, number, number] =
+					h.length === 3
+						? [parseInt(h[0]! + h[0]!, 16), parseInt(h[1]! + h[1]!, 16), parseInt(h[2]! + h[2]!, 16)]
+						: [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+				// rgb -> hsl
+				const [r, g, b] = rgb.map((c) => c / 255) as [number, number, number];
+				const max = Math.max(r, g, b);
+				const min = Math.min(r, g, b);
+				const l = (max + min) / 2;
+				const d = max - min;
+				const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+				let hue = 0;
+				if (d !== 0) {
+					if (max === r) hue = 60 * (((g - b) / d) % 6);
+					else if (max === g) hue = 60 * ((b - r) / d + 2);
+					else hue = 60 * ((r - g) / d + 4);
+				}
+				if (hue < 0) hue += 360;
+				const hslToHex = (hh: number, ss: number, ll: number): string => {
+					const c = (1 - Math.abs(2 * ll - 1)) * ss;
+					const x = c * (1 - Math.abs(((hh / 60) % 2) - 1));
+					const mo = ll - c / 2;
+					let rr = 0;
+					let gg = 0;
+					let bb = 0;
+					if (hh < 60) [rr, gg, bb] = [c, x, 0];
+					else if (hh < 120) [rr, gg, bb] = [x, c, 0];
+					else if (hh < 180) [rr, gg, bb] = [0, c, x];
+					else if (hh < 240) [rr, gg, bb] = [0, x, c];
+					else if (hh < 300) [rr, gg, bb] = [x, 0, c];
+					else [rr, gg, bb] = [c, 0, x];
+					const to = (n: number): string => Math.round((n + mo) * 255).toString(16).padStart(2, '0');
+					return `#${to(rr)}${to(gg)}${to(bb)}`;
+				};
+				const harmony = v.str('harmony');
+				let swatches: string[];
+				if (harmony === 'monochrome') {
+					swatches = [hslToHex(hue, Math.min(1, s * 1.1), 0.88), hslToHex(hue, s, 0.72), hslToHex(hue, s, l), hslToHex(hue, s, 0.35), hslToHex(hue, s, 0.18)];
+				} else if (harmony === 'analogous') {
+					swatches = [hslToHex((hue + 330) % 360, s, Math.min(0.85, l + 0.12)), hslToHex((hue + 340) % 360, s, l), hslToHex(hue, s, l), hslToHex((hue + 20) % 360, s, l), hslToHex((hue + 30) % 360, s, Math.max(0.2, l - 0.12))];
+				} else if (harmony === 'complementary') {
+					swatches = [hslToHex(hue, s, 0.92), hslToHex(hue, s * 0.5, l), hslToHex(hue, s, l), hslToHex((hue + 180) % 360, s, l), hslToHex((hue + 180) % 360, s, 0.3)];
+				} else if (harmony === 'triadic') {
+					swatches = [hslToHex((hue + 120) % 360, s, 0.85), hslToHex(hue, s, l), hslToHex((hue + 240) % 360, s, l), hslToHex((hue + 120) % 360, s, l), hslToHex((hue + 240) % 360, s, 0.3)];
+				} else {
+					swatches = [hslToHex((hue + 150) % 360, s, 0.85), hslToHex(hue, s, l), hslToHex((hue + 210) % 360, s, l), hslToHex((hue + 150) % 360, s, 0.4), hslToHex((hue + 210) % 360, s, 0.25)];
+				}
+				// chartSvg swatch strip: rects + hex labels under each
+				const W = 120;
+				const svg =
+					`<svg viewBox="0 0 ${5 * W} 150" xmlns="http://www.w3.org/2000/svg" role="img">` +
+					swatches
+						.map(
+							(hex, i) =>
+								`<rect x="${i * W}" y="0" width="${W}" height="110" fill="${hex}"/>` +
+								`<text x="${i * W + W / 2}" y="135" text-anchor="middle" font-family="var(--font-mono, monospace)" font-size="15" fill="currentColor">${hex}</text>`,
+						)
+						.join('') +
+					`</svg>`;
+				return {
+					rows: [row('Base color', '基准色', `#${h.toLowerCase()}`)],
+					// hex codes are language-neutral; the note accepts identical
+					// halves, a value row's zh half would not.
+					note: swatches.join('  '),
+					noteZh: swatches.join('  '),
+					chartSvg: svg,
+				};
+			},
+		},
+	},
+
+	{
+		slug: 'browser-info',
+		category: 'devtools',
+		name: 'Browser & Hardware Info',
+		nameZh: '浏览器与硬件信息',
+		description: 'Read what the browser knows about this machine — CPU cores, memory, GPU, screen, network, codec support — and copy it as a report. Nothing is sent anywhere; the page just prints its own APIs.',
+		descriptionZh: '读取浏览器可知的本机信息——CPU 核数、内存、GPU、屏幕、网络、解码支持——一键生成可复制报告。纯本地读取，不向任何地方发送。',
+		kind: 'text',
+		config: {
+			placeholder: 'Click "Scan this browser" below — the report fills in here…',
+			placeholderZh: '点击下方"扫描本机浏览器"——报告将显示在此处…',
+			mono: true,
+			transforms: [
+				{
+					id: 'scan',
+					label: 'Scan this browser',
+					labelZh: '扫描本机浏览器',
+					// Every field below is a standard browser API reading — the
+					// report is literally the page describing itself, client-side.
+					run: async () => {
+						const nav = navigator as Navigator & {
+							hardwareConcurrency?: number;
+							deviceMemory?: number;
+							connection?: { effectiveType?: string; downlink?: number; rtt?: number };
+							userAgentData?: { platform?: string };
+						};
+						const L = (label: string, value: string): string => `${label.padEnd(30)} ${value}`;
+						const lines: string[] = [];
+						// --- browser / engine (reuse the UA parser) ---
+						const ua = parseUa(nav.userAgent);
+						if (ua) {
+							lines.push(L('Browser 浏览器', `${ua.browser} / ${ua.browserZh}${ua.version ? ` · v${ua.version}` : ''}`));
+							lines.push(L('Engine 引擎', `${ua.engine} / ${ua.engineZh}`));
+							lines.push(L('OS 操作系统', `${ua.os} / ${ua.osZh}`));
+							lines.push(L('Device 设备', `${ua.device} / ${ua.deviceZh}`));
+						}
+						lines.push(L('Platform 平台', nav.userAgentData?.platform ?? nav.platform ?? '—'));
+						lines.push(L('Languages 语言', nav.languages?.join(', ') ?? nav.language));
+						lines.push(L('Time zone 时区', Intl.DateTimeFormat().resolvedOptions().timeZone ?? '—'));
+						// --- hardware ---
+						lines.push(L('CPU cores 逻辑核心', String(nav.hardwareConcurrency ?? '—')));
+						lines.push(L('Device memory 设备内存', nav.deviceMemory ? `~${nav.deviceMemory} GB (browser caps at 8)` : '— (not exposed)'));
+						lines.push(L('Touch points 触控点', String(nav.maxTouchPoints ?? 0)));
+						// --- screen ---
+						const s = screen;
+						lines.push(L('Screen 屏幕', `${s.width}×${s.height} @ ${s.colorDepth}-bit`));
+						lines.push(L('Available 可用区域', `${s.availWidth}×${s.availHeight}`));
+						lines.push(L('Pixel ratio 像素比', String(window.devicePixelRatio)));
+						// --- GPU via WebGL ---
+						try {
+							const canvas = document.createElement('canvas');
+							const gl = (canvas.getContext('webgl2') ?? canvas.getContext('webgl')) as WebGLRenderingContext | null;
+							if (gl) {
+								const ext = gl.getExtension('WEBGL_debug_renderer_info');
+								const renderer = ext ? (gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) as string) : (gl.getParameter(gl.RENDERER) as string);
+								lines.push(L('GPU 显卡', renderer || '—'));
+							} else lines.push(L('GPU 显卡', '— (WebGL unavailable)'));
+						} catch {
+							lines.push(L('GPU 显卡', '— (WebGL blocked)'));
+						}
+						// --- network ---
+						const conn = nav.connection;
+						if (conn) lines.push(L('Network 网络', `${conn.effectiveType ?? '—'}${conn.downlink ? ` · ~${conn.downlink} Mbps` : ''}${conn.rtt ? ` · ${conn.rtt} ms RTT` : ''}`));
+						else lines.push(L('Network 网络', '— (not exposed)'));
+						// --- storage ---
+						try {
+							const est = await navigator.storage.estimate();
+							if (est.quota) lines.push(L('Storage quota 存储配额', `${(est.quota / 1024 ** 3).toFixed(1)} GB (used ${((est.usage ?? 0) / 1024 ** 2).toFixed(0)} MB)`));
+						} catch { /* API absent — skip silently */ }
+						// --- preferences ---
+						lines.push(L('Color scheme 配色偏好', matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+						lines.push(L('Reduced motion 减少动效', matchMedia('(prefers-reduced-motion: reduce)').matches ? 'yes' : 'no'));
+						// --- codec support: the honest answer for "can my browser play HEVC?" ---
+						const v = document.createElement('video');
+						const a = document.createElement('audio');
+						const can = (el: HTMLMediaElement, type: string): string => {
+							const r = el.canPlayType(type);
+							return r === 'probably' ? '✓' : r === 'maybe' ? '(maybe)' : '✗';
+						};
+						const codecs: [string, string][] = [
+							['H.264 / AVC', 'video/mp4; codecs="avc1.42E01E"'],
+							['H.265 / HEVC', 'video/mp4; codecs="hvc1.1.6.L93.B0"'],
+							['VP9', 'video/webm; codecs="vp9"'],
+							['AV1', 'video/mp4; codecs="av01.0.05M.08"'],
+							['AAC', 'audio/mp4; codecs="mp4a.40.2"'],
+							['MP3', 'audio/mpeg'],
+							['Opus', 'audio/webm; codecs="opus"'],
+							['FLAC', 'audio/flac'],
+						];
+						lines.push('', '--- Codec support 解码支持 ---');
+						for (const [name, type] of codecs) {
+							const el = name === 'MP3' || name === 'AAC' || name === 'Opus' || name === 'FLAC' ? a : v;
+							lines.push(L(name, can(el, type)));
+						}
+						lines.push('', '🔒 Everything above was read locally 报告完全本地生成，未向任何服务器发送。');
+						return { output: lines.join('\n') };
+					},
+				},
+			],
+		},
 	},
 
 	{

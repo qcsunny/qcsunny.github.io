@@ -23,6 +23,9 @@ const percent = (v: number): string => formatNumber(Math.round(v * 100) / 100);
 const cash = (v: number | null): { value: string; valueZh: string } =>
 	v === null || !Number.isFinite(v) ? { value: '—', valueZh: '—' } : { value: `$${money(v)}`, valueZh: `¥${money(v)}` };
 
+/** A plain bilingual row (no currency formatting). */
+const row2 = (label: string, labelZh: string, value: string, valueZh: string): FormResultRow => ({ label, labelZh, value, valueZh });
+
 /** Equal-payment amortization monthly payment. months > 0. */
 function monthlyPayment(principal: number, annualRatePct: number, months: number): number {
 	const i = annualRatePct / 100 / 12;
@@ -3278,6 +3281,190 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		descriptionZh: '普通年金与先付年金的现值/终值测算，支持月付年付，评估养老金与年金保险给付价值。',
 		kind: 'form',
 		config: annuityCalculator,
+	},
+	{
+		slug: 'net-worth',
+		category: 'finance',
+		name: 'Net Worth Calculator',
+		nameZh: '净资产计算器',
+		description: 'List assets and liabilities ("label, amount" per line) and get total assets, total liabilities, net worth and the debt-to-asset ratio.',
+		descriptionZh: '逐行列出资产与负债（"名称, 金额"），得出总资产、总负债、净资产与资产负债率。',
+		kind: 'form',
+		config: {
+			intro: 'One line per item: "label, amount". Commas, spaces or semicolons all separate.',
+			introZh: '每行一项："名称, 金额"。逗号、空格、分号均可作分隔。',
+			fields: [
+				{
+					id: 'assets',
+					label: 'Assets (label, amount per line)',
+					labelZh: '资产（每行 名称, 金额）',
+					type: 'textarea',
+					def: 'Cash, 20000\nSavings, 80000\nIndex funds, 150000\nCar, 25000',
+				},
+				{
+					id: 'liabilities',
+					label: 'Liabilities (label, amount per line)',
+					labelZh: '负债（每行 名称, 金额）',
+					type: 'textarea',
+					def: 'Mortgage, 210000\nCar loan, 12000',
+				},
+			],
+			compute: (v) => {
+				const row = (label: string, labelZh: string, value: string, valueZh = value) => ({ label, labelZh, value, valueZh });
+				const parse = (text: string): { items: [string, number][]; bad: string[] } => {
+					const items: [string, number][] = [];
+					const bad: string[] = [];
+					for (const line of text.split('\n')) {
+						const t = line.trim();
+						if (!t) continue;
+						const parts = t.split(/[,;]\s*|\s{2,}/);
+						const label = parts.slice(0, -1).join(',').trim() || t;
+						const amount = Number((parts.at(-1) ?? '').replace(/[^\d.-]/g, ''));
+						if (Number.isFinite(amount)) items.push([label, amount]);
+						else bad.push(t);
+					}
+					return { items, bad };
+				};
+				const a = parse(v.str('assets'));
+				const l = parse(v.str('liabilities'));
+				const totalAssets = a.items.reduce((s, [, x]) => s + x, 0);
+				const totalLiab = l.items.reduce((s, [, x]) => s + x, 0);
+				const net = totalAssets - totalLiab;
+				const ratio = totalAssets > 0 ? (totalLiab / totalAssets) * 100 : 0;
+				const rows: FormResultRow[] = [
+					{ label: 'Net worth', labelZh: '净资产', ...cash(net), emphasis: true },
+					{ label: 'Total assets', labelZh: '总资产', ...cash(totalAssets) },
+					{ label: 'Total liabilities', labelZh: '总负债', ...cash(totalLiab) },
+					row('Debt-to-asset ratio', '资产负债率', `${percent(ratio)}%`),
+				];
+				if (a.bad.length || l.bad.length)
+					rows.push(row('Ignored unparseable lines', '已忽略的无效行', [...a.bad, ...l.bad].slice(0, 3).join('  ')));
+				return { rows };
+			},
+		},
+	},
+	{
+		slug: 'lump-sum-vs-dca',
+		category: 'finance',
+		name: 'Lump Sum vs Dollar-Cost Averaging',
+		nameZh: '一次性投资 vs 定投对比',
+		description: 'Compare investing everything today against spreading the same total in monthly installments — future values, contributions and the difference, year by year.',
+		descriptionZh: '对比今天一次性全额投入与按月分批定投同一笔总额：终值、投入与差额，逐年展开。',
+		kind: 'form',
+		config: {
+			intro: 'The classic question: invest the lump sum now, or average in monthly? Same total contribution either way — only the timing differs.',
+			introZh: '经典问题：一次性投入，还是按月分批？两种方式总投入相同，差别只在入场时机。',
+			fields: [
+				{ id: 'amount', label: 'Total amount', labelZh: '总金额', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '12000', step: 'any', required: true },
+				{ id: 'years', label: 'Investment horizon', labelZh: '投资年限', suffix: '(years)', suffixZh: '(年)', type: 'number', def: '5', step: 'any', required: true },
+				{ id: 'rate', label: 'Expected annual return', labelZh: '预期年化收益率', suffix: '(%)', type: 'number', def: '7', step: 'any', required: true },
+				{
+					id: 'frequency',
+					label: 'DCA frequency',
+					labelZh: '定投频率',
+					type: 'select',
+					def: 'monthly',
+					options: [
+						{ value: 'monthly', label: 'Monthly' },
+						{ value: 'quarterly', label: 'Quarterly' },
+					],
+				},
+			],
+			compute: (v) => {
+				const total = v.num('amount');
+				const years = v.num('years');
+				const rate = v.num('rate') / 100;
+				const perYear = v.str('frequency') === 'quarterly' ? 4 : 12;
+				// years is capped at 100: the DCA loop is O(steps) and a
+				// pathologically large horizon would freeze the tab (and the
+				// i18n sweep, which feeds every field 1e9).
+				if (!(total > 0) || !(years > 0) || years > 100 || !Number.isFinite(rate))
+					return {
+						rows: [
+							{ label: 'Result', labelZh: '结果', value: '— (amount > 0, years 1-100)', valueZh: '—（金额需大于 0，年限 1–100）' },
+						],
+					};
+				const steps = Math.round(years * perYear);
+				const per = total / steps;
+				const i = rate / perYear;
+				// Lump sum: everything compounds from day 0.
+				const lumpFV = total * (1 + rate) ** years;
+				// DCA: each installment compounds for its remaining time (annuity FV).
+				let dcaFV = 0;
+				for (let k = 1; k <= steps; k++) dcaFV += per * (1 + i) ** k;
+				const diff = lumpFV - dcaFV;
+				if (!Number.isFinite(lumpFV) || !Number.isFinite(dcaFV))
+					return {
+						rows: [
+							{ label: 'Result', labelZh: '结果', value: '— (the rate overflows this horizon)', valueZh: '—（该收益率在此年限下溢出）' },
+						],
+					};
+				const rows: FormResultRow[] = [
+					{ label: 'Lump sum FV', labelZh: '一次性投入终值', ...cash(lumpFV), emphasis: true },
+					{ label: 'DCA FV', labelZh: '定投终值', ...cash(dcaFV) },
+					{ label: 'Advantage of lump sum', labelZh: '一次性投入领先', ...cash(diff) },
+					row2(
+						'Verdict',
+						'结论',
+						diff > 0 ? `Lump sum wins by ${percent((diff / dcaFV) * 100)}%` : `DCA wins by ${percent((-diff / lumpFV) * 100)}%`,
+						diff > 0 ? `一次性投入胜出 ${percent((diff / dcaFV) * 100)}%` : `定投胜出 ${percent((-diff / lumpFV) * 100)}%`,
+					),
+				];
+				const table: FormTable = {
+					columns: ['Year', 'Lump sum FV ($)', 'DCA FV ($)', 'Contributed ($)'],
+					columnsZh: ['年份', '一次性终值 (¥)', '定投终值 (¥)', '已投入 (¥)'],
+					rows: [],
+				};
+				for (let y = 1; y <= Math.min(30, Math.ceil(years)); y++) {
+					const lumpY = total * (1 + rate) ** y;
+					const end = Math.min(steps, Math.round(y * perYear));
+					let dcaY = 0;
+					for (let k = 1; k <= end; k++) dcaY += per * (1 + i) ** k;
+					table.rows.push([String(y), money(lumpY), money(dcaY), money(per * end)]);
+				}
+				rows.push({ label: 'Note', labelZh: '说明', value: `Historically lump sum beats DCA about 2 out of 3 times (markets rise more often than they fall); DCA wins in falling markets and buys peace of mind.`, valueZh: `历史上一次性投入约三分之二的概率跑赢定投（市场上涨多于下跌）；下跌市中定投占优，且买的是心安。` });
+				return { rows, table };
+			},
+		},
+	},
+	{
+		slug: 'real-return',
+		category: 'finance',
+		name: 'Real Return Calculator (Inflation-Adjusted)',
+		nameZh: '真实收益率计算器（扣除通胀）',
+		description: 'Strip inflation out of a nominal return: the exact Fisher real rate, plus what an investment actually buys after N years.',
+		descriptionZh: '把通胀从名义收益中剥离：费雪方程精确实际利率，并算出投资 N 年后的真实购买力。',
+		kind: 'form',
+		config: {
+			intro: 'A 5% return with 3% inflation is not 2% — it is 1.94%. The Fisher equation compounds the ratio, not the difference.',
+			introZh: '5% 收益配 3% 通胀不是 2%——而是 1.94%。费雪方程算的是比值之差，不是简单相减。',
+			fields: [
+				{ id: 'nominal', label: 'Nominal annual return', labelZh: '名义年化收益率', suffix: '(%)', type: 'number', def: '5', step: 'any', required: true },
+				{ id: 'inflation', label: 'Annual inflation', labelZh: '年均通胀率', suffix: '(%)', type: 'number', def: '3', step: 'any', required: true },
+				{ id: 'years', label: 'Years', labelZh: '年限', suffix: '(years)', suffixZh: '(年)', type: 'number', def: '10', step: 'any' },
+				{ id: 'amount', label: 'Amount invested', labelZh: '投资金额', suffix: '($)', suffixZh: '(¥)', type: 'number', def: '10000', step: 'any' },
+			],
+			compute: (v) => {
+				const n = v.num('nominal') / 100;
+				const inf = v.num('inflation') / 100;
+				const years = Math.max(0, v.num('years') || 0);
+				const amount = v.num('amount');
+				if (inf <= -1 || !Number.isFinite(n) || !(amount > 0))
+					return { rows: [{ label: 'Result', labelZh: '结果', value: '— (inflation must be > −100%)', valueZh: '—（通胀率需大于 −100%）' }] };
+				const real = (1 + n) / (1 + inf) - 1;
+				const nominalFV = amount * (1 + n) ** years;
+				const realFV = amount * ((1 + n) / (1 + inf)) ** years;
+				const purchasingPower = nominalFV / (1 + inf) ** years;
+				const rows: FormResultRow[] = [
+					row2('Real annual return', '实际年化收益率', `${percent(real * 100)}%`, `${percent(real * 100)}%`),
+					{ label: 'Naive subtraction', labelZh: '简单相减', value: `${percent((n - inf) * 100)}%`, valueZh: `${percent((n - inf) * 100)}%` },
+					{ label: 'Nominal value after N years', labelZh: `${years} 年后名义价值`, ...cash(nominalFV) },
+					{ label: 'Real value (today\u2019s money)', labelZh: '真实价值（今日购买力）', ...cash(realFV) },
+					row2('Purchasing power kept', '购买力留存', `${percent((realFV / amount) * 100)}%`, `${percent((realFV / amount) * 100)}%`),
+				];
+				return { rows };
+			},
+		},
 	},
 ];
 
