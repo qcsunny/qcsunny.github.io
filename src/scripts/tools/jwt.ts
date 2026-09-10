@@ -101,13 +101,13 @@ export function initJwt(host: HTMLElement): void {
 	signRow.className = 't-filerow t-signrow';
 	const secretLabel = document.createElement('label');
 	secretLabel.htmlFor = 't-jwt-secret';
-	secretLabel.append(...bilingualNode('Secret (HMAC key)', '密钥 (HMAC)'));
+	secretLabel.append(...bilingualNode('Secret (HMAC — Sign / Verify only)', '密钥（HMAC，仅验签/签发需要）'));
 	const secretInput = document.createElement('input');
 	secretInput.type = 'password';
 	secretInput.id = 't-jwt-secret';
 	secretInput.autocomplete = 'off';
 	secretInput.spellcheck = false;
-	secretInput.placeholder = 'your-256-bit-secret';
+	secretInput.placeholder = 'only needed to Sign / Verify';
 	const algLabel = document.createElement('label');
 	algLabel.htmlFor = 't-jwt-alg';
 	algLabel.append(...bilingualNode('Algorithm', '算法'));
@@ -119,7 +119,13 @@ export function initJwt(host: HTMLElement): void {
 		o.textContent = a;
 		algSel.append(o);
 	}
-	signRow.append(secretLabel, secretInput, algLabel, algSel);
+	const keyHint = document.createElement('span');
+	keyHint.className = 't-file-hint';
+	keyHint.append(...bilingualNode(
+		'Decoding needs no key — fill this only for Verify / Sign.',
+		'解码无需密钥——仅「验签 / 签发」时才需要填写。',
+	));
+	signRow.append(secretLabel, secretInput, algLabel, algSel, keyHint);
 
 	/** Sign: the input box holds the payload JSON; secret + algorithm above
 	 *  produce a complete three-segment JWT. */

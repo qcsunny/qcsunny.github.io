@@ -72,6 +72,45 @@ function slugify(text: string, sep: string): string {
 	return s.split(sep).filter(Boolean).join(sep);
 }
 
+// --- json diff --------------------------------------------------------------------------
+
+type JsonDiff = { path: string; kind: 'added' | 'removed' | 'changed'; a: string; b: string };
+
+/** Deep structural comparison of two parsed JSON values; arrays compare by
+ *  index (a reordering is a row of changes, which is honest for data files).
+ *  Returns at most `cap` entries so a wildly different pair cannot produce a
+ *  10k-row report. */
+function jsonDiff(a: unknown, b: unknown, path = '$', out: JsonDiff[] = [], cap = 200): JsonDiff[] {
+	if (out.length >= cap) return out;
+	const show = (v: unknown): string => {
+		const s = JSON.stringify(v);
+		return s === undefined ? 'undefined' : s.length > 80 ? s.slice(0, 77) + '…' : s;
+	};
+	if (Array.isArray(a) && Array.isArray(b)) {
+		const n = Math.max(a.length, b.length);
+		for (let i = 0; i < n && out.length < cap; i++) {
+			if (i >= b.length) out.push({ path: `${path}[${i}]`, kind: 'removed', a: show(a[i]), b: '' });
+			else if (i >= a.length) out.push({ path: `${path}[${i}]`, kind: 'added', a: '', b: show(b[i]) });
+			else jsonDiff(a[i], b[i], `${path}[${i}]`, out, cap);
+		}
+	} else if (a && b && typeof a === 'object' && typeof b === 'object') {
+		const keys = [...new Set([...Object.keys(a as object), ...Object.keys(b as object)])].sort();
+		for (const k of keys) {
+			if (out.length >= cap) break;
+			const key = /^\w+$/.test(k) ? `.${k}` : `[${JSON.stringify(k)}]`;
+			const av = (a as Record<string, unknown>)[k];
+			const bv = (b as Record<string, unknown>)[k];
+			if (!(k in (a as object))) out.push({ path: path + key, kind: 'added', a: '', b: show(bv) });
+			else if (!(k in (b as object))) out.push({ path: path + key, kind: 'removed', a: show(av), b: '' });
+			else jsonDiff(av, bv, path + key, out, cap);
+		}
+	} else if (a !== b) {
+		// type-changing or value-changing: 1 !== "1" is a change, not noise
+		out.push({ path, kind: 'changed', a: show(a), b: show(b) });
+	}
+	return out;
+}
+
 // --- word counter ---------------------------------------------------------------------
 
 const CJK_RE = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu;
@@ -1905,6 +1944,87 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 				},
 			],
 		} satisfies TextConfig,
+	},
+
+	{
+		slug: 'json-diff',
+		category: 'devtools',
+		name: 'JSON Diff (Structural)',
+		nameZh: 'JSON 结构化对比',
+		description: 'Compare two JSON documents structurally: added, removed and changed values listed by path — key order and formatting differences are not noise.',
+		descriptionZh: '结构化比较两个 JSON 文档：按路径列出新增、删除与变更的值——键顺序和格式差异不算噪音。',
+		kind: 'form',
+		config: {
+			intro: 'Paste two JSON documents. The comparison is structural (parsed trees, not text), so reordered keys and different indentation do not show up as changes.',
+			introZh: '粘贴两个 JSON 文档。比较基于解析后的树而非文本，键顺序不同、缩进不同都不会被当作变更。',
+			fields: [
+				{
+					id: 'left',
+					label: 'JSON A',
+					labelZh: 'JSON A（左）',
+					type: 'textarea',
+					def: '{\n  "name": "example",\n  "version": "1.0.0",\n  "tags": ["a", "b"],\n  "price": 9.99\n}',
+				},
+				{
+					id: 'right',
+					label: 'JSON B',
+					labelZh: 'JSON B（右）',
+					type: 'textarea',
+					def: '{\n  "version": "1.1.0",\n  "name": "example",\n  "tags": ["a", "b", "c"],\n  "price": 12.5,\n  "deprecated": false\n}',
+				},
+			],
+			compute: (v) => {
+				const row = (label: string, labelZh: string, value: string, valueZh = value) => ({ label, labelZh, value, valueZh });
+				let a: unknown, b: unknown;
+				try {
+					a = JSON.parse(v.str('left'));
+				} catch (e) {
+					return { rows: [row('JSON A is invalid', 'JSON A 无效', e instanceof Error ? e.message : 'invalid JSON')] };
+				}
+				try {
+					b = JSON.parse(v.str('right'));
+				} catch (e) {
+					return { rows: [row('JSON B is invalid', 'JSON B 无效', e instanceof Error ? e.message : 'invalid JSON')] };
+				}
+				const diffs = jsonDiff(a, b);
+				if (!diffs.length) {
+					return { rows: [row('Result', '结果', 'Identical — the two documents are structurally equal.', '完全一致——两个文档结构相等。')] };
+				}
+				const count = (k: JsonDiff['kind']) => diffs.filter((d) => d.kind === k).length;
+				const capNote = diffs.length >= 200;
+				return {
+					rows: [
+						row('Changed', '变更', String(count('changed'))),
+						row('Added in B', 'B 中新增', String(count('added'))),
+						row('Removed from A', 'A 中已删除', String(count('removed'))),
+					],
+					table: {
+						columns: ['Path', 'Change', 'A value', 'B value'],
+						columnsZh: ['路径', '变更类型', 'A 的值', 'B 的值'],
+						rows: diffs.map((d) => [
+							d.path,
+							d.kind === 'added' ? '+ added' : d.kind === 'removed' ? '− removed' : '~ changed',
+							d.a || '—',
+							d.b || '—',
+						]),
+					},
+					note: capNote
+						? 'Showing the first 200 differences — the documents diverge massively.'
+						: undefined,
+					noteZh: capNote ? '仅显示前 200 条差异——两份文档差异过大。' : undefined,
+				};
+			},
+		},
+	},
+
+	{
+		slug: 'json-schema',
+		category: 'devtools',
+		name: 'JSON Schema Generator & Validator',
+		nameZh: 'JSON Schema 生成与校验',
+		description: 'Infer a draft-07 schema from a JSON document, then validate documents against it — errors listed by JSON path, all in your browser.',
+		descriptionZh: '从 JSON 文档推导 draft-07 Schema，再据此校验其他文档——错误按 JSON 路径列出，全程浏览器本地。',
+		kind: 'jsonschema',
 	},
 
 	{

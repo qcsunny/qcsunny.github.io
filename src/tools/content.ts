@@ -665,7 +665,97 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '可以压缩为单行吗？', a: '可以，点击"单行压缩 (Minify)"即可去除所有注释与冗余空白，生成适合嵌入代码字面量的紧凑语句。' },
 		],
 	},
-		'devtools/line-organizer': {
+			'devtools/json-schema': {
+		about: [
+			'Generate a draft-07 JSON Schema from a sample document, then validate other documents against it. Generation preloads the schema box, so the natural flow — paste, Generate, break the document, Validate — is two clicks.',
+			'The validator covers the everyday draft-07 keywords: type, properties, required, items, enum, minimum/maximum, minLength/maxLength, pattern, minItems/maxItems and additionalProperties: false. Errors are listed with their JSON paths.',
+		],
+		aboutZh: [
+			'从样例文档生成 draft-07 JSON Schema，再据此校验其他文档。生成会自动填入校验框，所以「粘贴 → 生成 → 改坏文档 → 校验」这条最自然的路径只需两次点击。',
+			'校验器覆盖日常 draft-07 关键字：type、properties、required、items、enum、minimum/maximum、minLength/maxLength、pattern、minItems/maxItems 与 additionalProperties: false。错误按 JSON 路径逐条列出。',
+		],
+		faq: [
+			{ q: 'Why is every key in the generated schema required?', a: 'A single sample cannot prove a key optional. Generation is a starting point — delete entries from "required" for the keys your data may omit.' },
+			{ q: 'Which draft is supported?', a: 'Generation targets draft-07 (the most widely deployed). Validation accepts the common draft-07 keyword subset; exotic keywords ($ref, if/then, oneOf) pass silently rather than erroring on support.' },
+		],
+		faqZh: [
+			{ q: '为什么生成的 Schema 里所有键都是必填？', a: '单一样本无法证明某个键可省略。生成结果只是起点——数据中允许缺失的键，从 "required" 数组里删掉即可。' },
+			{ q: '支持哪个版本？', a: '生成面向 draft-07（部署最广）。校验接受常用 draft-07 关键字子集；生僻关键字（$ref、if/then、oneOf）会静默跳过而非报「不支持」错。' },
+		],
+	},
+	'devtools/json-diff': {
+		about: [
+			'Structural comparison of two JSON documents: added, removed and changed values listed by path, with a summary count of each. Key order, indentation and other formatting differences are not changes — the documents are parsed first, compared as trees.',
+			'Arrays compare by index, so an insertion shows as one added row plus the shifted changes after it — honest for data files, where position carries meaning.',
+		],
+		aboutZh: [
+			'两个 JSON 文档的结构化比较：按路径列出新增、删除与变更的值，并汇总各类计数。键顺序、缩进等格式差异不算变更——先解析成树再比较。',
+			'数组按下标比较，因此插入会显示为一条新增加后续位移变更——对位置有含义的数据文件来说这是诚实的结果。',
+		],
+		faq: [
+			{ q: 'How is this different from the Text Diff tool?', a: 'Text Diff compares lines of text, so reformatting one line shows as a change. JSON Diff parses both documents and compares values, so {"a":1} and { "a" : 1 } are identical.' },
+			{ q: 'Is there a size limit?', a: 'The report lists at most 200 differences — two wildly different documents produce a note instead of a 10,000-row table.' },
+		],
+		faqZh: [
+			{ q: '和文本对比工具有什么区别？', a: '文本对比逐行比较，重新排版一行就会显示为变更。JSON Diff 先解析两份文档再比值，{"a":1} 与 { "a" : 1 } 视为相同。' },
+			{ q: '有大小限制吗？', a: '报告最多列出 200 条差异——差异过大的两份文档会以一条提示收尾，而不是吐出一万行表格。' },
+		],
+	},
+	'calculators/calculus': {
+		about: [
+			'Numerical calculus on any f(x) the site expression engine understands: derivatives via central differences (with the second derivative), definite integrals via composite Simpson with a doubling-based error estimate, and two-sided limits probed with shrinking steps.',
+			'Everything is numeric — no symbolic rewriting — which is exactly right for checking a model or sanity-checking homework: fast, honest about error, and never claims an exact form it cannot prove.',
+		],
+		aboutZh: [
+			'对站内表达式引擎支持的任意 f(x) 做数值微积分：中心差分求导（含二阶导）、复合辛普森法定积分（附倍增误差估计）、递减步长探测双侧极限。',
+			'全部为数值方法——不做符号改写——恰好适合检验模型或核对作业：快、对误差诚实，绝不冒称求出了无法证明的解析形式。',
+		],
+		faq: [
+			{ q: 'How accurate is the derivative?', a: 'Central differences are O(h²) accurate; the step is scaled to |x₀| near the floating-point sweet spot, giving ~10 significant digits for smooth functions. Derivatives that oscillate or vanish nearby degrade gracefully to fewer digits.' },
+			{ q: 'What if the limit does not exist?', a: 'The table shows f(x₀±h) for h down to 10⁻⁸; sin(1/x)-style oscillation shows up as two columns that never agree, with a verdict of "no common limit".' },
+		],
+		faqZh: [
+			{ q: '导数有多准？', a: '中心差分精度 O(h²)，步长按 |x₀| 缩放到浮点最优点，光滑函数约 10 位有效数字。在 x₀ 附近振荡或趋零的函数会自然退化为较少位数。' },
+			{ q: '极限不存在时会怎样？', a: '表格给出 h 递减到 10⁻⁸ 的 f(x₀±h)；sin(1/x) 型振荡表现为两列始终不合拢，结论显示「两侧无公共极限」。' },
+		],
+	},
+	'calculators/polynomial-regression': {
+		about: [
+			'Fit a polynomial of degree 1–5 to (x, y) points by least squares: normal equations solved with partial-pivot Gaussian elimination, reported as the fitted equation, R², RMSE and per-degree coefficients.',
+			'Degree 1 is plain linear regression (same answers as the Descriptive Statistics tool); higher degrees trade extrapolation safety for local fit — watch RMSE, not just R², before believing a degree-5 curve through 6 points.',
+		],
+		aboutZh: [
+			'对 (x, y) 数据点做 1–5 次多项式最小二乘拟合：正规方程经列主元高斯消元求解，输出拟合方程、R²、RMSE 与各次系数。',
+			'1 次即普通线性回归（与描述统计工具同答案）；更高次数用外推安全性换局部拟合——相信一条穿过 6 个点的 5 次曲线之前，先看 RMSE 而不只是 R²。',
+		],
+		faq: [
+			{ q: 'Why does it refuse to fit sometimes?', a: 'The normal equations become singular when there are not enough distinct x values (or fewer points than coefficients) — the message says so instead of returning garbage coefficients.' },
+			{ q: 'Should I always pick the highest degree?', a: 'No. A degree-5 polynomial through 6 points has zero residual and zero predictive value. Prefer the lowest degree whose RMSE stops improving meaningfully.' },
+		],
+		faqZh: [
+			{ q: '为什么有时拒绝拟合？', a: '当 x 取值不够分散（或点数少于系数个数）时正规方程奇异——工具会如实提示，而不是给出垃圾系数。' },
+			{ q: '次数越高越好吗？', a: '不是。穿过 6 个点的 5 次多项式残差为零、预测价值也为零。选 RMSE 不再明显下降的最低次数。' },
+		],
+	},
+	'calculators/probability-distribution': {
+		about: [
+			'Binomial and Poisson probabilities: P(X = k), the cumulative P(X ≤ k), mean and variance, plus a small table around k. All mass functions are computed in log space (Lanczos ln-Γ), so B(10000, 0.5) is as comfortable as a coin flip.',
+			'The normal distribution has its own tool (with the interactive curve), and hypothesis testing its own — this page covers the two discrete workhorses.',
+		],
+		aboutZh: [
+			'二项与泊松分布概率：P(X = k)、累积 P(X ≤ k)、均值与方差，外加 k 附近的小表格。质量函数全部在对数空间（Lanczos ln-Γ）计算，B(10000, 0.5) 和抛硬币一样轻松。',
+			'正态分布有专属工具（含交互曲线），假设检验也有专属页——本页补的是两个最常用的离散分布。',
+		],
+		faq: [
+			{ q: 'How large can n get?', a: 'Computation is log-space, so overflow is not the limit — your patience for a cumulative sum is. n up to a few thousand rounds instantly; the cumulative caps at a million terms.' },
+			{ q: 'When do I use Poisson instead of binomial?', a: 'Poisson approximates binomial when n is large and p is small (rule of thumb: n ≥ 20, p ≤ 0.05) — it models rare-event counts per interval.' },
+		],
+		faqZh: [
+			{ q: 'n 最大能到多少？', a: '对数空间计算，瓶颈不是溢出而是你等累积和的耐心。几千以内瞬间出结果；累积求和上限一百万项。' },
+			{ q: '什么时候用泊松代替二项？', a: 'n 大 p 小时（经验法则：n ≥ 20 且 p ≤ 0.05）泊松近似二项——它刻画单位区间内的稀有事件计数。' },
+		],
+	},
+'devtools/line-organizer': {
 		about: [
 			'Paste a list — from a log, a spreadsheet column, a chat transcript — and clean it in one click: trim whitespace, drop empty lines, remove duplicates, then sort alphabetically (version-aware, so v2 comes before v10), by length, or in reverse.',
 			'Live counters show the line total, unique count and duplicate count before you commit to a transform, so a botched paste is obvious immediately.',
