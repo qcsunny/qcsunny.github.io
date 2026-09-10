@@ -7,6 +7,47 @@ import { computeStats, parseNumbers } from './stats';
 
 const pct = (v: number): string => `${formatNumber(v)}%`;
 
+// ln Γ(z), Lanczos approximation (g=7) — binomial/Poisson probabilities are
+// computed in log space so C(10000, 5000) neither overflows nor underflows.
+const LG_C = [
+	0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313,
+	-176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6,
+	1.5056327351493116e-7,
+];
+function lgamma(z: number): number {
+	if (z < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * z)) - lgamma(1 - z);
+	z -= 1;
+	let x = LG_C[0] as number;
+	for (let i = 1; i < 9; i++) x += LG_C[i] as number / (z + i);
+	const t = z + 7.5;
+	return 0.5 * Math.log(2 * Math.PI) + (z + 0.5) * Math.log(t) - t + Math.log(x);
+}
+
+/** Solve A·x = b by Gaussian elimination with partial pivoting. Singular (or
+ *  numerically near-singular) systems return null — repeated x values in a
+ *  regression, typically. */
+function gaussSolve(A: number[][], b: number[]): number[] | null {
+	const n = b.length;
+	const M = A.map((row, i) => [...row, b[i] as number]);
+	for (let col = 0; col < n; col++) {
+		let piv = col;
+		for (let r = col + 1; r < n; r++) if (Math.abs(M[r]![col]!) > Math.abs(M[piv]![col]!)) piv = r;
+		if (Math.abs(M[piv]![col]!) < 1e-12) return null;
+		[M[col], M[piv]] = [M[piv]!, M[col]!];
+		for (let r = col + 1; r < n; r++) {
+			const f = M[r]![col]! / M[col]![col]!;
+			for (let c = col; c <= n; c++) M[r]![c] = M[r]![c]! - f * M[col]![c]!;
+		}
+	}
+	const x = new Array<number>(n).fill(0);
+	for (let r = n - 1; r >= 0; r--) {
+		let s = M[r]![n] as number;
+		for (let c = r + 1; c < n; c++) s -= M[r]![c]! * x[c]!;
+		x[r] = s / M[r]![r]!;
+	}
+	return x;
+}
+
 // --- prime factorization (Miller–Rabin + Pollard rho) ------------------------
 // The mainstream route for a whole number up to 2^64−1: strip small primes by
 // trial division, then finish the remainder with deterministic Miller–Rabin and
@@ -2785,6 +2826,301 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 		descriptionZh: '多组样本数据的单因素方差分析 (ANOVA)，计算 F 检验统计量、p-value 显著性概率、组间/组内平方和与均方。',
 		kind: 'form',
 		config: anovaCalculator,
+	},
+	{
+		slug: 'calculus',
+		category: 'calculators',
+		name: 'Calculus Calculator (Derivative · Integral · Limit)',
+		nameZh: '微积分计算器（导数 · 定积分 · 极限）',
+		description: 'Numerical derivative at a point, definite integral over an interval, and two-sided limits of any f(x) — powered by the site expression engine.',
+		descriptionZh: '对任意 f(x) 求某点的数值导数、区间定积分与双侧极限——由站内表达式引擎驱动。',
+		kind: 'form',
+		config: {
+			intro: 'One f(x), three modes. Derivatives use central differences; integrals use composite Simpson; limits probe both sides with shrinking steps.',
+			introZh: '一个 f(x)，三种模式：导数用中心差分，定积分用复合辛普森法，极限从两侧以递减步长探测。',
+			fields: [
+				{ id: 'fx', label: 'f(x)', labelZh: 'f(x)', type: 'text', def: 'x^2 * sin(x)', placeholder: 'e.g. x^2 * sin(x)', placeholderZh: '例如 x^2 * sin(x)', required: true },
+				{
+					id: 'mode',
+					label: 'Mode',
+					labelZh: '模式',
+					type: 'select',
+					def: 'derivative',
+					options: [
+						{ value: 'derivative', label: "Derivative f'(x₀)" },
+						{ value: 'integral', label: 'Definite integral ∫ₐᵇ' },
+						{ value: 'limit', label: 'Limit x → x₀' },
+					],
+				},
+				{ id: 'x0', label: 'x₀', labelZh: 'x₀', type: 'number', def: '1', step: 'any', showIf: (v) => v.str('mode') !== 'integral' },
+				{ id: 'a', label: 'a (lower bound)', labelZh: 'a（下限）', type: 'number', def: '0', step: 'any', showIf: (v) => v.str('mode') === 'integral' },
+				{ id: 'b', label: 'b (upper bound)', labelZh: 'b（上限）', type: 'number', def: '3.1415926', step: 'any', showIf: (v) => v.str('mode') === 'integral' },
+			],
+			compute: (v) => {
+				const row = (label: string, labelZh: string, value: string, valueZh = value) => ({ label, labelZh, value, valueZh });
+				const num = (x: number) => (Number.isFinite(x) ? formatNumber(x) : '—');
+				let f: (x: number) => number;
+				try {
+					const g = compile(v.str('fx'));
+					f = (x) => g({ vars: { x }, deg: false });
+				} catch (err) {
+					const msg = err instanceof Error ? err.message : 'invalid expression';
+					return { rows: [row('Expression error', '表达式错误', `— (${msg})`)] };
+				}
+				const safe = (x: number): number => {
+					const y = f(x);
+					if (!Number.isFinite(y)) throw new Error('not finite');
+					return y;
+				};
+				const mode = v.str('mode');
+				if (mode === 'integral') {
+					let a = v.num('a');
+					let b = v.num('b');
+					if (!Number.isFinite(a) || !Number.isFinite(b))
+						return { rows: [row('Bounds', '积分区间', '— (a and b are required)', '— (需要填写 a 和 b)')] };
+					const swapped = a > b;
+					if (swapped) [a, b] = [b, a];
+					// composite Simpson, even panel count; n vs n/2 doubles as an
+					// error estimate (Simpson's error shrinks ~16× per doubling)
+					const simpson = (n: number): number => {
+						const h = (b - a) / n;
+						let s = safe(a) + safe(b);
+						for (let i = 1; i < n; i++) s += safe(a + i * h) * (i % 2 ? 4 : 2);
+						return (s * h) / 3;
+					};
+					try {
+						const s500 = simpson(500);
+						const s1000 = simpson(1000);
+						return {
+							rows: [
+								row('∫ f(x) dx', '∫ f(x) dx', num(swapped ? -s1000 : s1000), num(swapped ? -s1000 : s1000)),
+								row('Estimated error (n=500 vs 1000)', '误差估计（n=500 对 1000）', num(Math.abs(s1000 - s500))),
+								row('Method', '方法', 'Composite Simpson, n = 1000', '复合辛普森法，n = 1000'),
+							],
+							note: swapped ? 'a > b — the sign is flipped.' : undefined,
+							noteZh: swapped ? 'a > b——结果已翻转换号。' : undefined,
+						};
+					} catch {
+						return { rows: [row('Result', '结果', '— (f is not finite somewhere on [a, b])', '— (f 在 [a, b] 上有非有限值)')] };
+					}
+				}
+				const x0 = v.num('x0');
+				if (!Number.isFinite(x0)) return { rows: [row('Point', '点位', '— (x₀ is required)', '— (需要填写 x₀)')] };
+				if (mode === 'limit') {
+					const table = [1e-1, 1e-2, 1e-3, 1e-4, 1e-6, 1e-8].map((h) => {
+						const r = safe(x0 + h);
+						const l = safe(x0 - h);
+						return [String(h), num(r), num(l)];
+					});
+					const right = f(x0 + 1e-8);
+					const left = f(x0 - 1e-8);
+					const agree = Number.isFinite(right) && Number.isFinite(left) && Math.abs(right - left) < 1e-4 * (1 + Math.abs(right));
+					return {
+						rows: [
+							row('Right limit f(x₀+h)', '右极限 f(x₀+h)', num(right)),
+							row('Left limit f(x₀−h)', '左极限 f(x₀−h)', num(left)),
+							row(
+								'Verdict',
+								'结论',
+								agree ? `both sides approach ${num(right)}` : 'no common limit (diverges, oscillates, or needs finer analysis)',
+								agree ? `两侧都趋于 ${num(right)}` : '两侧无公共极限（发散、振荡或需更细分析）',
+							),
+						],
+						table: { columns: ['h', 'f(x₀+h)', 'f(x₀−h)'], columnsZh: ['h', 'f(x₀+h)', 'f(x₀−h)'], rows: table },
+					};
+				}
+				// derivative: central difference, h scaled to |x₀| (round-off sweet spot ≈ ε^⅓)
+				const h = 6e-6 * Math.max(1, Math.abs(x0));
+				try {
+					const d1 = (safe(x0 + h) - safe(x0 - h)) / (2 * h);
+					const d2 = (safe(x0 + h) - 2 * safe(x0) + safe(x0 - h)) / (h * h);
+					return {
+						rows: [
+							row("f'(x₀)", "f'(x₀)", num(d1)),
+							row('f″(x₀)', 'f″(x₀)', num(d2)),
+							row('Method', '方法', 'Central difference, h ≈ 6·10⁻⁶·max(1, |x₀|)', '中心差分（自适应步长）'),
+						],
+					};
+				} catch {
+					return { rows: [row('Result', '结果', '— (f is not finite near x₀)', '— (f 在 x₀ 附近有非有限值)')] };
+				}
+			},
+		},
+	},
+	{
+		slug: 'polynomial-regression',
+		category: 'calculators',
+		name: 'Polynomial Regression',
+		nameZh: '多项式回归拟合',
+		description: 'Fit a polynomial of degree 1–5 to (x, y) data by least squares: coefficients, R², RMSE and the fitted equation.',
+		descriptionZh: '对 (x, y) 数据做 1–5 次多项式最小二乘拟合：给出系数、R²、RMSE 与拟合方程。',
+		kind: 'form',
+		config: {
+			intro: 'Paste points as "x, y" per line (spaces, commas or semicolons all separate). Degree 1 is plain linear regression.',
+			introZh: '每行一个 "x, y" 点（逗号、空格、分号均可作分隔）。1 次即普通线性回归。',
+			fields: [
+				{
+					id: 'points',
+					label: 'Data points (x, y per line)',
+					labelZh: '数据点（每行 x, y）',
+					type: 'textarea',
+					def: '0, 1\n1, 2.1\n2, 4.4\n3, 9.2\n4, 15.8\n5, 25.1',
+				},
+				{
+					id: 'degree',
+					label: 'Degree',
+					labelZh: '次数',
+					type: 'select',
+					def: '2',
+					options: [1, 2, 3, 4, 5].map((d) => ({ value: String(d), label: `${d}` })),
+				},
+			],
+			compute: (v) => {
+				const row = (label: string, labelZh: string, value: string, valueZh = value) => ({ label, labelZh, value, valueZh });
+				const pts: [number, number][] = [];
+				const bad: string[] = [];
+				for (const line of v.str('points').split('\n')) {
+					const t = line.trim();
+					if (!t) continue;
+					const m = t.split(/[,;\s]+/).filter(Boolean).map(Number);
+					if (m.length === 2 && m.every(Number.isFinite)) pts.push([m[0] as number, m[1] as number]);
+					else bad.push(t);
+				}
+				const deg = Number(v.str('degree')) || 1;
+				if (pts.length < deg + 2)
+					return { rows: [row('Result', '结果', `— (a degree-${deg} fit needs at least ${deg + 2} points, got ${pts.length})`, `—（${deg} 次拟合至少需要 ${deg + 2} 个点，当前 ${pts.length} 个）`)] };
+				// normal equations A·c = b with A = Σ x^(i+j)
+				const A: number[][] = [];
+				const b: number[] = [];
+				for (let i = 0; i <= deg; i++) {
+					A.push([]);
+					for (let j = 0; j <= deg; j++) {
+						let s = 0;
+						for (const [x] of pts) s += x ** (i + j);
+						A[i]!.push(s);
+					}
+					let bi = 0;
+					for (const [x, y] of pts) bi += y * x ** i;
+					b.push(bi);
+				}
+				const c = gaussSolve(A, b);
+				if (!c)
+					return { rows: [row('Result', '结果', '— (singular system: the x values need more spread)', '—（矩阵奇异：x 取值需要更分散）')] };
+				// R² and RMSE against the mean-baseline model
+				const n = pts.length;
+				const meanY = pts.reduce((s, [, y]) => s + y, 0) / n;
+				let ssRes = 0;
+				let ssTot = 0;
+				for (const [x, y] of pts) {
+					let fy = 0;
+					for (let i = 0; i <= deg; i++) fy += (c[i] as number) * x ** i;
+					ssRes += (y - fy) ** 2;
+					ssTot += (y - meanY) ** 2;
+				}
+				const r2 = ssTot > 0 ? 1 - ssRes / ssTot : 1;
+				const rmse = Math.sqrt(ssRes / n);
+				// ŷ = a₂x² + a₁x + a₀, highest degree first, signs inline
+				const parts: string[] = [];
+				for (let i = deg; i >= 0; i--) {
+					const co = c[i] as number;
+					const xp = i === 0 ? '' : i === 1 ? 'x' : `x^${i}`;
+					const mag = formatNumber(Math.abs(co)) + xp;
+					parts.push(parts.length === 0 ? (co < 0 ? `−${mag}` : mag) : `${co < 0 ? '−' : '+'} ${mag}`);
+				}
+				const eq = parts.join(' ');
+				const rows = [
+					{ label: 'Fitted equation', labelZh: '拟合方程', value: `ŷ = ${eq}`, valueZh: `ŷ = ${eq}` },
+					row('R²', 'R²', formatNumber(r2)),
+					row('RMSE', 'RMSE', formatNumber(rmse)),
+					row('Points used', '使用点数', String(n)),
+				];
+				for (let i = deg; i >= 0; i--) rows.push(row(`Coefficient of x^${i}`, `x^${i} 的系数`, formatNumber(c[i] as number)));
+				if (bad.length) rows.push(row('Ignored invalid lines', '已忽略的无效行', bad.slice(0, 5).join('  ')));
+				return { rows };
+			},
+		},
+	},
+	{
+		slug: 'probability-distribution',
+		category: 'calculators',
+		name: 'Probability Distribution (Binomial · Poisson)',
+		nameZh: '概率分布（二项 · 泊松）',
+		description: 'P(X = k), P(X ≤ k), mean and variance for binomial and Poisson distributions — computed in log space so huge n never overflows.',
+		descriptionZh: '二项分布与泊松分布的 P(X = k)、P(X ≤ k)、均值与方差——对数空间计算，超大 n 也不会溢出。',
+		kind: 'form',
+		config: {
+			intro: 'Binomial needs n and p; Poisson needs λ. k is the value to evaluate at.',
+			introZh: '二项分布填 n 和 p；泊松分布填 λ。k 为待评估的取值。',
+			fields: [
+				{
+					id: 'dist',
+					label: 'Distribution',
+					labelZh: '分布',
+					type: 'select',
+					def: 'binomial',
+					options: [
+						{ value: 'binomial', label: 'Binomial B(n, p)' },
+						{ value: 'poisson', label: 'Poisson P(λ)' },
+					],
+				},
+				{ id: 'n', label: 'n (trials)', labelZh: 'n（试验次数）', type: 'number', def: '20', step: '1', showIf: (v) => v.str('dist') === 'binomial' },
+				{ id: 'p', label: 'p (success probability)', labelZh: 'p（成功概率）', type: 'number', def: '0.5', step: 'any', showIf: (v) => v.str('dist') === 'binomial' },
+				{ id: 'lambda', label: 'λ (rate)', labelZh: 'λ（速率）', type: 'number', def: '3', step: 'any', showIf: (v) => v.str('dist') === 'poisson' },
+				{ id: 'k', label: 'k (value)', labelZh: 'k（取值）', type: 'number', def: '5', step: '1' },
+			],
+			compute: (v) => {
+				const row = (label: string, labelZh: string, value: string, valueZh = value) => ({ label, labelZh, value, valueZh });
+				const fmtP = (x: number) => (x < 1e-10 ? '≈ 0' : x > 1 - 1e-10 ? '≈ 1' : formatNumber(x));
+				const dist = v.str('dist');
+				const k = Math.max(0, Math.floor(v.num('k') || 0));
+				let pmf: (i: number) => number;
+				let mean: number;
+				let variance: number;
+				if (dist === 'poisson') {
+					const lam = v.num('lambda');
+					if (!Number.isFinite(lam) || lam < 0)
+						return { rows: [row('λ', 'λ', '— (λ must be ≥ 0)', '— (λ 需要 ≥ 0)')] };
+					pmf = (i) => Math.exp(-lam + i * Math.log(lam || 1) - lgamma(i + 1));
+					mean = lam;
+					variance = lam;
+				} else {
+					const n = Math.floor(v.num('n'));
+					const p = v.num('p');
+					if (!Number.isFinite(n) || n < 0)
+						return { rows: [row('n', 'n', '— (n must be ≥ 0)', '— (n 需要 ≥ 0)')] };
+					if (!Number.isFinite(p) || p < 0 || p > 1)
+						return { rows: [row('p', 'p', '— (p must be in [0, 1])', '— (p 需在 [0, 1] 之间)')] };
+					pmf = (i) =>
+						i > n || p === 0
+							? i === 0 && p === 0 ? 1 : 0
+							: Math.exp(lgamma(n + 1) - lgamma(i + 1) - lgamma(n - i + 1) + i * Math.log(p || 1) + (n - i) * Math.log(1 - p || 1));
+					mean = n * p;
+					variance = n * p * (1 - p);
+				}
+				const pk = pmf(k);
+				let cdf = 0;
+				for (let i = 0; i <= k && i <= 1e6; i++) cdf += pmf(i);
+				const rows = [
+					{ label: 'P(X = k)', labelZh: 'P(X = k)', value: fmtP(pk), valueZh: fmtP(pk), emphasis: true },
+					row('P(X ≤ k)', 'P(X ≤ k)', fmtP(Math.min(1, cdf))),
+					row('P(X > k)', 'P(X > k)', fmtP(Math.max(0, 1 - Math.min(1, cdf)))),
+					row('Mean E[X]', '均值 E[X]', formatNumber(mean)),
+					row('Variance Var[X]', '方差 Var[X]', formatNumber(variance)),
+				];
+				const table = {
+					columns: ['i', 'P(X = i)', 'P(X ≤ i)'],
+					columnsZh: ['i', 'P(X = i)', 'P(X ≤ i)'],
+					rows: [] as string[][],
+				};
+				let acc = 0;
+				const lo = Math.max(0, k - 2);
+				for (let i = lo; i <= k + 2; i++) {
+					acc += pmf(i);
+					table.rows.push([String(i), fmtP(pmf(i)), fmtP(Math.min(1, acc))]);
+				}
+				return { rows, table };
+			},
+		},
 	},
 ];
 

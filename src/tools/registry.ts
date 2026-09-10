@@ -28,6 +28,7 @@ export type ToolKind =
 	| 'generator'
 	| 'redirect'
 	| 'json'
+	| 'jsonschema'
 	| 'sql'
 	| 'jwt'
 	| 'url'
@@ -245,6 +246,7 @@ export type ToolEntry = ToolMeta &
 		| { kind: 'generator'; config: GeneratorConfig }
 		| { kind: 'redirect'; config: RedirectConfig }
 		| { kind: 'json' }
+		| { kind: 'jsonschema' }
 		| { kind: 'sql' }
 		| { kind: 'jwt' }
 		| { kind: 'url' }
@@ -411,6 +413,11 @@ export const TOOL_KEYWORDS: Record<string, string> = {
 	'json-formatter': 'json 格式化 校验 压缩 美化 解析 语法高亮 json format validator parser prettify minify',
 	'sql-formatter': 'sql 格式化 sql美化 数据库查询 ddl dml 大小写转换 sql prettifier database query format',
 	'jwt-decoder': 'jwt 解码 token bearer json web token header payload signature auth 验签 签发 hs256 hs512 hmac sign verify',
+		'json-schema': 'json schema 生成 校验 draft-07 validator generator schema',
+		'json-diff': 'json 对比 差异 比较 diff compare json对比工具',
+		'calculus': '微积分 导数 求导 定积分 极限 derivative integral limit differentiation',
+		'polynomial-regression': '多项式回归 最小二乘 拟合 曲线拟合 regression least squares fit',
+		'probability-distribution': '概率分布 二项分布 泊松分布 binomial poisson pmf cdf 概率计算',
 		'line-organizer': '去重 删除重复行 排序 文本行排序 空行清理 行首尾空白 列表整理 dedupe unique sort lines remove duplicates trim whitespace',
 		'text-extractor': '提取网址 提取邮箱 正则提取 url email extractor 抓取 邮件地址',
 		'slug-generator': 'slug url 别名 seo 友好链接 标题转url kebab-case 短横线 slugify permalink',
