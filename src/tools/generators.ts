@@ -5,7 +5,7 @@
 
 import type { ToolEntry } from './registry';
 
-export const GENERATOR_TOOLS: ToolEntry[] = [
+export const DEVTOOLS_GENERATOR_TOOLS: ToolEntry[] = [
 	{
 		slug: 'password-generator',
 		category: 'devtools',
@@ -19,13 +19,16 @@ export const GENERATOR_TOOLS: ToolEntry[] = [
 	{
 		slug: 'uuid-generator',
 		category: 'devtools',
-		name: 'UUID Generator (v4 & v7)',
-		nameZh: 'UUID 生成器 (v4 / v7)',
-		description: 'Generate random UUID v4 and time-ordered UUID v7 identifiers in bulk.',
-		descriptionZh: '批量生成随机 UUID v4 与时间有序的 UUID v7 唯一标识符。',
+		name: 'UUID / ULID / NanoID Generator',
+		nameZh: 'UUID / ULID / NanoID 生成器',
+		description: 'Generate UUID v4, time-ordered UUID v7, sortable ULIDs and short NanoIDs in bulk.',
+		descriptionZh: '批量生成 UUID v4、时间有序的 UUID v7、可排序 ULID 与短 NanoID 标识符。',
 		kind: 'generator',
 		config: { generator: 'uuid', defCount: 5, maxCount: 100 },
 	},
+];
+
+export const UTILITIES_GENERATOR_TOOLS: ToolEntry[] = [
 	{
 		slug: 'random-number',
 		category: 'utilities',

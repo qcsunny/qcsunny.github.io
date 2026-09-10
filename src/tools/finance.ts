@@ -1,7 +1,8 @@
 // Registry entries for /finance/* — all form tools, several with result
 // tables (compound interest year by year, loan amortization, mortgage prepayment, etc.).
 
-import type { FormConfig, FormResult, FormResultRow, FormTable, ToolEntry } from './registry';
+import type { FormConfig, FormResult, FormResultRow, FormTable, TextConfig, ToolEntry } from './registry';
+import { rmbUppercase } from './textTools';
 import { formatNumber } from '../scripts/calculator/engine';
 
 const money = (v: number): string => formatNumber(Math.round(v * 100) / 100);
@@ -2593,7 +2594,7 @@ const rentVsBuy: FormConfig = {
 		const diff = buyNetWealth - rentNetWealth;
 
 		const winner = diff >= 0 ? 'Buying a Home' : 'Renting & Investing';
-		const winnerZh = diff >= 0 ? '买房方案胜出 (Buying Home)' : '租房+理财方案胜出 (Renting & Investing)';
+		const winnerZh = diff >= 0 ? '买房方案胜出' : '租房+理财方案胜出';
 
 		return {
 			rows: [
@@ -2667,6 +2668,17 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		kind: 'form',
 		config: mortgagePrepayment,
 	},
+
+	{
+		slug: 'rent-vs-buy',
+		category: 'finance',
+		name: 'Rent vs Buy Home Calculator',
+		nameZh: '买房 vs 租房收益对比计算器',
+		description: 'Compare accumulated net wealth after N years between buying a home vs renting and investing the savings.',
+		descriptionZh: '综合测算 N 年后买房（房贷本息、房屋增值、剩余贷款残值）与租房（首付与每月差额定投理财）的最终净资产沉淀对比。',
+		kind: 'form',
+		config: rentVsBuy,
+	},
 	{
 		slug: 'loan-payment',
 		category: 'finance',
@@ -2696,6 +2708,44 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		descriptionZh: '年薪、月薪、周薪、日薪与时薪之间快速多维互转换算。',
 		kind: 'form',
 		config: salary,
+	},
+	{
+		slug: 'cny-uppercase',
+		category: 'finance',
+		name: 'Chinese Uppercase Amount',
+		nameZh: '人民币大写金额转换器',
+		description: 'Convert a numeric amount into the formal Chinese uppercase form used on invoices and bank slips.',
+		descriptionZh: '把数字金额转换为发票、银行凭证使用的规范人民币大写金额。',
+		kind: 'text',
+		config: {
+			// No prefilled sample on purpose: the live transform would render the
+			// Chinese uppercase result into the output box on first paint, which
+			// the English-view i18n scan reads as a leak. The tool's output is
+			// Chinese by definition — it should only appear once the visitor
+			// enters an amount (same exemption shape as converters/weight's
+			// 市斤/两, which live in labels rather than control values).
+			placeholder: 'e.g. 1234567.89',
+			placeholderZh: '例如 1234567.89',
+			live: true,
+			transforms: [
+				{
+					id: 'upper',
+					label: 'Convert → uppercase amount',
+					labelZh: '转换为人民币大写',
+					run: (t) => {
+						if (!t.trim()) return { output: '', error: 'Enter an amount first.', errorZh: '请先输入金额。' };
+						const r = rmbUppercase(t);
+						return r
+							? { output: r }
+							: {
+									output: '',
+									error: 'Enter a valid amount: digits only, at most 2 decimals, below 10^16.',
+									errorZh: '请输入有效金额：纯数字、最多两位小数、小于 10^16。',
+								};
+					},
+				},
+			],
+		} satisfies TextConfig,
 	},
 	{
 		slug: 'irr-calculator',
@@ -2786,16 +2836,6 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 		descriptionZh: '根据打折折扣百分比计算优惠后价格与节省金额，支持单件或批量核算。',
 		kind: 'form',
 		config: discount,
-	},
-	{
-		slug: 'rent-vs-buy',
-		category: 'finance',
-		name: 'Rent vs Buy Home Calculator',
-		nameZh: '买房 vs 租房收益对比计算器',
-		description: 'Compare accumulated net wealth after N years between buying a home vs renting and investing the savings.',
-		descriptionZh: '综合测算 N 年后买房（房贷本息、房屋增值、剩余贷款残值）与租房（首付与每月差额定投理财）的最终净资产沉淀对比。',
-		kind: 'form',
-		config: rentVsBuy,
 	},
 ];
 

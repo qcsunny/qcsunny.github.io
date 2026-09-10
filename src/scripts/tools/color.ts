@@ -236,10 +236,130 @@ export function initColor(host: HTMLElement): void {
 
 	gamutCard.append(gamutHeader, gamutViewport);
 
+	// --- WCAG contrast checker --------------------------------------------------------
+	// Two hex fields (foreground / background) over the base color's own contrast
+	// card: live preview and AA / AAA pass-or-fail against the active color.
+	const contrastCard = document.createElement('div');
+	contrastCard.className = 't-gamut-card';
+
+	const contrastHeader = document.createElement('div');
+	contrastHeader.className = 't-gamut-header';
+	const contrastTitle = document.createElement('span');
+	contrastTitle.append(bilingual('WCAG Contrast Checker', 'WCAG 对比度检查'));
+	const contrastInfo = document.createElement('span');
+	contrastInfo.className = 't-gamut-info';
+	contrastHeader.append(contrastTitle, contrastInfo);
+	contrastCard.append(contrastHeader);
+
+	const fgField = document.createElement('div');
+	fgField.className = 't-field t-colorfield';
+	const fgLabel = document.createElement('label');
+	fgLabel.htmlFor = 't-contrast-fg';
+	fgLabel.append(bilingual('Foreground text', '前景文字颜色'));
+	const fgInput = document.createElement('input');
+	fgInput.type = 'text';
+	fgInput.id = 't-contrast-fg';
+	fgInput.spellcheck = false;
+	fgInput.value = '#ffffff';
+	fgField.append(fgLabel, fgInput);
+
+	const bgField = document.createElement('div');
+	bgField.className = 't-field t-colorfield';
+	const bgLabel = document.createElement('label');
+	bgLabel.htmlFor = 't-contrast-bg';
+	bgLabel.append(bilingual('Background', '背景颜色'));
+	const bgInput = document.createElement('input');
+	bgInput.type = 'text';
+	bgInput.id = 't-contrast-bg';
+	bgInput.spellcheck = false;
+	bgInput.value = rgbToHex({ r: 35, g: 55, b: 255 });
+	bgField.append(bgLabel, bgInput);
+
+	const contrastFields = document.createElement('div');
+	contrastFields.className = 't-colorgroups';
+	contrastFields.append(fgField, bgField);
+	contrastCard.append(contrastFields);
+
+	const previewRow = document.createElement('div');
+	previewRow.className = 't-contrast-preview';
+	const previewSample = document.createElement('span');
+	previewSample.className = 't-contrast-sample';
+	previewSample.textContent = 'Aa';
+	const previewRatio = document.createElement('span');
+	previewRatio.className = 't-contrast-ratio';
+	previewRow.append(previewSample, previewRatio);
+	contrastCard.append(previewRow);
+
+	const contrastRows = document.createElement('div');
+	contrastRows.className = 't-css';
+	for (const key of ['aaNormal', 'aaLarge', 'aaaNormal', 'aaaLarge'] as const) {
+		const row = document.createElement('div');
+		row.className = 't-row';
+		const l = document.createElement('span');
+		l.className = 't-row-label';
+		const v = document.createElement('span');
+		v.className = 't-row-value';
+		l.append(
+			bilingual(
+				key === 'aaNormal' ? 'AA normal text (4.5:1)' : key === 'aaLarge' ? 'AA large text (3:1)' : key === 'aaaNormal' ? 'AAA normal text (7:1)' : 'AAA large text (4.5:1)',
+				key === 'aaNormal' ? 'AA 正文 (4.5:1)' : key === 'aaLarge' ? 'AA 大字 (3:1)' : key === 'aaaNormal' ? 'AAA 正文 (7:1)' : 'AAA 大字 (4.5:1)',
+			),
+		);
+		row.append(l, v);
+		contrastRows.append(row);
+	}
+	contrastCard.append(contrastRows);
+
+	/** WCAG relative luminance (WCAG 2.x, sRGB). */
+	function relLum({ r, g, b }: Rgb): number {
+		const ch = (v: number) => {
+			const s = v / 255;
+			return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+		};
+		return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b);
+	}
+
+	function updateContrast(): void {
+		const fg = hexToRgb(fgInput.value);
+		const bg = hexToRgb(bgInput.value);
+		if (!fg || !bg) {
+			previewRatio.textContent = '—';
+			for (const row of contrastRows.children) {
+				const v = row.querySelector('.t-row-value') as HTMLElement | null;
+				if (v) v.textContent = '—';
+			}
+			return;
+		}
+		const l1 = relLum(fg);
+		const l2 = relLum(bg);
+		const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+		previewSample.style.color = rgbToHex(fg);
+		previewSample.style.background = rgbToHex(bg);
+		previewRatio.textContent = `${ratio.toFixed(2)}:1`;
+		const judgements: [number, HTMLElement][] = [];
+		const values = contrastRows.querySelectorAll('.t-row-value');
+		judgements.push([4.5, values[0] as HTMLElement]);
+		judgements.push([3, values[1] as HTMLElement]);
+		judgements.push([7, values[2] as HTMLElement]);
+		judgements.push([4.5, values[3] as HTMLElement]);
+		const pass = (ok: boolean): Node[] => [
+			document.createTextNode(ok ? '✓ ' : '✗ '),
+			bilingual(ok ? 'Pass' : 'Fail', ok ? '通过' : '未通过'),
+		];
+		for (const [need, el] of judgements) {
+			const ok = ratio >= need;
+			el.replaceChildren(...pass(ok));
+		}
+	}
+
+	fgInput.addEventListener('input', updateContrast);
+	bgInput.addEventListener('input', updateContrast);
+	updateContrast();
+
 	const note = document.createElement('p');
 	note.className = 't-note';
 
-	host.append(groups, swatchRow, css, gamutCard, note);
+	host.append(groups, swatchRow, css, gamutCard, contrastCard, note);
 
 	const gamutCtrl = initColorGamut(gamutCard, (pickedRgb) => {
 		render(pickedRgb, 'none');
@@ -271,6 +391,12 @@ export function initColor(host: HTMLElement): void {
 		const okl = rgbToOklab(rgb.r, rgb.g, rgb.b);
 		cssOklchV.textContent = `oklch(${(okl.L * 100).toFixed(1)}% ${okl.C.toFixed(3)} ${okl.h.toFixed(1)})`;
 		gamutCtrl.update(rgb);
+		// The main color's own contrast readout follows the active color as the
+		// background — the classic "is this color dark enough for white text".
+		if (document.activeElement !== bgInput) {
+			bgInput.value = hex;
+			updateContrast();
+		}
 	}
 
 	hexInput.addEventListener('input', () => {

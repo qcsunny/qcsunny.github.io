@@ -277,6 +277,71 @@ function generateUuidV7(): string {
 	return hex;
 }
 
+// --- ULID / NanoID ----------------------------------------------------------------------
+
+const ULID_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+
+/** Encode the 48-bit millisecond timestamp as 10 Crockford Base32 chars. */
+function ulidTime(ms: number): string {
+	let t = ms;
+	const chars: string[] = [];
+	for (let i = 0; i < 10; i++) {
+		chars.unshift(ULID_ALPHABET[t % 32]);
+		t = Math.floor(t / 32);
+	}
+	return chars.join('');
+}
+
+/** Encode 80 random bits as 16 Crockford Base32 chars. */
+function ulidRandom(rand: bigint): string {
+	const chars: string[] = [];
+	let r = rand;
+	for (let i = 0; i < 16; i++) {
+		chars.unshift(ULID_ALPHABET[Number(r % 32n)]);
+		r >>= 5n;
+	}
+	return chars.join('');
+}
+
+function draw80(): bigint {
+	const randBytes = new Uint8Array(10);
+	crypto.getRandomValues(randBytes);
+	let rand = 0n;
+	for (const b of randBytes) rand = (rand << 8n) | BigInt(b);
+	return rand;
+}
+
+/** Monotonic ULID: within the same millisecond the random part increments
+ *  instead of redrawing, so successive ids keep their sort order (the spec's
+ *  monotonicity rule). Same-millisecond overflow past 2^80 wraps around — the
+ *  spec allows this only past absurd draw counts; nothing to guard here. */
+let lastUlidMs = 0;
+let lastUlidRand = 0n;
+
+function generateUlid(): string {
+	const ms = Date.now();
+	if (ms !== lastUlidMs) {
+		lastUlidMs = ms;
+		lastUlidRand = draw80();
+	} else {
+		lastUlidRand += 1n;
+	}
+	return ulidTime(ms) + ulidRandom(lastUlidRand);
+}
+
+/** NanoID (default profile): 21 chars from a 64-symbol alphabet
+ *  (URL-safe: A–Z a–z 0–9 - _), ≈126 bits of entropy. */
+const NANO_ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_';
+const NANO_LEN = 21;
+
+function generateNanoId(): string {
+	let out = '';
+	for (let i = 0; i < NANO_LEN; i++) out += NANO_ALPHABET[randInt(NANO_ALPHABET.length)];
+	return out;
+}
+
+
+
 function initUuid(host: HTMLElement, cfg: UuidGenConfig): void {
 	host.innerHTML = '';
 
@@ -299,7 +364,13 @@ function initUuid(host: HTMLElement, cfg: UuidGenConfig): void {
 	const optV7 = document.createElement('option');
 	optV7.value = 'v7';
 	langProp(optV7, 'textContent', 'UUID v7 (time-ordered)', 'UUID v7 (时间有序)');
-	verSelect.append(optV4, optV7);
+	const optUlid = document.createElement('option');
+	optUlid.value = 'ulid';
+	langProp(optUlid, 'textContent', 'ULID (sortable, 26 chars)', 'ULID (可排序, 26 位)');
+	const optNano = document.createElement('option');
+	optNano.value = 'nano';
+	langProp(optNano, 'textContent', 'NanoID (21 chars)', 'NanoID (21 位)');
+	verSelect.append(optV4, optV7, optUlid, optNano);
 	verField.append(verLabel, verSelect);
 
 	const countField = document.createElement('div');
@@ -343,7 +414,20 @@ function initUuid(host: HTMLElement, cfg: UuidGenConfig): void {
 
 		const lines: string[] = [];
 		for (let i = 0; i < n; i++) {
-			let id = ver === 'v7' ? generateUuidV7() : crypto.randomUUID();
+			let id: string;
+			switch (ver) {
+				case 'v7':
+					id = generateUuidV7();
+					break;
+				case 'ulid':
+					id = generateUlid();
+					break;
+				case 'nano':
+					id = generateNanoId();
+					break;
+				default:
+					id = crypto.randomUUID();
+			}
 			if (!withHyphen) id = id.replace(/-/g, '');
 			if (uppercase) id = id.toUpperCase();
 			lines.push(id);
@@ -354,6 +438,18 @@ function initUuid(host: HTMLElement, cfg: UuidGenConfig): void {
 				note,
 				'UUID v7: 48-bit millisecond timestamp + 74 bits randomness (RFC 9562). Naturally sortable and database index friendly.',
 				'UUID v7：48 位毫秒时间戳 + 74 位随机数 (RFC 9562)。天然可排序，对数据库索引友好。',
+			);
+		} else if (ver === 'ulid') {
+			setBilingual(
+				note,
+				'ULID: 48-bit millisecond timestamp + 80 bits randomness, Crockford Base32, 26 chars. Lexicographically sortable; within one millisecond ids are generated monotonically increasing.',
+				'ULID：48 位毫秒时间戳 + 80 位随机数，Crockford Base32 编码，26 位字符。按字典序可排序；同一毫秒内依次递增生成。',
+			);
+		} else if (ver === 'nano') {
+			setBilingual(
+				note,
+				'NanoID: 21 chars from a 64-symbol URL-safe alphabet, ≈126 bits of entropy. Shorter than a UUID for URLs and IDs at the same collision resistance.',
+				'NanoID：21 位 URL 安全字符（64 符号字母表），约 126 位熵。与 UUID 同等防碰撞能力下更短，适合 URL 与短 ID。',
 			);
 		} else {
 			setBilingual(

@@ -144,12 +144,13 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			getters.set(field.id, () => ta.value);
 			control = ta;
 		} else {
-			// 'number' gets a real numeric input; 'bigint' is a text input with a
-			// numeric keypad (pattern + inputmode) because values above 2^53 would
-			// be rounded if they passed through a JS Number.
+			// 'number' gets a real numeric input; 'date' a native calendar picker
+			// (value is the ISO "YYYY-MM-DD" string, parsed by compute()); 'bigint'
+			// is a text input with a numeric keypad (pattern + inputmode) because
+			// values above 2^53 would be rounded if they passed through a JS Number.
 			const numericish = field.type === 'number' || field.type === 'bigint';
 			const input = document.createElement('input');
-			input.type = field.type === 'number' ? 'number' : 'text';
+			input.type = field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text';
 			if (field.type === 'bigint') {
 				input.inputMode = 'numeric';
 				input.pattern = '[0-9]*';

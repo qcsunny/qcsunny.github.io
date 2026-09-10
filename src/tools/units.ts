@@ -394,6 +394,76 @@ export const UNIT_CATEGORIES: UnitCategory[] = [
 			EiB: lin('exbibyte (EiB, 1024⁶)', 1024 ** 6, '艾字节 (1024⁶ 字节)', 'EiB'),
 		},
 	},
+	{
+		// Fuel consumption is inverse-proportional (more L/100km = WORSE economy),
+		// so it cannot use lin(): every unit converts through a reciprocal.
+		// Base unit is liters per 100 km.
+		id: 'fuel',
+		label: 'Fuel Consumption',
+		labelZh: '油耗',
+		defaultSource: 'L100km',
+		units: {
+			L100km: {
+				label: 'liters per 100 km (L/100km)',
+				labelZh: '百公里油耗 (L/100km)',
+				short: 'L/100km',
+				toBase: (v) => v,
+				fromBase: (v) => v,
+			},
+			kmL: {
+				label: 'kilometers per liter (km/L)',
+				labelZh: '每升可行驶公里数 (km/L)',
+				short: 'km/L',
+				toBase: (v) => 100 / v,
+				fromBase: (v) => 100 / v,
+			},
+			mpgUS: {
+				// 1 US gallon = 3.785411784 L; 1 mile = 1.609344 km
+				// L/100km = 235.214583 / mpg
+				label: 'miles per US gallon (mpg US)',
+				labelZh: '美制英里每加仑 (mpg US)',
+				short: 'mpg (US)',
+				toBase: (v) => 235.2145832 / v,
+				fromBase: (v) => 235.2145832 / v,
+			},
+			mpgUK: {
+				// 1 imperial gallon = 4.54609 L → L/100km = 282.480936 / mpg
+				label: 'miles per imperial gallon (mpg UK)',
+				labelZh: '英制英里每加仑 (mpg UK)',
+				short: 'mpg (UK)',
+				toBase: (v) => 282.4809363 / v,
+				fromBase: (v) => 282.4809363 / v,
+			},
+			miL: {
+				label: 'miles per liter (mi/L)',
+				labelZh: '每升可行驶英里数 (mi/L)',
+				short: 'mi/L',
+				toBase: (v) => 100 / (v * 1.609344),
+				fromBase: (v) => 100 / (v * 1.609344),
+			},
+			gal100mi: {
+				label: 'US gallons per 100 miles (gal/100mi)',
+				labelZh: '百英里耗油量 (美制加仑)',
+				short: 'gal/100mi',
+				toBase: (v) => (v * 3.785411784) / 1.609344,
+				fromBase: (v) => (v * 1.609344) / 3.785411784,
+			},
+		},
+	},
+	{
+		id: 'angle',
+		label: 'Angle',
+		labelZh: '角度',
+		defaultSource: 'deg',
+		units: {
+			deg: lin('degree (°)', 1, '度 (°)', '°'),
+			rad: lin('radian (rad)', Math.PI / 180, '弧度 (rad，微积分与编程三角函数标准)', 'rad'),
+			grad: lin('gradian (grad / gon)', 0.9, '百分度 (grad / 冈，测绘常用)', 'grad'),
+			turn: lin('turn / revolution', 360, '转数 (1 turn = 360°)', 'turn', '转'),
+			arcmin: lin('arcminute (′)', 1 / 60, '角分 (′，1° = 60′)', '′'),
+			arcsec: lin('arcsecond (″)', 1 / 3600, '角秒 (″，1′ = 60″，天文观测精度)', '″'),
+		},
+	},
 ];
 
 export function getCategory(id: string): UnitCategory | undefined {

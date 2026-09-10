@@ -12,6 +12,7 @@ import llmsTxt from './llms-txt.mjs';
 import modulePreload from './modulepreload.mjs';
 import ogImages from './og-images.mjs';
 import satteriKatex from './satteri-katex.mjs';
+import searchIndex from './search-index.mjs';
 
 // Blog pubDate → ISO, skimmed from frontmatter at config time so the sitemap
 // can emit <lastmod>. @astrojs/sitemap never sees the content collection, so
@@ -48,6 +49,7 @@ export default defineConfig({
 		llmsTxt(),
 		ogImages(),
 		modulePreload(),
+		searchIndex(),
 	],
 	markdown: {
 		// Dual Shiki themes so a code block follows the site theme instead of

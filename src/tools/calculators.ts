@@ -2120,7 +2120,11 @@ const hypothesisTesting: FormConfig = {
 		const ci95Low = xbar - margin95;
 		const ci95High = xbar + margin95;
 
-		const fmtP = (p: number) => (p < 0.0001 ? '< 0.0001 (Highly Significant ***)' : `${(p * 100).toFixed(3)}% (p = ${formatNumber(p)})`);
+		// {value, valueZh} pair so a spread fills both row halves at once.
+		const fmtP = (p: number): { value: string; valueZh: string } =>
+			p < 0.0001
+				? { value: '< 0.0001 (Highly Significant ***)', valueZh: '< 0.0001（高度显著 ***）' }
+				: { value: `${(p * 100).toFixed(3)}% (p = ${formatNumber(p)})`, valueZh: `${(p * 100).toFixed(3)}%（p = ${formatNumber(p)}）` };
 
 		return {
 			rows: [
@@ -2133,18 +2137,18 @@ const hypothesisTesting: FormConfig = {
 				{
 					label: 'Two-Tailed p-Value (H1: μ ≠ μ0)',
 					labelZh: '双侧 p 值 (H1: μ ≠ μ0)',
-					value: fmtP(pTwo),
+					...fmtP(pTwo),
 					emphasis: true,
 				},
 				{
 					label: 'Right-Tailed p-Value (H1: μ > μ0)',
 					labelZh: '右侧 p 值 (H1: μ > μ0)',
-					value: fmtP(pRight),
+					...fmtP(pRight),
 				},
 				{
 					label: 'Left-Tailed p-Value (H1: μ < μ0)',
 					labelZh: '左侧 p 值 (H1: μ < μ0)',
-					value: fmtP(pLeft),
+					...fmtP(pLeft),
 				},
 				{
 					label: 'Standard Error (SE = s / √n)',
@@ -2417,12 +2421,16 @@ const anovaCalculator: FormConfig = {
 			pValue = 1;
 		}
 
-		const fmtP = (p: number) => (p < 0.0001 ? '< 0.0001 (Highly Significant ***)' : `${(p * 100).toFixed(3)}% (p = ${formatNumber(p)})`);
+		// {value, valueZh} pair so a spread fills both row halves at once.
+		const fmtP = (p: number): { value: string; valueZh: string } =>
+			p < 0.0001
+				? { value: '< 0.0001 (Highly Significant ***)', valueZh: '< 0.0001（高度显著 ***）' }
+				: { value: `${(p * 100).toFixed(3)}% (p = ${formatNumber(p)})`, valueZh: `${(p * 100).toFixed(3)}%（p = ${formatNumber(p)}）` };
 
 		return {
 			rows: [
 				{ label: 'F-Statistic', labelZh: 'F 检验统计量', value: formatNumber(fStat), emphasis: true },
-				{ label: 'p-Value', labelZh: 'p-value 显著性概率', value: fmtP(pValue), emphasis: true },
+				{ label: 'p-Value', labelZh: 'p-value 显著性概率', ...fmtP(pValue), emphasis: true },
 				{ label: 'Between-Groups SS (SSB)', labelZh: '组间平方和 (SSB)', value: formatNumber(ssb) },
 				{ label: 'Within-Groups SS (SSW)', labelZh: '组内平方和 (SSW / 残差)', value: formatNumber(ssw) },
 				{ label: 'Total Sum of Squares (SST)', labelZh: '总平方和 (SST)', value: formatNumber(sst) },
