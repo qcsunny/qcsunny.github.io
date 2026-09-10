@@ -27,12 +27,18 @@ jobs:
       # gated exactly this content on the PR — rerunning it on main duplicates
       # ~7 minutes for byte-identical code. Concurrent merges, conflict
       # resolutions, squashes and direct pushes produce a different tree (or no
-      # second parent at all) and keep the full run. The PR-side gate itself is
-      # never skipped — this only shortens the post-merge path.
+      # second parent at all) and keep the full run.
+      # CRITICAL: this skip may ONLY fire on push-to-main runs. A pull_request
+      # run also checks out a merge commit with a second parent, and a PR based
+      # on fresh main has merge tree == head tree — the PR-side gate would skip
+      # itself, and the post-merge main run would skip too, shipping the PR with
+      # zero E2E coverage (caught on PR #38, whose suite was silently skipped).
       - name: Detect already-gated merge (same tree as PR head)
         id: gate
         run: |
-          if PR_HEAD=$(git rev-parse --verify HEAD^2 2>/dev/null); then
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            echo "PR run — this IS the gate, always running the full suite."
+          elif PR_HEAD=$(git rev-parse --verify HEAD^2 2>/dev/null); then
             if git diff --quiet "$PR_HEAD" HEAD; then
               echo "skip=true" >> "$GITHUB_OUTPUT"
               echo "Tree identical to PR head $PR_HEAD — E2E gated there already, skipping the duplicate run."
