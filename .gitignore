@@ -42,3 +42,8 @@ __pycache__/
 .claude/settings.local.json
 .claude/settings.local.json.tmp.*
 .claude/worktrees/
+
+# throwaway browser-probe scripts (kept out of accidental `git add -A`)
+/probe-*.mjs
+/probe-*.mts
+/engine-check-*.mts
