@@ -14,7 +14,6 @@ import { TOOL_COUNT } from '../../tools/registry';
 const posts = (await getCollection('blog')).sort(
 	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
 );
-const [featured, ...rest] = posts;
 
 // The bottom CTA used to say "40+"; a hardcoded number ages into a lie as tools
 // ship. TOOL_COUNT is the single registry-derived total (REAL_TOOLS minus the
@@ -26,6 +25,40 @@ const toolTotal = TOOL_COUNT;
 // articles instead of the tool registry.
 const blogSearchConfig = buildBlogSearchConfig(posts);
 
+// Filter chips carry a build-time count, and a category with zero posts does
+// not get a chip at all — an empty filter result can then never happen, no
+// runtime empty-state needed.
+const countByCategory = new Map<string, number>();
+for (const post of posts) {
+	const key = getBlogCategory(post.data.category).key;
+	countByCategory.set(key, (countByCategory.get(key) ?? 0) + 1);
+}
+const filterableCategories = BLOG_CATEGORIES.filter((c) => (countByCategory.get(c.key) ?? 0) > 0);
+
+// The page reads as a magazine top and an archive tail: the newest posts get
+// display space (featured 1+2, then a card grid), everything older collapses
+// into per-year single-line rows. 47 identical two-column cards was a wall;
+// the archive rows halve the page and make the years of writing visible.
+const [hero, ...rest] = posts;
+const minis = rest.slice(0, 2);
+const recent = rest.slice(2, 6);
+const archive = rest.slice(6);
+const byYear = new Map<number, typeof posts>();
+for (const post of archive) {
+	const year = post.data.pubDate.getFullYear();
+	const bucket = byYear.get(year) ?? [];
+	bucket.push(post);
+	byYear.set(year, bucket);
+}
+const yearGroups = [...byYear.entries()].sort((a, b) => b[0] - a[0]);
+
+// Short in-row date: the list row has no room for FormattedDate's long form,
+// and it must be a bilingual pair (en "Mar 12" / zh "3月12日") like every
+// other script-free text on the page.
+const shortDate = (d: Date) => ({
+	en: d.toLocaleDateString('en-us', { month: 'short', day: 'numeric' }),
+	zh: `${d.getMonth() + 1}月${d.getDate()}日`,
+});
 ---
 
 <!doctype html>
@@ -50,12 +83,8 @@ const blogSearchConfig = buildBlogSearchConfig(posts);
 					<span class="i18n-zh">技术博客与工程手记</span>
 					<span class="i18n-en">Writing About the Craft</span>
 				</h1>
-				<p class="blog-subtitle i18n-zh">
-					{posts.length} 篇从零手写、实测驱动的手记：二维码纠错码、SQL 词法、Markdown 解析、不用 WebGL 的三维曲面、房贷摊销与 FIRE 数学——讲清代码怎么写，数字从哪来。
-				</p>
-				<p class="blog-subtitle i18n-en">
-					{posts.length} hand-written, measurement-driven notes: QR error correction, an SQL tokenizer, Markdown parsing, a WebGL-free 3-D plotter, mortgage amortization and FIRE math — how the code works and where the numbers come from.
-				</p>
+				<p class="blog-subtitle i18n-zh">{posts.length} 篇手写引擎、实测数据驱动的工程手记。</p>
+				<p class="blog-subtitle i18n-en">{posts.length} notes on hand-rolled engines and measured numbers.</p>
 			</div>
 
 			<form class="blog-category-filter" data-blog-category-filter action="/blog/" method="get">
@@ -65,98 +94,154 @@ const blogSearchConfig = buildBlogSearchConfig(posts);
 				</span>
 				<button type="submit" name="category" value="" data-blog-category="all" aria-pressed="true" aria-current="true">
 					<span class="i18n-zh">全部</span><span class="i18n-en">All</span>
+					<span class="count-badge">{posts.length}</span>
 				</button>
-				{BLOG_CATEGORIES.map((category) => (
+				{filterableCategories.map((category) => (
 					<button type="submit" name="category" value={category.key} data-blog-category={category.key} aria-pressed="false" aria-current="false">
 						<span class="i18n-zh">{category.labelZh}</span><span class="i18n-en">{category.labelEn}</span>
+						<span class="count-badge">{countByCategory.get(category.key)}</span>
 					</button>
 				))}
 			</form>
 
-			<!-- Featured Hero Article -->
+			<!-- Featured: newest post large + the next two compact -->
 			{
-				featured && (
-					<section class="featured-section" data-blog-card-container data-cat={getBlogCategory(featured.data.category).key}>
-						<a class="featured-card" href={`/blog/${featured.id}/`} data-blog-card data-cat={getBlogCategory(featured.data.category).key}>
-							<div class="featured-badge-row">
-								<span class="featured-tag">
-									⭐ <span class="i18n-zh">最新精选</span><span class="i18n-en">Featured</span>
-								</span>
-								<span class="cat-pill" style={`--cat-color: ${getBlogCategory(featured.data.category).color};`}>
-									<span class="i18n-zh">{getBlogCategory(featured.data.category).labelZh}</span>
-									<span class="i18n-en">{getBlogCategory(featured.data.category).labelEn}</span>
-								</span>
-								<span class="read-time-pill">
-									<ReadingTime minutes={readingMinutes(featured.body ?? '')} />
-								</span>
-							</div>
-
-							<h2 class="featured-title" lang={featured.data.contentLang}>{featured.data.title}</h2>
-							<p class="featured-desc" lang={featured.data.contentLang}>{featured.data.description}</p>
-
-							<div class="featured-foot">
-								<div class="featured-meta">
-									<FormattedDate date={featured.data.pubDate} />
-									<span class="meta-dot">·</span>
-									<span>QCSunny</span>
+				hero && (
+					<section class="featured-section" data-blog-card-container>
+						<div class="featured-grid">
+							<a class="featured-card" href={`/blog/${hero.id}/`} data-blog-card data-cat={getBlogCategory(hero.data.category).key}>
+								<div class="featured-badge-row">
+									<span class="featured-tag">
+										<span class="i18n-zh">最新发布</span><span class="i18n-en">Latest</span>
+									</span>
+									<span class="cat-pill" style={`--cat-color: ${getBlogCategory(hero.data.category).color};`}>
+										<span class="i18n-zh">{getBlogCategory(hero.data.category).labelZh}</span>
+										<span class="i18n-en">{getBlogCategory(hero.data.category).labelEn}</span>
+									</span>
+									<span class="read-time-pill">
+										<ReadingTime minutes={readingMinutes(hero.body ?? '')} />
+									</span>
 								</div>
-								<span class="featured-cta">
-									<span class="i18n-zh">阅读完整长文</span>
-									<span class="i18n-en">Read Full Article</span>
-									<span class="cta-arrow" aria-hidden="true">→</span>
-								</span>
+
+								<h2 class="featured-title" lang={hero.data.contentLang}>{hero.data.title}</h2>
+								<p class="featured-desc" lang={hero.data.contentLang}>{hero.data.description}</p>
+
+								<div class="featured-foot">
+									<div class="featured-meta">
+										<FormattedDate date={hero.data.pubDate} />
+										<span class="meta-dot">·</span>
+										<span>QCSunny</span>
+									</div>
+									<span class="featured-cta">
+										<span class="i18n-zh">阅读完整长文</span>
+										<span class="i18n-en">Read Full Article</span>
+										<span class="cta-arrow" aria-hidden="true">→</span>
+									</span>
+								</div>
+							</a>
+							<div class="featured-side">
+								{minis.map((post) => {
+									const cat = getBlogCategory(post.data.category);
+									return (
+										<a class="featured-mini" href={`/blog/${post.id}/`} data-blog-card data-cat={cat.key} style={`--cat-color: ${cat.color};`}>
+											<div class="mini-top">
+												<span class="cat-pill" style={`--cat-color: ${cat.color};`}>
+													<span class="i18n-zh">{cat.labelZh}</span>
+													<span class="i18n-en">{cat.labelEn}</span>
+												</span>
+												<ReadingTime minutes={readingMinutes(post.body ?? '')} />
+											</div>
+											<h3 class="mini-title" lang={post.data.contentLang}>{post.data.title}</h3>
+											<div class="mini-meta">
+												<FormattedDate date={post.data.pubDate} />
+												<span class="cta-arrow" aria-hidden="true">→</span>
+											</div>
+										</a>
+									);
+								})}
 							</div>
-						</a>
+						</div>
 					</section>
 				)
 			}
 
-			<!-- Articles Grid -->
-			<section class="articles-section">
-				<div class="articles-header">
-					<h2 class="articles-title">
-						<span class="i18n-zh">全部文章</span>
-						<span class="i18n-en">All Articles</span>
-						<span class="posts-count">({posts.length})</span>
-					</h2>
-				</div>
+			<!-- Recent Articles Grid -->
+			{
+				recent.length > 0 && (
+					<section class="articles-section" data-blog-card-container>
+						<div class="articles-header">
+							<h2 class="articles-title">
+								<span class="i18n-zh">近期文章</span>
+								<span class="i18n-en">Recent Articles</span>
+							</h2>
+						</div>
 
-				<div class="articles-grid">
-					{
-						rest.map((post) => {
-							const cat = getBlogCategory(post.data.category);
-							return (
-								<article class="article-card" data-blog-card data-cat={cat.key}>
-									<a href={`/blog/${post.id}/`} class="article-card-link">
-										<div class="article-meta-row">
-											<span class="cat-pill" style={`--cat-color: ${cat.color};`}>
-												<span class="i18n-zh">{cat.labelZh}</span>
-												<span class="i18n-en">{cat.labelEn}</span>
-											</span>
-											<span class="article-date">
-												<FormattedDate date={post.data.pubDate} />
-											</span>
-											<span class="meta-dot">·</span>
-											<ReadingTime minutes={readingMinutes(post.body ?? '')} />
-										</div>
+						<div class="articles-grid">
+							{recent.map((post) => {
+								const cat = getBlogCategory(post.data.category);
+								return (
+									<article class="article-card" data-blog-card data-cat={cat.key} style={`--cat-color: ${cat.color};`}>
+										<a href={`/blog/${post.id}/`} class="article-card-link">
+											<div class="article-meta-row">
+												<span class="cat-pill" style={`--cat-color: ${cat.color};`}>
+													<span class="i18n-zh">{cat.labelZh}</span>
+													<span class="i18n-en">{cat.labelEn}</span>
+												</span>
+												<span class="article-date">
+													<FormattedDate date={post.data.pubDate} />
+												</span>
+												<span class="meta-dot">·</span>
+												<ReadingTime minutes={readingMinutes(post.body ?? '')} />
+											</div>
 
-										<h3 class="article-title" lang={post.data.contentLang}>{post.data.title}</h3>
-										<p class="article-desc" lang={post.data.contentLang}>{post.data.description}</p>
+											<h3 class="article-title" lang={post.data.contentLang}>{post.data.title}</h3>
+											<p class="article-desc" lang={post.data.contentLang}>{post.data.description}</p>
 
-										<div class="article-foot">
-											<span class="read-more">
-												<span class="i18n-zh">阅读全文</span>
-												<span class="i18n-en">Read Article</span>
-												<span class="read-arrow" aria-hidden="true">→</span>
+											<div class="article-foot">
+												<span class="read-more">
+													<span class="i18n-zh">阅读全文</span>
+													<span class="i18n-en">Read Article</span>
+													<span class="read-arrow" aria-hidden="true">→</span>
+												</span>
+											</div>
+										</a>
+									</article>
+								);
+							})}
+						</div>
+					</section>
+				)
+			}
+
+			<!-- Archive: one row per older post, grouped by year -->
+			{
+				yearGroups.map(([year, group]) => (
+					<section class="archive-year" data-blog-card-container>
+						<h3 class="year-label">{year}</h3>
+						<ul class="archive-list">
+							{group.map((post) => {
+								const cat = getBlogCategory(post.data.category);
+								const d = shortDate(post.data.pubDate);
+								return (
+									<li>
+										<a class="archive-row" href={`/blog/${post.id}/`} data-blog-card data-cat={cat.key} style={`--cat-color: ${cat.color};`}>
+											<span class="row-date">
+												<span class="i18n-en">{d.en}</span>
+												<span class="i18n-zh">{d.zh}</span>
 											</span>
-										</div>
-									</a>
-								</article>
-							);
-						})
-					}
-				</div>
-			</section>
+											<span class="row-dot" aria-hidden="true"></span>
+											<span class="row-title" lang={post.data.contentLang}>{post.data.title}</span>
+											<span class="row-time">
+												<ReadingTime minutes={readingMinutes(post.body ?? '')} />
+											</span>
+										</a>
+									</li>
+								);
+							})}
+						</ul>
+					</section>
+				))
+			}
 
 			<!-- Bottom Tools Promotion Box -->
 			<section class="tools-cta-box">
@@ -197,7 +282,15 @@ const blogSearchConfig = buildBlogSearchConfig(posts);
 						card.hidden = selected !== 'all' && card.dataset.cat !== selected;
 					});
 					containers.forEach((container) => {
-						container.hidden = selected !== 'all' && container.dataset.cat !== selected;
+						if (container.dataset.cat) {
+							container.hidden = selected !== 'all' && container.dataset.cat !== selected;
+						} else {
+							// Mixed-content containers (featured grid, recent grid, a
+							// year group) have no single category: they show while
+							// they still hold at least one visible card.
+							container.hidden =
+								container.querySelectorAll('[data-blog-card]:not([hidden])').length === 0;
+						}
 					});
 					if (updateUrl) {
 						const url = new URL(window.location.href);
@@ -223,6 +316,13 @@ const blogSearchConfig = buildBlogSearchConfig(posts);
 </html>
 
 <style>
+	/* The cards below set explicit display (flex/grid), which beats the UA's
+	   [hidden] { display: none } — the category filter hides cards via the
+	   hidden attribute, so it has to win here. */
+	[hidden] {
+		display: none !important;
+	}
+
 	.blog-container {
 		/* --w-shell, the site-wide frame the nav, the home page and the post
 		   shell all take — the list used to ride --w-outer (832), so the frame
@@ -294,6 +394,9 @@ const blogSearchConfig = buildBlogSearchConfig(posts);
 	}
 
 	.blog-category-filter button {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45em;
 		border: 1px solid var(--gridline);
 		border-radius: 999px;
 		background: var(--card);
@@ -317,13 +420,42 @@ const blogSearchConfig = buildBlogSearchConfig(posts);
 		color: var(--accent);
 	}
 
+	/* Build-time count per category, so an empty filter result is impossible. */
+	.count-badge {
+		font-size: 0.72rem;
+		font-family: var(--font-mono);
+		color: var(--dim);
+		background: color-mix(in srgb, var(--fg) 7%, transparent);
+		border-radius: 999px;
+		padding: 0.05em 0.55em;
+	}
 
+	.blog-category-filter button[aria-pressed='true'] .count-badge {
+		color: var(--accent);
+		background: color-mix(in srgb, var(--accent) 14%, transparent);
+	}
+
+	/* --- FEATURED 1 + 2 --- */
 	.featured-section {
-		margin-bottom: 3.5rem;
+		margin-bottom: 3rem;
+	}
+
+	.featured-grid {
+		display: grid;
+		grid-template-columns: 1.55fr 1fr;
+		gap: 1.2rem;
+		align-items: stretch;
+	}
+
+	@media (max-width: 820px) {
+		.featured-grid {
+			grid-template-columns: 1fr;
+		}
 	}
 
 	.featured-card {
-		display: block;
+		display: flex;
+		flex-direction: column;
 		padding: 2.2rem 2.4rem;
 		background: var(--card);
 		border: 1px solid var(--gridline);
@@ -404,6 +536,7 @@ const blogSearchConfig = buildBlogSearchConfig(posts);
 		line-height: 1.65;
 		margin-bottom: 1.8rem;
 		max-width: 48em;
+		flex: 1;
 	}
 
 	.featured-foot {
@@ -446,9 +579,91 @@ const blogSearchConfig = buildBlogSearchConfig(posts);
 		transform: translateX(5px);
 	}
 
-	/* --- ARTICLES SECTION --- */
+	/* The two compact cards beside the hero. Same family, less room. */
+	.featured-side {
+		display: grid;
+		grid-template-rows: 1fr 1fr;
+		gap: 1.2rem;
+		min-width: 0;
+	}
+
+	.featured-mini {
+		position: relative;
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+		gap: 0.55rem;
+		padding: 1.3rem 1.5rem;
+		background: var(--card);
+		border: 1px solid var(--gridline);
+		border-radius: 16px;
+		text-decoration: none;
+		box-shadow: var(--box-shadow);
+		transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+	}
+
+	/* Category colour spine on the left edge — the no-image list's colour
+	   anchor; the hero has its gradient bar, cards get their category. */
+	.featured-mini::before,
+	.article-card::before {
+		content: '';
+		position: absolute;
+		left: 0;
+		top: 0;
+		bottom: 0;
+		width: 3px;
+		background: var(--cat-color);
+	}
+
+	.featured-mini:hover {
+		transform: translateY(-3px);
+		border-color: var(--accent);
+		box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+	}
+
+	.mini-top {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.6em;
+		font-size: 0.76rem;
+		color: var(--dim);
+		font-family: var(--font-mono);
+		flex-wrap: wrap;
+	}
+
+	.mini-title {
+		font-size: 1.08rem;
+		font-weight: 700;
+		color: var(--fg);
+		line-height: 1.42;
+		letter-spacing: -0.01em;
+		margin: 0;
+		transition: color 0.15s ease;
+	}
+
+	.featured-mini:hover .mini-title {
+		color: var(--accent);
+	}
+
+	.mini-meta {
+		margin-top: auto;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.6em;
+		font-size: 0.8rem;
+		color: var(--dim);
+		font-family: var(--font-mono);
+	}
+
+	.featured-mini:hover .mini-meta .cta-arrow {
+		transform: translateX(4px);
+	}
+
+	/* --- RECENT GRID --- */
 	.articles-section {
-		margin-top: 2rem;
+		margin-top: 1rem;
 	}
 
 	.articles-header {
@@ -467,13 +682,6 @@ const blogSearchConfig = buildBlogSearchConfig(posts);
 		margin: 0;
 	}
 
-	.posts-count {
-		font-size: 0.95rem;
-		font-weight: 400;
-		color: var(--dim);
-		margin-left: 0.4em;
-	}
-
 	.articles-grid {
 		display: grid;
 		/* two columns comfortably: 2 × 390 + 1.4rem gap = 809 ≤ 832. minmax
@@ -490,6 +698,8 @@ const blogSearchConfig = buildBlogSearchConfig(posts);
 	}
 
 	.article-card {
+		position: relative;
+		overflow: hidden;
 		background: var(--card);
 		border: 1px solid var(--gridline);
 		border-radius: 12px;
@@ -569,6 +779,95 @@ const blogSearchConfig = buildBlogSearchConfig(posts);
 
 	.article-card:hover .read-arrow {
 		transform: translateX(4px);
+	}
+
+	/* --- ARCHIVE BY YEAR --- */
+	.archive-year {
+		margin-top: 2.6rem;
+	}
+
+	.year-label {
+		display: flex;
+		align-items: center;
+		gap: 0.9rem;
+		font-size: 1.15rem;
+		font-weight: 700;
+		color: var(--fg);
+		margin: 0 0 0.6rem;
+		font-family: var(--font-mono);
+	}
+
+	.year-label::after {
+		content: '';
+		flex: 1;
+		height: 1px;
+		background: var(--gridline);
+	}
+
+	.archive-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	/* One post per line: date · category dot · title · reading time. Rows, not
+	   cards — hover lights the title and the date, no lift; the archive is for
+	   scanning, not for browsing. */
+	.archive-row {
+		display: flex;
+		align-items: baseline;
+		gap: 0.75em;
+		padding: 0.5rem 0.35rem;
+		border-radius: 8px;
+		text-decoration: none;
+	}
+
+	.row-date {
+		flex: none;
+		width: 5.5em;
+		font-size: 0.82rem;
+		font-family: var(--font-mono);
+		color: var(--dim);
+		transition: color 0.15s ease;
+		white-space: nowrap;
+	}
+
+	.row-dot {
+		flex: none;
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: var(--cat-color);
+		align-self: center;
+	}
+
+	.row-title {
+		flex: 1;
+		min-width: 0;
+		font-size: 0.95rem;
+		font-weight: 500;
+		color: var(--fg);
+		line-height: 1.5;
+		transition: color 0.15s ease;
+	}
+
+	.row-time {
+		flex: none;
+		font-size: 0.78rem;
+		color: var(--dim);
+		font-family: var(--font-mono);
+		white-space: nowrap;
+	}
+
+	.archive-row:hover .row-title,
+	.archive-row:hover .row-date {
+		color: var(--accent);
+	}
+
+	@media (max-width: 640px) {
+		.row-time {
+			display: none;
+		}
 	}
 
 	/* --- TOOLS CTA BOX --- */
