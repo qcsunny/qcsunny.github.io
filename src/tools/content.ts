@@ -676,11 +676,31 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 		],
 		faq: [
 			{ q: 'Is it safe to paste production tokens?', a: 'Yes. Unlike typical online JWT decoders that may log your Bearer tokens, this tool runs 100% locally with zero network requests.' },
-			{ q: 'Can this tool verify the signature?', a: 'Client-side browsers cannot safely hold your secret key. This tool is designed for inspecting claims, debugging auth issues, and checking token expiration.' },
+			{ q: 'Can this tool verify or create signatures?', a: 'Yes — for the HMAC family. Enter a secret above and use "Verify Signature (HMAC)" to check HS256/384/512 tokens, or "Sign Payload → JWT" to mint one from a payload JSON. RS/ES (asymmetric) algorithms need a public key and are not supported.' },
 		],
 		faqZh: [
 			{ q: '在这里粘贴生产 Token 安全吗？', a: '绝对安全。绝大多数在线 JWT 网站存在泄露甚至截获 Token 的风险，而本工具 100% 纯前端解码，无任何后台网络请求。' },
-			{ q: '本工具可以验签吗？', a: '出于安全考量，前端不应持有或输入服务端的私钥/密钥。本工具主要用于查看 Payload 数据、排查鉴权 Bug 及校验过期时间。' },
+			{ q: '本工具可以验签或签发 Token 吗？', a: '可以（HMAC 系列）。在上方输入密钥后，"验签 (HMAC)" 可校验 HS256/384/512 Token，"签发 Payload → JWT" 可由 Payload JSON 生成完整 Token。RS/ES 非对称算法需要公钥，暂不支持。' },
+		],
+	},
+	'devtools/hash-generator': {
+		about: [
+			'Compute MD5, SHA-1, SHA-224, SHA-256, SHA-384, SHA-512, SHA3-256, and SHA3-512 digests of any text, and optionally HMAC-SHA256/384/512 with a secret key.',
+			'Drop a file onto the input box to hash its raw bytes — checksum verification for downloads, without the file ever leaving your device. SHA-1/256/384/512 use the browser\u2019s native Web Crypto; MD5, SHA-224, and SHA-3 are hand-rolled implementations verified against NIST test vectors.',
+		],
+		aboutZh: [
+			'计算任意文本的 MD5、SHA-1、SHA-224、SHA-256、SHA-384、SHA-512、SHA3-256、SHA3-512 八种摘要，并可在填写密钥后附带 HMAC-SHA256/384/512。',
+			'把文件拖入输入框即可对原始字节求哈希——校验下载文件完整性时文件全程不离开本地设备。SHA-1/256/384/512 走浏览器原生 Web Crypto；MD5、SHA-224、SHA-3 为手写实现，已用 NIST 标准测试向量逐一验证。',
+		],
+		faq: [
+			{ q: 'Are uploaded files sent to a server?', a: 'Nothing is uploaded — there is no server. Files are read with the browser FileReader API and hashed in the page; you can disconnect your network and everything still works.' },
+			{ q: 'Why is MD5 still offered?', a: 'MD5 and SHA-1 are cryptographically broken and must not secure anything. They remain ubiquitous for legacy checksums and deduplication keys, which is what a hash tool is for.' },
+			{ q: 'How large a file can I hash?', a: 'The practical limit is your device\u2019s memory, not the tool — a few hundred MB is fine on a desktop. Text input is capped at 5 MB per paste.' },
+		],
+		faqZh: [
+			{ q: '上传的文件会被发送到服务器吗？', a: '没有任何上传——本站也没有后端。文件通过浏览器 FileReader API 在页面内读取并计算，断网后功能照常可用。' },
+			{ q: '为什么还提供 MD5？', a: 'MD5 与 SHA-1 已被密码学破解，绝不能用于安全场景。但它们仍广泛用于传统校验和与去重键，这正是哈希工具的用途。' },
+			{ q: '最大支持多大的文件？', a: '上限取决于设备内存而非本工具——桌面端几百 MB 没问题。文本粘贴路径的上限是 5 MB。' },
 		],
 	},
 	'devtools/url-parser': {

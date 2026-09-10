@@ -1494,10 +1494,10 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 	{
 		slug: 'hash-generator',
 		category: 'devtools',
-		name: 'SHA-256 Hash Generator',
-		nameZh: 'SHA-256 哈希生成器',
-		description: 'Compute the SHA-256 digest of any text entirely in your browser.',
-		descriptionZh: '在本机浏览器内计算任意文本的 SHA-256 摘要。',
+		name: 'Hash & HMAC Generator (Text & File)',
+		nameZh: '哈希与 HMAC 生成器 (文本 / 文件)',
+		description: 'MD5, SHA-1/224/256/384/512 and SHA-3 digests of text or dropped files, plus HMAC-SHA256/384/512 — all locally in your browser.',
+		descriptionZh: '文本或拖入文件计算 MD5、SHA-1/224/256/384/512、SHA-3 摘要，并支持 HMAC-SHA256/384/512，全程本地运算。',
 		kind: 'text',
 		config: {
 			def: 'hello world',
@@ -1505,6 +1505,26 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 			placeholderZh: '输入或粘贴需要求哈希的文本…',
 			mono: true,
 			live: true,
+			// Bytes in, digests out — shared by the text and the file paths.
+			// hashlib lazily imported: the hand-rolled MD5/SHA-224/SHA-3 cores
+			// (~6 KB) stay out of the chunk every tool page downloads.
+			fileTransform: async (data, name, size, secret = '') => {
+				const { hashBytes, HASH_ALGOS, hmacBytes } = await import('../scripts/tools/hashlib');
+				const bytes = new Uint8Array(data);
+				const lines: string[] = [`File: ${name} (${size.toLocaleString()} bytes)`, ''];
+				for (const algo of HASH_ALGOS) lines.push(`${algo.padEnd(10)} ${await hashBytes(algo, bytes)}`);
+				if (secret) {
+					lines.push('', '-- HMAC --');
+					for (const algo of (['SHA-256', 'SHA-384', 'SHA-512'] as const)) lines.push(`${algo.padEnd(10)} ${await hmacBytes(algo, secret, bytes)}`);
+				}
+				return { output: lines.join('\n') };
+			},
+			secretInput: {
+				label: 'Secret key (for HMAC)',
+				labelZh: '密钥（HMAC 用）',
+				placeholder: 'leave empty to skip HMAC',
+				placeholderZh: '留空则不计算 HMAC',
+			},
 			stats: (text: string) => {
 				const charCount = text.length;
 				const byteCount = new TextEncoder().encode(text).length;
@@ -1519,33 +1539,50 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 						labelZh: '字节数 (UTF-8)',
 						value: String(byteCount),
 					},
-					{
-						label: 'Algorithm',
-						labelZh: '算法',
-						value: 'SHA-256 (256-bit)',
-					},
 				];
 			},
 			transforms: [
 				{
 					id: 'hash',
-					label: 'Generate SHA-256',
-					labelZh: '生成哈希',
-					run: async (text: string) => {
+					label: 'Generate all hashes',
+					labelZh: '计算全部哈希',
+					run: async (text: string, secret = '') => {
 						if (!text) return { output: '—' };
-						const hash = await sha256Async(text);
-						return { output: `SHA-256 ${hash}` };
+						const { hashBytes, HASH_ALGOS, hmacBytes } = await import('../scripts/tools/hashlib');
+						const bytes = new TextEncoder().encode(text);
+						const lines: string[] = [];
+						for (const algo of HASH_ALGOS) lines.push(`${algo.padEnd(10)} ${await hashBytes(algo, bytes)}`);
+						if (secret) {
+							lines.push('', '-- HMAC --');
+							for (const algo of (['SHA-256', 'SHA-384', 'SHA-512'] as const)) lines.push(`${algo.padEnd(10)} ${await hmacBytes(algo, secret, bytes)}`);
+						}
+						return { output: lines.join('\n') };
+					},
+				},
+				{
+					id: 'hmac',
+					label: 'HMAC only',
+					labelZh: '仅计算 HMAC',
+					run: async (text: string, secret = '') => {
+						if (!text) return { output: '', error: 'Enter text first.', errorZh: '请先输入文本。' };
+						if (!secret) return { output: '', error: 'Enter the secret key above.', errorZh: '请先在上方输入密钥。' };
+						const { hmacBytes } = await import('../scripts/tools/hashlib');
+						const bytes = new TextEncoder().encode(text);
+						const lines: string[] = [];
+						for (const algo of (['SHA-256', 'SHA-384', 'SHA-512'] as const)) lines.push(`${algo.padEnd(10)} ${await hmacBytes(algo, secret, bytes)}`);
+						return { output: lines.join('\n') };
 					},
 				},
 				{
 					id: 'hashLines',
-					label: 'Hash each line',
-					labelZh: '逐行生成哈希',
+					label: 'Hash each line (SHA-256)',
+					labelZh: '逐行生成哈希 (SHA-256)',
 					run: async (text: string) => {
 						const lines = text.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
 						if (!lines.length) return { output: '', error: 'Enter at least one line.', errorZh: '请至少输入一行内容。' };
+						const { hashBytes } = await import('../scripts/tools/hashlib');
 						const out: string[] = [];
-						for (const line of lines) out.push(`${line} → SHA-256 ${await sha256Async(line)}`);
+						for (const line of lines) out.push(`${line} → ${await hashBytes('SHA-256', new TextEncoder().encode(line))}`);
 						return { output: out.join('\n') };
 					},
 				},
