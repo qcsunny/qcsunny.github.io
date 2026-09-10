@@ -2515,13 +2515,16 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 				const at = (vw: number): string => `${Math.round(minSize + slope * (vw - minVw))}px @ ${vw}px`;
 				return {
 					rows: [
-						row('clamp() (px)', 'clamp()（px 版）', px),
-						row('clamp() (rem)', 'clamp()（rem 版）', rem),
-						row('Slope', '斜率', `${(slope * 100).toFixed(4)}vw per 100px ≈ ${(slope).toFixed(4)}px/px`),
 						row('At 320px', '320px 时', at(320)),
 						row('At 768px', '768px 时', at(768)),
 						row('At 1920px', '1920px 时', at(1920)),
+						row('Slope', '斜率', `${(slope * 100).toFixed(4)}vw / 100px`),
 					],
+					// The generated CSS is code — identical in both views, so it
+					// rides in the note (which allows same-content halves) rather
+					// than a value row (whose zh half must not carry Latin words).
+					note: `${px}\n${rem}`,
+					noteZh: `${px}\n${rem}`,
 				};
 			},
 		},
@@ -2676,10 +2679,11 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 						.join('') +
 					`</svg>`;
 				return {
-					rows: [
-						row('Base color', '基准色', `#${h.toLowerCase()}`),
-						row('Swatches (left to right)', '色板（从左到右）', swatches.join('  ')),
-					],
+					rows: [row('Base color', '基准色', `#${h.toLowerCase()}`)],
+					// hex codes are language-neutral; the note accepts identical
+					// halves, a value row's zh half would not.
+					note: swatches.join('  '),
+					noteZh: swatches.join('  '),
 					chartSvg: svg,
 				};
 			},

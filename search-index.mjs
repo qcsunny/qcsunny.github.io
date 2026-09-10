@@ -27,8 +27,12 @@ function toolIndex() {
 		t.href,
 		t.name,
 		t.nameZh || '',
-		t.description,
-		t.descriptionZh || '',
+		// Descriptions are capped at 120 code points: the modal result card
+		// shows two lines and search relevance ranks slug/name/keywords first,
+		// so the tail of a 200-char description costs budget without earning
+		// either display or matching. The registry keeps the full text.
+		truncate(t.description),
+		t.descriptionZh ? truncate(t.descriptionZh) : '',
 		t.category,
 		t.keywords || '',
 		t.slug,
@@ -63,6 +67,15 @@ function blogIndex() {
 			keywords,
 			slug,
 		]);
+}
+
+/** Cap a description at 120 code points, cutting on the last space when
+ *  there is one (Latin text) so words survive; CJK needs no space. */
+function truncate(text) {
+	if ([...text].length <= 120) return text;
+	const cut = [...text].slice(0, 120).join('');
+	const sp = cut.lastIndexOf(' ');
+	return (sp > 80 ? cut.slice(0, sp) : cut) + '…';
 }
 
 export default function searchIndex() {

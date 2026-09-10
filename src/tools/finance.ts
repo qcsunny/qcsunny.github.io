@@ -3299,14 +3299,14 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 					label: 'Assets (label, amount per line)',
 					labelZh: '资产（每行 名称, 金额）',
 					type: 'textarea',
-					def: 'Cash 现金, 20000\nSavings 存款, 80000\nIndex funds 指数基金, 150000\nCar 汽车, 25000',
+					def: 'Cash, 20000\nSavings, 80000\nIndex funds, 150000\nCar, 25000',
 				},
 				{
 					id: 'liabilities',
 					label: 'Liabilities (label, amount per line)',
 					labelZh: '负债（每行 名称, 金额）',
 					type: 'textarea',
-					def: 'Mortgage balance 房贷余额, 210000\nCar loan 车贷, 12000',
+					def: 'Mortgage, 210000\nCar loan, 12000',
 				},
 			],
 			compute: (v) => {
@@ -3375,13 +3375,15 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 				const years = v.num('years');
 				const rate = v.num('rate') / 100;
 				const perYear = v.str('frequency') === 'quarterly' ? 4 : 12;
-				if (!(total > 0) || !(years > 0))
+				// years is capped at 100: the DCA loop is O(steps) and a
+				// pathologically large horizon would freeze the tab (and the
+				// i18n sweep, which feeds every field 1e9).
+				if (!(total > 0) || !(years > 0) || years > 100 || !Number.isFinite(rate))
 					return {
 						rows: [
-							{ label: 'Result', labelZh: '结果', value: '— (amount and years must be > 0)', valueZh: '—（金额与年限需大于 0）' },
+							{ label: 'Result', labelZh: '结果', value: '— (amount > 0, years 1-100)', valueZh: '—（金额需大于 0，年限 1–100）' },
 						],
 					};
-				const months = Math.round(years * 12);
 				const steps = Math.round(years * perYear);
 				const per = total / steps;
 				const i = rate / perYear;
@@ -3391,6 +3393,12 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 				let dcaFV = 0;
 				for (let k = 1; k <= steps; k++) dcaFV += per * (1 + i) ** k;
 				const diff = lumpFV - dcaFV;
+				if (!Number.isFinite(lumpFV) || !Number.isFinite(dcaFV))
+					return {
+						rows: [
+							{ label: 'Result', labelZh: '结果', value: '— (the rate overflows this horizon)', valueZh: '—（该收益率在此年限下溢出）' },
+						],
+					};
 				const rows: FormResultRow[] = [
 					{ label: 'Lump sum FV', labelZh: '一次性投入终值', ...cash(lumpFV), emphasis: true },
 					{ label: 'DCA FV', labelZh: '定投终值', ...cash(dcaFV) },
@@ -3441,7 +3449,8 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 				const inf = v.num('inflation') / 100;
 				const years = Math.max(0, v.num('years') || 0);
 				const amount = v.num('amount');
-				if (inf <= -1) return { rows: [{ label: 'Result', labelZh: '结果', value: '— (inflation must be > −100%)', valueZh: '—（通胀率需大于 −100%）' }] };
+				if (inf <= -1 || !Number.isFinite(n) || !(amount > 0))
+					return { rows: [{ label: 'Result', labelZh: '结果', value: '— (inflation must be > −100%)', valueZh: '—（通胀率需大于 −100%）' }] };
 				const real = (1 + n) / (1 + inf) - 1;
 				const nominalFV = amount * (1 + n) ** years;
 				const realFV = amount * ((1 + n) / (1 + inf)) ** years;

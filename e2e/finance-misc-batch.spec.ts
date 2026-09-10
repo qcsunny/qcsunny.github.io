@@ -57,9 +57,11 @@ test('timezone converter with world clock table', async ({ page }) => {
 test('css clamp emits px and rem forms', async ({ page }) => {
 	await page.goto('/devtools/css-clamp/');
 	const results = page.locator('.t-results');
-	await expect(results).toContainText('clamp(16px');
-	await expect(results).toContainText('rem');
-	await expect(results).toContainText('1920px'); // sample value row
+	// The generated CSS rides in the note (identical in both languages);
+	// sample values live in the rows.
+	await expect(page.locator('.t-note')).toContainText('clamp(16px');
+	await expect(page.locator('.t-note')).toContainText('rem');
+	await expect(results).toContainText('320px'); // sample value row
 });
 
 test('wcag contrast: 4.54 with pass and fail verdicts', async ({ page }) => {

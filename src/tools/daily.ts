@@ -613,7 +613,8 @@ export const DAILY_TOOLS: ToolEntry[] = [
 				};
 				let utc = wallAsUtc - offsetOf(from, wallAsUtc);
 				utc = wallAsUtc - offsetOf(from, utc);
-				const fmt = (zone: string, at: number): { time: string; date: string; wd: string } => {
+				const WD_ZH: Record<string, string> = { Mon: '星期一', Tue: '星期二', Wed: '星期三', Thu: '星期四', Fri: '星期五', Sat: '星期六', Sun: '星期日' };
+				const fmt = (zone: string, at: number): { time: string; date: string; wdEn: string; wdZh: string } => {
 					const d = new Date(at);
 					const p = new Intl.DateTimeFormat('en-GB', {
 						timeZone: zone,
@@ -627,8 +628,12 @@ export const DAILY_TOOLS: ToolEntry[] = [
 					}).formatToParts(d);
 					const get = (t: string): string => p.find((x) => x.type === t)?.value ?? '';
 					const wdEn = get('weekday');
-					const weekday = { Mon: '星期一', Tue: '星期二', Wed: '星期三', Thu: '星期四', Fri: '星期五', Sat: '星期六', Sun: '星期日' }[wdEn] ?? wdEn;
-					return { time: `${get('hour')}:${get('minute')}`, date: `${get('year')}-${get('month')}-${get('day')}`, wd: `${wdEn} ${weekday}` };
+					return {
+						time: `${get('hour')}:${get('minute')}`,
+						date: `${get('year')}-${get('month')}-${get('day')}`,
+						wdEn,
+						wdZh: WD_ZH[wdEn] ?? wdEn,
+					};
 				};
 				const target = fmt(to, utc);
 				const source = fmt(from, utc);
@@ -641,7 +646,7 @@ export const DAILY_TOOLS: ToolEntry[] = [
 						valueZh: `${target.time} ${target.date}`,
 						emphasis: true,
 					},
-					row('Weekday', '星期', target.wd),
+					row('Weekday', '星期', target.wdEn, target.wdZh),
 					row('Time difference', '时差', `${diffH >= 0 ? '+' : ''}${formatNumber(diffH)} h`),
 				];
 				// The world clock: the same instant across the major zones.
@@ -650,7 +655,7 @@ export const DAILY_TOOLS: ToolEntry[] = [
 					columnsZh: ['城市', '时间', '日期', '星期'],
 					rows: ZONES.map((z) => {
 						const t = fmt(z.tz, utc);
-						return [z.label, t.time, t.date, t.wd.split(' ')[0] ?? t.wd];
+						return [z.label, t.time, t.date, t.wdEn];
 					}),
 				};
 				// zh weekday column: the table cells carry words, not digits
@@ -658,7 +663,7 @@ export const DAILY_TOOLS: ToolEntry[] = [
 					columns: ['城市', '时间', '日期', '星期'],
 					rows: ZONES.map((z) => {
 						const t = fmt(z.tz, utc);
-						return [z.labelZh, t.time, t.date, t.wd.split(' ')[1] ?? t.wd];
+						return [z.labelZh, t.time, t.date, t.wdZh];
 					}),
 				};
 				return { rows, table: { ...table, rowsZh: tableZh.rows, columnsZh: tableZh.columns } };

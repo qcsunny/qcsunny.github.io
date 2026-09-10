@@ -90,10 +90,12 @@ test('the search index is external, and each file stays small', () => {
 	const blog = forIdx('search-blog.json');
 	// Raw size (the file is on disk; the host compresses in flight — the brotli
 	// numbers land ~13/9 KB, smaller than the old inline block ever was). The
-	// ceilings sit ~30% above the 2026-09 levels (84 tools ≈ 38 KB / 47 posts
-	// ≈ 33 KB) so a couple of tool batches fit without renegotiation, while a
-	// runaway growth still trips the pin.
-	expect(tools[1], `${tools[0]} raw size`).toBeLessThan(50_000);
+	// tool ceiling was raised once, 2026-09-11, when the 40-tool gap batch
+	// took the registry 84 → 118 tools: descriptions in the index are now
+	// capped at 120 code points (search-index.mjs), which pins the per-tool
+	// row at ~460 bytes, so 60 KB ≈ 130 tools of linear, predictable growth —
+	// a runaway (untruncated descs, keyword stuffing) still trips the pin.
+	expect(tools[1], `${tools[0]} raw size`).toBeLessThan(60_000);
 	expect(blog[1], `${blog[0]} raw size`).toBeLessThan(45_000);
 });
 
