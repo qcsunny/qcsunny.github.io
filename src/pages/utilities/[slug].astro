@@ -51,13 +51,20 @@ const textConfig = entry.kind === 'text' ? (entry.config as TextConfig) : undefi
 								<>
 									<div class="t-btnrow">
 										{textConfig.transforms.map((t) => (
-											<button type="button" class="t-btn">
-												<span class="i18n-en">{t.label}</span>
-												{t.labelZh && t.labelZh !== t.label && (
+										<button type="button" class="t-btn">
+											{t.labelZh && t.labelZh !== t.label ? (
+												<>
+													<span class="i18n-en">{t.label}</span>
 													<span class="i18n-zh">{t.labelZh}</span>
-												)}
-											</button>
-										))}
+												</>
+											) : (
+												// identical in both languages: a bare text node, NOT a lone
+												// .i18n-en span — the global CSS hides .i18n-en in the Chinese
+												// view, which left these buttons blank (csv-json-converter).
+												t.label
+											)}
+										</button>
+									))}
 									</div>
 									<span class="t-label t-out-label">
 										<span class="i18n-en">Output</span>
