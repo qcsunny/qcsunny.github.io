@@ -11,6 +11,9 @@
 // declaration order *is* the ranking.
 
 import type { TextConfig, ToolEntry } from './registry';
+import { HTTP_STATUSES } from './httpStatus';
+import { MIME_MAP } from './mimeTypes';
+import { parseUa } from './useragent';
 
 /** YAML transforms share the same bilingual error shape: the parser throws
  *  Error("line N: message"), which we surface verbatim in both views. */
@@ -109,6 +112,103 @@ function jsonDiff(a: unknown, b: unknown, path = '$', out: JsonDiff[] = [], cap 
 		out.push({ path, kind: 'changed', a: show(a), b: show(b) });
 	}
 	return out;
+}
+
+// --- web/seo batch helpers ----------------------------------------------------------------
+
+/** Match status codes by number or keyword across name/meaning/cause. */
+function matchStatuses(text: string) {
+	const q = text.trim().toLowerCase();
+	if (!q) return [];
+	if (/^\d{3}$/.test(q)) return HTTP_STATUSES.filter((e) => String(e.code) === q);
+	if (/^\d+$/.test(q)) return HTTP_STATUSES.filter((e) => String(e.code).startsWith(q));
+	const hits = HTTP_STATUSES.filter((e) => `${e.name} ${e.nameZh} ${e.meaning} ${e.meaningZh} ${e.cause} ${e.causeZh}`.toLowerCase().includes(q));
+	return hits;
+}
+
+function matchMime(text: string) {
+	const q = text.trim().toLowerCase().replace(/^\./, '');
+	if (!q) return [];
+	if (q.includes('/')) return MIME_MAP.filter((m) => m.mime === q);
+	return MIME_MAP.filter((m) => m.ext === q);
+}
+
+function noMime(t: string): { output: string; error: string; errorZh: string } {
+	return {
+		output: '',
+		error: `No MIME entry matches "${t.trim().slice(0, 40)}" — try ".pdf", "font/woff2", or an extension without the dot.`,
+		errorZh: `没有匹配 "${t.trim().slice(0, 40)}" 的条目——试试 ".pdf"、"font/woff2"，或不带点的扩展名。`,
+	};
+}
+
+/** robots DSL → canonical robots.txt. Lines: user-agent / disallow / allow /
+ *  sitemap / crawl-delay / blank (new group). Everything else is an error. */
+function robotsFromDsl(text: string): { output: string; errors: string[] } {
+	const lines: string[] = [];
+	const errors: string[] = [];
+	for (const raw of text.split('\n')) {
+		const t = raw.trim();
+		if (!t) {
+			if (lines.length && lines[lines.length - 1] !== '') lines.push('');
+			continue;
+		}
+		const m = /^([a-z-]+)\s*:\s*(.*)$/i.exec(t);
+		if (!m) {
+			errors.push(`✗ Cannot parse: "${t.slice(0, 50)}" — every line must be "directive: value".`, `✗ 无法解析："${t.slice(0, 50)}"——每行必须是 "指令: 值"。`);
+			break;
+		}
+		const [, directive, value] = m;
+		const d = directive.toLowerCase();
+		if (!['user-agent', 'disallow', 'allow', 'sitemap', 'crawl-delay'].includes(d)) {
+			errors.push(`✗ Unknown directive "${d}" — allowed: user-agent, disallow, allow, sitemap, crawl-delay.`, `✗ 未知指令 "${d}"——可用：user-agent、disallow、allow、sitemap、crawl-delay。`);
+			break;
+		}
+		if (d === 'crawl-delay') lines.push(`Crawl-delay: ${value}`);
+		else lines.push(`${d.charAt(0).toUpperCase() + d.slice(1)}: ${value}`);
+	}
+	if (errors.length) return { output: '', errors };
+	while (lines.length && lines[lines.length - 1] === '') lines.pop();
+	return { output: lines.join('\n') + '\n', errors: [] };
+}
+
+function lintRobots(text: string): string[] {
+	const problems: string[] = [];
+	const lines = text.split('\n');
+	let sawDirective = false;
+	let groupHasAgent = false;
+	for (const raw of lines) {
+		const t = raw.trim();
+		if (!t || t.startsWith('#')) continue;
+		const m = /^([a-zA-Z-]+)\s*:\s*(.*)$/.exec(t);
+		if (!m) {
+			problems.push(`✗ Unparseable line 无法解析: "${t.slice(0, 60)}"`);
+			continue;
+		}
+		const d = m[1]!.toLowerCase();
+		const v = m[2] ?? '';
+		sawDirective = true;
+		if (!['user-agent', 'disallow', 'allow', 'sitemap', 'crawl-delay'].includes(d)) {
+			problems.push(`✗ Unknown directive 未知指令: "${d}" ${d === 'disalow' || d === 'dissallow' ? '(typo for disallow? 拼写错误？)' : ''}`);
+			continue;
+		}
+		if (d === 'user-agent') groupHasAgent = true;
+		if ((d === 'disallow' || d === 'allow') && !groupHasAgent)
+			problems.push(`✗ "${t.slice(0, 40)}" comes before any User-agent — it applies to nothing. 该行出现在任何 User-agent 之前，不会生效。`);
+		if (d === 'sitemap' && !/^https?:\/\//.test(v))
+			problems.push(`✗ Sitemap should be an absolute URL sitemap 应为绝对 URL: "${v.slice(0, 60)}"`);
+	}
+	if (!problems.length && !sawDirective) problems.push('✗ No directives found 没有找到任何指令。');
+	if (!/sitemap\s*:/i.test(text) && !problems.length)
+		problems.push('⚠ No Sitemap line — adding one helps crawlers discover everything. 缺少 Sitemap 行——补上有利于收录。');
+	return problems;
+}
+
+function escXml(s: string): string {
+	return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+}
+
+function humanCount(n: number): string {
+	return n < 1024 ? `${n} B` : `${(n / 1024).toFixed(1)} KB`;
 }
 
 // --- word counter ---------------------------------------------------------------------
@@ -2025,6 +2125,277 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 		description: 'Infer a draft-07 schema from a JSON document, then validate documents against it — errors listed by JSON path, all in your browser.',
 		descriptionZh: '从 JSON 文档推导 draft-07 Schema，再据此校验其他文档——错误按 JSON 路径列出，全程浏览器本地。',
 		kind: 'jsonschema',
+	},
+
+	{
+		slug: 'http-status-lookup',
+		category: 'devtools',
+		name: 'HTTP Status Code Lookup',
+		nameZh: 'HTTP 状态码查询',
+		description: 'Look up any HTTP status code — or search by keyword ("redirect", "teapot", "timeout") — with meaning and typical causes in both languages.',
+		descriptionZh: '查询任意 HTTP 状态码——也支持关键词搜索（"redirect"、"teapot"、"timeout"）——中英双语给出含义与常见原因。',
+		kind: 'text',
+		config: {
+			def: '404',
+			placeholder: 'A code (404) or keyword (redirect, timeout…)',
+			placeholderZh: '状态码（404）或关键词（redirect、timeout…）',
+			mono: true,
+			stats: (text: string) => [
+				{ label: 'Matching codes', labelZh: '匹配的状态码', value: String(matchStatuses(text).length) },
+				{ label: 'Codes in reference', labelZh: '收录状态码', value: String(HTTP_STATUSES.length) },
+			],
+			transforms: [
+				{
+					id: 'lookup',
+					label: 'Look up',
+					labelZh: '查询',
+					run: (t) => {
+						const found = matchStatuses(t);
+						if (!found.length)
+							return { output: '', error: 'No status code matches — try a number (100-599) or a keyword like "redirect".', errorZh: '没有匹配的状态码——试试数字（100–599）或关键词，如 "redirect"。' };
+						const blocks = found.slice(0, 8).map(
+							(e) =>
+								`${e.code} ${e.name} ${e.nameZh}\n` +
+								`  Meaning 含义: ${e.meaning}\n  ${e.meaningZh}\n` +
+								`  Typical causes 常见原因: ${e.cause}\n  ${e.causeZh}`,
+						);
+						return { output: blocks.join('\n\n') };
+					},
+				},
+			],
+		},
+	},
+	{
+		slug: 'mime-type-lookup',
+		category: 'devtools',
+		name: 'MIME Type Lookup',
+		nameZh: 'MIME 类型查询',
+		description: 'Map file extensions to MIME types and back: .pdf ↔ application/pdf, .woff2 ↔ font/woff2 — with the practical notes servers actually need.',
+		descriptionZh: '文件扩展名与 MIME 类型互查：.pdf ↔ application/pdf、.woff2 ↔ font/woff2——附服务器实践所需的备注。',
+		kind: 'text',
+		config: {
+			def: '.pdf',
+			placeholder: 'Extension (.pdf) or MIME type (application/pdf)',
+			placeholderZh: '扩展名（.pdf）或 MIME 类型（application/pdf）',
+			mono: true,
+			stats: (text: string) => [{ label: 'Matching types', labelZh: '匹配的类型', value: String(matchMime(text).length) }],
+			transforms: [
+				{
+					id: 'ext2mime',
+					label: 'Extension → MIME',
+					labelZh: '扩展名 → MIME',
+					run: (t) => {
+						const found = matchMime(t);
+						if (!found.length) return noMime(t);
+						return { output: found.map((m) => `.${m.ext.padEnd(14)} ${m.mime}${m.note ? `  (${m.note} · ${m.noteZh})` : ''}`).join('\n') };
+					},
+				},
+				{
+					id: 'mime2ext',
+					label: 'MIME → extensions',
+					labelZh: 'MIME → 扩展名',
+					run: (t) => {
+						const q = t.trim().toLowerCase();
+						if (!q) return { output: '', error: 'Enter a MIME type (e.g. application/pdf).', errorZh: '请输入 MIME 类型（如 application/pdf）。' };
+						const hits = MIME_MAP.filter((m) => m.mime === q);
+						if (!hits.length) return noMime(t);
+						return { output: hits.map((m) => `${m.mime} → .${m.ext}`).join('\n') };
+					},
+				},
+			],
+		},
+	},
+	{
+		slug: 'user-agent-parser',
+		category: 'devtools',
+		name: 'User-Agent Parser',
+		nameZh: 'User-Agent 解析器',
+		description: 'Paste any User-Agent string and get browser, version, engine, operating system and device class — with crawler and bot detection.',
+		descriptionZh: '粘贴任意 User-Agent 字符串，解析浏览器、版本、引擎、操作系统与设备类型——并识别爬虫与机器人。',
+		kind: 'text',
+		config: {
+			def: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+			placeholder: 'Paste a User-Agent string…',
+			placeholderZh: '粘贴 User-Agent 字符串…',
+			mono: true,
+			stats: (text: string) => {
+				const ua = parseUa(text);
+				if (!ua) return [{ label: 'Status', labelZh: '状态', value: '— (paste a UA string)' }];
+				return [
+					{ label: 'Browser', labelZh: '浏览器', value: ua.browser },
+					{ label: 'OS', labelZh: '操作系统', value: ua.os },
+					{ label: 'Device', labelZh: '设备类型', value: ua.device },
+					...(ua.bot ? [{ label: 'Bot', labelZh: '爬虫', value: 'YES' }] : []),
+				];
+			},
+			transforms: [
+				{
+					id: 'report',
+					label: 'Full report',
+					labelZh: '完整报告',
+					run: (t) => {
+						const ua = parseUa(t);
+						if (!ua) return { output: '', error: 'Paste a User-Agent string first.', errorZh: '请先粘贴 User-Agent 字符串。' };
+						const lines = [
+							['Browser 浏览器', `${ua.browser} / ${ua.browserZh}${ua.version ? ` · v${ua.version}` : ''}`],
+							['Engine 引擎', `${ua.engine} / ${ua.engineZh}`],
+							['OS 操作系统', `${ua.os} / ${ua.osZh}`],
+							['Device 设备', `${ua.device} / ${ua.deviceZh}`],
+							['Bot 爬虫', ua.bot ? 'YES · detected as a bot' : 'NO · human-facing browser'],
+						];
+						return { output: lines.map(([l, v]) => `${l.padEnd(24)} ${v}`).join('\n') };
+					},
+				},
+			],
+		},
+	},
+	{
+		slug: 'media-info',
+		category: 'devtools',
+		name: 'Media Info (Video · Audio Metadata)',
+		nameZh: '媒体信息查看器（视频/音频元数据）',
+		description: 'Drop an MP4/MOV, WebM/MKV or WAV file and read codec, resolution, duration, frame rate and audio channels — parsed byte-by-byte in your browser, never uploaded.',
+		descriptionZh: '拖入 MP4/MOV、WebM/MKV 或 WAV 文件，读取编码、分辨率、时长、帧率与音频声道——逐字节本地解析，绝不上传。',
+		kind: 'text',
+		config: {
+			placeholder: 'Drop a media file onto this box — or pick one below…',
+			placeholderZh: '把媒体文件拖到此框——或点击下方按钮选择…',
+			mono: true,
+			// Binary path: bytes straight into the box parsers (MP4 boxes, EBML,
+			// RIFF), with the browser's own media stack as a fallback. The bytes
+			// never leave the page.
+			fileTransform: async (data, name, size) => {
+				const { mediaInfo } = await import('../scripts/tools/mediainfo');
+				return mediaInfo(data, name, size);
+			},
+			transforms: [
+				{
+					id: 'how',
+					label: 'How it works',
+					labelZh: '工作原理',
+					run: () => ({
+						output:
+							'Drop a file (or use the 📄 button). The bytes are parsed locally:\n' +
+							'  · MP4 / MOV — ISO-BMFF boxes (ftyp / moov / trak / stsd / stts)\n' +
+							'  · WebM / MKV — EBML elements (Duration / Tracks / CodecID)\n' +
+							'  · WAV — RIFF fmt/data chunks\n' +
+							'Unknown containers fall back to the browser\u2019s decoder for what it can read.\n' +
+							'\n文件拖入后完全本地解析：MP4/MOV 走 box 结构，WebM/MKV 走 EBML，WAV 读 RIFF 头；未知容器由浏览器解码兜底。文件不会上传。',
+					}),
+				},
+			],
+		},
+	},
+	{
+		slug: 'robots-txt-generator',
+		category: 'devtools',
+		name: 'robots.txt Generator & Validator',
+		nameZh: 'robots.txt 生成与校验',
+		description: 'Write rules in a simple line format (user-agent / disallow / allow / sitemap) and get a valid robots.txt — or lint an existing one for typos and order mistakes.',
+		descriptionZh: '用简单的行格式（user-agent / disallow / allow / sitemap）书写规则并生成合法的 robots.txt——或校验现有文件，揪出拼写与顺序错误。',
+		kind: 'text',
+		config: {
+			def: 'user-agent: *\ndisallow: /admin\ndisallow: /private/\nallow: /private/public/\n\nuser-agent: GPTBot\ndisallow: /\n\nsitemap: https://example.com/sitemap.xml',
+			placeholder: 'user-agent: *\ndisallow: /private',
+			placeholderZh: 'user-agent: *\ndisallow: /private',
+			mono: true,
+			live: false,
+			transforms: [
+				{
+					id: 'generate',
+					label: 'Generate robots.txt',
+					labelZh: '生成 robots.txt',
+					run: (t) => {
+						const { output, errors } = robotsFromDsl(t);
+						if (errors.length) return { output: '', error: errors[0], errorZh: errors[1] ?? errors[0] };
+						return { output };
+					},
+				},
+				{
+					id: 'validate',
+					label: 'Validate / lint',
+					labelZh: '校验 / 检查',
+					run: (t) => {
+						const problems = lintRobots(t);
+						if (!problems.length)
+							return { output: '✓ No problems found — directives, order and sitemap all check out.\n✓ 未发现问题——指令、顺序与 sitemap 均合规。' };
+						return { output: problems.join('\n') };
+					},
+				},
+			],
+		},
+	},
+	{
+		slug: 'sitemap-xml-generator',
+		category: 'devtools',
+		name: 'sitemap.xml Generator & Validator',
+		nameZh: 'sitemap.xml 生成与校验',
+		description: 'Paste one URL per line (optionally "url, lastmod") and get a valid sitemap.xml — or validate a pasted sitemap: URL count, limits, malformed entries.',
+		descriptionZh: '每行一个 URL（可选 "url, lastmod"）生成合法 sitemap.xml——或校验粘贴的 sitemap：URL 数量、上限与格式问题。',
+		kind: 'text',
+		config: {
+			def: 'https://example.com/\nhttps://example.com/about\nhttps://example.com/tools, 2026-09-01',
+			placeholder: 'https://example.com/page\nhttps://example.com/other, 2026-09-01',
+			placeholderZh: 'https://example.com/page\nhttps://example.com/other, 2026-09-01',
+			mono: true,
+			transforms: [
+				{
+					id: 'generate',
+					label: 'Generate sitemap.xml',
+					labelZh: '生成 sitemap.xml',
+					run: (t) => {
+						const entries = t
+							.split('\n')
+							.map((l) => l.trim())
+							.filter(Boolean)
+							.map((l) => {
+								const [url, lastmod] = l.split(',').map((s) => s.trim());
+								return { url: url ?? '', lastmod };
+							});
+						const bad = entries.filter((e) => !/^https?:\/\//.test(e.url));
+						if (!entries.length) return { output: '', error: 'Enter at least one URL.', errorZh: '请至少输入一个 URL。' };
+						if (bad.length) return { output: '', error: `These lines are not absolute URLs: ${bad.slice(0, 3).map((e) => e.url).join(', ')}`, errorZh: `以下行不是绝对 URL：${bad.slice(0, 3).map((e) => e.url).join('、')}` };
+						const urls = [...new Set(entries.map((e) => e.url))];
+						const xml =
+							'<?xml version="1.0" encoding="UTF-8"?>\n' +
+							'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+							urls
+								.map((url) => {
+									const e = entries.find((x) => x.url === url) as { url: string; lastmod?: string };
+									return `  <url>\n    <loc>${escXml(url)}</loc>\n${e.lastmod ? `    <lastmod>${e.lastmod}</lastmod>\n` : ''}  </url>`;
+								})
+								.join('\n') +
+							'\n</urlset>\n';
+						return { output: `${urls.length} URLs · ${humanCount(xml.length)}\n\n${xml}` };
+					},
+				},
+				{
+					id: 'validate',
+					label: 'Validate sitemap.xml',
+					labelZh: '校验 sitemap.xml',
+					run: (t) => {
+						const locs = [...t.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+						if (!locs.length) return { output: '', error: 'No <loc> entries found — paste a sitemap.xml to validate.', errorZh: '未找到 <loc> 条目——请粘贴待校验的 sitemap.xml。' };
+						const bad = locs.filter((u) => !/^https?:\/\//.test(u));
+						const lines = [
+							`URLs URL 数: ${locs.length}${locs.length > 50000 ? '  ⚠ over the 50,000 limit · 超过 5 万上限!' : ''}`,
+							`Unique 去重后: ${new Set(locs).size}`,
+							`Non-absolute 非绝对 URL: ${bad.length}${bad.length ? ` (${bad.slice(0, 3).join(', ')})` : ''}`,
+						];
+						return { output: lines.join('\n') };
+					},
+				},
+			],
+		},
+	},
+	{
+		slug: 'meta-tag-generator',
+		category: 'devtools',
+		name: 'Meta Tag Generator & OG Preview',
+		nameZh: 'Meta 标签生成与 OG 预览',
+		description: 'Fill in title, description, URL and image — get the full <head> tag block (meta + Open Graph + Twitter) with a live social share card preview.',
+		descriptionZh: '填写标题、描述、URL 与图片——生成完整 <head> 标签块（meta + Open Graph + Twitter），并实时预览社交分享卡片。',
+		kind: 'meta',
 	},
 
 	{
