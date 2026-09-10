@@ -21,6 +21,27 @@ function errToZh(e: unknown): string {
 	return `—（${e instanceof Error ? e.message : 'YAML 无效'}）`;
 }
 
+/** Batch engine for the per-line tools (base64, cidr, hash, case…): run f on
+ *  every non-empty line, one result per line as "input → output". A line that
+ *  throws (or returns null) is marked ✗ WITHOUT aborting the batch — the whole
+ *  point of batch mode is that one bad row must not cost you the other 200. */
+function runBatch(text: string, f: (line: string) => string | null): { output: string; error?: string; errorZh?: string } {
+	const lines = text
+		.split('\n')
+		.map((l) => l.trim())
+		.filter((l) => l.length > 0);
+	if (!lines.length) return { output: '', error: 'Enter at least one line.', errorZh: '请至少输入一行内容。' };
+	const out = lines.map((line) => {
+		try {
+			const r = f(line);
+			return r === null ? `${line} → ✗` : `${line} → ${r}`;
+		} catch {
+			return `${line} → ✗`;
+		}
+	});
+	return { output: out.join('\n') };
+}
+
 // --- word counter ---------------------------------------------------------------------
 
 const CJK_RE = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu;
@@ -1426,6 +1447,25 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 						errorZh: t ? undefined : '请先输入文本。',
 					}),
 				},
+				{
+					id: 'encodeLines',
+					label: 'Encode each line',
+					labelZh: '逐行编码',
+					run: (t) => runBatch(t, (line) => b64encode(line)),
+				},
+				{
+					id: 'decodeLines',
+					label: 'Decode each line',
+					labelZh: '逐行解码',
+					// Batch decode: one bad line is marked ✗, the rest of the list still decodes.
+					run: (t) => runBatch(t, (line) => {
+						try {
+							return b64decode(line);
+						} catch {
+							return null;
+						}
+					}),
+				},
 			],
 		} satisfies TextConfig,
 	},
@@ -1495,6 +1535,18 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 						if (!text) return { output: '—' };
 						const hash = await sha256Async(text);
 						return { output: `SHA-256 ${hash}` };
+					},
+				},
+				{
+					id: 'hashLines',
+					label: 'Hash each line',
+					labelZh: '逐行生成哈希',
+					run: async (text: string) => {
+						const lines = text.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
+						if (!lines.length) return { output: '', error: 'Enter at least one line.', errorZh: '请至少输入一行内容。' };
+						const out: string[] = [];
+						for (const line of lines) out.push(`${line} → SHA-256 ${await sha256Async(line)}`);
+						return { output: out.join('\n') };
 					},
 				},
 			],
@@ -1568,6 +1620,18 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 					labelZh: '全小写',
 					run: (t) => ({ output: t.toLowerCase(), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
 				},
+				{
+					id: 'batch',
+					label: 'Convert each line (all styles)',
+					labelZh: '逐行转换 (四种风格对照)',
+					// One row per input line, four naming styles side by side — batch mode is
+					// exactly the 'not sure which style I need' moment, so show them all.
+					run: (t) => {
+						const r = runBatch(t, (line) => `${toCamel(line)} | ${toSnake(line)} | ${toKebab(line)} | ${toConstant(line)}`);
+						if (!r.output) return r;
+						return { output: `# input → camelCase | snake_case | kebab-case | CONSTANT_CASE\n${r.output}` };
+					},
+				},
 			],
 		} satisfies TextConfig,
 	},
@@ -1636,16 +1700,44 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 					id: 'number',
 					label: 'Number in source base',
 					labelZh: '源进制下的数字',
-					type: 'text',
+					// textarea: one value per line — several lines switch the compute
+					// into a batch table (one row per input), a single line stays on
+					// the full per-base breakdown.
+					type: 'textarea',
 					def: 'ff',
-					placeholder: 'e.g. ff, 255, 11111111',
-					placeholderZh: '例如 ff、255、11111111',
+					placeholder: 'e.g. ff, 255, 11111111 — or one per line for batch',
+					placeholderZh: '例如 ff、255、11111111——批量时每行一个',
 					required: true,
 				},
 			],
 			compute: (v) => {
 				const base = Number(v.str('base') || '16');
 				const raw = v.str('number');
+				// Batch: one value per line, one result row per value. A bad line is
+				// marked invalid without sinking the rest of the list.
+				const lines = raw.split('\n').map((s) => s.trim()).filter((s) => s.length > 0);
+				if (lines.length > 1) {
+					return {
+						rows: [
+							{
+								label: 'Batch result',
+								labelZh: '批量结果',
+								value: `${lines.length} values from base ${base}`,
+								valueZh: `共 ${lines.length} 个数值（${base} 进制）`,
+								emphasis: true,
+							},
+						],
+						table: {
+							columns: ['Input', 'Binary', 'Octal', 'Decimal', 'Hexadecimal'],
+							columnsZh: ['输入', '二进制', '八进制', '十进制', '十六进制'],
+							rows: lines.map((line) => {
+								const n = parseBigInt(line, base);
+								if (n === null) return [line, '—', '—', '—', '✗ invalid'];
+								return [line, bigToBase(n, 2), bigToBase(n, 8), bigToBase(n, 10), '0x' + bigToBase(n, 16)];
+							}),
+						},
+					};
+				}
 				const n = parseBigInt(raw, base);
 				if (n === null) {
 					return {
@@ -1690,17 +1782,49 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 					id: 'seconds',
 					label: 'Unix timestamp (seconds)',
 					labelZh: 'Unix 时间戳（秒）',
-					type: 'number',
+					// textarea: one timestamp per line — several lines switch the
+					// compute into a batch table (the log-analysis case), a single
+					// line keeps the full breakdown below.
+					type: 'textarea',
 					def: '0',
-					step: 'any',
-					min: '0',
+					placeholder: 'e.g. 1760000000 — or one per line for batch',
+					placeholderZh: '例如 1760000000——批量时每行一个',
 					required: true,
-					hint: 'Seconds since 1970-01-01 00:00:00 UTC.',
-					hintZh: '自 1970-01-01 00:00:00 (UTC) 以来的秒数。',
+					hint: 'Seconds since 1970-01-01 00:00:00 UTC. Millisecond values (13 digits) are detected automatically.',
+					hintZh: '自 1970-01-01 00:00:00 (UTC) 以来的秒数；13 位毫秒值会自动识别。',
 				},
 			],
 			compute: (v) => {
-				const sec = v.num('seconds');
+				const raw = v.str('seconds');
+				const lines = raw.split('\n').map((s) => s.trim()).filter((s) => s.length > 0);
+				// Batch: one timestamp per line → one row each (the log-paste case).
+				if (lines.length > 1) {
+					const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+					return {
+						rows: [
+							{
+								label: 'Batch result',
+								labelZh: '批量结果',
+								value: `${lines.length} timestamps · ${localTz}`,
+								valueZh: `共 ${lines.length} 个时间戳 · ${localTz}`,
+								emphasis: true,
+							},
+						],
+						table: {
+							columns: ['Timestamp (s)', 'Local Time', 'UTC Time'],
+							columnsZh: ['时间戳 (秒)', '本地时间', 'UTC 时间'],
+							rows: lines.map((line) => {
+								// 13-digit values are milliseconds; a bare number is seconds.
+								let sec = Number(line);
+								if (!Number.isFinite(sec) || sec < 0) return [line, '—', '—'];
+								if (/^\d{13}$/.test(line)) sec = sec / 1000;
+								const ms = Math.round(sec * 1000);
+								return [line, stamp(ms, localTz, false), stamp(ms, 'UTC', false)];
+							}),
+						},
+					};
+				}
+				const sec = Number(raw);
 				if (!Number.isFinite(sec) || sec < 0) {
 					return {
 						rows: [
@@ -1775,10 +1899,12 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 					id: 'expr',
 					label: 'Cron expression',
 					labelZh: 'Cron 表达式',
-					type: 'text',
+					// textarea: one expression per line — several lines switch the
+					// compute into a batch table (paste a whole crontab).
+					type: 'textarea',
 					def: '0 12 * * *',
-					placeholder: 'minute hour day month weekday',
-					placeholderZh: '分 时 日 月 周',
+					placeholder: 'minute hour day month weekday — or one per line for batch',
+					placeholderZh: '分 时 日 月 周——批量时每行一条',
 					required: true,
 					hint: 'Fields are minute (0-59), hour (0-23), day of month (1-31), month (1-12) and weekday (Linux 0-7 with 0 and 7 both Sunday; Quartz 1-7 with 1=Sunday). Supports "*", ranges a-b, steps (a/n means a-max/n) and comma lists. The L/W/# modifiers are not supported.',
 					hintZh: '字段依次为：分 (0-59)、时 (0-23)、日 (1-31)、月 (1-12)、周（Linux 0-7，0 与 7 均为周日；Quartz 1-7，1 为周日）。支持 *、区间 a-b、步长（a/n 意为 a-max/n）与逗号列表。不支持 L/W/# 扩展语法。',
@@ -1817,6 +1943,46 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 				const tz: 'local' | 'UTC' = v.str('tz') === 'UTC' ? 'UTC' : 'local';
 				const count = Number(v.str('count')) || 7;
 				const spec = DIALECT_FIELDS[dialect];
+
+				// Batch: one expression per line (paste a whole crontab), one row
+				// per expression with its next fire — invalid lines are flagged ✗
+				// without sinking the rest.
+				const batchLines = expr.split('\n').map((s) => s.trim()).filter((s) => s.length > 0);
+				if (batchLines.length > 1) {
+					const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+					const table = {
+						columns: tz === 'UTC' ? ['Expression', 'Next run (UTC)'] : ['Expression', 'Next run (local)', 'Next run (UTC)'],
+						columnsZh: tz === 'UTC' ? ['表达式', '下次执行 (UTC)'] : ['表达式', '下次执行 (本地)', '下次执行 (UTC)'],
+						rows: batchLines.map((line) => {
+							const parsed = parseCron(line, dialect);
+							if (isCronError(parsed)) return tz === 'UTC' ? [line, `✗ ${parsed.error}`] : [line, `✗ ${parsed.error}`, '—'];
+							const fire = nextFire(parsed, Date.now(), tz, 1);
+							const next = fire.times[0];
+							if (next === undefined) return tz === 'UTC' ? [line, '— (never fires)'] : [line, '—', '—'];
+							return tz === 'UTC' ? [line, stamp(next, 'UTC', false)] : [line, stamp(next, localTz, false), stamp(next, 'UTC', false)];
+						}),
+						rowsZh: batchLines.map((line) => {
+							const parsed = parseCron(line, dialect);
+							if (isCronError(parsed)) return tz === 'UTC' ? [line, `✗ ${parsed.errorZh}`] : [line, `✗ ${parsed.errorZh}`, '—'];
+							const fire = nextFire(parsed, Date.now(), tz, 1);
+							const next = fire.times[0];
+							if (next === undefined) return tz === 'UTC' ? [line, '—（不会触发）'] : [line, '—', '—'];
+							return tz === 'UTC' ? [line, stamp(next, 'UTC', true)] : [line, stamp(next, localTz, true), stamp(next, 'UTC', true)];
+						}),
+					};
+					return {
+						rows: [
+							{
+								label: 'Batch result',
+								labelZh: '批量结果',
+								value: `${batchLines.length} expressions (${dialect})`,
+								valueZh: `共 ${batchLines.length} 条表达式（${dialect}）`,
+								emphasis: true,
+							},
+						],
+						table,
+					};
+				}
 
 				const parsed = parseCron(expr, dialect);
 				if (isCronError(parsed)) {
@@ -2255,6 +2421,24 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 						];
 						return { output: lines.join('\n') };
 					},
+				},
+				{
+					id: 'cidrBatch',
+					label: 'Calculate each line',
+					labelZh: '逐行批量计算',
+					// One compact summary per CIDR — for pasting an ACL or a subnet plan and
+					// eyeballing the whole list. A bad line is ✗, the list keeps going.
+					run: (text: string) =>
+						runBatch(text, (line) => {
+							if (line.includes(':')) {
+								const v6 = parseCidr6(line);
+								if (!v6) return null;
+								return `${v6.cidr} · ${v6.total} addrs (${v6.network} – ${v6.lastAddress})`;
+							}
+							const info = parseCidrCalc(line);
+							if (!info) return null;
+							return `${info.cidr} · mask ${info.netmask} · usable ${info.firstUsable}–${info.lastUsable} (${info.usableHosts} hosts)`;
+						}),
 				},
 			],
 		},
