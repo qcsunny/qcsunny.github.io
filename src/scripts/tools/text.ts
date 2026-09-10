@@ -246,12 +246,16 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 
 		if (config.live && config.transforms.length > 0) {
 			let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-			input.addEventListener('input', () => {
+			const scheduleLive = () => {
 				if (debounceTimer) clearTimeout(debounceTimer);
 				debounceTimer = setTimeout(() => {
 					executeTransform(config.transforms![0]);
 				}, 40);
-			});
+			};
+			input.addEventListener('input', scheduleLive);
+			// The secret box changes the HMAC rows of the same input, so typing a
+			// key must recompute just the same as typing text does.
+			secretInput?.addEventListener('input', scheduleLive);
 			if (input.value) {
 				executeTransform(config.transforms[0]);
 			}

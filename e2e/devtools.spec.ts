@@ -176,28 +176,36 @@ test('sql minify does not glue tokens across a dropped comment', async ({ page }
 	await expect(output).toHaveValue(/SELECT 1/);
 });
 
-test('hash generator computes SHA-256 live on input with Web Crypto', async ({ page }) => {
+test('hash generator computes all 8 algorithms live, HMAC with a secret', async ({ page }) => {
 	await page.goto('/devtools/hash-generator/');
 
 	const input = page.locator('textarea[data-role="input"]');
 	const output = page.locator('textarea[data-role="output"]');
 
-	// Standard NIST test vector: "abc" -> ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
+	// NIST vectors for "abc": every algorithm must appear with its digest.
 	await input.fill('abc');
-	await expect(output).toHaveValue(
-		'SHA-256 ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
-	);
+	await expect(output).toHaveValue(/MD5\s+900150983cd24fb0d6963f7d28e17f72/);
+	await expect(output).toHaveValue(/SHA-256\s+ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad/);
+	await expect(output).toHaveValue(/SHA-512\s+ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a/);
+	// SHA-224/384/SHA-3 are the hand-rolled cores — pin them too.
+	await expect(output).toHaveValue(/SHA-224\s+23097d223405d8228642a477bda255b32aadbce4bda0b3f7e36c9da7/);
+	await expect(output).toHaveValue(/SHA3-256\s+3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532/);
+	// No secret -> no HMAC section.
+	await expect(output).not.toHaveValue(/HMAC/);
 
 	// Verify stats update live
 	const stats = page.locator('.t-results');
 	await expect(stats).toContainText('3');
 
-	// Verify button also works
-	await input.fill('hello');
-	await page.getByRole('button', { name: /^(Generate SHA-256|生成哈希)$/ }).click();
-	await expect(output).toHaveValue(
-		'SHA-256 2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824',
-	);
+	// Secret box appends HMAC rows (RFC 4231 case 2: key "key", "The quick brown fox …").
+	await input.fill('The quick brown fox jumps over the lazy dog');
+	await page.locator('#t-secret').fill('key');
+	await expect(output).toHaveValue(/SHA-256\s+f7bc83f430538424b13298e6aa6fb143ef4d59a14946175997479dbc2d1a3cd8/);
+
+	// "HMAC only" button: just the three HMAC rows, and it errors without a secret.
+	await page.locator('#t-secret').fill('');
+	await page.getByRole('button', { name: /^(HMAC only|仅计算 HMAC)$/ }).click();
+	await expect(page.locator('.t-error')).toContainText(/secret/i);
 });
 
 
