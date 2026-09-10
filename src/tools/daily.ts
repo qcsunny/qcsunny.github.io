@@ -34,6 +34,24 @@ function parseYmd(s: string): Ymd | null {
 	return { y, m: mo, d };
 }
 
+
+// The world clock set: zones people actually schedule across. IANA keys are
+// the runtime truth; labels are for reading.
+const ZONES: { tz: string; label: string; labelZh: string }[] = [
+	{ tz: 'Asia/Shanghai', label: 'Beijing / Shanghai', labelZh: '北京 / 上海' },
+	{ tz: 'Asia/Tokyo', label: 'Tokyo', labelZh: '东京' },
+	{ tz: 'Asia/Singapore', label: 'Singapore', labelZh: '新加坡' },
+	{ tz: 'Asia/Dubai', label: 'Dubai', labelZh: '迪拜' },
+	{ tz: 'Asia/Kolkata', label: 'Mumbai / Delhi', labelZh: '孟买 / 德里' },
+	{ tz: 'Europe/Moscow', label: 'Moscow', labelZh: '莫斯科' },
+	{ tz: 'Europe/Berlin', label: 'Berlin / Paris', labelZh: '柏林 / 巴黎' },
+	{ tz: 'Europe/London', label: 'London', labelZh: '伦敦' },
+	{ tz: 'America/New_York', label: 'New York', labelZh: '纽约' },
+	{ tz: 'America/Chicago', label: 'Chicago', labelZh: '芝加哥' },
+	{ tz: 'America/Los_Angeles', label: 'Los Angeles', labelZh: '洛杉矶' },
+	{ tz: 'Australia/Sydney', label: 'Sydney', labelZh: '悉尼' },
+];
+
 const pad2 = (n: number): string => String(n).padStart(2, '0');
 const ymdStr = (p: Ymd): string => `${p.y}-${pad2(p.m)}-${pad2(p.d)}`;
 const utcMs = (p: Ymd): number => Date.UTC(p.y, p.m - 1, p.d);
@@ -527,5 +545,124 @@ export const DAILY_TOOLS: ToolEntry[] = [
 		descriptionZh: 'BMI 与 WHO 分类、健康体重范围、基础代谢率与增减重每日热量目标。',
 		kind: 'form',
 		config: bmiConfig,
+	},
+	{
+		slug: 'timezone-converter',
+		category: 'utilities',
+		name: 'Time Zone Converter & World Clock',
+		nameZh: '时区转换与世界时钟',
+		description: 'Convert a moment between any two time zones (DST handled by the browser\u2019s own tz database) and see it across 12 world cities at once.',
+		descriptionZh: '在任意两个时区间转换某一时刻（夏令时由浏览器时区数据库处理），并一次看到全球 12 个主要城市的时间。',
+		kind: 'form',
+		config: {
+			// The IANA keys are the truth; the labels only make them readable.
+			intro: 'Set a date and time in the "from" zone; the converter and the world-clock table follow. DST is handled by the browser\u2019s tz database.',
+			introZh: '设定"源时区"的日期时间，转换结果与世界时钟随之更新。夏令时由浏览器时区数据库自动处理。',
+			fields: [
+				{ id: 'date', label: 'Date', labelZh: '日期', type: 'date', def: '2026-09-11', required: true },
+				{ id: 'time', label: 'Time', labelZh: '时间', type: 'text', def: '14:30', placeholder: 'HH:MM (24h)', required: true },
+				{
+					id: 'from',
+					label: 'From zone',
+					labelZh: '源时区',
+					type: 'select',
+					def: 'Asia/Shanghai',
+					options: ZONES.map((z) => ({ value: z.tz, label: z.label })),
+				},
+				{
+					id: 'to',
+					label: 'To zone',
+					labelZh: '目标时区',
+					type: 'select',
+					def: 'America/New_York',
+					options: ZONES.map((z) => ({ value: z.tz, label: z.label })),
+				},
+			],
+			compute: (v) => {
+				const row = (label: string, labelZh: string, value: string, valueZh = value) => ({ label, labelZh, value, valueZh });
+				const from = v.str('from');
+				const to = v.str('to');
+				const dateStr = v.str('date');
+				const timeStr = v.str('time');
+				const tm = /^(\d{1,2}):(\d{2})$/.exec(timeStr.trim());
+				if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr) || !tm)
+					return { rows: [row('Input', '输入', '— (need a date and HH:MM time)', '—（需要日期与 HH:MM 时间）')] };
+				const wallAsUtc = Date.parse(`${dateStr}T${pad2(Number(tm[1]))}:${tm[2]}:00Z`);
+				if (!Number.isFinite(wallAsUtc))
+					return { rows: [row('Input', '输入', '— (the date/time is not valid)', '—（日期/时间无效）')] };
+				// wall time in `from` -> UTC: subtract the zone offset, iterating once
+				// so a DST boundary in the gap lands on the right instant.
+				const offsetOf = (zone: string, at: number): number => {
+					try {
+						const parts = new Intl.DateTimeFormat('en-US', {
+							timeZone: zone,
+							hour12: false,
+							year: 'numeric',
+							month: '2-digit',
+							day: '2-digit',
+							hour: '2-digit',
+							minute: '2-digit',
+							second: '2-digit',
+						}).formatToParts(new Date(at));
+						const get = (t: string): string => parts.find((p) => p.type === t)?.value ?? '0';
+						const asUtc = Date.UTC(Number(get('year')), Number(get('month')) - 1, Number(get('day')), Number(get('hour')) % 24, Number(get('minute')), Number(get('second')));
+						return asUtc - at;
+					} catch {
+						return 0;
+					}
+				};
+				let utc = wallAsUtc - offsetOf(from, wallAsUtc);
+				utc = wallAsUtc - offsetOf(from, utc);
+				const fmt = (zone: string, at: number): { time: string; date: string; wd: string } => {
+					const d = new Date(at);
+					const p = new Intl.DateTimeFormat('en-GB', {
+						timeZone: zone,
+						hour12: false,
+						weekday: 'short',
+						year: 'numeric',
+						month: '2-digit',
+						day: '2-digit',
+						hour: '2-digit',
+						minute: '2-digit',
+					}).formatToParts(d);
+					const get = (t: string): string => p.find((x) => x.type === t)?.value ?? '';
+					const wdEn = get('weekday');
+					const weekday = { Mon: '星期一', Tue: '星期二', Wed: '星期三', Thu: '星期四', Fri: '星期五', Sat: '星期六', Sun: '星期日' }[wdEn] ?? wdEn;
+					return { time: `${get('hour')}:${get('minute')}`, date: `${get('year')}-${get('month')}-${get('day')}`, wd: `${wdEn} ${weekday}` };
+				};
+				const target = fmt(to, utc);
+				const source = fmt(from, utc);
+				const diffH = (offsetOf(to, utc) - offsetOf(from, utc)) / 3600000;
+				const rows = [
+					{
+						label: `Time in ${to}`,
+						labelZh: `${to} 的时间`,
+						value: `${target.time} ${target.date}`,
+						valueZh: `${target.time} ${target.date}`,
+						emphasis: true,
+					},
+					row('Weekday', '星期', target.wd),
+					row('Time difference', '时差', `${diffH >= 0 ? '+' : ''}${formatNumber(diffH)} h`),
+				];
+				// The world clock: the same instant across the major zones.
+				const table = {
+					columns: ['City', 'Time', 'Date', 'Weekday'],
+					columnsZh: ['城市', '时间', '日期', '星期'],
+					rows: ZONES.map((z) => {
+						const t = fmt(z.tz, utc);
+						return [z.label, t.time, t.date, t.wd.split(' ')[0] ?? t.wd];
+					}),
+				};
+				// zh weekday column: the table cells carry words, not digits
+				const tableZh = {
+					columns: ['城市', '时间', '日期', '星期'],
+					rows: ZONES.map((z) => {
+						const t = fmt(z.tz, utc);
+						return [z.labelZh, t.time, t.date, t.wd.split(' ')[1] ?? t.wd];
+					}),
+				};
+				return { rows, table: { ...table, rowsZh: tableZh.rows, columnsZh: tableZh.columns } };
+			},
+		},
 	},
 ];

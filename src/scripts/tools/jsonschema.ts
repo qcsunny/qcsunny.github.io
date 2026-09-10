@@ -252,6 +252,12 @@ export function initJsonSchema(host: HTMLElement): void {
 	// The workbench clears the host, so the schema box goes in after it renders.
 	host.insertBefore(schemaRow, host.firstChild ?? null);
 
+	// First visit shows content, not blank boxes: preload the sample document
+	// and generate its schema, so every box on the page is self-explaining.
+	wb.inputArea.value =
+		'{\n  "name": "example",\n  "version": 2,\n  "price": 9.99,\n  "tags": ["a", "b"],\n  "meta": { "draft": true, "authors": null }\n}';
+	doGenerate();
+
 	// The validation report is plain text in a <textarea>; rebuild it in the
 	// other language on every switch. Only error reports carry prose, so the
 	// rebuild just re-runs the last action.
