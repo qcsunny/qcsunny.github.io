@@ -1,7 +1,7 @@
 // Hardware-accelerated OKLab / OKLCH Chromaticity & Gamut Slice (sRGB vs Display P3)
 // Zero third-party dependencies: Native WebGL 2/1 with pure Canvas 2D CPU fallback.
 
-import { isZh } from './i18n';
+import { bilingual, isZh } from './i18n';
 
 export interface RgbColor {
 	r: number;
@@ -67,6 +67,22 @@ export function oklabToRgb(L: number, a: number, b: number): { r: number; g: num
 		b: Math.round(linearToSrgb(clamp01(lb)) * 255),
 		inSrgb,
 	};
+}
+
+/** Pull the chroma of an OKLab color back along its own hue until it sits
+ *  inside sRGB. Channel-clamping instead (oklabToRgb's per-channel clamp)
+ *  shifts the hue — a click in the out-of-gamut area would land on a color
+ *  that does not match where it was clicked; this keeps the direction. */
+export function clampOklabToSrgb(L: number, a: number, b: number): { a: number; b: number } {
+	if (oklabToRgb(L, a, b).inSrgb) return { a, b };
+	let lo = 0;
+	let hi = 1;
+	for (let i = 0; i < 20; i++) {
+		const mid = (lo + hi) / 2;
+		if (oklabToRgb(L, a * mid, b * mid).inSrgb) lo = mid;
+		else hi = mid;
+	}
+	return { a: a * lo, b: b * lo };
 }
 
 export interface GamutController {
@@ -190,6 +206,36 @@ export function initColorGamut(
 	}
 
 	const ctx = canvas2d?.getContext('2d') || null;
+
+	// --- lightness slider ---------------------------------------------------------
+	// The slice shows the a-b plane at ONE lightness; without this slider the
+	// only way to move between slices was to type a different color somewhere
+	// else first. Sweeping L here re-slices live (and the current hue/chroma
+	// follow, pulled back into sRGB when the slice's gamut is narrower).
+	const controlsRow = document.createElement('div');
+	controlsRow.className = 't-gamut-controls';
+	const lLabel = document.createElement('label');
+	lLabel.htmlFor = 't-gamut-l';
+	lLabel.append(bilingual('Lightness', '亮度'));
+	const lSlider = document.createElement('input');
+	lSlider.type = 'range';
+	lSlider.id = 't-gamut-l';
+	lSlider.min = '0';
+	lSlider.max = '1';
+	lSlider.step = '0.001';
+	lSlider.value = String(currentOklab.L);
+	const lVal = document.createElement('span');
+	lVal.className = 't-gamut-lval';
+	lVal.textContent = `${Math.round(currentOklab.L * 100)}%`;
+	controlsRow.append(lLabel, lSlider, lVal);
+	card.append(controlsRow);
+
+	lSlider.addEventListener('input', () => {
+		const L = Number(lSlider.value);
+		const { a, b } = clampOklabToSrgb(L, currentOklab.a, currentOklab.b);
+		const picked = oklabToRgb(L, a, b);
+		onSelectRgb({ r: picked.r, g: picked.g, b: picked.b });
+	});
 
 	function toScreen(a: number, b: number, w: number, h: number): { x: number; y: number } {
 		const x = ((a - -0.35) / (0.35 - -0.35)) * w;
@@ -325,7 +371,10 @@ export function initColorGamut(
 		const px = e.clientX - rect.left;
 		const py = e.clientY - rect.top;
 		const { a, b } = fromScreen(px, py, rect.width, rect.height);
-		const picked = oklabToRgb(currentOklab.L, a, b);
+		// Out-of-gamut clicks snap to the gamut edge along the clicked hue,
+		// so the picked color always matches the direction of the click.
+		const inGamut = clampOklabToSrgb(currentOklab.L, a, b);
+		const picked = oklabToRgb(currentOklab.L, inGamut.a, inGamut.b);
 		onSelectRgb({ r: picked.r, g: picked.g, b: picked.b });
 	}
 
@@ -356,6 +405,10 @@ export function initColorGamut(
 		update(rgb: RgbColor): void {
 			currentRgb = rgb;
 			currentOklab = rgbToOklab(rgb.r, rgb.g, rgb.b);
+			// keep the slider in step when the color changed elsewhere (hex
+			// input, RGB fields, a slice click)
+			lSlider.value = String(currentOklab.L);
+			lVal.textContent = `${Math.round(currentOklab.L * 100)}%`;
 			render();
 		},
 		destroy(): void {

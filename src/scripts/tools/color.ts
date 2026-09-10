@@ -28,13 +28,20 @@ function rgbToHex({ r, g, b }: Rgb): string {
 	return `#${h(r)}${h(g)}${h(b)}`;
 }
 
-function hexToRgb(hex: string): Rgb | null {
-	const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(hex.trim());
+/** Parse #rgb / #rgba / #rrggbb / #rrggbbaa. Alpha defaults to 1. */
+function hexToRgb(hex: string): Rgb & { a: number } | null {
+	const m = /^#?([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.exec(hex.trim());
 	if (!m) return null;
 	let s = m[1]!;
-	if (s.length === 3) s = [...s].map((c) => c + c).join('');
+	// 3/4-digit shorthand doubles each digit, landing on 6 or 8 hex digits
+	if (s.length === 3 || s.length === 4) s = [...s].map((c) => c + c).join('');
+	let a = 1;
+	if (s.length === 8) {
+		a = parseInt(s.slice(6, 8), 16) / 255;
+		s = s.slice(0, 6);
+	}
 	const n = parseInt(s, 16);
-	return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+	return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255, a };
 }
 
 function rgbToHsl({ r, g, b }: Rgb): Hsl {
@@ -153,7 +160,31 @@ export function initColor(host: HTMLElement): void {
 	});
 	hslField.append(hslLabel, hslRow);
 
-	groups.append(hexField, rgbField, hslField);
+	// Alpha — the fourth channel. It is NOT part of OKLab/OKLCH (no colour
+	// space models opacity); it rides alongside as CSS's /α notation. The
+	// gamut slice and the WCAG contrast checker work on the solid colour.
+	const alphaField = document.createElement('div');
+	alphaField.className = 't-field t-colorfield';
+	const alphaLabel = document.createElement('label');
+	alphaLabel.htmlFor = 't-alpha';
+	alphaLabel.append(bilingual('Alpha', '透明度'));
+	const alphaRow = document.createElement('div');
+	alphaRow.className = 't-colorrow t-alpharow';
+	const alphaInput = document.createElement('input');
+	alphaInput.type = 'range';
+	alphaInput.id = 't-alpha';
+	alphaInput.min = '0';
+	alphaInput.max = '1';
+	alphaInput.step = '0.01';
+	alphaInput.value = '1';
+	const alphaVal = document.createElement('span');
+	alphaVal.className = 't-alphaval';
+	alphaVal.textContent = '100%';
+	alphaRow.append(alphaInput, alphaVal);
+	alphaField.append(alphaLabel, alphaRow);
+
+	groups.append(hexField, rgbField, hslField, alphaField);
+	let alpha = 1;
 
 	// --- swatches ------------------------------------------------------------------
 	const swatchRow = document.createElement('div');
@@ -366,12 +397,20 @@ export function initColor(host: HTMLElement): void {
 	});
 
 	// --- sync logic: one source of truth (RGB), fields update it ---------------------
+	let lastRgb: Rgb = { r: 35, g: 55, b: 255 };
 	function render(rgb: Rgb, source: 'hex' | 'rgb' | 'hsl' | 'none'): void {
+		lastRgb = rgb;
 		const hex = rgbToHex(rgb);
 		const hsl = rgbToHsl(rgb);
 		base.style.background = hex;
 		comp.style.background = rgbToHex(hslToRgb({ h: (hsl.h + 180) % 360, s: hsl.s, l: hsl.l }));
-		if (source !== 'hex') hexInput.value = hex;
+		if (source !== 'hex') {
+			// 8-digit hex whenever there is real transparency to convey
+			const aHex = Math.round(alpha * 255)
+				.toString(16)
+				.padStart(2, '0');
+			hexInput.value = alpha < 1 ? `${hex}${aHex}` : hex;
+		}
 		if (source !== 'rgb') {
 			const [r, g, b] = [rgbInputs[0]!, rgbInputs[1]!, rgbInputs[2]!];
 			r.value = String(Math.round(rgb.r));
@@ -384,12 +423,23 @@ export function initColor(host: HTMLElement): void {
 			s.value = String(hsl.s);
 			l.value = String(hsl.l);
 		}
-		cssHexV.textContent = hex;
-		cssRgbV.textContent = `rgb(${Math.round(rgb.r)}, ${Math.round(rgb.g)}, ${Math.round(rgb.b)})`;
-		cssHslV.textContent = `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`;
+		alphaInput.value = String(alpha);
+		alphaVal.textContent = `${Math.round(alpha * 100)}%`;
+		const aText = alpha < 1 ? ` / ${Math.round(alpha * 100) / 100}` : '';
+		cssHexV.textContent = alpha < 1
+			? `${hex}${Math.round(alpha * 255).toString(16).padStart(2, '0')}`
+			: hex;
+		cssRgbV.textContent =
+			alpha < 1
+				? `rgba(${Math.round(rgb.r)}, ${Math.round(rgb.g)}, ${Math.round(rgb.b)}, ${Math.round(alpha * 100) / 100})`
+				: `rgb(${Math.round(rgb.r)}, ${Math.round(rgb.g)}, ${Math.round(rgb.b)})`;
+		cssHslV.textContent =
+			alpha < 1
+				? `hsla(${hsl.h}, ${hsl.s}%, ${hsl.l}%, ${Math.round(alpha * 100) / 100})`
+				: `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`;
 
 		const okl = rgbToOklab(rgb.r, rgb.g, rgb.b);
-		cssOklchV.textContent = `oklch(${(okl.L * 100).toFixed(1)}% ${okl.C.toFixed(3)} ${okl.h.toFixed(1)})`;
+		cssOklchV.textContent = `oklch(${(okl.L * 100).toFixed(1)}% ${okl.C.toFixed(3)} ${okl.h.toFixed(1)}${aText})`;
 		gamutCtrl.update(rgb);
 		// The main color's own contrast readout follows the active color as the
 		// background — the classic "is this color dark enough for white text".
@@ -403,9 +453,11 @@ export function initColor(host: HTMLElement): void {
 		const rgb = hexToRgb(hexInput.value);
 		if (rgb) {
 			note.textContent = '';
+			// 4/8-digit hex carries alpha along with the colour
+			alpha = rgb.a;
 			render(rgb, 'hex');
 		} else {
-			setBilingual(note, 'HEX expects #rgb or #rrggbb.', 'HEX 需要 #rgb 或 #rrggbb 格式。');
+			setBilingual(note, 'HEX expects #rgb, #rgba, #rrggbb or #rrggbbaa.', 'HEX 需要 #rgb、#rgba、#rrggbb 或 #rrggbbaa 格式。');
 		}
 	});
 	for (const input of rgbInputs) {
@@ -436,4 +488,11 @@ export function initColor(host: HTMLElement): void {
 	}
 
 	render({ r: 35, g: 55, b: 255 }, 'none');
+
+	// Alpha is orthogonal to the colour fields: re-render the CSS rows with
+	// the current colour, transparency applied.
+	alphaInput.addEventListener('input', () => {
+		alpha = Number(alphaInput.value);
+		render(lastRgb, 'none');
+	});
 }

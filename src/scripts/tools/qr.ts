@@ -70,7 +70,16 @@ export function initQr(host: HTMLElement): void {
 	download.type = 'button';
 	download.className = 't-btn';
 	download.append(bilingual('Download PNG', '下载 PNG'));
-	actions.append(download);
+	const clear = document.createElement('button');
+	clear.type = 'button';
+	clear.className = 't-btn t-clear';
+	clear.append(bilingual('✕ Clear', '✕ 清空'));
+	clear.addEventListener('click', () => {
+		input.value = '';
+		update();
+		input.focus();
+	});
+	actions.append(download, clear);
 
 	host.append(settings, meta, canvas, error, actions);
 
@@ -107,20 +116,24 @@ export function initQr(host: HTMLElement): void {
 			}
 			const bytes = new TextEncoder().encode(input.value).length;
 			const version = (qr.size - 17) / 4;
+			const modeEn = qr.mode === 'numeric' ? 'Numeric mode' : qr.mode === 'alnum' ? 'Alphanumeric mode' : 'Byte mode';
+			const modeZh = qr.mode === 'numeric' ? '数字模式' : qr.mode === 'alnum' ? '字母数字模式' : '字节模式';
 			setBilingual(
 				meta,
-				`Version ${version} · ${qr.size}×${qr.size} modules · ECC ${eccSelect.value} · ${bytes} bytes encoded.`,
-				`版本 ${version} · ${qr.size}×${qr.size} 模块 · 容错 ${eccSelect.value} · 已编码 ${bytes} 字节。`,
+				`Version ${version} · ${qr.size}×${qr.size} modules · ECC ${eccSelect.value} · ${modeEn} · ${bytes} bytes encoded.`,
+				`版本 ${version} · ${qr.size}×${qr.size} 模块 · 容错 ${eccSelect.value} · ${modeZh} · 已编码 ${bytes} 字节。`,
 			);
 		} catch (err) {
 			canvas.width = 0;
 			canvas.height = 0;
 			meta.textContent = '';
 			if (err instanceof QrCapacityError) {
+				const modeEn = err.mode === 'numeric' ? 'numeric mode' : err.mode === 'alnum' ? 'alphanumeric mode' : 'byte mode';
+				const modeZh = err.mode === 'numeric' ? '数字模式' : err.mode === 'alnum' ? '字母数字模式' : '字节模式';
 				setBilingual(
 					error,
-					`Text is ${err.bytes} bytes — the largest supported code (version 10, ECC ${err.ecc}) holds ${err.capacity}.`,
-					`文本长度 ${err.bytes} 字节 — 本编码器支持的最大版本 (版本 10，容错 ${err.ecc}) 仅能容纳 ${err.capacity} 字节。`,
+					`Text is ${err.units} ${err.mode === 'byte' ? 'bytes' : 'characters'} — the largest code (version 40, ${modeEn}, ECC ${err.ecc}) holds ${err.capacity}.`,
+					`文本长度 ${err.units} ${err.mode === 'byte' ? '字节' : '字符'} — 最大的二维码 (版本 40，${modeZh}，容错 ${err.ecc}) 仅能容纳 ${err.capacity}。`,
 				);
 			} else {
 				setBilingual(
