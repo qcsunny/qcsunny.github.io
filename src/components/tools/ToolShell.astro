@@ -580,6 +580,67 @@ const year = new Date().getFullYear();
 				gap: 0.3em 0.8em;
 				margin-bottom: 1em;
 			}
+			/* --- WebGL widgets (mandelbrot.ts / imgfilter.ts) ---------------------- */
+			.t-fractal {
+				border: 1px solid var(--gridline);
+				border-radius: 12px;
+				overflow: hidden;
+				margin-bottom: 1em;
+				background: #05070d;
+			}
+			.t-fractal-canvas {
+				display: block;
+				width: 100%;
+				touch-action: none; /* pointer events own the pan/zoom */
+				cursor: grab;
+			}
+			.t-fractal-canvas:active {
+				cursor: grabbing;
+			}
+			.t-fractal-ctrl,
+			.t-filter-ctrl {
+				display: flex;
+				align-items: center;
+				flex-wrap: wrap;
+				gap: 0.4em 0.8em;
+				margin-bottom: 1em;
+			}
+			.t-fractal-ctrl input[type='range'],
+			.t-filter-ctrl input[type='range'] {
+				width: 9em;
+			}
+			.t-kernel-grid {
+				display: grid;
+				grid-template-columns: repeat(3, 4.5em);
+				gap: 0.25em;
+			}
+			.t-kernel-grid input {
+				width: 100%;
+				border: 1px solid var(--gridline);
+				border-radius: 6px;
+				background: var(--card);
+				color: var(--fg);
+				font: inherit;
+				font-size: 0.8rem;
+				font-family: var(--font-mono);
+				padding: 0.3em 0.35em;
+				text-align: center;
+			}
+			.t-kernel-grid input:focus-visible {
+				outline: none;
+				border-color: var(--accent);
+			}
+			.t-filter-presets {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.4em;
+			}
+			.t-fractal.t-droptarget,
+			.t-fractal-canvas.t-droptarget {
+				outline: 2px dashed var(--accent);
+				outline-offset: -2px;
+			}
+
 			/* --- meta/OG preview (metaog.ts) ---------------------------------------- */
 			.t-metafields {
 				display: flex;

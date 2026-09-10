@@ -30,6 +30,8 @@ export type ToolKind =
 	| 'json'
 	| 'jsonschema'
 	| 'meta'
+	| 'fractal'
+	| 'imgfilter'
 	| 'sql'
 	| 'jwt'
 	| 'url'
@@ -249,6 +251,8 @@ export type ToolEntry = ToolMeta &
 		| { kind: 'json' }
 		| { kind: 'jsonschema' }
 		| { kind: 'meta' }
+		| { kind: 'fractal' }
+		| { kind: 'imgfilter' }
 		| { kind: 'sql' }
 		| { kind: 'jwt' }
 		| { kind: 'url' }
@@ -425,6 +429,8 @@ export const TOOL_KEYWORDS: Record<string, string> = {
 		'color-palette': '配色 色板 色轮 互补色 邻近色 三角配色 palette generator harmony',
 		'lossless-checker': '无损音乐 真假无损 flac 频谱 转码 检测 lossless spectrum transcode',
 		'browser-info': '浏览器信息 硬件信息 gpu 显卡 核心数 屏幕 分辨率 解码支持 hevc av1 browser hardware info navigator',
+		'mandelbrot-explorer': '曼德博 分形 范数集合 朱利亚 复平面 缩放 mandelbrot julia fractal explorer zoom',
+		'image-filter-lab': '图像滤镜 卷积 模糊 锐化 边缘检测 浮雕 卷积核 convolution kernel filter image processing',
 		'http-status-lookup': 'http 状态码 404 500 302 status code 错误码 重定向 查询',
 		'mime-type-lookup': 'mime 类型 content-type 文件类型 扩展名 application/pdf 查询 mime type',
 		'user-agent-parser': 'user agent ua 解析 浏览器识别 爬虫识别 设备 useragent browser detection',
