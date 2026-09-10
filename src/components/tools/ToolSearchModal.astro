@@ -60,6 +60,24 @@ const items = config?.items ?? TOOLS_ITEMS;
 const categories = config?.categories ?? TOOLS_CATEGORIES;
 const copy = config?.copy ?? TOOLS_COPY;
 const totalCount = items.length;
+
+// The index ships inline on every page that renders the Header, so it is
+// encoded as positional rows — repeating nine object keys per item across 84
+// tools cost ~5 KB the brotli budget (perf-budget.spec pins the block < 16 KB
+// on the worst page). The row is rehydrated into the SearchItem shape in the
+// first statement of the script below. Order is load-bearing; keep both in
+// sync: [href, name, nameZh, desc, descZh, category, icon, keywords, slug].
+const SEARCH_ROWS = items.map((t) => [
+	t.href,
+	t.name,
+	t.nameZh ?? '',
+	t.desc ?? '',
+	t.descZh ?? '',
+	t.category,
+	t.icon ?? '',
+	t.keywords ?? '',
+	t.slug ?? '',
+]);
 ---
 
 <div id="site-search-modal" class="sm-overlay" style="display: none;" aria-hidden="true" role="dialog" aria-modal="true"
@@ -146,8 +164,13 @@ const totalCount = items.length;
 	</div>
 </div>
 
-<script is:inline define:vars={{ searchData: items, searchCategories: categories, searchCopy: copy }}>
+<script is:inline define:vars={{ searchData: SEARCH_ROWS, searchCategories: categories, searchCopy: copy }}>
 	(() => {
+		// Rehydrate the compact rows injected above into the object shape this
+		// script reads. Unannotated on purpose: is:inline ships plain JavaScript.
+		const idx = searchData.map(function (r) {
+			return { href: r[0], name: r[1], nameZh: r[2], desc: r[3], descZh: r[4], category: r[5], icon: r[6], keywords: r[7], slug: r[8] };
+		});
 		const modal = document.getElementById('site-search-modal');
 		const backdrop = document.getElementById('sm-backdrop');
 		const input = document.getElementById('sm-input');
@@ -279,7 +302,7 @@ const totalCount = items.length;
 
 		function searchItems(query, cat) {
 			const q = (query || '').trim().toLowerCase();
-			let pool = searchData;
+			let pool = idx;
 			if (cat && cat !== 'all') {
 				pool = pool.filter((t) => t.category === cat);
 			}

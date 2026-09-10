@@ -983,4 +983,160 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '为什么买的 1 TB 硬盘在电脑里只有 931 GB？', a: '硬盘制造商按十进制 1 TB = 10¹² 字节出厂标称；而 Windows 操作系统底层按二进制 GiB（1 GiB = 1024³ 字节）统计：10¹² ÷ 1024³ ≈ 931.32 GiB。' },
 		],
 	},
+	'converters/fuel': {
+		about: [
+			'Fuel consumption is the one conversion table that works backwards: more L/100km means worse economy, while more mpg means better. Converting between them therefore cannot be a simple factor — it goes through a reciprocal.',
+			'The table covers L/100km (metric standard), km/L (Japan), US mpg and UK mpg (an imperial gallon is 20% larger, so the same car reads ~20% higher in UK mpg), plus gallons per 100 miles.',
+		],
+		aboutZh: [
+			'油耗是唯一一张"方向相反"的换算表：百公里油耗数值越大越费油，而 mpg 数值越大越省油。因此这两类单位之间不是简单的倍数关系，必须经过一次倒数换算。',
+			'表内涵盖百公里油耗 L/100km（公制标准）、每升公里数 km/L（日本常用）、美制 mpg 与英制 mpg（英制加仑大约大 20%，同一辆车在英制口径下数值也高约 20%），以及百英里耗油量。',
+		],
+		faq: [
+			{ q: 'How do I convert L/100km to mpg?', a: 'Divide 235.215 by the L/100km value for US mpg (e.g. 8 L/100km ≈ 29.4 mpg US), or 282.481 for UK mpg.' },
+			{ q: 'Is a lower L/100km number better?', a: 'Yes — it means fewer liters burned per 100 km. For mpg the direction flips: higher is better.' },
+		],
+		faqZh: [
+			{ q: '百公里油耗怎么换算成 mpg？', a: '美制 mpg = 235.215 ÷ 百公里油耗（如 8L/100km ≈ 29.4 mpg US）；英制则用 282.481 除。' },
+			{ q: '百公里油耗是不是越低越好？', a: '是——数值越低代表每 100 公里烧的油越少；而 mpg 恰好相反，数值越高越省油。' },
+		],
+	},
+	'converters/angle': {
+		about: [
+			'Convert between degrees, radians, gradians, turns, arcminutes and arcseconds. The radian is the natural unit of calculus — sin(x) only has derivative cos(x) when x is in radians — while degrees rule everyday geometry.',
+			'Full turn: 360° = 2π rad = 400 grad. Arcminutes and arcseconds subdivide each degree by 60 — the notation used for celestial coordinates and lens fields of view.',
+		],
+		aboutZh: [
+			'在度、弧度、百分度、转数、角分与角秒之间换算。弧度是微积分的自然单位——只有 x 以弧度计，sin(x) 的导数才是 cos(x)——而日常几何用度。',
+			'一整圈：360° = 2π rad = 400 grad。角分与角秒把每度按 60 细分，是天体坐标与镜头视场角的记法。',
+		],
+		faq: [
+			{ q: 'Why do programming languages want radians?', a: 'Math.sin and friends are defined on radians so their Taylor series and derivatives are clean; multiply degrees by π/180 first.' },
+			{ q: 'What is 1 radian in degrees?', a: 'About 57.2958° — the angle where the arc length equals the radius.' },
+		],
+		faqZh: [
+			{ q: '为什么编程语言都用弧度？', a: 'Math.sin 等函数按弧度定义，泰勒展开与求导才干净；先把角度乘以 π/180 再传入。' },
+			{ q: '1 弧度等于多少度？', a: '约 57.2958°——即弧长恰好等于半径时所对的圆心角。' },
+		],
+	},
+	'utilities/age-calculator': {
+		about: [
+			'Enter a date of birth and get an exact age: years, months and days following calendar periods, plus total days, total weeks, the weekday you were born on, and a countdown to your next birthday.',
+			'The breakdown borrows days from the month before the reference date, so "3 months" always means three full calendar months rather than 90 days. A Feb 29 birthday counts Feb 28 in common years.',
+		],
+		aboutZh: [
+			'输入出生日期即得精确年龄：按日历周期拆分的年、月、日，以及已活总天数、总周数、出生当天是星期几和下一个生日的倒计时。',
+			'拆分算法按"基准日前一个月"借位，因此"3 个月"一定是三个完整日历月而非 90 天。2 月 29 日出生者平年按 2 月 28 日计算。',
+		],
+		faq: [
+			{ q: 'Why is my age different in months vs 90-day blocks?', a: 'Ages follow the calendar: a month is however long that month is (28–31 days), not a fixed 30 or 90 days.' },
+			{ q: 'What happens on my birthday itself?', a: 'The countdown switches to next year\'s birthday, so it shows 365 or 366 days, never 0.' },
+			{ q: 'Which calendar does it use?', a: 'The Gregorian calendar with no time zones — the standard for legal ages worldwide.' },
+		],
+		faqZh: [
+			{ q: '为什么按月算和按 90 天算的年龄不一样？', a: '年龄跟日历走：一个月是 28 到 31 天不等，而不是固定 30 天或 90 天。' },
+			{ q: '生日当天会显示什么？', a: '倒计时切换到下一个生日，显示 365 或 366 天，不会是 0。' },
+			{ q: '用的是哪种历法？', a: '公历（格里高利历），不涉及时区——这也是世界各国法定年龄的通用标准。' },
+		],
+	},
+	'utilities/date-calculator': {
+		about: [
+			'Two modes in one page. Difference mode measures the span between two dates: years/months/days, total days, weeks, and business days (Monday–Friday, holidays not included). Add mode does calendar arithmetic — add or subtract days, weeks, months or years from a date.',
+			'Month and year arithmetic is calendar-aware: January 31 + 1 month lands on February 28 (the day is clamped to the target month and the page tells you), and leap years are handled exactly.',
+		],
+		aboutZh: [
+			'一页两种模式。间隔模式计算两个日期之间的差：年/月/日、总天数、周数与工作日（周一至周五，不含法定节假日）；加减模式做日历运算——从某日期加减日、周、月、年。',
+			'月与年的加减遵循日历规则：1 月 31 日 + 1 个月落在 2 月 28 日（日被钳制到目标月末，页面会提示），闰年精确处理。',
+		],
+		faq: [
+			{ q: 'Does the day count include the end date?', a: 'By default no — a span counts whole days between the dates. Tick the checkbox to include the end date itself, which is how visa and notice periods are usually counted.' },
+			{ q: 'Why does Jan 31 + 1 month give Feb 28?', a: 'February has no 31st day, so the day is clamped to the month\'s last day — the standard convention.' },
+			{ q: 'Do business days include public holidays?', a: 'No — only weekends are excluded; local public holidays vary by country, so add them yourself.' },
+		],
+		faqZh: [
+			{ q: '天数包含结束日当天吗？', a: '默认不包含——间隔统计的是两日期之间的整天数。勾选后包含结束日当天，这也是签证期限、通知期通常的算法。' },
+			{ q: '为什么 1 月 31 日 + 1 个月是 2 月 28 日？', a: '2 月没有 31 日，日被钳制到当月最后一天——这是通用约定。' },
+			{ q: '工作日包含法定节假日吗？', a: '不包含——只剔除周末；各国法定节假日不同，请自行留意。' },
+		],
+	},
+	'utilities/bmi-calculator': {
+		about: [
+			'Enter height, weight, age, sex and activity level to get your Body Mass Index with its WHO category, the healthy weight range for your height, your basal metabolic rate (Mifflin–St Jeor), and the daily calorie targets to maintain, lose or gain weight.',
+			'BMI = weight ÷ height², with height in metres. It is a population screening number, not a body-composition measurement — muscular athletes often read "overweight" while carrying little fat. Several Asian populations use 24 / 28 as the overweight / obesity cutoffs instead of the WHO 25 / 30.',
+		],
+		aboutZh: [
+			'输入身高、体重、年龄、性别与活动水平，得到 BMI 及 WHO 分类、对应身高的健康体重范围、基础代谢率（Mifflin–St Jeor 公式）与维持、减重或增重的每日热量目标。',
+			'BMI = 体重 ÷ 身高²（身高以米计）。它是人群筛查指标而非体成分测量——肌肉发达的运动员常被误判为"超重"。中国等亚洲人群常用 24 / 28 作为超重/肥胖界值，而非 WHO 的 25 / 30。',
+		],
+		faq: [
+			{ q: 'Is BMI accurate for everyone?', a: 'No — it ignores muscle mass, bone density and fat distribution. It screens populations well but misreads athletes, and loses accuracy for children, pregnancy and adults over ~65.' },
+			{ q: 'What are the BMI categories?', a: 'WHO: underweight < 18.5, normal 18.5–24.9, overweight 25–29.9, obesity ≥ 30. China\'s WS/T 428 standard uses 24 / 28 for overweight / obesity.' },
+			{ q: 'How many calories to lose 0.5 kg per week?', a: 'About a 550 kcal daily deficit — 1 kg of body fat holds roughly 7,700 kcal. The page computes the target from your own TDEE.' },
+		],
+		faqZh: [
+			{ q: 'BMI 对所有人都准吗？', a: '不——它不区分肌肉、骨密度与脂肪分布，用于人群筛查很好，但会误判运动员，对儿童、孕期和 65 岁以上人群也不够准。' },
+			{ q: 'BMI 的分类标准是什么？', a: 'WHO：偏瘦 < 18.5，正常 18.5–24.9，超重 25–29.9，肥胖 ≥ 30；中国 WS/T 428 标准则以 24 / 28 为超重/肥胖界值。' },
+			{ q: '每周想减 0.5 公斤要少吃多少？', a: '每天约 550 千卡的热量缺口——1 公斤体脂约含 7,700 千卡。页面会按你的 TDEE 直接算出目标值。' },
+		],
+	},
+	'finance/cny-uppercase': {
+		about: [
+			'Convert any amount into the formal Chinese uppercase form required on invoices, bank slips and contracts — 1234567.89 becomes 壹佰贰拾叁万肆仟伍佰陆拾柒元捌角玖分.',
+			'The conversion follows the People\'s Bank accounting convention: 零 is collapsed to a single occurrence and dropped at the end, an all-zero integer part reads 零元, an amount with no fractional part ends in 整, and a missing 角 between 元 and 分 is bridged with 零 (10.05 → 壹拾元零伍分).',
+		],
+		aboutZh: [
+			'把任意金额转换为发票、银行凭证与合同要求的规范大写金额——1234567.89 变成 壹佰贰拾叁万肆仟伍佰陆拾柒元捌角玖分。',
+			'换算遵循人民银行会计记账规范：连续的"零"只保留一个且末尾不出现；整数部分为零读"零元"；无角分结尾加"整"；元与分之间缺角时补"零"（10.05 → 壹拾元零伍分）。',
+		],
+		faq: [
+			{ q: 'Why do financial documents use these characters?', a: 'The uppercase forms 壹贰叁 share no simple strokes with each other, so a handwritten digit cannot be altered into a larger one — the point of writing amounts this way.' },
+			{ q: 'What is the maximum amount supported?', a: 'Up to 16 digits before the decimal point — quadrillions (万万亿), far beyond any real transaction.' },
+			{ q: 'Is "人民币" prefixed?', a: 'No — the tool outputs the amount itself. Add the currency name or symbol (￥) in front as your form requires.' },
+		],
+		faqZh: [
+			{ q: '为什么财务票据要用这些字？', a: '壹贰叁等大写数字笔画繁复、彼此不易涂改——把"一"改成"三"这类做账舞弊在书写上就不可行，这正是大写金额的意义。' },
+			{ q: '最大支持多大金额？', a: '小数点前最多 16 位，到万亿级别，远超任何真实交易。' },
+			{ q: '结果前面要写"人民币"吗？', a: '本工具只输出大写金额本身；请按票据格式在前面自行加"人民币"或"￥"符号。' },
+		],
+	},
+	'devtools/yaml-formatter': {
+		about: [
+			'Format messy YAML with canonical 2-space indentation, validate it with precise line-numbered errors, or convert it to JSON — and JSON back to YAML. Everything runs locally in your browser.',
+			'The parser covers the block style you meet in the wild: nested mappings and sequences by indentation, compact "- key: value" items, flow collections [a, b] and {k: v}, all scalar types, comments, and sequences at the same indent as their key. Anchors, aliases and multi-line literal blocks (| and >) are deliberately unsupported and reported as errors.',
+		],
+		aboutZh: [
+			'用规范的 2 空格缩进格式化杂乱的 YAML，带行号的精确报错校验，或与 JSON 双向互转。全部在浏览器本地完成。',
+			'解析器覆盖真实场景中的块级语法：按缩进嵌套的映射与序列、紧凑的 "- key: value" 写法、行内集合 [a, b] 与 {k: v}、全部标量类型、注释，以及与键同级的序列。锚点、别名与多行文本块（| 与 >）为刻意不支持，会明确报错。',
+		],
+		faq: [
+			{ q: 'Why do I get "multi-line quoted scalars are not supported"?', a: 'Quoted strings must close on the same line. Put the content on one line, or use a shorter value — literal | blocks are not supported either.' },
+			{ q: 'Tabs or spaces?', a: 'Spaces only. YAML forbids tabs for indentation; the parser treats a tab as part of the content and will flag it.' },
+			{ q: 'Does it support multiple documents in one file?', a: 'A single leading --- is accepted and ignored; further --- separators are not supported — split the file first.' },
+		],
+		faqZh: [
+			{ q: '为什么提示"multi-line quoted scalars are not supported"？', a: '引号字符串必须在同一行闭合。请把内容写在一行或缩短——多行文本块 | 同样不支持。' },
+			{ q: '用 Tab 还是空格？', a: '只能空格。YAML 禁止用 Tab 缩进，解析器会把 Tab 当内容的一部分并报错。' },
+			{ q: '支持一个文件里多个文档吗？', a: '仅接受并忽略开头的单个 ---；后续的 --- 分隔符不支持，请先拆分文件。' },
+		],
+	},
+	'devtools/csv-json-converter': {
+		about: [
+			'Convert CSV to JSON — the first row becomes the header and each later row an object — or turn a JSON array of objects back into CSV. Both directions speak full RFC 4180: quoted fields, doubled quotes, commas and newlines inside values.',
+			'Validation is strict by design: duplicate headers, ragged rows and unterminated quotes are rejected with the exact row and column counts, so data problems surface here instead of silently corrupting a downstream import.',
+		],
+		aboutZh: [
+			'CSV 转 JSON——首行作表头、后续每行成一个对象；也可把 JSON 对象数组转回 CSV。两个方向都完整支持 RFC 4180：带引号字段、双写引号、值内的逗号与换行。',
+			'校验刻意从严：表头重复、行长不齐、引号未闭合都会连同精确的行列数一起报错，让数据问题在这里暴露，而不是悄悄污染下游导入。',
+		],
+		faq: [
+			{ q: 'Are numbers kept as numbers?', a: 'CSV has no types — every cell stays a string in the JSON output. Cast in your own code, or post-process the JSON.' },
+			{ q: 'What if a JSON row has extra keys?', a: 'The header comes from the first object; extra keys in later rows are ignored, missing ones become empty cells.' },
+			{ q: 'Does it handle Excel exports?', a: 'Yes for standard CSV exports; .xlsx is a binary format and needs to be saved as CSV first.' },
+		],
+		faqZh: [
+			{ q: '数字会保持数字类型吗？', a: 'CSV 本身没有类型——JSON 输出里每个单元格都是字符串，请在自己的代码里转换，或对 JSON 做后处理。' },
+			{ q: 'JSON 某行多了字段怎么办？', a: '表头取自第一个对象；后续行的多余字段被忽略，缺失字段输出为空单元格。' },
+			{ q: '能处理 Excel 导出的文件吗？', a: '标准 CSV 导出可以；.xlsx 是二进制格式，请先另存为 CSV。' },
+		],
+	},
 };

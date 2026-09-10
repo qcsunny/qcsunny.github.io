@@ -47,19 +47,20 @@ test('prose pages ship no first-party JavaScript', () => {
 	}
 });
 
-// A ceiling, not a target. The dispatcher chunk is shared by all 63 registry
+// A ceiling, not a target. The dispatcher chunk is shared by all registry
 // tool pages and cached immutably, so it is paid once per visitor — but it is on
-// the critical path to the first tool becoming interactive, and it grows with
-// every tool added. Growth to 53 tools (adding matrix LUP, equation solvers,
-// adaptive calculus & Richardson limits) moved the chunk to ~49.5 KB brotli;
-// the cron parser's BigInt bitmasks (field expansion, Vixie day matching, the
-// next-fire carry chain) put it at ~57.3 KB at 63 tools, so 60 KB keeps the same
-// margin.
+// the critical path to the first tool becoming interactive. History: the whole
+// registry (every category's configs and compute functions) rode in main, which
+// grew with every tool — 49.5 KB at 53 tools, 57.3 KB at 63, and 66 KB at 84,
+// past the old 60 KB line. The catalog.ts refactor made main a thin dispatcher
+// that lazily imports the current category's data module, landing it at ~12 KB;
+// 20 KB keeps a margin that still catches a config accidentally imported into
+// the shared chunk again.
 test('the shared tool bundle stays inside its brotli budget', () => {
 	const main = astroJs().filter(([f]) => /^main\..*\.js$/.test(f));
 	expect(main.length, 'built tool dispatcher chunk').toBe(1);
 	const size = brotli(main[0][1]);
-	expect(size, `main chunk is ${size} B brotli`).toBeLessThan(60_000);
+	expect(size, `main chunk is ${size} B brotli`).toBeLessThan(20_000);
 });
 
 // Every page carrying the search modal inlines the index its button searches —
@@ -70,8 +71,13 @@ test('the shared tool bundle stays inside its brotli budget', () => {
 // page. The reason it is deliberate is that they are small. This pins "small":
 // the 49-tool index sat just under 12 KB brotli per page; ten more tools and
 // growth to 42 articles pushed the worst page to ~14.2 KB, and at 63 tools /
-// 47 articles it is ~15.3 KB. Still well under an extra round trip to fetch
-// and cache an external file, while keeping search fully functional offline.
+// 47 articles it was ~15.3 KB. The 2026-09 batch (11 dev/stat tools, then 10
+// daily/dev tools — 84 total, each with bilingual name/description/keywords)
+// moved the marginal cost on 404.html to ~17.2 KB; positional-row encoding of
+// the payload bought little because brotli already crushes the repeated object
+// keys — the weight is the unique bilingual text. 18 KB is still well under an
+// extra round trip to fetch and cache an external file, while keeping search
+// fully functional offline.
 test('the inlined search index stays small enough to justify inlining', () => {
 	const withIndex = distHtml().filter(([, html]) => html.includes('const searchData'));
 	expect(withIndex.length, 'pages carrying the search modal').toBeGreaterThan(50);
@@ -93,7 +99,7 @@ test('the inlined search index stays small enough to justify inlining', () => {
 	expect(
 		worst[1],
 		`search index costs ${worst[1]} B brotli on worst page (${worst[0]})`,
-	).toBeLessThan(16_000);
+	).toBeLessThan(18_000);
 });
 
 // Astro emits one hoisted entry chunk per page and puts the <script> in the
@@ -136,7 +142,13 @@ const preloadsIn = (html: string): string[] =>
 test('every page preloads what its entry chunk imports', () => {
 	for (const [route, want] of PRELOADS) {
 		const html = readFileSync(join(DIST, route), 'utf-8');
-		expect(preloadsIn(html), `modulepreload links on ${route}`).toEqual(want);
+		// Sorted: the preload set is what matters — the links all sit in <head>
+		// and fire in parallel, so emission order (which Rollup may change when
+		// the chunk graph is reshuffled) is irrelevant.
+		expect(
+			preloadsIn(html).sort(),
+			`modulepreload links on ${route}`,
+		).toEqual([...want].sort());
 	}
 });
 

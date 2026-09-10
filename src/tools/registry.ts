@@ -9,9 +9,14 @@
 
 import { CALCULATOR_TOOLS } from './calculators';
 import { CONVERTER_TOOLS } from './converters';
+import { DAILY_TOOLS } from './daily';
 import { FINANCE_TOOLS } from './finance';
-import { GENERATOR_TOOLS } from './generators';
-import { TEXT_TOOLS } from './textTools';
+import {
+	DEVTOOLS_GENERATOR_TOOLS,
+	UTILITIES_GENERATOR_TOOLS,
+} from './generators';
+import { DEVTOOLS_TEXT_TOOLS, UTILITIES_TEXT_TOOLS } from './textTools';
+import { TOOL_WIDGETS } from './widgets';
 
 export type ToolCategory = 'calculators' | 'converters' | 'finance' | 'tools' | 'devtools' | 'utilities';
 export type ToolKind =
@@ -73,8 +78,10 @@ export interface FormField {
 	labelZh?: string;
 	/** input type rendered; 'select' needs options, 'checkbox' is boolean;
 	 *  'bigint' is a text field with a numeric keypad whose value is read as
-	 *  BigInt (use when the number can exceed Number's exact 2^53 range) */
-	type?: 'number' | 'bigint' | 'text' | 'select' | 'checkbox' | 'textarea';
+	 *  BigInt (use when the number can exceed Number's exact 2^53 range);
+	 *  'date' is a native date picker whose value is the ISO string read
+	 *  via str() and parsed by compute() */
+	type?: 'number' | 'bigint' | 'text' | 'select' | 'checkbox' | 'textarea' | 'date';
 	def?: string;
 	placeholder?: string;
 	placeholderZh?: string;
@@ -167,6 +174,10 @@ export interface TextTransform {
 }
 
 export interface TextConfig {
+	/** sample content prefilled into the input on first load — use clearly
+	 *  fictional data (example.com, placeholder names), never anything that
+	 *  could read as a real person's information */
+	def?: string;
 	placeholder?: string;
 	placeholderZh?: string;
 	/** live per-input statistics rows */
@@ -265,10 +276,10 @@ export const CATEGORIES: {
 	},
 	{
 		id: 'utilities',
-		label: 'Daily & Text Utilities',
-		labelZh: '日常实用与文本工具',
-		blurb: 'Word counter, character counter, text diff, markdown editor, QR code generator, random numbers, and color converter.',
-		blurbZh: '字数统计、字符计数、文本差异对比、Markdown 预览、二维码生成、随机数生成与颜色换算。',
+		label: 'Daily Calculators & Text Utilities',
+		labelZh: '日常计算与文本工具',
+		blurb: 'Age and date calculators, BMI and calories, word and character counters, text diff, markdown editor, QR code generator, random numbers, and color converter.',
+		blurbZh: '年龄与日期计算器、BMI 与每日热量、字数统计、文本差异对比、Markdown 预览、二维码生成、随机数生成与颜色换算。',
 	},
 ];
 
@@ -321,37 +332,20 @@ export function categoryHref(id: ToolCategory): string {
 	return id === 'tools' ? '/devtools/' : `/${id}/`;
 }
 
-/** Registry entries for /utilities/qr-code-generator and /utilities/color-converter.
- *  Their widgets live in src/scripts/tools/{qr,color}.ts and are loaded via
- *  dynamic import from the dispatcher. */
-export const TOOL_WIDGETS: ToolEntry[] = [
-	{
-		slug: 'qr-code-generator',
-		category: 'utilities',
-		name: 'QR Code Generator',
-		nameZh: '二维码生成器',
-		description: 'Turn text or URLs into downloadable QR codes, generated entirely in your browser.',
-		descriptionZh: '将文本或网址转换为可下载的二维码，完全在浏览器本地生成。',
-		kind: 'qr',
-	},
-	{
-		slug: 'color-converter',
-		category: 'utilities',
-		name: 'Color Converter',
-		nameZh: '颜色换算工具',
-		description: 'Convert colors between HEX, RGB and HSL with a live swatch and complement.',
-		descriptionZh: '在 HEX、RGB 和 HSL 之间转换颜色，支持实时色块预览与互补色计算。',
-		kind: 'color',
-	},
-];
 
 /** Every registry-driven tool page, all four categories. */
 export const REGISTRY: ToolEntry[] = [
 	...CALCULATOR_TOOLS,
 	...CONVERTER_TOOLS,
 	...FINANCE_TOOLS,
-	...TEXT_TOOLS,
-	...GENERATOR_TOOLS,
+	// DAILY before the text/generator arrays so the age/date/BMI calculators
+	// lead the utilities listing (they are its highest-traffic entries); array
+	// order is per-category display order everywhere.
+	...DAILY_TOOLS,
+	...DEVTOOLS_TEXT_TOOLS,
+	...UTILITIES_TEXT_TOOLS,
+	...DEVTOOLS_GENERATOR_TOOLS,
+	...UTILITIES_GENERATOR_TOOLS,
 	...TOOL_WIDGETS,
 ];
 
@@ -402,7 +396,7 @@ export const TOOL_KEYWORDS: Record<string, string> = {
 	'html-formatter': 'html 格式化 网页代码美化 缩进 压缩 html beautifier indent format',
 	'markdown-preview': 'markdown 渲染 markdown预览 实时渲染 实时预览 gfm 编辑器 排版 导出html 解析器 数学公式 latex 公式渲染 katex mathml markdown viewer editor preview compiler gfm table math formula latex',
 	'password-generator': '密码 强密码 随机密码 密码生成器 字符熵 安全密码 password generator random crypto secure',
-	'uuid-generator': 'uuid guid v4 v7 唯一标识符 随机uuid 时间戳uuid uuid generator random monotonic',
+	'uuid-generator': 'uuid guid v4 v7 ulid nanoid 唯一标识符 随机uuid 时间戳uuid 可排序id 短id uuid generator random monotonic sortable short id',
 	'random-number': '随机数 随机抽取 掷骰子 抽签 范围生成器 random number generator dice range lottery',
 	'qr-code-generator': '二维码 qr code 生成 二维码制作 扫码 qr code generator barcode matrix',
 	'color-converter': '颜色转换 hex rgb hsl 调色板 互补色 颜色换算 color converter hex rgb hsl palette',
@@ -452,6 +446,17 @@ export const TOOL_KEYWORDS: Record<string, string> = {
 	'standard': '科学计算器 计算器 算术函数 根号 三角函数 次方 scientific calculator standard math sqrt sin cos',
 	'graph': '函数图像 曲线绘制 坐标系 绘图 函数可视化 function grapher plotting curves calculus',
 	'graph3d': '三维函数 空间曲面 3D曲面 3d surface plotter mesh',
+	'age-calculator': '年龄计算 年龄计算器 周岁 虚岁 实际年龄 出生多少天 生日倒计时 age calculator date of birth how old',
+	'date-calculator': '日期计算 日期计算器 日期间隔 日期差 两个日期相差多少天 工作日计算 日期加减 几月几号 date calculator days between date add subtract business days',
+	'bmi-calculator': 'bmi 身体质量指数 bmi计算器 体重指数 基础代谢率 bmr 每日热量 tdee 减肥热量 增肌热量 卡路里计算 bmi calculator calorie bmr tdee',
+	'case-converter': '大小写转换 命名风格 驼峰转换 下划线转换 case converter camelcase snake_case kebab pascal 帕斯卡 变量命名 标识符转换',
+	'cny-uppercase': '人民币大写 金额大写 大写金额 转大写 发票大写 银行大写 壹贰叁 人民币转大写 chinese yuan uppercase amount rmb 数字转大写',
+	'roman-numeral': '罗马数字 罗马数字转换 罗马数字对照 roman numeral converter 罗马数字翻译',
+	'html-entity-escaper': 'html实体 转义 反转义 html entity escape unescape &amp 字符实体 编码解码',
+	'csv-json-converter': 'csv转json json转csv 表格转换 csv to json json to csv 数据转换 excel导出',
+	'yaml-formatter': 'yaml 格式化 yaml校验 yaml转json json转yaml yml 格式化 validator parser prettify 配置文件 kubernetes',
+	'fuel': '油耗换算 百公里油耗 l/100km mpg 每公里油耗 燃油消耗 fuel consumption converter miles per gallon',
+	'angle': '角度换算 弧度 度 角度转弧度 deg rad gradian turn arcminute angle converter 角分 角秒',
 };
 
 export interface SearchItem {

@@ -93,6 +93,14 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'支持升、毫升、立方米、美制/英制加仑、原油标准桶、美制量杯与立方英尺容量换算。',
 	),
 	converter(
+		'fuel',
+		'fuel',
+		'Fuel Consumption Converter',
+		'油耗换算器',
+		'Convert between L/100km, km/L, US and imperial mpg — the inverse scales car ads and fuel apps never agree on.',
+		'百公里油耗 (L/100km)、每升公里数 (km/L) 与美制/英制 mpg 互算，注意油耗换算是倒数关系，数值越大越省油的方向相反。',
+	),
+	converter(
 		'speed',
 		'speed',
 		'Speed & Velocity Converter',
@@ -123,5 +131,13 @@ export const CONVERTER_TOOLS: ToolEntry[] = [
 		'压力与压强单位换算器',
 		'Convert between pascals (Pa), kPa, MPa, bar, psi, standard atmospheres (atm), mmHg/Torr, and kgf/cm².',
 		'支持帕斯卡 (Pa)、千帕、巴 (bar)、磅力/平方英寸 (psi)、标准大气压、托及公斤力换算。',
+	),
+	converter(
+		'angle',
+		'angle',
+		'Angle Converter',
+		'角度单位换算器',
+		'Convert between degrees (°), radians (rad), gradians (grad), turns, arcminutes (′) and arcseconds (″).',
+		'支持度 (°)、弧度 (rad)、百分度 (grad)、转数、角分 (′) 与角秒 (″) 换算，适配三角函数与编程场景。',
 	),
 ];

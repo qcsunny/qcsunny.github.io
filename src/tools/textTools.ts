@@ -12,6 +12,15 @@
 
 import type { TextConfig, ToolEntry } from './registry';
 
+/** YAML transforms share the same bilingual error shape: the parser throws
+ *  Error("line N: message"), which we surface verbatim in both views. */
+function errToEn(e: unknown): string {
+	return `— (${e instanceof Error ? e.message : 'invalid YAML'})`;
+}
+function errToZh(e: unknown): string {
+	return `—（${e instanceof Error ? e.message : 'YAML 无效'}）`;
+}
+
 // --- word counter ---------------------------------------------------------------------
 
 const CJK_RE = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu;
@@ -599,7 +608,366 @@ export async function sha256Async(msg: string): Promise<string> {
 	return sha256Hex(msg);
 }
 
-export const TEXT_TOOLS: ToolEntry[] = [
+// --- case converter -----------------------------------------------------------------
+// Word boundaries come from non-alphanumeric runs, case transitions
+// (lower→UPPER) and the acronym→word seam (XMLHttp→XML|Http), so acronyms
+// survive re-joining in every style.
+
+export function splitWords(s: string): string[] {
+	return s
+		.replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+		.replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+		.split(/[^A-Za-z0-9]+/)
+		.filter(Boolean);
+}
+
+const cap = (w: string): string => (w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w);
+
+export function toCamel(s: string): string {
+	return splitWords(s)
+		.map((w, i) => (i === 0 ? w.toLowerCase() : cap(w)))
+		.join('');
+}
+export function toPascal(s: string): string {
+	return splitWords(s)
+		.map(cap)
+		.join('');
+}
+export function toSnake(s: string): string {
+	return splitWords(s)
+		.map((w) => w.toLowerCase())
+		.join('_');
+}
+export function toKebab(s: string): string {
+	return splitWords(s)
+		.map((w) => w.toLowerCase())
+		.join('-');
+}
+export function toConstant(s: string): string {
+	return splitWords(s)
+		.map((w) => w.toUpperCase())
+		.join('_');
+}
+export function toTitle(s: string): string {
+	return splitWords(s)
+		.map(cap)
+		.join(' ');
+}
+export function toSentence(s: string): string {
+	const w = splitWords(s).map((x) => x.toLowerCase());
+	return w.length ? cap(w[0]) + ' ' + w.slice(1).join(' ') : '';
+}
+
+// --- RMB uppercase (人民币大写金额) --------------------------------------------------
+// Formal amount for invoices and bank slips. The Chinese characters ARE the
+// tool's subject matter, so they show in both language views — same exemption
+// as converters/weight's 市斤/两. Rules follow the People's Bank accounting
+// convention: 零 collapsed to single, trailing 零 dropped, all-zero integer
+// part reads 零元, no fractional part reads 整, 角 present + no 分 reads e.g.
+// 伍角, and 零 bridges 元 to 分 (10.05 → 壹拾元零伍分).
+// Supports 0 ≤ amount < 10^16 with up to two decimal places.
+
+const RMB_DIGITS = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖'];
+const RMB_SECTIONS = ['', '拾', '佰', '仟'];
+const RMB_GROUP_UNITS = ['', '万', '亿', '万亿'];
+
+/** Convert a numeric amount into the formal Chinese uppercase amount, or null
+ *  when the input is not a valid non-negative amount with ≤2 decimals. */
+export function rmbUppercase(input: string): string | null {
+	const t = input.replace(/[¥￥,，\s]/g, '');
+	if (!/^\d{1,16}(\.\d{1,2})?$/.test(t)) return null;
+	const [intRaw, dec = ''] = t.split('.');
+	const int = intRaw.replace(/^0+(?=\d)/, '');
+	const hasJiao = dec[0] !== undefined && dec[0] !== '0';
+	const hasFen = dec.length > 1 && dec[1] !== '0';
+
+	let intStr = '';
+	if (int !== '0') {
+		// 4-digit chunks, most significant first; each chunk carries its group unit.
+		const groups: string[] = [];
+		for (let i = int.length; i > 0; i -= 4) groups.unshift(int.slice(Math.max(0, i - 4), i));
+		const parts: string[] = [];
+		let pendingZero = false;
+		groups.forEach((g, idx) => {
+			const unit = RMB_GROUP_UNITS[groups.length - 1 - idx];
+			if (/^0+$/.test(g)) {
+				// An entirely-zero group (100000001 → 亿 group then two 0001/0000…):
+				// it contributes nothing but remembers a 零 for the next nonzero group.
+				if (parts.length) pendingZero = true;
+				return;
+			}
+			// Section digits with 拾佰仟; 零 only where a nonzero digit follows a gap.
+			const padded = g.padStart(4, '0');
+			let section = '';
+			let zeroIn = false;
+			for (let i = 0; i < 4; i++) {
+				const d = +padded[i];
+				if (d === 0) {
+					if (section) zeroIn = true;
+					continue;
+				}
+				if (zeroIn) {
+					section += '零';
+					zeroIn = false;
+				}
+				section += RMB_DIGITS[d] + RMB_SECTIONS[3 - i];
+			}
+			// A nonzero group whose thousands digit is 0 needs a bridging 零
+			// after a preceding group (12340001 → …万零壹元).
+			if (parts.length && padded[0] === '0') pendingZero = true;
+			if (pendingZero) {
+				parts.push('零');
+				pendingZero = false;
+			}
+			parts.push(section + unit);
+		});
+		intStr = parts.join('') + '元';
+	}
+
+	if (!hasJiao && !hasFen) return (intStr || '零元') + '整';
+	let decStr = '';
+	if (hasJiao) decStr += RMB_DIGITS[+dec[0]] + '角';
+	if (hasFen) {
+		// No 角 between 元 and 分 → bridge with 零 (10.05 → 壹拾元零伍分),
+		// except when there is no 元 part at all (0.05 → 伍分).
+		if (!hasJiao && int !== '0') decStr += '零';
+		decStr += RMB_DIGITS[+dec[1]] + '分';
+	}
+	return intStr + decStr;
+}
+
+// --- roman numerals -------------------------------------------------------------------
+
+const ROMAN_VALUES: [number, string][] = [
+	[1000, 'M'],
+	[900, 'CM'],
+	[500, 'D'],
+	[400, 'CD'],
+	[100, 'C'],
+	[90, 'XC'],
+	[50, 'L'],
+	[40, 'XL'],
+	[10, 'X'],
+	[9, 'IX'],
+	[5, 'V'],
+	[4, 'IV'],
+	[1, 'I'],
+];
+
+/** 1–3999; null outside the range classical numerals can express. */
+export function toRoman(n: number): string | null {
+	if (!Number.isInteger(n) || n < 1 || n > 3999) return null;
+	let out = '';
+	for (const [v, sym] of ROMAN_VALUES) {
+		while (n >= v) {
+			out += sym;
+			n -= v;
+		}
+	}
+	return out;
+}
+
+/** Validate and evaluate a Roman numeral (1–3999); null when malformed. */
+export function fromRoman(s: string): number | null {
+	const t = s.trim().toUpperCase();
+	if (!/^[MDCLXVI]+$/.test(t)) return null;
+	// Reject non-canonical forms (e.g. IIII, VX, IC) by re-encoding.
+	let n = 0;
+	const vals: Record<string, number> = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
+	for (let i = 0; i < t.length; i++) {
+		const cur = vals[t[i]];
+		const next = vals[t[i + 1]] ?? 0;
+		n += cur < next ? -cur : cur;
+	}
+	if (n < 1 || n > 3999 || toRoman(n) !== t) return null;
+	return n;
+}
+
+// --- HTML entities ---------------------------------------------------------------------
+
+const ENTITY_ESCAPES: [RegExp, string][] = [
+	[/&/g, '&amp;'],
+	[/</g, '&lt;'],
+	[/>/g, '&gt;'],
+	[/"/g, '&quot;'],
+	[/'/g, '&#39;'],
+];
+
+const NAMED_ENTITIES: Record<string, string> = {
+	amp: '&',
+	lt: '<',
+	gt: '>',
+	quot: '"',
+	apos: "'",
+	nbsp: ' ',
+	ensp: ' ',
+	emsp: ' ',
+	copy: '©',
+	reg: '®',
+	trade: '™',
+	deg: '°',
+	plusmn: '±',
+	middot: '·',
+	times: '×',
+	divide: '÷',
+	hellip: '…',
+	mdash: '—',
+	ndash: '–',
+	lsquo: '‘',
+	rsquo: '’',
+	ldquo: '“',
+	rdquo: '”',
+	laquo: '«',
+	raquo: '»',
+	euro: '€',
+	pound: '£',
+	yen: '¥',
+	cent: '¢',
+};
+
+/** Unescape one &entity; token, or null when unknown. */
+function unescapeEntity(tok: string): string | null {
+	if (tok.startsWith('#x') || tok.startsWith('#X')) {
+		const cp = parseInt(tok.slice(2), 16);
+		return cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : null;
+	}
+	if (tok.startsWith('#')) {
+		const cp = parseInt(tok.slice(1), 10);
+		return cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : null;
+	}
+	return Object.prototype.hasOwnProperty.call(NAMED_ENTITIES, tok) ? NAMED_ENTITIES[tok] : null;
+}
+
+export function escapeEntities(text: string): string {
+	let out = text;
+	for (const [re, rep] of ENTITY_ESCAPES) out = out.replace(re, rep);
+	return out;
+}
+
+/** Unescape every entity in the text; null when any single one is unknown,
+ *  so a typo is reported instead of silently passing through. */
+export function unescapeEntities(text: string): string | null {
+	let ok = true;
+	const out = text.replace(/&([#xX]?[0-9a-zA-Z]+);/g, (_m, tok: string) => {
+		const r = unescapeEntity(tok);
+		if (r === null) {
+			ok = false;
+			return _m;
+		}
+		return r;
+	});
+	return ok ? out : null;
+}
+
+// --- CSV / JSON -------------------------------------------------------------------------
+
+/** RFC 4180 CSV parser: quoted fields, doubled quotes, CRLF or LF rows.
+ *  Returns null when a quoted field is left unterminated. */
+export function parseCsv(text: string): string[][] | null {
+	const rows: string[][] = [];
+	let row: string[] = [];
+	let field = '';
+	let inQuotes = false;
+	let i = 0;
+	const s = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+	while (i < s.length) {
+		const ch = s[i];
+		if (inQuotes) {
+			if (ch === '"') {
+				if (s[i + 1] === '"') {
+					field += '"';
+					i += 2;
+					continue;
+				}
+				inQuotes = false;
+			} else {
+				field += ch;
+			}
+		} else if (ch === '"' && field === '') {
+			inQuotes = true;
+		} else if (ch === ',') {
+			row.push(field);
+			field = '';
+		} else if (ch === '\n') {
+			row.push(field);
+			rows.push(row);
+			row = [];
+			field = '';
+		} else {
+			field += ch;
+		}
+		i++;
+	}
+	if (inQuotes) return null;
+	if (field !== '' || row.length > 0) {
+		row.push(field);
+		rows.push(row);
+	}
+	// Drop a trailing all-empty row created by a final newline.
+	if (rows.length > 1 && rows[rows.length - 1].every((c) => c === '') && rows[rows.length - 1].length === 1) rows.pop();
+	return rows;
+}
+
+function csvCell(v: string): string {
+	return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+}
+
+/** CSV text → JSON text. First row is the header; ragged rows are an error. */
+export function csvToJson(text: string): { output: string; error?: string; errorZh?: string } {
+	const rows = parseCsv(text);
+	if (!rows) return { output: '', error: 'Unterminated quoted field.', errorZh: '存在未闭合的引号字段。' };
+	if (rows.length < 2) return { output: '', error: 'CSV needs a header row plus at least one data row.', errorZh: 'CSV 需要一行表头和至少一行数据。' };
+	const header = rows[0];
+	const seen = new Set<string>();
+	for (const h of header) {
+		if (seen.has(h)) return { output: '', error: `Duplicate header "${h}".`, errorZh: `表头 "${h}" 重复。` };
+		seen.add(h);
+	}
+	const objs: Record<string, string>[] = [];
+	for (let r = 1; r < rows.length; r++) {
+		if (rows[r].length !== header.length) {
+			return {
+				output: '',
+				error: `Row ${r + 1} has ${rows[r].length} fields, expected ${header.length}.`,
+				errorZh: `第 ${r + 1} 行有 ${rows[r].length} 个字段，应为 ${header.length} 个。`,
+			};
+		}
+		const obj: Record<string, string> = {};
+		header.forEach((h, c) => (obj[h] = rows[r][c]));
+		objs.push(obj);
+	}
+	return { output: JSON.stringify(objs, null, 2) };
+}
+
+/** JSON text (array of flat objects) → CSV text. */
+export function jsonToCsv(text: string): { output: string; error?: string; errorZh?: string } {
+	let data: unknown;
+	try {
+		data = JSON.parse(text);
+	} catch {
+		return { output: '', error: 'Not valid JSON.', errorZh: '这不是合法的 JSON。' };
+	}
+	if (!Array.isArray(data) || data.length === 0) {
+		return { output: '', error: 'Expected a non-empty JSON array of objects.', errorZh: '需要非空的 JSON 对象数组。' };
+	}
+	// Header: keys of the first object, in order; extra keys in later rows are ignored.
+	const first = data[0];
+	if (typeof first !== 'object' || first === null || Array.isArray(first)) {
+		return { output: '', error: 'Expected an array of objects, not primitives.', errorZh: '需要对象数组，不支持基本类型。' };
+	}
+	const header = Object.keys(first as Record<string, unknown>);
+	const lines = [header.map(csvCell).join(',')];
+	for (const item of data) {
+		if (typeof item !== 'object' || item === null) {
+			return { output: '', error: 'Every row must be an object.', errorZh: '每一行都必须是对象。' };
+		}
+		const rec = item as Record<string, unknown>;
+		lines.push(header.map((h) => csvCell(rec[h] === undefined || rec[h] === null ? '' : String(rec[h]))).join(','));
+	}
+	return { output: lines.join('\n') };
+}
+
+export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 	{
 		slug: 'json-formatter',
 		category: 'devtools',
@@ -609,6 +977,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: '格式化、校验、压缩与转义 JSON，精准定位语法错误行号与列号。',
 		kind: 'json',
 	},
+
 	{
 		slug: 'sql-formatter',
 		category: 'devtools',
@@ -618,6 +987,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: 'SQL 查询格式化美化与压缩工具，支持关键字自动大写与本地隐私安全。',
 		kind: 'sql',
 	},
+
 	{
 		slug: 'html-formatter',
 		category: 'devtools',
@@ -627,6 +997,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: 'HTML 网页代码规范缩进排版与单行 Minify 压缩工具。',
 		kind: 'html',
 	},
+
 	{
 		slug: 'css-formatter',
 		category: 'devtools',
@@ -636,6 +1007,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: 'CSS 样式表格式化排版与单行 Minify 压缩工具。',
 		kind: 'css',
 	},
+
 	{
 		slug: 'xml-formatter',
 		category: 'devtools',
@@ -645,15 +1017,179 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: 'XML 与 SVG 矢量代码格式化、层级缩进与语法校验工具。',
 		kind: 'xml',
 	},
+
+	// --- JS / TS Code Formatter ---------------------------------------------------------
 	{
-		slug: 'markdown-preview',
-		category: 'utilities',
-		name: 'Markdown Live Editor & Previewer',
-		nameZh: 'Markdown 实时渲染与预览编辑器',
-		description: 'Live split-screen Markdown rendering with GitHub Flavored Markdown (GFM), tables, task lists, code syntax, KaTeX-typeset maths, and HTML export.',
-		descriptionZh: '纯本地双栏实时 Markdown 渲染编辑器，支持 GFM 全语法、LaTeX 公式排版与 HTML 导出。',
-		kind: 'markdown',
+		slug: 'js-formatter',
+		category: 'devtools',
+		name: 'JavaScript & TypeScript Code Formatter',
+		nameZh: 'JavaScript / TypeScript 代码格式化与压缩',
+		description: 'Format and beautify JavaScript & TypeScript code with 2-space indentation and block rules, or minify to a single line.',
+		descriptionZh: 'JavaScript 与 TypeScript 代码规范缩进格式化美化、单行 Minify 压缩与括号整理工具。',
+		kind: 'text',
+		config: {
+			placeholder: 'function calculateTotal(items){let sum=0;for(let i=0;i<items.length;i++){sum+=items[i].price;}return sum;}',
+			placeholderZh: '粘贴 JS / TS 代码，例如：function calculateTotal(items){let sum=0;for(let i=0;i<items.length;i++){sum+=items[i].price;}return sum;}',
+			mono: true,
+			live: true,
+			stats: (text: string) => {
+				const lines = text ? text.split('\n').length : 0;
+				const chars = text.length;
+				return [
+					{ label: 'Total Lines', labelZh: '总行数', value: String(lines) },
+					{ label: 'Character Count', labelZh: '字符总数', value: String(chars) },
+				];
+			},
+			transforms: [
+				{
+					id: 'format',
+					label: 'Format JS/TS',
+					labelZh: '格式化排版',
+					run: (text: string) => ({ output: formatJsTsCode(text, 'beautify') }),
+				},
+				{
+					id: 'minify',
+					label: 'Minify Code',
+					labelZh: '单行压缩',
+					run: (text: string) => ({ output: formatJsTsCode(text, 'minify') }),
+				},
+			],
+		},
 	},
+
+
+	// --- GraphQL Formatter --------------------------------------------------------------
+	{
+		slug: 'graphql-formatter',
+		category: 'devtools',
+		name: 'GraphQL Query & Schema Formatter',
+		nameZh: 'GraphQL 查询与 Schema 格式化工具',
+		description: 'Format GraphQL queries, mutations, subscriptions, and SDL schemas with clean indentation and directive alignment.',
+		descriptionZh: 'GraphQL 查询语句 (Query / Mutation) 与 Schema 声明规范格式化、层级缩进与单行压缩。',
+		kind: 'text',
+		config: {
+			placeholder: 'query GetUser($id: ID!){ user(id: $id){ id name email posts{ title content } } }',
+			placeholderZh: '粘贴 GraphQL 查询语句，例如：query GetUser($id: ID!){ user(id: $id){ id name email posts{ title content } } }',
+			mono: true,
+			live: true,
+			stats: (text: string) => {
+				const lines = text ? text.split('\n').length : 0;
+				const chars = text.length;
+				return [
+					{ label: 'Total Lines', labelZh: '总行数', value: String(lines) },
+					{ label: 'Character Count', labelZh: '字符总数', value: String(chars) },
+				];
+			},
+			transforms: [
+				{
+					id: 'format',
+					label: 'Format GraphQL',
+					labelZh: '格式化排版',
+					run: (text: string) => ({ output: formatGraphQL(text, 'beautify') }),
+				},
+				{
+					id: 'minify',
+					label: 'Minify Query',
+					labelZh: '单行压缩',
+					run: (text: string) => ({ output: formatGraphQL(text, 'minify') }),
+				},
+			],
+		},
+	},
+
+	{
+		slug: 'yaml-formatter',
+		category: 'devtools',
+		name: 'YAML Formatter & Validator',
+		nameZh: 'YAML 格式化与校验工具',
+		description: 'Format and validate YAML with canonical 2-space indentation, or convert between YAML and JSON both ways.',
+		descriptionZh: '规范化缩进格式化并校验 YAML，支持 YAML 与 JSON 双向转换。',
+		kind: 'text',
+		config: {
+			def: '# demo service config\nserver:\n  host: example.com\n  port: 8080\ndatabase:\n  name: demo\n  replicas:\n    - primary\n    - replica-1\n',
+			placeholder: 'server:\n  port: 8080\n…',
+			placeholderZh: 'server:\n  port: 8080\n…',
+			mono: true,
+			transforms: [
+				{
+					id: 'format',
+					label: 'Format / Validate',
+					labelZh: '格式化 / 校验',
+					// The parser is dynamically imported so its ~10 KB stays out of
+					// the shared tool chunk every tool page downloads (perf-budget
+					// pins main < 60 KB brotli); text.ts already awaits run().
+					run: async (t) => {
+						if (!t.trim()) return { output: '', error: 'Enter YAML first.', errorZh: '请先输入 YAML。' };
+						try {
+							const { formatYaml: fmt } = await import('./yaml');
+							return { output: fmt(t) };
+						} catch (e) {
+							return { output: '', error: errToEn(e), errorZh: errToZh(e) };
+						}
+					},
+				},
+				{
+					id: 'yaml2json',
+					label: 'YAML → JSON',
+					labelZh: 'YAML → JSON',
+					run: async (t) => {
+						if (!t.trim()) return { output: '', error: 'Enter YAML first.', errorZh: '请先输入 YAML。' };
+						try {
+							const { yamlToJson: toJ } = await import('./yaml');
+							return { output: toJ(t) };
+						} catch (e) {
+							return { output: '', error: errToEn(e), errorZh: errToZh(e) };
+						}
+					},
+				},
+				{
+					id: 'json2yaml',
+					label: 'JSON → YAML',
+					labelZh: 'JSON → YAML',
+					run: async (t) => {
+						if (!t.trim()) return { output: '', error: 'Enter JSON first.', errorZh: '请先输入 JSON。' };
+						try {
+							const { jsonToYaml: toY } = await import('./yaml');
+							return { output: toY(t) };
+						} catch (e) {
+							return { output: '', error: errToEn(e), errorZh: errToZh(e) };
+						}
+					},
+				},
+			],
+		} satisfies TextConfig,
+	},
+
+	{
+		slug: 'csv-json-converter',
+		category: 'devtools',
+		name: 'CSV ⇄ JSON Converter',
+		nameZh: 'CSV 与 JSON 互转工具',
+		description: 'Convert CSV to JSON (first row as header) or a JSON array of objects to CSV, with full RFC 4180 quoting support.',
+		descriptionZh: 'CSV 转 JSON（首行为表头），或将 JSON 对象数组转为 CSV，完整支持 RFC 4180 引号规则。',
+		kind: 'text',
+		config: {
+			def: 'name,role,city\nAlice,Engineer,Shanghai\nBob,Designer,"Downtown, Hangzhou"',
+			placeholder: 'Paste CSV or a JSON array…',
+			placeholderZh: '粘贴 CSV 或 JSON 数组…',
+			mono: true,
+			transforms: [
+				{
+					id: 'csv2json',
+					label: 'CSV → JSON',
+					labelZh: 'CSV → JSON',
+					run: (t) => csvToJson(t),
+				},
+				{
+					id: 'json2csv',
+					label: 'JSON → CSV',
+					labelZh: 'JSON → CSV',
+					run: (t) => jsonToCsv(t),
+				},
+			],
+		} satisfies TextConfig,
+	},
+
 	{
 		slug: 'base64',
 		category: 'devtools',
@@ -704,6 +1240,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 			],
 		} satisfies TextConfig,
 	},
+
 	{
 		slug: 'jwt-decoder',
 		category: 'devtools',
@@ -713,6 +1250,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: '解析 JWT 令牌 Header 与 Payload，快速检验过期时间与 Claims 字段。',
 		kind: 'jwt',
 	},
+
 	{
 		slug: 'url-parser',
 		category: 'devtools',
@@ -722,34 +1260,164 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: '解析 URL 协议、域名、路径与参数，支持参数排序与去除营销追踪参数。',
 		kind: 'url',
 	},
+
+
 	{
-		slug: 'word-counter',
-		category: 'utilities',
-		name: 'Word Counter',
-		nameZh: '在线字数统计',
-		description: 'Live word, character, sentence and paragraph counts plus reading time.',
-		descriptionZh: '实时统计词数、字符数、句子数、段落数与预估阅读时长。',
+		slug: 'hash-generator',
+		category: 'devtools',
+		name: 'SHA-256 Hash Generator',
+		nameZh: 'SHA-256 哈希生成器',
+		description: 'Compute the SHA-256 digest of any text entirely in your browser.',
+		descriptionZh: '在本机浏览器内计算任意文本的 SHA-256 摘要。',
 		kind: 'text',
 		config: {
-			placeholder: 'Type or paste text…',
-			placeholderZh: '在此输入或粘贴文本…',
-			stats: wordStats,
-		} satisfies TextConfig,
+			placeholder: 'Type or paste text to hash…',
+			placeholderZh: '输入或粘贴需要求哈希的文本…',
+			mono: true,
+			live: true,
+			stats: (text: string) => {
+				const charCount = text.length;
+				const byteCount = new TextEncoder().encode(text).length;
+				return [
+					{
+						label: 'Characters',
+						labelZh: '字符数',
+						value: String(charCount),
+					},
+					{
+						label: 'UTF-8 Bytes',
+						labelZh: '字节数 (UTF-8)',
+						value: String(byteCount),
+					},
+					{
+						label: 'Algorithm',
+						labelZh: '算法',
+						value: 'SHA-256 (256-bit)',
+					},
+				];
+			},
+			transforms: [
+				{
+					id: 'hash',
+					label: 'Generate SHA-256',
+					labelZh: '生成哈希',
+					run: async (text: string) => {
+						if (!text) return { output: '—' };
+						const hash = await sha256Async(text);
+						return { output: `SHA-256 ${hash}` };
+					},
+				},
+			],
+		},
 	},
+
 	{
-		slug: 'character-counter',
-		category: 'utilities',
-		name: 'Character Counter',
-		nameZh: '字符计数器',
-		description: 'Count characters, letters, digits, spaces, symbols and UTF-8 bytes.',
-		descriptionZh: '实时细分统计字符、字母、数字、空格、符号与 UTF-8 字节数。',
+		slug: 'case-converter',
+		category: 'devtools',
+		name: 'Case & Naming Converter',
+		nameZh: '大小写与命名风格转换器',
+		description: 'Convert identifiers or sentences between camelCase, PascalCase, snake_case, kebab-case, CONSTANT_CASE and more.',
+		descriptionZh: '标识符或句子在 camelCase、PascalCase、snake_case、kebab-case、常量与标题式之间互转。',
 		kind: 'text',
 		config: {
-			placeholder: 'Type or paste text…',
-			placeholderZh: '在此输入或粘贴文本…',
-			stats: charStats,
+			def: 'user profile XMLHttpRequest api_key',
+			placeholder: 'e.g. "user profile XMLHttp api_key"…',
+			placeholderZh: '例如 "user profile XMLHttp api_key"…',
+			transforms: [
+				{
+					id: 'camel',
+					label: 'camelCase',
+					labelZh: '驼峰 (camelCase)',
+					run: (t) => ({ output: toCamel(t), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
+				},
+				{
+					id: 'pascal',
+					label: 'PascalCase',
+					labelZh: '帕斯卡 (PascalCase)',
+					run: (t) => ({ output: toPascal(t), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
+				},
+				{
+					id: 'snake',
+					label: 'snake_case',
+					labelZh: '下划线 (snake_case)',
+					run: (t) => ({ output: toSnake(t), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
+				},
+				{
+					id: 'kebab',
+					label: 'kebab-case',
+					labelZh: '短横线 (kebab-case)',
+					run: (t) => ({ output: toKebab(t), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
+				},
+				{
+					id: 'constant',
+					label: 'CONSTANT_CASE',
+					labelZh: '常量 (CONSTANT_CASE)',
+					run: (t) => ({ output: toConstant(t), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
+				},
+				{
+					id: 'title',
+					label: 'Title Case',
+					labelZh: '标题式 (Title Case)',
+					run: (t) => ({ output: toTitle(t), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
+				},
+				{
+					id: 'sentence',
+					label: 'Sentence case',
+					labelZh: '句首大写 (Sentence case)',
+					run: (t) => ({ output: toSentence(t), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
+				},
+				{
+					id: 'upper',
+					label: 'UPPERCASE',
+					labelZh: '全大写',
+					run: (t) => ({ output: t.toUpperCase(), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
+				},
+				{
+					id: 'lower',
+					label: 'lowercase',
+					labelZh: '全小写',
+					run: (t) => ({ output: t.toLowerCase(), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
+				},
+			],
 		} satisfies TextConfig,
 	},
+
+	{
+		slug: 'html-entity-escaper',
+		category: 'devtools',
+		name: 'HTML Entity Escape / Unescape',
+		nameZh: 'HTML 实体转义工具',
+		description: 'Escape text to HTML entities (&amp; &lt; &quot;) or unescape named and numeric entities back to characters.',
+		descriptionZh: '把文本转义为 HTML 实体，或将命名实体与数字实体还原为字符。',
+		kind: 'text',
+		config: {
+			def: '<a href="https://example.com">Alice &amp; Bob</a>',
+			placeholder: 'Text to escape, or entities to decode…',
+			placeholderZh: '待转义的文本，或待解码的 HTML 实体…',
+			mono: true,
+			live: true,
+			transforms: [
+				{
+					id: 'escape',
+					label: 'Escape → entities',
+					labelZh: '转义为 HTML 实体',
+					run: (t) => ({ output: escapeEntities(t), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
+				},
+				{
+					id: 'unescape',
+					label: 'Unescape ← entities',
+					labelZh: '实体还原为文本',
+					run: (t) => {
+						const r = unescapeEntities(t);
+						return r !== null
+							? { output: r }
+							: { output: '', error: 'Contains an unknown entity.', errorZh: '包含无法识别的实体。' };
+					},
+				},
+			],
+		} satisfies TextConfig,
+	},
+
 
 	{
 		slug: 'number-base-converter',
@@ -817,6 +1485,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 			},
 		},
 	},
+
 	{
 		slug: 'unix-timestamp',
 		category: 'devtools',
@@ -887,6 +1556,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 			},
 		},
 	},
+
 	{
 		slug: 'cron-expression-parser',
 		category: 'devtools',
@@ -1054,6 +1724,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		},
 	},
 
+
 	{
 		slug: 'regex-tester',
 		category: 'devtools',
@@ -1148,6 +1819,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 			},
 		},
 	},
+
 	{
 		slug: 'css-px-rem-converter',
 		category: 'devtools',
@@ -1235,6 +1907,216 @@ export const TEXT_TOOLS: ToolEntry[] = [
 			},
 		},
 	},
+
+
+	// --- cURL to Code Converter --------------------------------------------------------
+	{
+		slug: 'curl-to-code',
+		category: 'devtools',
+		name: 'cURL to Code Converter',
+		nameZh: 'cURL 转多语言代码生成器',
+		description: 'Convert cURL command lines into JavaScript (fetch/axios), Python (requests), Go, Rust, and PHP code.',
+		descriptionZh: '将 cURL 命令解析并一键转换为 JS (fetch/axios)、Python (requests)、Go、Rust 与 PHP 等多语言 HTTP 请求代码。',
+		kind: 'text',
+		config: {
+			placeholder: 'curl -X POST "https://api.example.com/v1/data" -H "Content-Type: application/json" -d \'{"name": "Alice"}\'',
+			placeholderZh: '粘贴 cURL 命令，如：curl -X POST "https://api.example.com/v1/data" -H "Content-Type: application/json" -d \'{"name": "Alice"}\'',
+			mono: true,
+			live: true,
+			stats: (text: string) => {
+				const trimmed = text.trim();
+				const parsed = trimmed ? parseCurl(trimmed) : null;
+				return [
+					{
+						label: 'HTTP Method',
+						labelZh: '请求动词 Method',
+						value: parsed ? parsed.method : '—',
+					},
+					{
+						label: 'Target URL',
+						labelZh: '目标网址 URL',
+						value: parsed && parsed.url ? parsed.url : '—',
+					},
+					{
+						label: 'Headers Count',
+						labelZh: '请求头标点数',
+						value: parsed ? String(Object.keys(parsed.headers).length) : '0',
+					},
+				];
+			},
+			transforms: [
+				{
+					id: 'js-fetch',
+					label: 'JS (fetch)',
+					labelZh: 'JS (fetch)',
+					run: (text: string) => {
+						const trimmed = text.trim();
+						if (!trimmed) return { output: '// Paste a cURL command above to convert to JavaScript fetch code' };
+						const parsed = parseCurl(trimmed);
+						return { output: curlToJsFetch(parsed) };
+					},
+				},
+				{
+					id: 'python-requests',
+					label: 'Python (requests)',
+					labelZh: 'Python (requests)',
+					run: (text: string) => {
+						const trimmed = text.trim();
+						if (!trimmed) return { output: '# Paste a cURL command above to convert to Python requests code' };
+						const parsed = parseCurl(trimmed);
+						return { output: curlToPython(parsed) };
+					},
+				},
+			],
+		},
+	},
+
+
+	// --- IP Subnet / CIDR Calculator ---------------------------------------------------
+	{
+		slug: 'cidr-calculator',
+		category: 'devtools',
+		name: 'IP Subnet & CIDR Calculator',
+		nameZh: 'IPv4 子网掩码与 CIDR 计算器',
+		description: 'Compute network address, netmask, broadcast, host range and total usable IPs from IPv4/CIDR notation.',
+		descriptionZh: '按 IPv4 / CIDR 网段表示法精准计算网络地址、子网掩码、广播地址、可用 IP 起止范围及主机容量数。',
+		kind: 'text',
+		config: {
+			placeholder: '192.168.1.50/24 or 10.0.0.1/16',
+			placeholderZh: '输入 IPv4/CIDR 网段，如：192.168.1.50/24 或 10.0.0.1/16',
+			mono: true,
+			live: true,
+			stats: (text: string) => {
+				const trimmed = text.trim() || '192.168.1.1/24';
+				const info = parseCidrCalc(trimmed);
+				if (!info) {
+					return [{ label: 'Status', labelZh: '状态', value: 'Invalid IPv4/CIDR format' }];
+				}
+				return [
+					{ label: 'Network CIDR', labelZh: '网段 CIDR', value: info.cidr },
+					{ label: 'Subnet Netmask', labelZh: '子网掩码', value: info.netmask },
+					{ label: 'Usable Hosts', labelZh: '可用主机总数', value: info.usableHosts },
+					{ label: 'IP Scope', labelZh: '网络类型范围', value: (typeof document !== 'undefined' && document.documentElement.dataset.lang === 'zh' ? info.scopeZh : info.scope) },
+				];
+			},
+			transforms: [
+				{
+					id: 'cidr',
+					label: 'Calculate Subnet',
+					labelZh: '计算子网明细',
+					run: (text: string) => {
+						const trimmed = text.trim() || '192.168.1.1/24';
+						const info = parseCidrCalc(trimmed);
+						if (!info) {
+							return {
+								output: '',
+								error: 'Invalid IP/CIDR string (e.g. 192.168.1.1/24)',
+								errorZh: '无效的 IP/CIDR 格式（例如 192.168.1.1/24）',
+							};
+						}
+						const lines = [
+							`=== IPv4 / CIDR Subnet Breakdown ===`,
+							`CIDR Notation   : ${info.cidr}`,
+							`IP Address      : ${info.ip}`,
+							`Subnet Netmask  : ${info.netmask}`,
+							`Wildcard Mask   : ${info.wildcard}`,
+							`Network Address : ${info.network}`,
+							`Broadcast Addr  : ${info.broadcast}`,
+							`First Usable Host: ${info.firstUsable}`,
+							`Last Usable Host : ${info.lastUsable}`,
+							`Total Hosts     : ${info.totalHosts}`,
+							`Usable Hosts    : ${info.usableHosts}`,
+							`IP Class        : ${info.ipClass}`,
+							`Scope           : ${info.scope}`,
+						];
+						return { output: lines.join('\n') };
+					},
+				},
+			],
+		},
+	},
+
+];
+
+export const UTILITIES_TEXT_TOOLS: ToolEntry[] = [
+	{
+		slug: 'word-counter',
+		category: 'utilities',
+		name: 'Word Counter',
+		nameZh: '在线字数统计',
+		description: 'Live word, character, sentence and paragraph counts plus reading time.',
+		descriptionZh: '实时统计词数、字符数、句子数、段落数与预估阅读时长。',
+		kind: 'text',
+		config: {
+			placeholder: 'Type or paste text…',
+			placeholderZh: '在此输入或粘贴文本…',
+			stats: wordStats,
+		} satisfies TextConfig,
+	},
+
+	{
+		slug: 'character-counter',
+		category: 'utilities',
+		name: 'Character Counter',
+		nameZh: '字符计数器',
+		description: 'Count characters, letters, digits, spaces, symbols and UTF-8 bytes.',
+		descriptionZh: '实时细分统计字符、字母、数字、空格、符号与 UTF-8 字节数。',
+		kind: 'text',
+		config: {
+			placeholder: 'Type or paste text…',
+			placeholderZh: '在此输入或粘贴文本…',
+			stats: charStats,
+		} satisfies TextConfig,
+	},
+
+	{
+		slug: 'markdown-preview',
+		category: 'utilities',
+		name: 'Markdown Live Editor & Previewer',
+		nameZh: 'Markdown 实时渲染与预览编辑器',
+		description: 'Live split-screen Markdown rendering with GitHub Flavored Markdown (GFM), tables, task lists, code syntax, KaTeX-typeset maths, and HTML export.',
+		descriptionZh: '纯本地双栏实时 Markdown 渲染编辑器，支持 GFM 全语法、LaTeX 公式排版与 HTML 导出。',
+		kind: 'markdown',
+	},
+
+
+	// --- Markdown Table Formatter -------------------------------------------------------
+	{
+		slug: 'markdown-table-formatter',
+		category: 'utilities',
+		name: 'Markdown Table Auto-Align Formatter',
+		nameZh: 'Markdown 表格自动对齐与格式化',
+		description: 'Format messy Markdown tables into clean, readable, column-aligned ASCII markdown tables with Unicode-aware auto-fitted widths.',
+		descriptionZh: '自动对齐错乱的 Markdown 表格，支持中文全角与英文字符宽度自适应计算，一键格式化完美矩形网格。',
+		kind: 'text',
+		config: {
+			placeholder: '| Product | Category | Price | Status |\n|:---|:---:|---:|:---|\n| iPhone 16 Pro | Electronics | $999 | In Stock |\n| Mechanical Keyboard | Peripherals | $129 | Pre-order |',
+			placeholderZh: '粘贴 Markdown 表格，如：\n| 商品 | 分类 | 价格 |\n|:---|:---:|---:|\n| iPhone 16 Pro | 电子产品 | 7999元 |',
+			mono: true,
+			live: true,
+			stats: (text: string) => {
+				const lines = text ? text.split('\n').filter((l) => l.trim().startsWith('|') || l.trim().endsWith('|')).length : 0;
+				return [
+					{ label: 'Table Rows', labelZh: '表格行数', value: String(lines) },
+				];
+			},
+			transforms: [
+				{
+					id: 'align',
+					label: 'Align & Beautify Table',
+					labelZh: '等宽对齐美化',
+					run: (text: string) => ({ output: formatMarkdownTable(text, 'align') }),
+				},
+				{
+					id: 'compact',
+					label: 'Compact Table',
+					labelZh: '紧凑模式',
+					run: (text: string) => ({ output: formatMarkdownTable(text, 'compact') }),
+				},
+			],
+		},
+	},
+
 	{
 		slug: 'text-diff',
 		category: 'utilities',
@@ -1300,293 +2182,66 @@ export const TEXT_TOOLS: ToolEntry[] = [
 	},
 
 	{
-		slug: 'hash-generator',
-		category: 'devtools',
-		name: 'SHA-256 Hash Generator',
-		nameZh: 'SHA-256 哈希生成器',
-		description: 'Compute the SHA-256 digest of any text entirely in your browser.',
-		descriptionZh: '在本机浏览器内计算任意文本的 SHA-256 摘要。',
-		kind: 'text',
-		config: {
-			placeholder: 'Type or paste text to hash…',
-			placeholderZh: '输入或粘贴需要求哈希的文本…',
-			mono: true,
-			live: true,
-			stats: (text: string) => {
-				const charCount = text.length;
-				const byteCount = new TextEncoder().encode(text).length;
-				return [
-					{
-						label: 'Characters',
-						labelZh: '字符数',
-						value: String(charCount),
-					},
-					{
-						label: 'UTF-8 Bytes',
-						labelZh: '字节数 (UTF-8)',
-						value: String(byteCount),
-					},
-					{
-						label: 'Algorithm',
-						labelZh: '算法',
-						value: 'SHA-256 (256-bit)',
-					},
-				];
-			},
-			transforms: [
-				{
-					id: 'hash',
-					label: 'Generate SHA-256',
-					labelZh: '生成哈希',
-					run: async (text: string) => {
-						if (!text) return { output: '—' };
-						const hash = await sha256Async(text);
-						return { output: `SHA-256 ${hash}` };
-					},
-				},
-			],
-		},
-	},
-
-	// --- cURL to Code Converter --------------------------------------------------------
-	{
-		slug: 'curl-to-code',
-		category: 'devtools',
-		name: 'cURL to Code Converter',
-		nameZh: 'cURL 转多语言代码生成器',
-		description: 'Convert cURL command lines into JavaScript (fetch/axios), Python (requests), Go, Rust, and PHP code.',
-		descriptionZh: '将 cURL 命令解析并一键转换为 JS (fetch/axios)、Python (requests)、Go、Rust 与 PHP 等多语言 HTTP 请求代码。',
-		kind: 'text',
-		config: {
-			placeholder: 'curl -X POST "https://api.example.com/v1/data" -H "Content-Type: application/json" -d \'{"name": "Alice"}\'',
-			placeholderZh: '粘贴 cURL 命令，如：curl -X POST "https://api.example.com/v1/data" -H "Content-Type: application/json" -d \'{"name": "Alice"}\'',
-			mono: true,
-			live: true,
-			stats: (text: string) => {
-				const trimmed = text.trim();
-				const parsed = trimmed ? parseCurl(trimmed) : null;
-				return [
-					{
-						label: 'HTTP Method',
-						labelZh: '请求动词 Method',
-						value: parsed ? parsed.method : '—',
-					},
-					{
-						label: 'Target URL',
-						labelZh: '目标网址 URL',
-						value: parsed && parsed.url ? parsed.url : '—',
-					},
-					{
-						label: 'Headers Count',
-						labelZh: '请求头标点数',
-						value: parsed ? String(Object.keys(parsed.headers).length) : '0',
-					},
-				];
-			},
-			transforms: [
-				{
-					id: 'js-fetch',
-					label: 'JS (fetch)',
-					labelZh: 'JS (fetch)',
-					run: (text: string) => {
-						const trimmed = text.trim();
-						if (!trimmed) return { output: '// Paste a cURL command above to convert to JavaScript fetch code' };
-						const parsed = parseCurl(trimmed);
-						return { output: curlToJsFetch(parsed) };
-					},
-				},
-				{
-					id: 'python-requests',
-					label: 'Python (requests)',
-					labelZh: 'Python (requests)',
-					run: (text: string) => {
-						const trimmed = text.trim();
-						if (!trimmed) return { output: '# Paste a cURL command above to convert to Python requests code' };
-						const parsed = parseCurl(trimmed);
-						return { output: curlToPython(parsed) };
-					},
-				},
-			],
-		},
-	},
-
-	// --- IP Subnet / CIDR Calculator ---------------------------------------------------
-	{
-		slug: 'cidr-calculator',
-		category: 'devtools',
-		name: 'IP Subnet & CIDR Calculator',
-		nameZh: 'IPv4 子网掩码与 CIDR 计算器',
-		description: 'Compute network address, netmask, broadcast, host range and total usable IPs from IPv4/CIDR notation.',
-		descriptionZh: '按 IPv4 / CIDR 网段表示法精准计算网络地址、子网掩码、广播地址、可用 IP 起止范围及主机容量数。',
-		kind: 'text',
-		config: {
-			placeholder: '192.168.1.50/24 or 10.0.0.1/16',
-			placeholderZh: '输入 IPv4/CIDR 网段，如：192.168.1.50/24 或 10.0.0.1/16',
-			mono: true,
-			live: true,
-			stats: (text: string) => {
-				const trimmed = text.trim() || '192.168.1.1/24';
-				const info = parseCidrCalc(trimmed);
-				if (!info) {
-					return [{ label: 'Status', labelZh: '状态', value: 'Invalid IPv4/CIDR format' }];
-				}
-				return [
-					{ label: 'Network CIDR', labelZh: '网段 CIDR', value: info.cidr },
-					{ label: 'Subnet Netmask', labelZh: '子网掩码', value: info.netmask },
-					{ label: 'Usable Hosts', labelZh: '可用主机总数', value: info.usableHosts },
-					{ label: 'IP Scope', labelZh: '网络类型范围', value: isZh() ? info.scopeZh : info.scope },
-				];
-			},
-			transforms: [
-				{
-					id: 'cidr',
-					label: 'Calculate Subnet',
-					labelZh: '计算子网明细',
-					run: (text: string) => {
-						const trimmed = text.trim() || '192.168.1.1/24';
-						const info = parseCidrCalc(trimmed);
-						if (!info) {
-							return {
-								output: '',
-								error: 'Invalid IP/CIDR string (e.g. 192.168.1.1/24)',
-								errorZh: '无效的 IP/CIDR 格式（例如 192.168.1.1/24）',
-							};
-						}
-						const lines = [
-							`=== IPv4 / CIDR Subnet Breakdown ===`,
-							`CIDR Notation   : ${info.cidr}`,
-							`IP Address      : ${info.ip}`,
-							`Subnet Netmask  : ${info.netmask}`,
-							`Wildcard Mask   : ${info.wildcard}`,
-							`Network Address : ${info.network}`,
-							`Broadcast Addr  : ${info.broadcast}`,
-							`First Usable Host: ${info.firstUsable}`,
-							`Last Usable Host : ${info.lastUsable}`,
-							`Total Hosts     : ${info.totalHosts}`,
-							`Usable Hosts    : ${info.usableHosts}`,
-							`IP Class        : ${info.ipClass}`,
-							`Scope           : ${info.scope}`,
-						];
-						return { output: lines.join('\n') };
-					},
-				},
-			],
-		},
-	},
-	// --- JS / TS Code Formatter ---------------------------------------------------------
-	{
-		slug: 'js-formatter',
-		category: 'devtools',
-		name: 'JavaScript & TypeScript Code Formatter',
-		nameZh: 'JavaScript / TypeScript 代码格式化与压缩',
-		description: 'Format and beautify JavaScript & TypeScript code with 2-space indentation and block rules, or minify to a single line.',
-		descriptionZh: 'JavaScript 与 TypeScript 代码规范缩进格式化美化、单行 Minify 压缩与括号整理工具。',
-		kind: 'text',
-		config: {
-			placeholder: 'function calculateTotal(items){let sum=0;for(let i=0;i<items.length;i++){sum+=items[i].price;}return sum;}',
-			placeholderZh: '粘贴 JS / TS 代码，例如：function calculateTotal(items){let sum=0;for(let i=0;i<items.length;i++){sum+=items[i].price;}return sum;}',
-			mono: true,
-			live: true,
-			stats: (text: string) => {
-				const lines = text ? text.split('\n').length : 0;
-				const chars = text.length;
-				return [
-					{ label: 'Total Lines', labelZh: '总行数', value: String(lines) },
-					{ label: 'Character Count', labelZh: '字符总数', value: String(chars) },
-				];
-			},
-			transforms: [
-				{
-					id: 'format',
-					label: 'Format JS/TS',
-					labelZh: '格式化排版',
-					run: (text: string) => ({ output: formatJsTsCode(text, 'beautify') }),
-				},
-				{
-					id: 'minify',
-					label: 'Minify Code',
-					labelZh: '单行压缩',
-					run: (text: string) => ({ output: formatJsTsCode(text, 'minify') }),
-				},
-			],
-		},
-	},
-
-	// --- GraphQL Formatter --------------------------------------------------------------
-	{
-		slug: 'graphql-formatter',
-		category: 'devtools',
-		name: 'GraphQL Query & Schema Formatter',
-		nameZh: 'GraphQL 查询与 Schema 格式化工具',
-		description: 'Format GraphQL queries, mutations, subscriptions, and SDL schemas with clean indentation and directive alignment.',
-		descriptionZh: 'GraphQL 查询语句 (Query / Mutation) 与 Schema 声明规范格式化、层级缩进与单行压缩。',
-		kind: 'text',
-		config: {
-			placeholder: 'query GetUser($id: ID!){ user(id: $id){ id name email posts{ title content } } }',
-			placeholderZh: '粘贴 GraphQL 查询语句，例如：query GetUser($id: ID!){ user(id: $id){ id name email posts{ title content } } }',
-			mono: true,
-			live: true,
-			stats: (text: string) => {
-				const lines = text ? text.split('\n').length : 0;
-				const chars = text.length;
-				return [
-					{ label: 'Total Lines', labelZh: '总行数', value: String(lines) },
-					{ label: 'Character Count', labelZh: '字符总数', value: String(chars) },
-				];
-			},
-			transforms: [
-				{
-					id: 'format',
-					label: 'Format GraphQL',
-					labelZh: '格式化排版',
-					run: (text: string) => ({ output: formatGraphQL(text, 'beautify') }),
-				},
-				{
-					id: 'minify',
-					label: 'Minify Query',
-					labelZh: '单行压缩',
-					run: (text: string) => ({ output: formatGraphQL(text, 'minify') }),
-				},
-			],
-		},
-	},
-
-	// --- Markdown Table Formatter -------------------------------------------------------
-	{
-		slug: 'markdown-table-formatter',
+		slug: 'roman-numeral',
 		category: 'utilities',
-		name: 'Markdown Table Auto-Align Formatter',
-		nameZh: 'Markdown 表格自动对齐与格式化',
-		description: 'Format messy Markdown tables into clean, readable, column-aligned ASCII markdown tables with Unicode-aware auto-fitted widths.',
-		descriptionZh: '自动对齐错乱的 Markdown 表格，支持中文全角与英文字符宽度自适应计算，一键格式化完美矩形网格。',
+		name: 'Roman Numeral Converter',
+		nameZh: '罗马数字转换器',
+		description: 'Convert between Roman numerals and Arabic numbers (1–3999), with strict validation of non-canonical forms.',
+		descriptionZh: '罗马数字与阿拉伯数字互转（1–3999），严格校验非规范写法。',
 		kind: 'text',
 		config: {
-			placeholder: '| Product | Category | Price | Status |\n|:---|:---:|---:|:---|\n| iPhone 16 Pro | Electronics | $999 | In Stock |\n| Mechanical Keyboard | Peripherals | $129 | Pre-order |',
-			placeholderZh: '粘贴 Markdown 表格，如：\n| 商品 | 分类 | 价格 |\n|:---|:---:|---:|\n| iPhone 16 Pro | 电子产品 | 7999元 |',
-			mono: true,
+			def: 'MCMLXXXVII',
+			placeholder: 'e.g. 1987 or MCMLXXXVII',
+			placeholderZh: '例如 1987 或 MCMLXXXVII',
 			live: true,
 			stats: (text: string) => {
-				const lines = text ? text.split('\n').filter((l) => l.trim().startsWith('|') || l.trim().endsWith('|')).length : 0;
+				const t = text.trim();
+				const asNum = /^-?\d+$/.test(t) ? Number(t) : null;
+				const n = asNum ?? fromRoman(t);
+				const valid = n !== null && n >= 1 && n <= 3999;
 				return [
-					{ label: 'Table Rows', labelZh: '表格行数', value: String(lines) },
+					{
+						label: 'Arabic value',
+						labelZh: '阿拉伯数字值',
+						value: valid ? String(n) : '—',
+					},
+					{
+						label: 'Roman form',
+						labelZh: '罗马数字',
+						value: valid ? (asNum !== null ? (toRoman(n) as string) : t.toUpperCase()) : '—',
+					},
 				];
 			},
 			transforms: [
 				{
-					id: 'align',
-					label: 'Align & Beautify Table',
-					labelZh: '等宽对齐美化',
-					run: (text: string) => ({ output: formatMarkdownTable(text, 'align') }),
+					id: 'toroman',
+					label: 'Number → Roman',
+					labelZh: '数字 → 罗马数字',
+					run: (t) => {
+						const n = Number(t.trim());
+						if (!t.trim()) return { output: '', error: 'Enter a number or numeral first.', errorZh: '请先输入数字或罗马数字。' };
+						const r = toRoman(n);
+						return r
+							? { output: r }
+							: { output: '', error: 'Enter an integer from 1 to 3999.', errorZh: '请输入 1 到 3999 的整数。' };
+					},
 				},
 				{
-					id: 'compact',
-					label: 'Compact Table',
-					labelZh: '紧凑模式',
-					run: (text: string) => ({ output: formatMarkdownTable(text, 'compact') }),
+					id: 'fromroman',
+					label: 'Roman → Number',
+					labelZh: '罗马数字 → 数字',
+					run: (t) => {
+						if (!t.trim()) return { output: '', error: 'Enter a numeral first.', errorZh: '请先输入罗马数字。' };
+						const n = fromRoman(t);
+						return n !== null
+							? { output: String(n) }
+							: { output: '', error: 'Not a canonical Roman numeral (1–3999).', errorZh: '这不是规范的罗马数字（1–3999）。' };
+					},
 				},
 			],
-		},
+		} satisfies TextConfig,
 	},
+
 ];
 
 interface ParsedCurl {

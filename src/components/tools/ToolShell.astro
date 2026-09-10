@@ -1113,6 +1113,27 @@ const year = new Date().getFullYear();
 	padding: 0.9em 1em;
 	background: var(--bg);
 }
+/* --- WCAG Contrast Card (reuses the gamut card frame) --- */
+.t-contrast-preview {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin: 0.6em 0;
+	padding: 0.5em 0.7em;
+	border: 1px solid var(--gridline);
+	border-radius: 8px;
+}
+.t-contrast-sample {
+	font-size: 1.6rem;
+	font-weight: 600;
+	padding: 0.15em 0.4em;
+	border-radius: 6px;
+}
+.t-contrast-ratio {
+	font-family: ui-monospace, Consolas, monospace;
+	font-size: 0.95rem;
+	font-weight: 600;
+}
 .t-gamut-header {
 	display: flex;
 	justify-content: space-between;

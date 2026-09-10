@@ -18,6 +18,9 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 	}
 	langProp(input, 'placeholder', config.placeholder ?? '', config.placeholderZh);
 	langAttr(input, 'aria-label', 'Text input', '文本输入');
+	// Sample content: prefilled only when the box is still empty, so a page
+	// reload never clobbers what the visitor typed.
+	if (config.def && !input.value) input.value = config.def;
 
 	let statsHost = host.querySelector<HTMLElement>('.t-results');
 	if (config.stats && !statsHost) {
