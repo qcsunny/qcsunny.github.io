@@ -1161,6 +1161,192 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 	},
 
 	{
+		slug: 'toml-formatter',
+		category: 'devtools',
+		name: 'TOML Formatter & Validator',
+		nameZh: 'TOML 格式化与校验工具',
+		description: 'Format and validate TOML (Cargo.toml / pyproject.toml), or convert between TOML and JSON both ways.',
+		descriptionZh: '规范化格式化并校验 TOML（Cargo.toml / pyproject.toml），支持 TOML 与 JSON 双向转换。',
+		kind: 'text',
+		config: {
+			def: '# demo config\ntitle = "demo"\nversion = 2\n\n[server]\nhost = "example.com"\nport = 8080\n\n[[products]]\nname = "hammer"\nsku = 738594937\n\n[[products]]\nname = "nail"\n',
+			placeholder: 'title = "demo"…',
+			placeholderZh: 'title = "demo"…',
+			mono: true,
+			transforms: [
+				{
+					id: 'format',
+					label: 'Format / Validate',
+					labelZh: '格式化 / 校验',
+					run: async (t) => {
+						if (!t.trim()) return { output: '', error: 'Enter TOML first.', errorZh: '请先输入 TOML。' };
+						try {
+							const { formatToml: fmt } = await import('./toml');
+							return { output: fmt(t) };
+						} catch (e) {
+							return { output: '', error: errToEn(e), errorZh: errToZh(e) };
+						}
+					},
+				},
+				{
+					id: 'toml2json',
+					label: 'TOML → JSON',
+					labelZh: 'TOML → JSON',
+					run: async (t) => {
+						if (!t.trim()) return { output: '', error: 'Enter TOML first.', errorZh: '请先输入 TOML。' };
+						try {
+							const { tomlToJson: toJ } = await import('./toml');
+							return { output: toJ(t) };
+						} catch (e) {
+							return { output: '', error: errToEn(e), errorZh: errToZh(e) };
+						}
+					},
+				},
+				{
+					id: 'json2toml',
+					label: 'JSON → TOML',
+					labelZh: 'JSON → TOML',
+					run: async (t) => {
+						if (!t.trim()) return { output: '', error: 'Enter JSON first.', errorZh: '请先输入 JSON。' };
+						try {
+							const { jsonToToml: toT } = await import('./toml');
+							return { output: toT(t) };
+						} catch (e) {
+							return { output: '', error: errToEn(e), errorZh: errToZh(e) };
+						}
+					},
+				},
+			],
+		} satisfies TextConfig,
+	},
+
+	{
+		slug: 'json-to-typescript',
+		category: 'devtools',
+		name: 'JSON to TypeScript Interface Generator',
+		nameZh: 'JSON 转 TypeScript 接口生成器',
+		description: 'Generate TypeScript interfaces from JSON, merging object arrays into one interface with optional keys.',
+		descriptionZh: '从 JSON 生成 TypeScript interface 定义，对象数组自动合并为单一接口并标注可选字段。',
+		kind: 'text',
+		config: {
+			def: '{\n  "name": "Alice",\n  "age": 30,\n  "address": { "city": "Springfield", "zip": "12345" },\n  "orders": [\n    { "id": 1, "total": 99.5, "shipped": true },\n    { "id": 2, "total": 12.0 }\n  ]\n}\n',
+			placeholder: '{ "name": "Alice", … }',
+			placeholderZh: '{ "name": "Alice", … }',
+			mono: true,
+			live: true,
+			transforms: [
+				{
+					id: 'gen',
+					label: 'Generate interfaces',
+					labelZh: '生成 TypeScript 接口',
+					run: async (t) => {
+						if (!t.trim()) return { output: '', error: 'Enter JSON first.', errorZh: '请先输入 JSON。' };
+						try {
+							const { jsonToTypescript: gen } = await import('./jsontots');
+							return { output: gen(t) };
+						} catch (e) {
+							return { output: '', error: errToEn(e), errorZh: errToZh(e) };
+						}
+					},
+				},
+			],
+		} satisfies TextConfig,
+	},
+
+	{
+		slug: 'xml-json-converter',
+		category: 'devtools',
+		name: 'XML ⇄ JSON Converter',
+		nameZh: 'XML 与 JSON 互转工具',
+		description: 'Convert XML to JSON (attributes as @keys, text as #text) and JSON back to XML, fully in your browser.',
+		descriptionZh: 'XML 转 JSON（属性映射为 @键、文本为 #text），以及 JSON 转 XML，全程浏览器本地处理。',
+		kind: 'text',
+		config: {
+			def: '<?xml version="1.0"?>\n<library name="city">\n  <book id="1">Dune</book>\n  <book id="2">Hyperion</book>\n  <open>false</open>\n</library>\n',
+			placeholder: '<root>…</root>',
+			placeholderZh: '<root>…</root>',
+			mono: true,
+			transforms: [
+				{
+					id: 'xml2json',
+					label: 'XML → JSON',
+					labelZh: 'XML → JSON',
+					run: async (t) => {
+						if (!t.trim()) return { output: '', error: 'Enter XML first.', errorZh: '请先输入 XML。' };
+						try {
+							const { xmlToJson: toJ } = await import('./xmljson');
+							return { output: toJ(t) };
+						} catch (e) {
+							return { output: '', error: errToEn(e), errorZh: errToZh(e) };
+						}
+					},
+				},
+				{
+					id: 'json2xml',
+					label: 'JSON → XML',
+					labelZh: 'JSON → XML',
+					run: async (t) => {
+						if (!t.trim()) return { output: '', error: 'Enter JSON first.', errorZh: '请先输入 JSON。' };
+						try {
+							const { jsonToXml: toX } = await import('./xmljson');
+							return { output: toX(t) };
+						} catch (e) {
+							return { output: '', error: errToEn(e), errorZh: errToZh(e) };
+						}
+					},
+				},
+			],
+		} satisfies TextConfig,
+	},
+
+	{
+		slug: 'env-json-converter',
+		category: 'devtools',
+		name: '.env ⇄ JSON Converter',
+		nameZh: '.env 与 JSON 互转工具',
+		description: 'Convert .env files to JSON and back, with quote handling, export prefixes and inline comments.',
+		descriptionZh: '.env 文件与 JSON 互转，完整处理引号、export 前缀与行内注释。',
+		kind: 'text',
+		config: {
+			def: '# app config\nHOST=example.com\nPORT=8080\nDEBUG=false\nAPI_KEY="your-key-here"\n',
+			placeholder: 'KEY=value…',
+			placeholderZh: 'KEY=value…',
+			mono: true,
+			live: true,
+			transforms: [
+				{
+					id: 'env2json',
+					label: '.env → JSON',
+					labelZh: '.env → JSON',
+					run: async (t) => {
+						if (!t.trim()) return { output: '', error: 'Enter .env content first.', errorZh: '请先输入 .env 内容。' };
+						try {
+							const { envToJson: toJ } = await import('./envjson');
+							return { output: toJ(t) };
+						} catch (e) {
+							return { output: '', error: errToEn(e), errorZh: errToZh(e) };
+						}
+					},
+				},
+				{
+					id: 'json2env',
+					label: 'JSON → .env',
+					labelZh: 'JSON → .env',
+					run: async (t) => {
+						if (!t.trim()) return { output: '', error: 'Enter JSON first.', errorZh: '请先输入 JSON。' };
+						try {
+							const { jsonToEnv: toE } = await import('./envjson');
+							return { output: toE(t) };
+						} catch (e) {
+							return { output: '', error: errToEn(e), errorZh: errToZh(e) };
+						}
+					},
+				},
+			],
+		} satisfies TextConfig,
+	},
+
+	{
 		slug: 'csv-json-converter',
 		category: 'devtools',
 		name: 'CSV ⇄ JSON Converter',
@@ -1976,18 +2162,27 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 	{
 		slug: 'cidr-calculator',
 		category: 'devtools',
-		name: 'IP Subnet & CIDR Calculator',
-		nameZh: 'IPv4 子网掩码与 CIDR 计算器',
-		description: 'Compute network address, netmask, broadcast, host range and total usable IPs from IPv4/CIDR notation.',
-		descriptionZh: '按 IPv4 / CIDR 网段表示法精准计算网络地址、子网掩码、广播地址、可用 IP 起止范围及主机容量数。',
+		name: 'IP Subnet & CIDR Calculator (IPv4 / IPv6)',
+		nameZh: 'IPv4 / IPv6 子网掩码与 CIDR 计算器',
+		description: 'Compute network address, netmask, broadcast, host range from IPv4/CIDR — plus full IPv6 breakdowns with :: expansion and 128-bit prefix math.',
+		descriptionZh: 'IPv4/CDIR 网段计算网络地址、子网掩码、广播地址与可用主机范围，并支持 IPv6 网段的 :: 展开、128 位前缀与地址总数计算。',
 		kind: 'text',
 		config: {
-			placeholder: '192.168.1.50/24 or 10.0.0.1/16',
-			placeholderZh: '输入 IPv4/CIDR 网段，如：192.168.1.50/24 或 10.0.0.1/16',
+			placeholder: '192.168.1.50/24, or 2001:db8::1/64',
+			placeholderZh: '输入 IPv4/CIDR（如 192.168.1.50/24）或 IPv6（如 2001:db8::1/64）',
 			mono: true,
 			live: true,
 			stats: (text: string) => {
 				const trimmed = text.trim() || '192.168.1.1/24';
+				if (trimmed.includes(':')) {
+					const v6 = parseCidr6(trimmed);
+					if (!v6) return [{ label: 'Status', labelZh: '状态', value: 'Invalid IPv6/CIDR format' }];
+					return [
+						{ label: 'Network CIDR', labelZh: '网段 CIDR', value: v6.cidr },
+						{ label: 'Total Addresses', labelZh: '地址总数', value: v6.total },
+						{ label: 'IP Scope', labelZh: '地址类型', value: (typeof document !== 'undefined' && document.documentElement.dataset.lang === 'zh' ? v6.scopeZh : v6.scope) },
+					];
+				}
 				const info = parseCidrCalc(trimmed);
 				if (!info) {
 					return [{ label: 'Status', labelZh: '状态', value: 'Invalid IPv4/CIDR format' }];
@@ -2006,6 +2201,28 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 					labelZh: '计算子网明细',
 					run: (text: string) => {
 						const trimmed = text.trim() || '192.168.1.1/24';
+						// ':' → IPv6 path (128-bit, BigInt); dotted → IPv4 as before
+						if (trimmed.includes(':')) {
+							const v6 = parseCidr6(trimmed);
+							if (!v6) {
+								return {
+									output: '',
+									error: 'Invalid IPv6/CIDR string (e.g. 2001:db8::1/64)',
+									errorZh: '无效的 IPv6/CIDR 格式（例如 2001:db8::1/64）',
+								};
+							}
+							const lines = [
+								`=== IPv6 / CIDR Subnet Breakdown ===`,
+								`CIDR Notation   : ${v6.cidr}`,
+								`IP Address      : ${v6.ip}`,
+								`Prefix Length   : /${v6.prefix} of 128 bits`,
+								`Network Address : ${v6.network}`,
+								`Last Address    : ${v6.lastAddress}`,
+								`Total Addresses : ${v6.total}`,
+								`Scope           : ${v6.scope}`,
+							];
+							return { output: lines.join('\n') };
+						}
 						const info = parseCidrCalc(trimmed);
 						if (!info) {
 							return {
@@ -2359,6 +2576,120 @@ function longToIp(long: number): string {
 		(long >>> 8) & 255,
 		long & 255,
 	].join('.');
+}
+
+// --- IPv6 / CIDR -----------------------------------------------------------------
+// 128-bit addresses live in BigInt. Parsing honours the RFC 4291 text form:
+// '::' collapses one run of zero groups (at most once), groups are 1–4 hex
+// digits, and an IPv4 tail (e.g. ::ffff:192.168.1.1) counts as two groups.
+
+/** Parse an IPv6 address string to a 128-bit BigInt, or null. */
+export function parseIpv6(s: string): bigint | null {
+	const t = s.trim().toLowerCase();
+	if (!t) return null;
+	const dbl = t.split('::');
+	if (dbl.length > 2) return null;
+	const hasDbl = dbl.length === 2;
+
+	const parseGroups = (part: string): bigint[] | null => {
+		if (part === '') return [];
+		const groups = part.split(':');
+		const out: bigint[] = [];
+		for (let i = 0; i < groups.length; i++) {
+			const g = groups[i]!;
+			// embedded IPv4 tail: only legal in the last group
+			if (g.includes('.')) {
+				if (i !== groups.length - 1) return null;
+				const v4 = ipToLong(g);
+				if (v4 === null) return null;
+				out.push(BigInt(v4 >>> 16), BigInt(v4 & 0xffff));
+			} else {
+				if (!/^[0-9a-f]{1,4}$/.test(g)) return null;
+				out.push(BigInt(parseInt(g, 16)));
+			}
+		}
+		return out;
+	};
+
+	const head = parseGroups(dbl[0]!);
+	if (head === null) return null;
+	const tail = hasDbl ? parseGroups(dbl[1]!) : [];
+	if (tail === null) return null;
+	const total = head.length + tail.length;
+	if (total > 8) return null;
+	if (!hasDbl && total !== 8) return null;
+
+	let v = 0n;
+	for (const g of head) v = (v << 16n) | g;
+	if (hasDbl) v <<= BigInt(16 * (8 - total));
+	for (const g of tail!) v = (v << 16n) | g;
+	return v;
+}
+
+/** Format a 128-bit BigInt as IPv6, compressing the longest zero run to '::'. */
+export function bigIntToIpv6(v: bigint): string {
+	const groups: string[] = [];
+	for (let i = 7; i >= 0; i--) {
+		groups.push(((v >> BigInt(i * 16)) & 0xffffn).toString(16));
+	}
+	// longest run of ≥2 zero groups, first one wins ties
+	let bestStart = -1;
+	let bestLen = 0;
+	let i = 0;
+	while (i < 8) {
+		if (groups[i] === '0') {
+			let j = i;
+			while (j < 8 && groups[j] === '0') j++;
+			if (j - i > bestLen) {
+				bestLen = j - i;
+				bestStart = i;
+			}
+			i = j;
+		} else i++;
+	}
+	if (bestLen >= 2) {
+		return `${groups.slice(0, bestStart).join(':')}::${groups.slice(bestStart + bestLen).join(':')}`;
+	}
+	return groups.join(':');
+}
+
+function ipv6Scope(v: bigint): { en: string; zh: string } {
+	if (v === 0n) return { en: 'Unspecified (::)', zh: '未指定地址 (::)' };
+	if (v === 1n) return { en: 'Loopback (::1)', zh: '回环地址 (::1)' };
+	if ((v >> 120n) === 0xffn) return { en: 'Multicast (ff00::/8)', zh: '组播地址 (ff00::/8)' };
+	// fe80::/10: top 10 bits are 1111111010 (0x3FA)
+	if ((v >> 118n) === 0x3fan) return { en: 'Link-Local (fe80::/10)', zh: '链路本地 (fe80::/10)' };
+	// fc00::/7: top 7 bits are 1111110 (0x7E)
+	if ((v >> 121n) === 0x7en) return { en: 'Unique Local (fc00::/7, ULA)', zh: '唯一本地地址 (fc00::/7, ULA)' };
+	if ((v >> 125n) === 0x1n) return { en: 'Global Unicast (2000::/3)', zh: '全球单播地址 (2000::/3)' };
+	return { en: 'Reserved / Special', zh: '保留 / 特殊用途' };
+}
+
+/** IPv6 CIDR breakdown; input is `addr` or `addr/prefix`, prefix defaults to 64. */
+export function parseCidr6(input: string) {
+	const parts = input.trim().split('/');
+	if (parts.length > 2) return null;
+	const prefix = parts[1] !== undefined ? Number(parts[1]) : 64;
+	if (!Number.isInteger(prefix) || prefix < 0 || prefix > 128) return null;
+	const ip = parseIpv6(parts[0]!);
+	if (ip === null) return null;
+
+	const mask = prefix === 0 ? 0n : ((1n << BigInt(prefix)) - 1n) << BigInt(128 - prefix);
+	const network = ip & mask;
+	const last = network | (~mask & ((1n << 128n) - 1n));
+	const total = 1n << BigInt(128 - prefix);
+	const scope = ipv6Scope(network);
+
+	return {
+		ip: bigIntToIpv6(ip),
+		cidr: `${bigIntToIpv6(network)}/${prefix}`,
+		network: bigIntToIpv6(network),
+		lastAddress: bigIntToIpv6(last),
+		prefix,
+		total: total.toLocaleString('en-US'),
+		scope: scope.en,
+		scopeZh: scope.zh,
+	};
 }
 
 function parseCidrCalc(input: string) {
