@@ -16,8 +16,32 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # Full history: the skip detection below needs the merge commit's second
+      # parent (the PR head), which a shallow clone's first-parent chain omits.
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # A merge commit's second parent is the PR branch head. When the merge
+      # commit's tree is identical to that parent, the full E2E suite already
+      # gated exactly this content on the PR — rerunning it on main duplicates
+      # ~7 minutes for byte-identical code. Concurrent merges, conflict
+      # resolutions, squashes and direct pushes produce a different tree (or no
+      # second parent at all) and keep the full run. The PR-side gate itself is
+      # never skipped — this only shortens the post-merge path.
+      - name: Detect already-gated merge (same tree as PR head)
+        id: gate
+        run: |
+          if PR_HEAD=$(git rev-parse --verify HEAD^2 2>/dev/null); then
+            if git diff --quiet "$PR_HEAD" HEAD; then
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              echo "Tree identical to PR head $PR_HEAD — E2E gated there already, skipping the duplicate run."
+            else
+              echo "Merge changed the tree (concurrent merge or conflict resolution) — running the full suite."
+            fi
+          else
+            echo "No second parent (direct push, squash or rebase merge) — running the full suite."
+          fi
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -59,13 +83,16 @@ jobs:
       # Playwright validates the installed browser against its expected revision
       # hash and re-downloads on mismatch.
       - name: Cache Playwright chromium
+        if: steps.gate.outputs.skip != 'true'
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: pw-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
       - name: Setup Playwright chromium
+        if: steps.gate.outputs.skip != 'true'
         run: npx playwright install chromium --with-deps
       - name: Run E2E tests against the build
+        if: steps.gate.outputs.skip != 'true'
         run: npx playwright test
       - name: Upload test report on failure
         if: failure()
