@@ -341,6 +341,18 @@ export function initColor(host: HTMLElement): void {
 	}
 	contrastCard.append(contrastRows);
 
+	// What the ✓/✗ column means — without this the four verdicts read as
+	// opaque labels. One bilingual line under the rows.
+	const contrastNote = document.createElement('p');
+	contrastNote.className = 't-note';
+	contrastNote.append(
+		bilingual(
+			'✓/✗ tells whether the foreground text has enough contrast on the background to meet each WCAG accessibility level. AA is the compliance baseline most regulations cite; AAA is the enhanced level.',
+			'✓/✗ 表示前景文字在该背景上的对比度是否达到该级 WCAG 无障碍标准。AA 是多数法规引用的合规底线，AAA 为增强级（低视力用户也能舒适阅读）。',
+		),
+	);
+	contrastCard.append(contrastNote);
+
 	/** WCAG relative luminance (WCAG 2.x, sRGB). */
 	function relLum({ r, g, b }: Rgb): number {
 		const ch = (v: number) => {
