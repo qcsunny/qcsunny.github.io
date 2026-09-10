@@ -14,10 +14,11 @@ import ogImages from './og-images.mjs';
 import satteriKatex from './satteri-katex.mjs';
 import searchIndex from './search-index.mjs';
 
-// Blog pubDate → ISO, skimmed from frontmatter at config time so the sitemap
+// Blog lastmod → ISO, skimmed from frontmatter at config time so the sitemap
 // can emit <lastmod>. @astrojs/sitemap never sees the content collection, so
-// there is no collection-aware hook; pubDate is the one honest per-page date
-// we carry (updatedDate is deliberately not filled yet).
+// there is no collection-aware hook. updatedDate wins when an article carries
+// one (2026-09-10: the field is live — set it in frontmatter and the sitemap
+// follows), pubDate is the fallback.
 /** @type {Record<string, string>} */
 const blogLastmod = {};
 {
@@ -29,7 +30,9 @@ const blogLastmod = {};
 		),
 	);
 	for (const { slug, data } of entries) {
-		const ts = Date.parse(data.pubDate);
+		// updatedDate is the later date when present; fall back to pubDate.
+		const raw = data.updatedDate ?? data.pubDate;
+		const ts = Date.parse(raw);
 		blogLastmod[`/blog/${slug}/`] = new Date(ts).toISOString();
 	}
 }

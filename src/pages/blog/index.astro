@@ -41,8 +41,10 @@ const filterableCategories = BLOG_CATEGORIES.filter((c) => (countByCategory.get(
 // the archive rows halve the page and make the years of writing visible.
 const [hero, ...rest] = posts;
 const minis = rest.slice(0, 2);
-const recent = rest.slice(2, 6);
-const archive = rest.slice(6);
+// Six recent cards fill a 3×2 grid exactly — four cards left a lonely corner
+// (3+1) on the 1140px frame.
+const recent = rest.slice(2, 8);
+const archive = rest.slice(8);
 const byYear = new Map<number, typeof posts>();
 for (const post of archive) {
 	const year = post.data.pubDate.getFullYear();
@@ -684,11 +686,16 @@ const shortDate = (d: Date) => ({
 
 	.articles-grid {
 		display: grid;
-		/* two columns comfortably: 2 × 390 + 1.4rem gap = 809 ≤ 832. minmax
-		   keeps the count fluid — one column on phones, three never (832 is
-		   not wide enough and 260px cards would be all padding). */
-		grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+		/* exactly 3 columns on the 1140px frame (≈366px per card after the
+		   gaps); 4 cards in 3 columns stranded one card alone on its row. */
+		grid-template-columns: repeat(3, 1fr);
 		gap: 1.4rem;
+	}
+
+	@media (max-width: 900px) {
+		.articles-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
 	}
 
 	@media (max-width: 640px) {
