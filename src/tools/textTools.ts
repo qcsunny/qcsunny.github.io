@@ -2793,6 +2793,25 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 	},
 
 	{
+		slug: 'mandelbrot-explorer',
+		category: 'devtools',
+		name: 'Mandelbrot & Julia Set Explorer',
+		nameZh: '曼德博与朱利亚集合浏览器',
+		description: 'Explore the Mandelbrot set on the GPU: drag to pan, wheel to zoom toward 10⁻¹⁵ scale, switch to Julia sets, tune iterations and palette, export PNG.',
+		descriptionZh: 'GPU 上探索曼德博集合：拖动平移、滚轮缩放至 10⁻¹⁵ 尺度、切换朱利亚集合、调节迭代与配色、导出 PNG。',
+		kind: 'fractal',
+	},
+	{
+		slug: 'image-filter-lab',
+		category: 'devtools',
+		name: 'Image Filter Lab (GPU Convolution)',
+		nameZh: '图像滤镜实验室（GPU 卷积）',
+		description: 'Drop an image and convolve it live on the GPU with an editable 3×3 kernel — blur, sharpen, Sobel edges, emboss, or your own — then export the result.',
+		descriptionZh: '拖入图片，用可编辑的 3×3 卷积核在 GPU 上实时卷积——模糊、锐化、Sobel 边缘、浮雕或自定义——然后导出结果。',
+		kind: 'imgfilter',
+	},
+
+	{
 		slug: 'html-entity-escaper',
 		category: 'devtools',
 		name: 'HTML Entity Escape / Unescape',
