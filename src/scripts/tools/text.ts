@@ -39,6 +39,104 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 		host.append(label, statsHost);
 	}
 
+	// --- optional secret input (HMAC keys and the like) -----------------------------
+	let secretInput: HTMLInputElement | null = null;
+	if (config.secretInput) {
+		const wrap = document.createElement('div');
+		wrap.className = 't-field t-secretfield';
+		const label = document.createElement('label');
+		label.htmlFor = 't-secret';
+		label.append(bilingual(config.secretInput.label, config.secretInput.labelZh));
+		secretInput = document.createElement('input');
+		secretInput.type = 'password';
+		secretInput.id = 't-secret';
+		secretInput.autocomplete = 'off';
+		secretInput.spellcheck = false;
+		langProp(secretInput, 'placeholder', config.secretInput.placeholder ?? '', config.secretInput.placeholderZh);
+		langAttr(secretInput, 'aria-label', config.secretInput.label, config.secretInput.labelZh);
+		wrap.append(label, secretInput);
+		host.insertBefore(wrap, input.nextSibling);
+	}
+
+	// --- optional file source (text drop-in, or binary via fileTransform) -----------
+	const humanSize = (n: number): string => {
+		if (n < 1024) return `${n} B`;
+		if (n < 1024 ** 2) return `${(n / 1024).toFixed(1)} KB`;
+		if (n < 1024 ** 3) return `${(n / 1024 ** 2).toFixed(1)} MB`;
+		return `${(n / 1024 ** 3).toFixed(2)} GB`;
+	};
+	async function readDroppedFile(file: File): Promise<void> {
+		if (!input) return;
+		try {
+			if (config.fileTransform) {
+				// Binary path: bytes straight to the tool (file hashing), the
+				// textarea just records what was dropped.
+				const buf = await file.arrayBuffer();
+				const r = await config.fileTransform(buf, file.name, file.size, secretInput?.value ?? '');
+				input.value = `📄 ${file.name} (${humanSize(file.size)})`;
+				if (out) out.value = r.output;
+				if (errEl) setBilingual(errEl, r.error ?? '', r.errorZh);
+			} else {
+				// Text path: the file IS the input; everything downstream
+				// (live transforms, stats) just works.
+				input.value = await file.text();
+				update();
+				input.dispatchEvent(new Event('input', { bubbles: true }));
+			}
+		} catch (err) {
+			if (errEl) setBilingual(errEl, err instanceof Error ? err.message : 'Could not read the file.', err instanceof Error ? err.message : '无法读取该文件。');
+		}
+	}
+	if (config.acceptFiles || config.fileTransform) {
+		const fileRow = document.createElement('div');
+		fileRow.className = 't-filerow';
+		const pick = document.createElement('button');
+		pick.type = 'button';
+		pick.className = 't-btn t-file-btn';
+		pick.append(bilingual('📄 Choose file', '📄 选择文件'));
+		const hint = document.createElement('span');
+		hint.className = 't-file-hint';
+		hint.append(
+			config.fileTransform
+				? bilingual('— or drop a file onto the input box', '——或把文件拖到输入框')
+				: bilingual(`— or drop a ${config.acceptFiles ?? ''} file onto the input box`, `——或把 ${config.acceptFiles ?? ''} 文件拖到输入框`),
+		);
+		const hidden = document.createElement('input');
+		hidden.type = 'file';
+		if (config.acceptFiles) hidden.accept = config.acceptFiles;
+		hidden.hidden = true;
+		// Stated up front on purpose: a file drop reads like "uploading" to
+		// most people, and the whole point of this site is that it isn't.
+		const privacy = document.createElement('span');
+		privacy.className = 't-file-privacy';
+		privacy.append(
+			bilingual('🔒 Files never leave your device — processing is 100% local.', '🔒 文件不会上传 —— 全程本地离线运算。'),
+		);
+		hidden.addEventListener('change', () => {
+			const f = hidden.files?.[0];
+			if (f) void readDroppedFile(f);
+			hidden.value = '';
+		});
+		pick.addEventListener('click', () => hidden.click());
+		fileRow.append(pick, hint, privacy, hidden);
+		// The drop targets: the textarea and the file row both accept a drop.
+		for (const zone of [input, fileRow] as HTMLElement[]) {
+			zone.addEventListener('dragover', (e: DragEvent) => {
+				e.preventDefault();
+				zone.classList.add('t-droptarget');
+			});
+			zone.addEventListener('dragleave', () => zone.classList.remove('t-droptarget'));
+			zone.addEventListener('drop', (e: DragEvent) => {
+				e.preventDefault();
+				zone.classList.remove('t-droptarget');
+				const f = e.dataTransfer?.files?.[0];
+				if (f) void readDroppedFile(f);
+			});
+		}
+		const secretOrInput = secretInput?.parentElement ?? input;
+		host.insertBefore(fileRow, secretOrInput === input ? input.nextSibling : secretOrInput.nextSibling);
+	}
+
 	let out: HTMLTextAreaElement | null = null;
 	let errEl: HTMLElement | null = null;
 
@@ -95,7 +193,18 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 		}
 
 		let runSeq = 0;
+		// Pending live-mode recompute, so a manual transform click can cancel it
+		// (see executeTransform).
+		let liveDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 		const executeTransform = (t: TextTransform): void => {
+			// A manual click wins over a pending live recompute: the debounce
+			// scheduled by the just-typed input would otherwise fire a moment
+			// later and clobber the manual result — a live transform fed a
+			// multi-line paste blanks a batch report the user just requested.
+			if (liveDebounceTimer) {
+				clearTimeout(liveDebounceTimer);
+				liveDebounceTimer = null;
+			}
 			if (!out || !input) return;
 			if (input.value.length > MAX_INPUT_CHARS) {
 				out.value = '';
@@ -103,8 +212,9 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 				return;
 			}
 			const currentSeq = ++runSeq;
+			const secret = secretInput?.value ?? '';
 			try {
-				const r = t.run(input.value);
+				const r = t.run(input.value, secret);
 				if (r instanceof Promise) {
 					r.then((res) => {
 						if (currentSeq !== runSeq || !out) return;
@@ -146,13 +256,17 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 		}
 
 		if (config.live && config.transforms.length > 0) {
-			let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-			input.addEventListener('input', () => {
-				if (debounceTimer) clearTimeout(debounceTimer);
-				debounceTimer = setTimeout(() => {
+			const scheduleLive = () => {
+				if (liveDebounceTimer) clearTimeout(liveDebounceTimer);
+				liveDebounceTimer = setTimeout(() => {
+					liveDebounceTimer = null;
 					executeTransform(config.transforms![0]);
 				}, 40);
-			});
+			};
+			input.addEventListener('input', scheduleLive);
+			// The secret box changes the HMAC rows of the same input, so typing a
+			// key must recompute just the same as typing text does.
+			secretInput?.addEventListener('input', scheduleLive);
 			if (input.value) {
 				executeTransform(config.transforms[0]);
 			}

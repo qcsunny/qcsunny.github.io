@@ -572,6 +572,33 @@ const year = new Date().getFullYear();
 			.t-btn.t-clear:hover {
 				opacity: 1;
 			}
+			/* --- file source row (text drop-in & binary hashing) --- */
+			.t-filerow {
+				display: flex;
+				align-items: center;
+				flex-wrap: wrap;
+				gap: 0.3em 0.8em;
+				margin-bottom: 1em;
+			}
+			.t-file-hint {
+				color: var(--dim);
+				font-size: 0.85rem;
+			}
+			.t-file-privacy {
+				flex-basis: 100%;
+				color: var(--dim);
+				font-size: 0.8rem;
+			}
+			.t-secretfield input {
+				width: 100%;
+				box-sizing: border-box;
+				margin-bottom: 1em;
+			}
+			.t-droptarget {
+				outline: 2px dashed var(--accent);
+				outline-offset: 2px;
+				border-radius: 8px;
+			}
 
 			/* --- export bar (print + PNG); shown only once results render --- */
 			.t-export-bar {

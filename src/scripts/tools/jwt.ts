@@ -66,11 +66,149 @@ function formatTimestamp(ts: number): string {
 	);
 }
 
+/** base64url encode (RFC 4648 §5, no padding) — the JWT wire form. */
+function base64UrlEncode(bytes: Uint8Array): string {
+	let bin = '';
+	for (const b of bytes) bin += String.fromCharCode(b);
+	return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+/** HMAC over the HS256/384/512 family via Web Crypto; returns the base64url
+ *  signature JWT uses. */
+async function hmacSign(algSha: 'SHA-256' | 'SHA-384' | 'SHA-512', secret: string, data: Uint8Array): Promise<string> {
+	const enc = new TextEncoder();
+	const key = await crypto.subtle.importKey(
+		'raw',
+		enc.encode(secret) as unknown as ArrayBuffer,
+		{ name: 'HMAC', hash: { name: algSha } },
+		false,
+		['sign'],
+	);
+	const sig = await crypto.subtle.sign('HMAC', key, data as unknown as ArrayBuffer);
+	return base64UrlEncode(new Uint8Array(sig));
+}
+
 export function initJwt(host: HTMLElement): void {
 	let wb: ReturnType<typeof createWorkbench>;
 
 	const READY_EN = 'Ready: paste a JWT (looks like eyJhbGci...) to decode it automatically.';
 	const READY_ZH = '准备就绪：粘贴 JWT Token (形如 eyJhbGci...) 后将自动解码。';
+
+	// --- signing controls: secret + algorithm, shared by Sign and Verify ------
+	// Rendered before the workbench so it sits above the input box; the two
+	// buttons below close over these controls.
+	const signRow = document.createElement('div');
+	signRow.className = 't-filerow t-signrow';
+	const secretLabel = document.createElement('label');
+	secretLabel.htmlFor = 't-jwt-secret';
+	secretLabel.append(...bilingualNode('Secret (HMAC key)', '密钥 (HMAC)'));
+	const secretInput = document.createElement('input');
+	secretInput.type = 'password';
+	secretInput.id = 't-jwt-secret';
+	secretInput.autocomplete = 'off';
+	secretInput.spellcheck = false;
+	secretInput.placeholder = 'your-256-bit-secret';
+	const algLabel = document.createElement('label');
+	algLabel.htmlFor = 't-jwt-alg';
+	algLabel.append(...bilingualNode('Algorithm', '算法'));
+	const algSel = document.createElement('select');
+	algSel.id = 't-jwt-alg';
+	for (const a of ['HS256', 'HS384', 'HS512']) {
+		const o = document.createElement('option');
+		o.value = a;
+		o.textContent = a;
+		algSel.append(o);
+	}
+	signRow.append(secretLabel, secretInput, algLabel, algSel);
+
+	/** Sign: the input box holds the payload JSON; secret + algorithm above
+	 *  produce a complete three-segment JWT. */
+	async function doSign(): Promise<void> {
+		const secret = secretInput.value;
+		const raw = wb.inputArea.value.trim();
+		if (!raw) {
+			wb.updateStatus('error', '✗ Enter the payload JSON first.', '✗ 请先输入 Payload JSON。');
+			return;
+		}
+		if (!secret) {
+			wb.updateStatus('error', '✗ Enter the secret key above.', '✗ 请先在上方输入密钥。');
+			return;
+		}
+		let payload: unknown;
+		try {
+			payload = JSON.parse(raw);
+		} catch (err) {
+			wb.updateStatus('error', `✗ Payload is not valid JSON: ${err instanceof Error ? err.message : ''}`, `✗ Payload 不是合法 JSON：${err instanceof Error ? err.message : ''}`);
+			return;
+		}
+		const alg = algSel.value as 'HS256' | 'HS384' | 'HS512';
+		const header = { alg, typ: 'JWT' };
+		const enc = new TextEncoder();
+		const h = base64UrlEncode(enc.encode(JSON.stringify(header)));
+		const p = base64UrlEncode(enc.encode(JSON.stringify(payload)));
+		const sig = await hmacSign(('SHA-' + alg.slice(2)) as 'SHA-256' | 'SHA-384' | 'SHA-512', secret, enc.encode(`${h}.${p}`));
+		wb.outputArea.value = `${h}.${p}.${sig}`;
+		wb.updateStatus('valid', `✓ Signed with ${alg} — copy the token from the output box.`, `✓ 已用 ${alg} 签名 —— 从输出框复制 Token。`);
+	}
+
+	/** Verify: recompute the HMAC of header.payload with the given secret and
+	 *  compare against the token's third segment. Only HS256/384/512 — the
+	 *  asymmetric algorithms need a public key this tool does not take. */
+	async function doVerify(): Promise<void> {
+		const zh = isZh();
+		const secret = secretInput.value;
+		const raw = wb.inputArea.value.trim().replace(/^Bearer\s+/i, '');
+		const parts = raw.split('.');
+		if (parts.length !== 3) {
+			wb.updateStatus('error', '✗ Verifying needs a full three-segment signed token.', '✗ 验签需要完整的三段式签名 Token。');
+			return;
+		}
+		let alg: string;
+		try {
+			alg = String(JSON.parse(base64UrlDecode(parts[0])).alg ?? '');
+		} catch {
+			wb.updateStatus('error', '✗ Could not decode the header.', '✗ 无法解码 Header。');
+			return;
+		}
+		if (!/^HS(256|384|512)$/.test(alg)) {
+			wb.updateStatus(
+				'error',
+				`✗ Algorithm ${alg} is not HMAC-based — RS/ES verification needs a public key and is not supported.`,
+				`✗ 算法 ${alg} 不是 HMAC 系 —— RS/ES 验签需要公钥，暂不支持。`,
+			);
+			return;
+		}
+		if (!secret) {
+			wb.updateStatus('error', '✗ Enter the secret key above to verify.', '✗ 请先在上方输入密钥再验签。');
+			return;
+		}
+		const sig = await hmacSign(('SHA-' + alg.slice(2)) as 'SHA-256' | 'SHA-384' | 'SHA-512', secret, new TextEncoder().encode(`${parts[0]}.${parts[1]}`));
+		const ok = sig === parts[2];
+		if (ok) {
+			wb.outputArea.value =
+				(zh ? '✓ 签名验证通过\n\n' : '✓ Signature verified\n\n') +
+				`alg: ${alg}\n${zh ? '期望签名' : 'expected'}: ${sig}\n${zh ? '实际签名' : 'received'}: ${parts[2]}`;
+			wb.updateStatus('valid', `✓ Signature valid (${alg})`, `✓ 签名有效 (${alg})`);
+		} else {
+			wb.outputArea.value =
+				(zh ? '✗ 签名不匹配\n\n' : '✗ Signature mismatch\n\n') +
+				`alg: ${alg}\n${zh ? '期望签名' : 'expected'}: ${sig}\n${zh ? '实际签名' : 'received'}: ${parts[2]}`;
+			wb.updateStatus('error', '✗ Signature mismatch — wrong secret or tampered token.', '✗ 签名不匹配 —— 密钥错误或 Token 已被篡改。');
+		}
+	}
+
+
+	// minimal helper: this file predates the i18n.ts helpers' use here, and
+	// onLang below already re-runs the decode; the labels only need the pair.
+	function bilingualNode(en: string, zh: string): Node[] {
+		const e = document.createElement('span');
+		e.className = 'i18n-en';
+		e.textContent = en;
+		const z = document.createElement('span');
+		z.className = 'i18n-zh';
+		z.textContent = zh;
+		return [e, z];
+	}
 
 	// The decoded report goes into a <textarea>, which holds text and not markup,
 	// so it cannot carry an .i18n-en/.i18n-zh pair the way the rest of the page
@@ -179,6 +317,8 @@ export function initJwt(host: HTMLElement): void {
 		downloadLabelZh: '💾 下载 JSON',
 		buttons: [
 			{ label: 'Decode Token', labelZh: '解析 Token', primary: true, onClick: doDecode },
+			{ label: 'Verify Signature (HMAC)', labelZh: '验签 (HMAC)', primary: false, onClick: () => void doVerify() },
+			{ label: 'Sign Payload → JWT', labelZh: '签发 Payload → JWT', primary: false, onClick: () => void doSign() },
 			{
 				label: 'Copy Payload JSON',
 				labelZh: '只复制 Payload JSON',
@@ -209,6 +349,10 @@ export function initJwt(host: HTMLElement): void {
 		initialStatus: READY_EN,
 		initialStatusZh: READY_ZH,
 	});
+
+	// The workbench clears the host, so the secret/algorithm row has to go in
+	// AFTER it renders — pinned to the top of the workbench structure.
+	host.insertBefore(signRow, host.firstChild ?? null);
 
 	// Re-render the report, which is plain text in a <textarea>, on every switch.
 	onLang(doDecode);

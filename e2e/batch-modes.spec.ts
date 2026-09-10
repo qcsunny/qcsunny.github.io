@@ -8,10 +8,14 @@ test('cidr batch transform summarizes each line, invalid lines flagged', async (
 	await page.goto('/devtools/cidr-calculator/');
 	await page.locator('textarea[data-role="input"]').fill('192.168.1.1/24\nnot-a-cidr\n10.0.0.0/8');
 	await page.getByRole('button', { name: /Calculate each line|逐行批量计算/ }).click();
-	const out = await page.locator('textarea[data-role="output"]').inputValue();
-	expect(out).toContain('mask 255.255.255.0');
-	expect(out).toContain('not-a-cidr → ✗');
-	expect(out).toContain('10.0.0.0/8');
+	// Polling assertion: this tool is live-mode, and the debounced live
+	// recompute of the just-filled input races the manual batch click on slow
+	// runners (the click now cancels the pending timer — see text.ts — but
+	// keep the assertion retrying regardless).
+	const out = page.locator('textarea[data-role="output"]');
+	await expect(out).toHaveValue(/mask 255\.255\.255\.0/);
+	await expect(out).toHaveValue(/not-a-cidr → ✗/);
+	await expect(out).toHaveValue(/10\.0\.0\.0\/8/);
 });
 
 test('base64 batch decode isolates bad lines', async ({ page }) => {

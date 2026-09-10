@@ -165,9 +165,12 @@ export interface TextTransform {
 	label: string;
 	labelZh?: string;
 	/** `error` is shown in the English view, `errorZh` in the Chinese one; with
-	 *  errorZh missing the English text shows in both. */
+	 *  errorZh missing the English text shows in both. The second argument is
+	 *  the optional secret box's current value ('' when the tool declares no
+	 *  secretInput, or the i18n harness runs transforms headless). */
 	run: (
 		text: string,
+		secret?: string,
 	) =>
 		| { output: string; error?: string; errorZh?: string }
 		| Promise<{ output: string; error?: string; errorZh?: string }>;
@@ -188,6 +191,20 @@ export interface TextConfig {
 	mono?: boolean;
 	/** whether the primary transform should run live on input (with debounce) */
 	live?: boolean;
+	/** File-drop support: accepted extensions ('.yml,.yaml'). When set, the
+	 *  input textarea becomes a drop zone with a file-picker button; the file
+	 *  is read as TEXT locally and dropped into the box. Binary hashing goes
+	 *  through fileTransform instead. */
+	acceptFiles?: string;
+	/** Binary counterpart of transforms for file-oriented tools: given the
+	 *  raw bytes (never leaves the browser), produce the output. When set, a
+	 *  file picker + drop zone replaces the textarea content source; the
+	 *  textarea still shows the pasted-text path. */
+	fileTransform?: (data: ArrayBuffer, name: string, size: number, secret: string) => Promise<{ output: string; error?: string; errorZh?: string }>;
+	/** An extra password-type input rendered above the transform buttons
+	 *  (HMAC keys and the like). Its current value is passed to every
+	 *  transform's run() as the second argument. */
+	secretInput?: { label: string; labelZh?: string; placeholder?: string; placeholderZh?: string };
 }
 
 // --- generator tools (password / uuid / random) ------------------------------------
@@ -393,7 +410,7 @@ export const TOOL_KEYWORDS: Record<string, string> = {
 	'annuity-calculator': '年金 年金现值 年金终值 先付年金 普通年金 养老年金 保险给付 折现 annuity present future value pension payout due ordinary',
 	'json-formatter': 'json 格式化 校验 压缩 美化 解析 语法高亮 json format validator parser prettify minify',
 	'sql-formatter': 'sql 格式化 sql美化 数据库查询 ddl dml 大小写转换 sql prettifier database query format',
-	'jwt-decoder': 'jwt 解码 token bearer json web token header payload signature auth',
+	'jwt-decoder': 'jwt 解码 token bearer json web token header payload signature auth 验签 签发 hs256 hs512 hmac sign verify',
 	'base64': 'base64 编码 解码 文本编解码 base64 encode decode binary string',
 	'url-parser': 'url 解析 查询参数 url编解码 query params encode decode hostname protocol path',
 	'xml-formatter': 'xml 格式化 树形视图 美化 缩进 xml formatter pretty print indent',
@@ -442,7 +459,7 @@ export const TOOL_KEYWORDS: Record<string, string> = {
 	'regex-tester': '正则表达式 正则测试 regex tester pattern match',
 	'css-px-rem-converter': 'px rem 换算 像素 css px rem converter',
 	'text-diff': '文本对比 diff text diff compare',
-	'hash-generator': '哈希 散列 sha256 md5 hash generator checksum',
+	'hash-generator': '哈希 散列 sha256 md5 sha1 sha224 sha384 sha512 sha3 hash generator checksum 文件哈希 hmac 摘要 file digest',
 	'curl-to-code': 'curl 代码转换 代码生成 请求转换 fetch axios python requests go rust php curl code converter API',
 	'cidr-calculator': 'cidr 子网掩码 ip计算器 广播地址 网络地址 可用主机 ip范围 subnet netmask wildcard broadcast usable hosts',
 	'js-formatter': 'js 格式化 ts 格式化 javascript typescript 美化 压缩 单行 minify js prettify ts beautifier',
