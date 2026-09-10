@@ -244,6 +244,15 @@ test('the Chinese view hides every English half', async ({ browser }) => {
 				const cls = (el.getAttribute('class') ?? '').trim().split(/\s+/)[0];
 				out.push(`${el.tagName.toLowerCase()}.${cls}: ${JSON.stringify(text)}`);
 			}
+			// A pre-rendered button whose label is identical in both languages must
+			// ship a bare text node, not a lone .i18n-en span: the global CSS hides
+			// .i18n-en here, and the csv-json-converter buttons shipped blank in the
+			// Chinese view for exactly that reason. The leak scan above cannot see
+			// it — an empty button leaks no English — so pin non-emptiness directly.
+			for (const btn of document.querySelectorAll('.t-btn')) {
+				if (!btn.checkVisibility({ visibilityProperty: true })) continue;
+				if (!(btn.textContent ?? '').trim()) out.push('button.t-btn: "" (blank label)');
+			}
 			return out;
 		});
 		for (const s of shown) leaks.push(`${route} → ${s}`);
