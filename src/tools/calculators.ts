@@ -2938,7 +2938,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						rows: [
 							row("f'(x₀)", "f'(x₀)", num(d1)),
 							row('f″(x₀)', 'f″(x₀)', num(d2)),
-							row('Method', '方法', 'Central difference, h ≈ 6·10⁻⁶·max(1, |x₀|)', '中心差分，h ≈ 6·10⁻⁶·max(1, |x₀|)'),
+							row('Method', '方法', 'Central difference, h ≈ 6·10⁻⁶·max(1, |x₀|)', '中心差分（自适应步长）'),
 						],
 					};
 				} catch {
