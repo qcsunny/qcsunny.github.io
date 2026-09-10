@@ -42,6 +42,36 @@ function runBatch(text: string, f: (line: string) => string | null): { output: s
 	return { output: out.join('\n') };
 }
 
+// --- text extractor / slug helpers -----------------------------------------------------
+
+/** URLs: absolute http(s) links and www.-prefixed hosts, up to the first
+ *  whitespace or closing bracket/quote. Bare domains ("example.com" without a
+ *  scheme) are deliberately NOT matched — filenames and version strings
+ *  ("utils-1.2.3.js") false-positive far too often. */
+const URL_RE_G = /(?:https?:\/\/|www\.)[^\s<>"'）)\]}]+/giu;
+const EMAIL_RE_G = /[a-z0-9._%+-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)+/giu;
+
+function extractMatches(text: string, re: RegExp, what: 'URL' | 'Email'): { output: string; error?: string; errorZh?: string } {
+	const found = text.match(re) ?? [];
+	if (!found.length)
+		return { output: '', error: `No ${what.toLowerCase()}s found in the text.`, errorZh: `文本中没有找到${what === 'URL' ? '网址' : '邮箱'}。` };
+	return { output: found.join('\n') };
+}
+
+/** Title → URL slug: lowercase, fold diacritics (café → cafe), keep letters /
+ *  digits / CJK, collapse every other run into ONE separator, trim separators.
+ *  CJK characters survive as-is — browsers percent-encode them on copy, and
+ *  stripping them would empty a purely Chinese title. */
+function slugify(text: string, sep: string): string {
+	const s = text
+		.normalize('NFKD')
+		.replace(/[\u0300-\u036f]/g, '')
+		.toLowerCase()
+		.replace(/[^a-z0-9㐀-鿿぀-ヿ가-힯]+/gu, sep);
+	// split + filter both trims the ends and collapses runs of the separator.
+	return s.split(sep).filter(Boolean).join(sep);
+}
+
 // --- word counter ---------------------------------------------------------------------
 
 const CJK_RE = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu;
@@ -1667,6 +1697,210 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 						const r = runBatch(t, (line) => `${toCamel(line)} | ${toSnake(line)} | ${toKebab(line)} | ${toConstant(line)}`);
 						if (!r.output) return r;
 						return { output: `# input → camelCase | snake_case | kebab-case | CONSTANT_CASE\n${r.output}` };
+					},
+				},
+			],
+		} satisfies TextConfig,
+	},
+
+	{
+		slug: 'line-organizer',
+		category: 'devtools',
+		name: 'Line Organizer (Dedupe · Sort · Clean)',
+		nameZh: '文本行整理器（去重 · 排序 · 清理）',
+		description: 'Clean up pasted lists in one click: remove duplicates, sort alphabetically or by length, trim whitespace and drop empty lines.',
+		descriptionZh: '一键整理粘贴进来的列表：去除重复行、按字母或长度排序、去除行首尾空白与空行。',
+		kind: 'text',
+		config: {
+			def: 'banana\napple\n  apple  \ncherry\n\nbanana\n42\n7',
+			placeholder: 'Paste one item per line…',
+			placeholderZh: '每行一条，粘贴待整理的列表…',
+			mono: true,
+			stats: (text: string) => {
+				const lines = text.split('\n');
+				const nonEmpty = lines.filter((l) => l.trim()).length;
+				const unique = new Set(lines.map((l) => l.trim()).filter(Boolean)).size;
+				return [
+					{ label: 'Lines', labelZh: '总行数', value: String(lines.length) },
+					{ label: 'Non-empty', labelZh: '非空行', value: String(nonEmpty) },
+					{ label: 'Unique', labelZh: '去重后', value: String(unique) },
+					{ label: 'Duplicates', labelZh: '重复行', value: String(nonEmpty - unique) },
+				];
+			},
+			transforms: [
+				{
+					id: 'clean',
+					label: 'Clean (trim · dedupe · drop empty)',
+					labelZh: '一键清理（去空白 · 去重 · 删空行）',
+					// The 90% case: paste a noisy list, get a clean one, order kept.
+					run: (t) => {
+						const seen = new Set<string>();
+						const out: string[] = [];
+						for (const line of t.split('\n')) {
+							const s = line.trim();
+							if (!s || seen.has(s)) continue;
+							seen.add(s);
+							out.push(s);
+						}
+						if (!out.length) return { output: '', error: 'Nothing to keep — the input is empty or blank.', errorZh: '没有可保留的内容——输入为空或全是空白。' };
+						return { output: out.join('\n') };
+					},
+				},
+				{
+					id: 'dedupe',
+					label: 'Remove duplicates',
+					labelZh: '仅去重',
+					run: (t) => {
+						const seen = new Set<string>();
+						const out: string[] = [];
+						for (const line of t.split('\n')) {
+							if (seen.has(line)) continue;
+							seen.add(line);
+							out.push(line);
+						}
+						return { output: out.join('\n') };
+					},
+				},
+				{
+					id: 'sortAz',
+					label: 'Sort A → Z',
+					labelZh: '排序 A → Z',
+					// numeric: true so v2 sorts before v10; undefined stays last so
+					// the blanks survive for the dedicated buttons to handle.
+					run: (t) => ({
+						output: t
+							.split('\n')
+							.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+						.join('\n'),
+					}),
+				},
+				{
+					id: 'sortZa',
+					label: 'Sort Z → A',
+					labelZh: '排序 Z → A',
+					run: (t) => ({
+						output: t
+							.split('\n')
+							.sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))
+						.join('\n'),
+					}),
+				},
+				{
+					id: 'sortLen',
+					label: 'Sort by length',
+					labelZh: '按长度排序',
+					run: (t) => ({
+						output: t
+							.split('\n')
+							.sort((a, b) => a.length - b.length || a.localeCompare(b, undefined, { numeric: true }))
+						.join('\n'),
+					}),
+				},
+				{
+					id: 'reverse',
+					label: 'Reverse order',
+					labelZh: '反转顺序',
+					run: (t) => ({ output: t.split('\n').reverse().join('\n') }),
+				},
+				{
+					id: 'removeEmpty',
+					label: 'Remove empty lines',
+					labelZh: '删除空行',
+					run: (t) => ({ output: t.split('\n').filter((l) => l.trim()).join('\n') }),
+				},
+				{
+					id: 'trim',
+					label: 'Trim each line',
+					labelZh: '去除行首尾空白',
+					run: (t) => ({ output: t.split('\n').map((l) => l.trim()).join('\n') }),
+				},
+			],
+		} satisfies TextConfig,
+	},
+
+	{
+		slug: 'text-extractor',
+		category: 'devtools',
+		name: 'Text Extractor (URLs · Emails)',
+		nameZh: '文本提取器（网址 · 邮箱）',
+		description: 'Pull every URL and email address out of pasted text — logs, chat transcripts, pages of prose — one match per line, duplicates optional.',
+		descriptionZh: '从粘贴的任意文本（日志、聊天记录、长文）中提取全部网址和邮箱地址，每行一条，可选择去重。',
+		kind: 'text',
+		config: {
+			// Fictional sample data only (example.com, RFC 2606 domains).
+			def: 'Contact alice@example.com or sales@example.org.\nDocs: https://docs.example.com/getting-started#install\nSee also www.example.net/pricing and https://example.dev/api\nReach bob.smith+support@example.io for help.',
+			placeholder: 'Paste text with URLs or emails inside…',
+			placeholderZh: '粘贴包含网址或邮箱的文本…',
+			mono: true,
+			stats: (text: string) => [
+				{ label: 'URLs found', labelZh: '网址数', value: String((text.match(URL_RE_G) ?? []).length) },
+				{ label: 'Emails found', labelZh: '邮箱数', value: String((text.match(EMAIL_RE_G) ?? []).length) },
+				{ label: 'Characters', labelZh: '字符数', value: String(text.length) },
+			],
+			transforms: [
+				{
+					id: 'urls',
+					label: 'Extract URLs',
+					labelZh: '提取网址',
+					run: (t) => extractMatches(t, URL_RE_G, 'URL'),
+				},
+				{
+					id: 'emails',
+					label: 'Extract emails',
+					labelZh: '提取邮箱',
+					run: (t) => extractMatches(t, EMAIL_RE_G, 'Email'),
+				},
+				{
+					id: 'all',
+					label: 'Extract all (unique)',
+					labelZh: '全部提取（去重）',
+					// Combined pass, deduped across both kinds — the "give me every
+					// contact point in this dump" button.
+					run: (t) => {
+						const urls = t.match(URL_RE_G) ?? [];
+						const emails = t.match(EMAIL_RE_G) ?? [];
+						const all = [...urls, ...emails];
+						if (!all.length) return { output: '', error: 'No URLs or emails found in the text.', errorZh: '文本中没有找到网址或邮箱。' };
+						return { output: [...new Set(all)].join('\n') };
+					},
+				},
+			],
+		} satisfies TextConfig,
+	},
+
+	{
+		slug: 'slug-generator',
+		category: 'devtools',
+		name: 'URL Slug Generator',
+		nameZh: 'URL Slug 生成器',
+		description: 'Turn any title into a clean SEO-friendly URL slug: lowercased, diacritics folded, punctuation collapsed to one separator. Chinese titles are kept as-is.',
+		descriptionZh: '把任意标题转成干净的 SEO 友好 URL Slug：转小写、折叠变音符号、标点合并为单个分隔符，中文标题原样保留。',
+		kind: 'text',
+		config: {
+			def: '10 Tips for Writing Better CSS!',
+			placeholder: 'Type a title…',
+			placeholderZh: '输入文章标题…',
+			stats: (text: string) => [
+				{ label: 'Characters', labelZh: '字符数', value: String(text.length) },
+				{ label: 'Slug length', labelZh: 'Slug 长度', value: String(slugify(text, '-').length) },
+			],
+			transforms: [
+				{
+					id: 'hyphen',
+					label: 'Slug (kebab-case)',
+					labelZh: 'Slug（短横线）',
+					run: (t) => {
+						const s = slugify(t, '-');
+						return s ? { output: s } : { output: '', error: 'Nothing to keep — the title has no letters, digits or CJK characters.', errorZh: '没有可保留的内容——标题里没有字母、数字或汉字。' };
+					},
+				},
+				{
+					id: 'underscore',
+					label: 'Slug (snake_case)',
+					labelZh: 'Slug（下划线）',
+					run: (t) => {
+						const s = slugify(t, '_');
+						return s ? { output: s } : { output: '', error: 'Nothing to keep — the title has no letters, digits or CJK characters.', errorZh: '没有可保留的内容——标题里没有字母、数字或汉字。' };
 					},
 				},
 			],
