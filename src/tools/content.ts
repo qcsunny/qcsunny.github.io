@@ -665,7 +665,61 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '可以压缩为单行吗？', a: '可以，点击"单行压缩 (Minify)"即可去除所有注释与冗余空白，生成适合嵌入代码字面量的紧凑语句。' },
 		],
 	},
-	'devtools/jwt-decoder': {
+		'devtools/line-organizer': {
+		about: [
+			'Paste a list — from a log, a spreadsheet column, a chat transcript — and clean it in one click: trim whitespace, drop empty lines, remove duplicates, then sort alphabetically (version-aware, so v2 comes before v10), by length, or in reverse.',
+			'Live counters show the line total, unique count and duplicate count before you commit to a transform, so a botched paste is obvious immediately.',
+		],
+		aboutZh: [
+			'粘贴一段列表——来自日志、表格列或聊天记录——一键整理：去除行首尾空白、删除空行、去除重复行，再按字母（版本号感知，v2 排在 v10 前）、长度或倒序排列。',
+			'实时计数在动手前就显示总行数、去重后行数与重复行数，粘错内容立刻可见。',
+		],
+		faq: [
+			{ q: 'Does dedupe consider two lines with different trailing spaces the same?', a: '"Clean" and "Remove duplicates" work on trimmed lines, so yes — "apple" and "apple " collapse into one. The plain "Trim each line" button only strips whitespace and keeps every line.' },
+			{ q: 'How are numbers sorted?', a: 'Alphabetical sorts are numeric-aware (natural sort): 2 < 10 < 100, not the string order 10 < 2 < 100.' },
+		],
+		faqZh: [
+			{ q: '行尾有空格的两行算重复吗？', a: '算——「一键清理」和「仅去重」都先做 trim 再比较，"apple" 与 "apple " 会合并为一行。单独的「去除行首尾空白」按钮只去空白、不删行。' },
+			{ q: '数字是怎么排序的？', a: '字母排序带数字感知（自然排序）：2 < 10 < 100，而不是字符串序的 10 < 2 < 100。' },
+		],
+	},
+	'devtools/text-extractor': {
+		about: [
+			'Pull every URL and email address out of any pasted text — server logs, exported chat transcripts, a page of prose — one match per line. A combined pass returns both kinds deduped, ready to paste into a blocker list or a mailing tool.',
+			'Matching is deliberately conservative: only absolute http(s) links and www.-prefixed hosts count as URLs, because bare domains (example.com without a scheme) collide with filenames and version strings far too often.',
+		],
+		aboutZh: [
+			'从任意粘贴文本中提取全部网址和邮箱——服务器日志、导出的聊天记录、整页文章——每行一条。「全部提取」会合并两种结果并去重，可直接粘贴进拦截清单或邮件工具。',
+			'匹配刻意保守：只认 http(s) 绝对链接和 www. 开头的域名，因为裸域名（不带协议的 example.com）极易与文件名、版本号混淆。',
+		],
+		faq: [
+			{ q: 'Why is "example.com" in plain text not extracted as a URL?', a: 'Without a scheme there is no reliable way to tell a domain from "utils-1.2.3.js" or "node-v22.9.0". Add https:// (or use the www. form) and it matches.' },
+			{ q: 'Does it run in my browser?', a: 'Yes — the extraction is plain JavaScript on the pasted string, nothing is sent anywhere.' },
+		],
+		faqZh: [
+			{ q: '为什么纯文本里的 "example.com" 没被提取？', a: '不带协议时，无法可靠区分域名与 "utils-1.2.3.js"、"node-v22.9.0" 这类文件名/版本号。写成 https:// 开头（或 www. 形式）即可命中。' },
+			{ q: '数据会上传吗？', a: '不会——提取就是在页面里对粘贴文本跑一段 JavaScript，什么都不外发。' },
+		],
+	},
+	'devtools/slug-generator': {
+		about: [
+			'Turn a title into a clean URL slug: lowercase, diacritics folded (café → cafe), punctuation and whitespace collapsed to a single hyphen or underscore. "10 Tips for Writing Better CSS!" becomes 10-tips-for-writing-better-css.',
+			'Chinese, Japanese and Korean titles keep their characters — browsers percent-encode them when the URL is copied, and stripping them would leave a purely Chinese title with nothing to say.',
+		],
+		aboutZh: [
+			'把标题转成干净的 URL Slug：转小写、折叠变音符号（café → cafe）、标点与空白合并为单个短横线或下划线。"10 Tips for Writing Better CSS!" → 10-tips-for-writing-better-css。',
+			'中日韩标题原样保留汉字/假名/谚文——复制链接时浏览器会自动百分号编码，而直接剥离会让纯中文标题变成空串。',
+		],
+		faq: [
+			{ q: 'How are non-English letters handled?', a: 'Diacritics are folded to their base letter (é → e, ü → u). Cyrillic, Greek and other scripts are stripped, since most CMS platforms still ASCII-normalize slugs — keep those titles manual.' },
+			{ q: 'Is a CJK slug good for SEO?', a: 'Modern search engines match CJK slugs fine. If your CMS or audience prefers ASCII, translate the title first and slug the translation.' },
+		],
+		faqZh: [
+			{ q: '其他语言的字母怎么处理？', a: '带变音符的字母折叠为基本字母（é → e、ü → u）。西里尔、希腊等文字会被剥离——多数 CMS 仍会把 slug 规范化为 ASCII，这类标题建议手工处理。' },
+			{ q: '中文 Slug 对 SEO 好吗？', a: '主流搜索引擎都能正常匹配中文 slug。若你的 CMS 或受众偏好 ASCII，先把标题翻译成英文再生成。' },
+		],
+	},
+'devtools/jwt-decoder': {
 		about: [
 			'Inspect and format JSON Web Tokens (JWT) instantly in your browser. Splits the token into Header, Payload, and Signature, and decodes Base64URL data with UTF-8 character support.',
 			'Automatically parses expiration (exp), issued-at (iat), and not-before (nbf) timestamps into human-readable local time, displaying live validity countdowns and status indicators.',
