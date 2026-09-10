@@ -193,7 +193,18 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 		}
 
 		let runSeq = 0;
+		// Pending live-mode recompute, so a manual transform click can cancel it
+		// (see executeTransform).
+		let liveDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 		const executeTransform = (t: TextTransform): void => {
+			// A manual click wins over a pending live recompute: the debounce
+			// scheduled by the just-typed input would otherwise fire a moment
+			// later and clobber the manual result — a live transform fed a
+			// multi-line paste blanks a batch report the user just requested.
+			if (liveDebounceTimer) {
+				clearTimeout(liveDebounceTimer);
+				liveDebounceTimer = null;
+			}
 			if (!out || !input) return;
 			if (input.value.length > MAX_INPUT_CHARS) {
 				out.value = '';
@@ -245,10 +256,10 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 		}
 
 		if (config.live && config.transforms.length > 0) {
-			let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 			const scheduleLive = () => {
-				if (debounceTimer) clearTimeout(debounceTimer);
-				debounceTimer = setTimeout(() => {
+				if (liveDebounceTimer) clearTimeout(liveDebounceTimer);
+				liveDebounceTimer = setTimeout(() => {
+					liveDebounceTimer = null;
 					executeTransform(config.transforms![0]);
 				}, 40);
 			};
