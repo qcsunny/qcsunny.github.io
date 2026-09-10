@@ -29,6 +29,7 @@ export type ToolKind =
 	| 'redirect'
 	| 'json'
 	| 'jsonschema'
+	| 'meta'
 	| 'sql'
 	| 'jwt'
 	| 'url'
@@ -247,6 +248,7 @@ export type ToolEntry = ToolMeta &
 		| { kind: 'redirect'; config: RedirectConfig }
 		| { kind: 'json' }
 		| { kind: 'jsonschema' }
+		| { kind: 'meta' }
 		| { kind: 'sql' }
 		| { kind: 'jwt' }
 		| { kind: 'url' }
@@ -413,6 +415,13 @@ export const TOOL_KEYWORDS: Record<string, string> = {
 	'json-formatter': 'json 格式化 校验 压缩 美化 解析 语法高亮 json format validator parser prettify minify',
 	'sql-formatter': 'sql 格式化 sql美化 数据库查询 ddl dml 大小写转换 sql prettifier database query format',
 	'jwt-decoder': 'jwt 解码 token bearer json web token header payload signature auth 验签 签发 hs256 hs512 hmac sign verify',
+		'http-status-lookup': 'http 状态码 404 500 302 status code 错误码 重定向 查询',
+		'mime-type-lookup': 'mime 类型 content-type 文件类型 扩展名 application/pdf 查询 mime type',
+		'user-agent-parser': 'user agent ua 解析 浏览器识别 爬虫识别 设备 useragent browser detection',
+		'media-info': '视频信息 mediainfo 元数据 码率 分辨率 时长 帧率 mp4 webm mkv wav metadata',
+		'robots-txt-generator': 'robots.txt 生成 爬虫协议 disallow allow 校验 生成器',
+		'sitemap-xml-generator': 'sitemap 网站地图 生成 校验 url 收录 lastmod',
+		'meta-tag-generator': 'meta 标签 seo og open graph twitter card 社交分享 预览 生成',
 		'json-schema': 'json schema 生成 校验 draft-07 validator generator schema',
 		'json-diff': 'json 对比 差异 比较 diff compare json对比工具',
 		'calculus': '微积分 导数 求导 定积分 极限 derivative integral limit differentiation',

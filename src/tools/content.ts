@@ -665,7 +665,133 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '可以压缩为单行吗？', a: '可以，点击"单行压缩 (Minify)"即可去除所有注释与冗余空白，生成适合嵌入代码字面量的紧凑语句。' },
 		],
 	},
-			'devtools/json-schema': {
+				'devtools/http-status-lookup': {
+		about: [
+			'Every status code a real site returns — 1xx through 5xx plus the ones RFCs made famous (418, 451) — with what it means and what typically causes it, in both languages.',
+			'Search by number or by keyword: "redirect" lists the 3xx family, "teapot" finds 418, "timeout" surfaces 408 and 504.',
+		],
+		aboutZh: [
+			'真实站点会返回的每一个状态码——1xx 到 5xx，外加 RFC 捧红的那些（418、451）——中英双语给出含义与常见成因。',
+			'按数字或关键词搜索："redirect" 列出 3xx 全家，"teapot" 找到 418，"timeout" 带出 408 与 504。',
+		],
+		faq: [
+			{ q: '301 vs 308 — which one?', a: 'Both are permanent. 301 lets clients rewrite POST to GET (a historic quirk); 308 requires the method to be repeated. Use 308 when API compatibility matters, 301 for plain pages.' },
+			{ q: 'Why 202 instead of 200 for my job API?', a: '200 says "done", 202 says "accepted, still working" — the honest code for async queues, and what polling clients expect.' },
+		],
+		faqZh: [
+			{ q: '301 和 308 选哪个？', a: '都是永久重定向。301 允许客户端把 POST 改写成 GET（历史包袱）；308 要求原样重发方法。API 兼容性敏感时用 308，普通页面用 301。' },
+			{ q: '异步任务接口为什么用 202 而不是 200？', a: '200 表示「完成」，202 表示「已受理、处理中」——这是异步队列的诚实答案，轮询客户端也以此为约定。' },
+		],
+	},
+	'devtools/mime-type-lookup': {
+		about: [
+			'The extension ↔ MIME mappings a web server actually needs — fonts (woff2), images (avif, webp), documents, archives — with the practical notes: why text/javascript replaced application/javascript, what image/x-icon still gets away with.',
+			'Look up in either direction: type ".pdf" for the MIME type, or paste "font/woff2" for the extensions.',
+		],
+		aboutZh: [
+			'Web 服务器真正会用到的扩展名 ↔ MIME 映射——字体（woff2）、图片（avif、webp）、文档、压缩包——并附实践备注：为什么 text/javascript 取代了 application/javascript、image/x-icon 为何还能通用。',
+			'双向查询：输入 ".pdf" 查 MIME 类型，或粘贴 "font/woff2" 查扩展名。',
+		],
+		faq: [
+			{ q: 'Why does .js map to text/javascript?', a: 'That is the current WHATWG/IANA registration; application/javascript is the deprecated legacy spelling and may be rejected by strict servers.' },
+			{ q: 'What do I serve unknown files as?', a: 'application/octet-stream — it forces a download instead of the browser guessing (and executing) a content type.' },
+		],
+		faqZh: [
+			{ q: '为什么 .js 映射到 text/javascript？', a: '这是 WHATWG/IANA 的现行注册；application/javascript 是弃用的旧写法，严格的服务器可能拒绝。' },
+			{ q: '未知文件该用什么类型？', a: 'application/octet-stream——强制下载，避免浏览器自行猜测（甚至执行）内容类型。' },
+		],
+	},
+	'devtools/user-agent-parser': {
+		about: [
+			'Paste a User-Agent string, get the browser (with version), rendering engine, operating system and device class — plus crawler detection: Googlebot, Bing, Baidu, AI crawlers (GPTBot, ClaudeBot), headless browsers and CLI clients are all recognized.',
+			'Pure regex, no library and no lookup-table download; the classification runs live as you type.',
+		],
+		aboutZh: [
+			'粘贴 User-Agent 字符串，解析浏览器（含版本）、渲染引擎、操作系统与设备类型——外加爬虫识别：Googlebot、必应、百度、AI 爬虫（GPTBot、ClaudeBot）、无头浏览器与命令行客户端均可识别。',
+			'纯正则实现，无需库和查找表下载；输入即实时分类。',
+		],
+		faq: [
+			{ q: 'How reliable is UA parsing?', a: 'For honest browsers, very. But UA strings are trivially spoofable, and browsers are freezing them into a few generic shapes — treat the result as a hint, never as identity or security.' },
+			{ q: 'Why does my browser show as Chrome?', a: 'Edge, Opera, Samsung Internet and many others are Chromium underneath — the parser prefers the actual brand token (Edg/, OPR/) when present.' },
+		],
+		faqZh: [
+			{ q: 'UA 解析可靠吗？', a: '对诚实的浏览器很可靠。但 UA 字符串极易伪造，且各浏览器正把它冻结成少数通用形态——把结果当线索，别当身份或安全依据。' },
+			{ q: '为什么我的浏览器显示为 Chrome？', a: 'Edge、Opera、三星浏览器底层都是 Chromium——解析器会优先认品牌标识（Edg/、OPR/），存在时显示真实品牌。' },
+		],
+	},
+	'devtools/media-info': {
+		about: [
+			'Drop a media file and read its key facts: container, duration, video codec with resolution and frame rate, audio codec with channels and sample rate, and the overall bit rate — the fields MediaInfo shows, in a browser tab.',
+			'The bytes are parsed locally: MP4/MOV via ISO-BMFF box walking, WebM/MKV via EBML elements, WAV via RIFF chunks. Unknown containers fall back to what the browser itself can decode. Nothing is uploaded, ever.',
+		],
+		aboutZh: [
+			'拖入媒体文件读取关键信息：容器、时长、视频编码与分辨率帧率、音频编码与声道采样率、总码率——相当于浏览器里的 MediaInfo。',
+			'字节全程本地解析：MP4/MOV 走 ISO-BMFF box 遍历，WebM/MKV 走 EBML 元素，WAV 读 RIFF 块；未知容器由浏览器解码兜底。文件绝不上传。',
+		],
+		faq: [
+			{ q: 'Which containers are supported?', a: 'MP4, MOV and M4V (ISO-BMFF), WebM and MKV (EBML), and WAV (RIFF). Others (avi, flv…) fall back to browser metadata: dimensions and duration, but no codec string.' },
+			{ q: 'Why is the frame rate sometimes missing?', a: 'It is computed from the sample-to-timestamp table (stts); variable-frame-rate or edited files may produce no clean table, and the field is simply left out rather than guessed.' },
+		],
+		faqZh: [
+			{ q: '支持哪些容器？', a: 'MP4、MOV、M4V（ISO-BMFF），WebM 与 MKV（EBML），以及 WAV（RIFF）。其他（avi、flv……）走浏览器元数据兜底：有分辨率和时长，但没有编码名。' },
+			{ q: '为什么有时没有帧率？', a: '帧率由采样-时间戳表（stts）计算；可变帧率或剪辑过的文件可能没有干净的时间表，此时宁缺毋滥。' },
+		],
+	},
+	'devtools/robots-txt-generator': {
+		about: [
+			'Write rules line by line — user-agent, disallow, allow, sitemap, crawl-delay, blank line for a new group — and get a canonical robots.txt. Or paste an existing one and lint it: typos ("disalow"), rules that precede any User-agent, non-absolute sitemap URLs.',
+			'Per-bot groups are where it earns its keep: allow everyone but block /admin, while a specific crawler (an AI bot, say) gets shown the door entirely.',
+		],
+		aboutZh: [
+			'逐行书写规则——user-agent、disallow、allow、sitemap、crawl-delay，空行分组——生成规范的 robots.txt。也可以粘贴现有文件做检查：拼写错误（"disalow"）、出现在任何 User-agent 之前的规则、非绝对地址的 sitemap。',
+			'按爬虫分组是它的价值所在：放行所有人但封住 /admin，同时让特定爬虫（比如某个 AI 机器人）吃闭门羹。',
+		],
+		faq: [
+			{ q: 'Does robots.txt block access?', a: 'No — it is a request, not a wall. Honest crawlers obey it; anything else can ignore it. Never use it to hide pages; keep those behind auth.' },
+			{ q: 'Where does the file live?', a: 'At the domain root (https://example.com/robots.txt), lowercase, one file per host — subdomains each need their own.' },
+		],
+		faqZh: [
+			{ q: 'robots.txt 能拦截访问吗？', a: '不能——它是请求不是墙。守规矩的爬虫会遵守，其他的可以无视。绝不要用它隐藏页面；该藏的内容放鉴权后面。' },
+			{ q: '文件放在哪里？', a: '域名根目录（https://example.com/robots.txt），全小写，每个主机一份——子域名需要各自独立的文件。' },
+		],
+	},
+	'devtools/sitemap-xml-generator': {
+		about: [
+			'Paste one URL per line — optionally "url, lastmod" for the last-modified date — and get a valid sitemap.xml with the official namespace. Or paste an existing sitemap and validate it: entry count against the 50,000-URL limit, duplicates, non-absolute URLs.',
+			'URLs are deduplicated automatically; the output includes the entry count and byte size so you can see the 50 MB ceiling coming.',
+		],
+		aboutZh: [
+			'每行一个 URL——可选 "url, lastmod" 标注最后修改日期——生成带官方命名空间的合法 sitemap.xml。也可以粘贴现有 sitemap 校验：条目数对照 5 万上限、重复项、非绝对 URL。',
+			'URL 自动去重；输出附带条目数与字节大小，方便留意 50 MB 上限。',
+		],
+		faq: [
+			{ q: 'One sitemap or many?', a: 'Up to 50,000 URLs and 50 MB per file. Beyond that, split into parts and add a sitemap index file that lists them.' },
+			{ q: 'Do I need lastmod?', a: 'It helps crawlers re-crawl changed pages, but only if honest — a fake lastmod on every entry trains search engines to ignore yours.' },
+		],
+		faqZh: [
+			{ q: '一个 sitemap 还是多个？', a: '每个文件最多 5 万条 URL、50 MB。超出就拆分成多个，再加一个 sitemap 索引文件列出它们。' },
+			{ q: '需要 lastmod 吗？', a: '它能引导爬虫重抓有变动的页面，但前提是真实——每条都填假 lastmod 只会让搜索引擎学会无视你的数据。' },
+		],
+	},
+	'devtools/meta-tag-generator': {
+		about: [
+			'Fill in the page facts — title, description, canonical URL, image, site name, type, Twitter card style — and get the complete <head> block: <title>, meta description, canonical link, the Open Graph set and the Twitter card set, ready to paste.',
+			'The share-card preview beside the tags shows what a link unfurls into: the domain line, the two-line title, the gray description, and where the image would sit. summary cards render the square-thumbnail layout, summary_large_image the big-banner one.',
+		],
+		aboutZh: [
+			'填入页面要素——标题、描述、规范 URL、图片、站点名、类型、Twitter 卡片样式——得到完整的 <head> 标签块：<title>、meta description、canonical 链接、Open Graph 全套与 Twitter 卡片全套，直接粘贴即用。',
+			'标签旁的分享卡片预览展示链接展开后的样子：域名行、两行标题、灰色描述与图片位置。summary 卡片渲染方图布局，summary_large_image 渲染大横幅布局。',
+		],
+		faq: [
+			{ q: 'What image size should og:image be?', a: '1200×630 (1.91:1) for summary_large_image, and keep it under ~5 MB. The preview block shows the exact aspect ratio.' },
+			{ q: 'Do I still need meta description if I have og:description?', a: 'Yes — og:* is for social scrapers; search engines read the plain meta description. The generated block includes both.' },
+		],
+		faqZh: [
+			{ q: 'og:image 尺寸多少合适？', a: 'summary_large_image 用 1200×630（1.91:1），别超过约 5 MB。预览块展示的就是这个宽高比。' },
+			{ q: '有了 og:description 还需要 meta description 吗？', a: '需要——og:* 面向社交抓取器；搜索引擎读的是普通 meta description。生成的标签块两者都含。' },
+		],
+	},
+'devtools/json-schema': {
 		about: [
 			'Generate a draft-07 JSON Schema from a sample document, then validate other documents against it. Generation preloads the schema box, so the natural flow — paste, Generate, break the document, Validate — is two clicks.',
 			'The validator covers the everyday draft-07 keywords: type, properties, required, items, enum, minimum/maximum, minLength/maxLength, pattern, minItems/maxItems and additionalProperties: false. Errors are listed with their JSON paths.',

@@ -580,6 +580,106 @@ const year = new Date().getFullYear();
 				gap: 0.3em 0.8em;
 				margin-bottom: 1em;
 			}
+			/* --- meta/OG preview (metaog.ts) ---------------------------------------- */
+			.t-metafields {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.6em 1.2em;
+				margin-bottom: 1em;
+			}
+			.t-metafield {
+				display: flex;
+				flex-direction: column;
+				gap: 0.25em;
+				font-size: 0.8rem;
+				color: var(--dim);
+				min-width: 13em;
+				flex: 1 1 13em;
+				max-width: 24em;
+			}
+			.t-metafield input,
+			.t-metafield select {
+				border: 1px solid var(--gridline);
+				border-radius: 8px;
+				background: var(--card);
+				color: var(--fg);
+				font: inherit;
+				font-size: 0.85rem;
+				padding: 0.4em 0.6em;
+			}
+			.t-metafield input:focus-visible,
+			.t-metafield select:focus-visible {
+				outline: none;
+				border-color: var(--accent);
+			}
+			.t-ogpreview {
+				margin-bottom: 1.2em;
+			}
+			/* A share card in the wild: 1.91:1 image block, domain, title, desc. */
+			.t-ogcard {
+				max-width: 500px;
+				border: 1px solid var(--gridline);
+				border-radius: 12px;
+				overflow: hidden;
+				background: var(--card);
+				box-shadow: 0 1px 3px rgb(0 0 0 / 0.08);
+			}
+			.t-ogcard-img {
+				aspect-ratio: 1.91 / 1;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				background: color-mix(in srgb, var(--fg) 8%, var(--card));
+				color: var(--dim);
+				font-size: 0.85rem;
+				overflow: hidden;
+				white-space: nowrap;
+				text-overflow: ellipsis;
+				padding: 0 1em;
+			}
+			.t-ogcard-body {
+				padding: 0.8em 1em 1em;
+				display: flex;
+				flex-direction: column;
+				gap: 0.3em;
+			}
+			.t-ogcard-domain {
+				font-size: 0.7rem;
+				text-transform: uppercase;
+				letter-spacing: 0.04em;
+				color: var(--dim);
+			}
+			.t-ogcard-title {
+				font-size: 0.95rem;
+				line-height: 1.3;
+				overflow: hidden;
+				display: -webkit-box;
+				-webkit-line-clamp: 2;
+				-webkit-box-orient: vertical;
+			}
+			.t-ogcard-desc {
+				font-size: 0.8rem;
+				color: var(--dim);
+				overflow: hidden;
+				display: -webkit-box;
+				-webkit-line-clamp: 2;
+				-webkit-box-orient: vertical;
+			}
+			/* summary card: square thumbnail left, text right */
+			.t-ogcard-small {
+				display: flex;
+				align-items: stretch;
+			}
+			.t-ogcard-small .t-ogcard-thumb {
+				aspect-ratio: 1 / 1;
+				width: 6.5em;
+				flex: none;
+				font-size: 1rem;
+			}
+			.t-ogcard-small .t-ogcard-body {
+				flex: 1;
+			}
+
 			.t-file-hint {
 				color: var(--dim);
 				font-size: 0.85rem;
