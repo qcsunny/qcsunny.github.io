@@ -198,11 +198,38 @@ function initPassword(host: HTMLElement, cfg: PasswordGenConfig): void {
 	out.readOnly = true;
 	langAttr(out, 'aria-label', 'Generated password', '生成的密码');
 
+	// Batch mode: more than one password at a time, one per line. The single
+	// input stays for count = 1 — one crisp line to copy-paste; a textarea takes
+	// over once there are several.
+	const outMulti = document.createElement('textarea');
+	outMulti.className = 't-textarea t-mono t-passmulti';
+	outMulti.rows = 12;
+	outMulti.readOnly = true;
+	outMulti.spellcheck = false;
+	outMulti.hidden = true;
+	langAttr(outMulti, 'aria-label', 'Generated passwords', '批量生成的密码');
+
+	const countLabel = document.createElement('span');
+	countLabel.className = 't-label';
+	countLabel.append(bilingual('Count', '生成数量'));
+	const countSel = document.createElement('select');
+	countSel.className = 't-conv-select t-countsel';
+	for (const n of [1, 3, 5, 10, 20, 50]) {
+		const o = document.createElement('option');
+		o.value = String(n);
+		o.textContent = String(n);
+		countSel.append(o);
+	}
+	langAttr(countSel, 'aria-label', 'How many passwords to generate', '批量生成密码的数量');
+	const countRow = document.createElement('div');
+	countRow.className = 't-checkrow-group';
+	countRow.append(countLabel, countSel);
+
 	const regen = document.createElement('button');
 	regen.type = 'button';
 	regen.className = 't-btn';
 	regen.append(bilingual('Regenerate', '重新生成'));
-	const copy = makeCopyButton(() => out.value);
+	const copy = makeCopyButton(() => (out.hidden ? outMulti.value : out.value));
 
 	const strength = document.createElement('p');
 	strength.className = 't-note';
@@ -216,6 +243,7 @@ function initPassword(host: HTMLElement, cfg: PasswordGenConfig): void {
 		});
 		if (!active.length) {
 			out.value = '';
+			outMulti.value = '';
 			setBilingual(strength, 'Select at least one character set.', '请至少勾选一类字符集。');
 			return;
 		}
@@ -226,11 +254,22 @@ function initPassword(host: HTMLElement, cfg: PasswordGenConfig): void {
 		}
 		if (!pool.length) {
 			out.value = '';
+			outMulti.value = '';
 			setBilingual(strength, 'Character pool is empty after exclusions.', '排除易混淆字符后，可用字符集为空。');
 			return;
 		}
-		out.value = passwordHtml(pool, Number(slider.value));
-		const bits = Number(slider.value) * Math.log2(pool.length);
+		const len = Number(slider.value);
+		const count = Number(countSel.value) || 1;
+		if (count <= 1) {
+			out.hidden = false;
+			outMulti.hidden = true;
+			out.value = passwordHtml(pool, len);
+		} else {
+			out.hidden = true;
+			outMulti.hidden = false;
+			outMulti.value = Array.from({ length: count }, () => passwordHtml(pool, len)).join('\n');
+		}
+		const bits = len * Math.log2(pool.length);
 		const st = strengthLabel(bits);
 		setBilingual(
 			strength,
@@ -239,13 +278,14 @@ function initPassword(host: HTMLElement, cfg: PasswordGenConfig): void {
 		);
 	}
 
-	host.append(lenLabel, lenRow, checkRowEl, out);
+	host.append(lenLabel, lenRow, checkRowEl, countRow, out, outMulti);
 	const actions = document.createElement('div');
 	actions.className = 't-btnrow';
 	actions.append(regen, copy.wrap);
 	host.append(actions, strength);
 
 	slider.addEventListener('input', update);
+	countSel.addEventListener('change', update);
 	for (const b of boxes) {
 		document.getElementById(b.id)?.addEventListener('change', update);
 	}
