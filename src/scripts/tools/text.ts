@@ -6,6 +6,13 @@
 import type { TextConfig, TextStat, TextTransform } from '../../tools/registry';
 import { bilingual, langAttr, langProp, setBilingual } from './i18n';
 
+/** Input size cap for every text tool. Live transforms run on every keystroke
+ *  and several parses are O(n·lookahead) — a multi-megabyte paste would freeze
+ *  the tab. Over the cap the tool REJECTS loudly instead of truncating: a
+ *  silently truncated JSON/YAML parse produces a wrong-but-plausible answer,
+ *  which is worse than a visible error. */
+const MAX_INPUT_CHARS = 5 * 1024 * 1024;
+
 export function initText(host: HTMLElement, config: TextConfig): void {
 	let input = host.querySelector<HTMLTextAreaElement>('textarea[data-role="input"]');
 	if (!input) {
@@ -90,6 +97,11 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 		let runSeq = 0;
 		const executeTransform = (t: TextTransform): void => {
 			if (!out || !input) return;
+			if (input.value.length > MAX_INPUT_CHARS) {
+				out.value = '';
+				if (errEl) setBilingual(errEl, `Input exceeds 5 MB — this tool does not process files that large.`, `输入超过 5 MB —— 本工具不处理这么大的文件。`);
+				return;
+			}
 			const currentSeq = ++runSeq;
 			try {
 				const r = t.run(input.value);
@@ -185,6 +197,18 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 	function update(): void {
 		if (!config.stats || !statsHost || !input) return;
 		statsHost.innerHTML = '';
+		if (input.value.length > MAX_INPUT_CHARS) {
+			const warn = document.createElement('div');
+			warn.className = 't-row t-row-warn';
+			warn.append(
+				bilingual(
+					`Input exceeds 5 MB — statistics are not computed for files this large.`,
+					`输入超过 5 MB —— 过大的文件不再计算统计。`,
+				),
+			);
+			statsHost.append(warn);
+			return;
+		}
 		for (const stat of config.stats(input.value)) statsHost.append(statRow(stat));
 	}
 

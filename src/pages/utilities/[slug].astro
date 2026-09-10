@@ -37,7 +37,7 @@ const textConfig = entry.kind === 'text' ? (entry.config as TextConfig) : undefi
 								aria-label="Text input"
 								data-aria-en="Text input"
 								data-aria-zh="文本输入"
-							/>
+							>{textConfig.def ?? ''}</textarea>
 							{textConfig.stats && (
 								<>
 									<span class="t-label t-stats-label">

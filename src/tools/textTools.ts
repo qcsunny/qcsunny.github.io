@@ -1028,6 +1028,7 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: 'JavaScript 与 TypeScript 代码规范缩进格式化美化、单行 Minify 压缩与括号整理工具。',
 		kind: 'text',
 		config: {
+			def: 'const user = { name: \"Alice\", age: 30, tags: [\"admin\", \"dev\"] };\nconsole.log(JSON.stringify(user, null, 2));\n',
 			placeholder: 'function calculateTotal(items){let sum=0;for(let i=0;i<items.length;i++){sum+=items[i].price;}return sum;}',
 			placeholderZh: '粘贴 JS / TS 代码，例如：function calculateTotal(items){let sum=0;for(let i=0;i<items.length;i++){sum+=items[i].price;}return sum;}',
 			mono: true,
@@ -1068,6 +1069,7 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: 'GraphQL 查询语句 (Query / Mutation) 与 Schema 声明规范格式化、层级缩进与单行压缩。',
 		kind: 'text',
 		config: {
+			def: 'query GetUser($id: ID!) { user(id: $id) { id name email posts { title } } }',
 			placeholder: 'query GetUser($id: ID!){ user(id: $id){ id name email posts{ title content } } }',
 			placeholderZh: '粘贴 GraphQL 查询语句，例如：query GetUser($id: ID!){ user(id: $id){ id name email posts{ title content } } }',
 			mono: true,
@@ -1385,6 +1387,7 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: '文本与 Base64 互相编解码，完整支持 Unicode 中文与 URL 安全模式。',
 		kind: 'text',
 		config: {
+			def: 'Hello, QCSunny Lab!',
 			placeholder: 'Text to encode, or Base64 to decode…',
 			placeholderZh: '待编码的文本，或待解码的 Base64…',
 			mono: true,
@@ -1457,6 +1460,7 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: '在本机浏览器内计算任意文本的 SHA-256 摘要。',
 		kind: 'text',
 		config: {
+			def: 'hello world',
 			placeholder: 'Type or paste text to hash…',
 			placeholderZh: '输入或粘贴需要求哈希的文本…',
 			mono: true,
@@ -2105,6 +2109,8 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: '将 cURL 命令解析并一键转换为 JS (fetch/axios)、Python (requests)、Go、Rust 与 PHP 等多语言 HTTP 请求代码。',
 		kind: 'text',
 		config: {
+			// Fictional sample (example.com / Alice), per the def convention.
+			def: `curl -X POST "https://api.example.com/v1/users" \\\n  -H "Content-Type: application/json" \\\n  -H "Authorization: Bearer demo-token" \\\n  -d '{"name": "Alice", "role": "admin"}'`,
 			placeholder: 'curl -X POST "https://api.example.com/v1/data" -H "Content-Type: application/json" -d \'{"name": "Alice"}\'',
 			placeholderZh: '粘贴 cURL 命令，如：curl -X POST "https://api.example.com/v1/data" -H "Content-Type: application/json" -d \'{"name": "Alice"}\'',
 			mono: true,
@@ -2168,6 +2174,7 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: 'IPv4/CDIR 网段计算网络地址、子网掩码、广播地址与可用主机范围，并支持 IPv6 网段的 :: 展开、128 位前缀与地址总数计算。',
 		kind: 'text',
 		config: {
+			def: '192.168.1.50/24',
 			placeholder: '192.168.1.50/24, or 2001:db8::1/64',
 			placeholderZh: '输入 IPv4/CIDR（如 192.168.1.50/24）或 IPv6（如 2001:db8::1/64）',
 			mono: true,
@@ -2265,6 +2272,7 @@ export const UTILITIES_TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: '实时统计词数、字符数、句子数、段落数与预估阅读时长。',
 		kind: 'text',
 		config: {
+			def: 'The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs.\n',
 			placeholder: 'Type or paste text…',
 			placeholderZh: '在此输入或粘贴文本…',
 			stats: wordStats,
@@ -2280,6 +2288,7 @@ export const UTILITIES_TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: '实时细分统计字符、字母、数字、空格、符号与 UTF-8 字节数。',
 		kind: 'text',
 		config: {
+			def: 'Hello, world! This is a sample text with 12345 numbers.\n',
 			placeholder: 'Type or paste text…',
 			placeholderZh: '在此输入或粘贴文本…',
 			stats: charStats,
@@ -2307,6 +2316,7 @@ export const UTILITIES_TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: '自动对齐错乱的 Markdown 表格，支持中文全角与英文字符宽度自适应计算，一键格式化完美矩形网格。',
 		kind: 'text',
 		config: {
+			def: '| Name | Role |\n| --- | --- |\n| Alice | admin |\n| Bob | dev |\n',
 			placeholder: '| Product | Category | Price | Status |\n|:---|:---:|---:|:---|\n| iPhone 16 Pro | Electronics | $999 | In Stock |\n| Mechanical Keyboard | Peripherals | $129 | Pre-order |',
 			placeholderZh: '粘贴 Markdown 表格，如：\n| 商品 | 分类 | 价格 |\n|:---|:---:|---:|\n| iPhone 16 Pro | 电子产品 | 7999元 |',
 			mono: true,

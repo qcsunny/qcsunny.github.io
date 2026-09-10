@@ -163,6 +163,15 @@ export function initColorGamut(
 	let currentRgb: RgbColor = { r: 35, g: 55, b: 255 };
 	let currentOklab: OklabColor = rgbToOklab(35, 55, 255);
 
+	// The slice is drawn at sliceL — the slider's own value while the slider
+	// drives, the color's L otherwise. currentOklab.L alone cannot serve both:
+	// the picked color round-trips OKLab → RGB(0–255 rounding) → OKLab, which
+	// drifts L by up to ~0.002 — feeding that back into the slider while the
+	// visitor is still dragging makes the handle snap back mid-drag (the slice
+	// appeared to "zoom/jitter"). sliderDriving separates the two writers.
+	let sliceL = currentOklab.L;
+	let sliderDriving = false;
+
 	let gl: WebGLRenderingContext | WebGL2RenderingContext | null = null;
 	let glProg: WebGLProgram | null = null;
 	let quadBuf: WebGLBuffer | null = null;
@@ -231,10 +240,19 @@ export function initColorGamut(
 	card.append(controlsRow);
 
 	lSlider.addEventListener('input', () => {
-		const L = Number(lSlider.value);
-		const { a, b } = clampOklabToSrgb(L, currentOklab.a, currentOklab.b);
-		const picked = oklabToRgb(L, a, b);
-		onSelectRgb({ r: picked.r, g: picked.g, b: picked.b });
+		// Guard the whole synchronous chain (onSelectRgb → color render →
+		// update()): while the slider drives, it — not the round-tripped
+		// color — owns sliceL and its own position.
+		sliderDriving = true;
+		try {
+			sliceL = Number(lSlider.value);
+			lVal.textContent = `${Math.round(sliceL * 100)}%`;
+			const { a, b } = clampOklabToSrgb(sliceL, currentOklab.a, currentOklab.b);
+			const picked = oklabToRgb(sliceL, a, b);
+			onSelectRgb({ r: picked.r, g: picked.g, b: picked.b });
+		} finally {
+			sliderDriving = false;
+		}
 	});
 
 	function toScreen(a: number, b: number, w: number, h: number): { x: number; y: number } {
@@ -260,7 +278,7 @@ export function initColorGamut(
 			const b = -0.35 + ((nh - 1 - j) / (nh - 1)) * 0.7;
 			for (let i = 0; i < nw; i++) {
 				const a = -0.35 + (i / (nw - 1)) * 0.7;
-				const res = oklabToRgb(currentOklab.L, a, b);
+				const res = oklabToRgb(sliceL, a, b);
 				const idx = (j * nw + i) * 4;
 				data[idx] = res.r;
 				data[idx + 1] = res.g;
@@ -281,9 +299,32 @@ export function initColorGamut(
 		if (!ctx) return;
 		const center = toScreen(0, 0, w, h);
 
+		// Grid every 0.1 in a and b — without it the slice is an unlabeled
+		// colour blob and "how far" a drag moves is invisible. Labels at the
+		// 0.2 steps only; 0.1 would be unreadable at this size.
+		ctx.strokeStyle = 'rgba(128, 128, 128, 0.15)';
+		ctx.lineWidth = 1;
+		ctx.beginPath();
+		for (let v = -0.3; v <= 0.3001; v += 0.1) {
+			const gx = toScreen(v, 0, w, h).x;
+			ctx.moveTo(gx, 0);
+			ctx.lineTo(gx, h);
+			const gy = toScreen(0, v, w, h).y;
+			ctx.moveTo(0, gy);
+			ctx.lineTo(w, gy);
+		}
+		ctx.stroke();
+		ctx.font = '9px ui-monospace, Consolas, monospace';
+		ctx.fillStyle = 'rgba(128, 128, 128, 0.65)';
+		for (let v = -0.2; v <= 0.2001; v += 0.2) {
+			const gx = toScreen(v, 0, w, h).x;
+			ctx.fillText(v.toFixed(1), gx + 2, h - 3);
+			const gy = toScreen(0, v, w, h).y;
+			ctx.fillText(v.toFixed(1), 2, gy - 2);
+		}
+
 		// Axes
 		ctx.strokeStyle = 'rgba(128, 128, 128, 0.35)';
-		ctx.lineWidth = 1;
 		ctx.beginPath();
 		ctx.moveTo(center.x, 0);
 		ctx.lineTo(center.x, h);
@@ -335,7 +376,7 @@ export function initColorGamut(
 			gl.vertexAttribPointer(pLoc, 2, gl.FLOAT, false, 0, 0);
 
 			gl.uniform2f(gl.getUniformLocation(glProg, 'uRes'), glCanvas.width, glCanvas.height);
-			gl.uniform1f(gl.getUniformLocation(glProg, 'uLightness'), currentOklab.L);
+			gl.uniform1f(gl.getUniformLocation(glProg, 'uLightness'), sliceL);
 
 			gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 		}
@@ -353,7 +394,7 @@ export function initColorGamut(
 
 		if (infoEl) {
 			const zh = isZh();
-			const test = oklabToRgb(currentOklab.L, currentOklab.a, currentOklab.b);
+			const test = oklabToRgb(sliceL, currentOklab.a, currentOklab.b);
 			const spaceText = test.inSrgb
 				? zh
 					? '色域: sRGB (标准)'
@@ -361,7 +402,7 @@ export function initColorGamut(
 				: zh
 					? '色域: Display P3 / 宽色域'
 					: 'Gamut: Display P3 (Wide)';
-			infoEl.textContent = `${spaceText} · L: ${(currentOklab.L * 100).toFixed(1)}% · C: ${currentOklab.C.toFixed(3)}`;
+			infoEl.textContent = `${spaceText} · L: ${(sliceL * 100).toFixed(1)}% · C: ${currentOklab.C.toFixed(3)} · h: ${currentOklab.h.toFixed(1)}°`;
 		}
 	}
 
@@ -405,10 +446,13 @@ export function initColorGamut(
 		update(rgb: RgbColor): void {
 			currentRgb = rgb;
 			currentOklab = rgbToOklab(rgb.r, rgb.g, rgb.b);
-			// keep the slider in step when the color changed elsewhere (hex
-			// input, RGB fields, a slice click)
-			lSlider.value = String(currentOklab.L);
-			lVal.textContent = `${Math.round(currentOklab.L * 100)}%`;
+			// While the slider drives, it keeps its own L (the color's
+			// round-tripped L drifts a little and would yank the handle back).
+			if (!sliderDriving) {
+				sliceL = currentOklab.L;
+				lSlider.value = String(sliceL);
+				lVal.textContent = `${Math.round(sliceL * 100)}%`;
+			}
 			render();
 		},
 		destroy(): void {

@@ -104,6 +104,15 @@ test('a formula KaTeX cannot parse keeps its source visible', async ({ page }) =
 	expect(await broken.getAttribute('title')).toContain('KaTeX');
 });
 
+test('javascript: link schemes are defused, labels kept', async ({ page }) => {
+	await page.goto(TOOL);
+	await page.locator('.t-md-textarea').fill('[click me](javascript:alert(1)) and [ok](https://example.com)');
+	await expect(page.locator('.t-md-preview-body')).toContainText('click me');
+	// The dangerous scheme must not survive into any href; the safe one stays.
+	const hrefs = await page.locator('.t-md-preview-body a').evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? ''));
+	expect(hrefs).toEqual(['https://example.com']);
+});
+
 // The exported file leaves this site, so it must not depend on it: no <link> to
 // our stylesheet, no font URLs, no script. MathML gets that — browsers typeset
 // it with their own maths font — which is why the export asks renderMathIn() for

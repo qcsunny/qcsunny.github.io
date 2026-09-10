@@ -662,12 +662,21 @@ function parseInline(text: string): string {
 
 	// Images: ![alt](url "title")
 	s = s.replace(/!\[([^\]]*)\]\(([^)]+?)(?:\s+"([^"]*)")?\)/g, (_, alt, url, title) => {
+		// Scheme guard: javascript:/vbscript: have no business in an img, and
+		// data: is only ever legitimate as an embedded image.
+		const u = String(url).trim();
+		if (/^(javascript|vbscript):/i.test(u) || /^data:(?!image\/)/i.test(u)) return String(alt);
 		const t = title ? ` title="${title}"` : '';
 		return `<img src="${url}" alt="${alt}"${t} loading="lazy" class="t-md-img" />`;
 	});
 
 	// Links: [text](url "title")
 	s = s.replace(/\[([^\]]+)\]\(([^)]+?)(?:\s+"([^"]*)")?\)/g, (_, label, url, title) => {
+		// Scheme guard: [click](javascript:alert(1)) would otherwise render a
+		// live script link in the preview — everything pasted is untrusted.
+		// Dangerous schemes keep the label, lose the link.
+		const u = String(url).trim();
+		if (/^(javascript|vbscript|data):/i.test(u)) return String(label);
 		const t = title ? ` title="${title}"` : '';
 		return `<a href="${url}"${t} target="_blank" rel="noopener" class="t-md-link">${label}</a>`;
 	});
@@ -695,6 +704,10 @@ function parseInline(text: string): string {
 
 	return s;
 }
+
+// Live-preview size cap: render() re-parses on every keystroke; a megabyte
+// document would freeze the tab mid-typing.
+const MAX_INPUT_CHARS = 512 * 1024;
 
 // Word count & reading statistics
 export function calculateStats(text: string) {
@@ -1208,6 +1221,16 @@ ${body.innerHTML}
 	function render() {
 		const t0 = performance.now();
 		const raw = editor.value;
+		// Size guard: render() re-parses the whole document on every keystroke.
+		// A megabyte paste would freeze the tab mid-typing. Rejected loudly —
+		// truncating instead would render a document that is not the input.
+		if (raw.length > MAX_INPUT_CHARS) {
+			preview.innerHTML =
+				currentLang === 'en'
+					? `<p class="t-md-error">Document exceeds ${MAX_INPUT_CHARS / 1024} KB — the live preview cannot process files this large. Split it or use a static renderer.</p>`
+					: `<p class="t-md-error">文档超过 ${MAX_INPUT_CHARS / 1024} KB —— 实时预览无法处理这么大的文件，请拆分后再试。</p>`;
+			return;
+		}
 		const html = parseMarkdownToHtml(raw, currentLang);
 		preview.innerHTML = html;
 		const dt = (performance.now() - t0).toFixed(1);
