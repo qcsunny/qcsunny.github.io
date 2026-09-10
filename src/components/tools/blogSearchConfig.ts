@@ -35,6 +35,10 @@ export function buildBlogSearchConfig(posts: CollectionEntry<'blog'>[]): SearchC
 
 	const count = items.length;
 	return {
+		// items only feed the server-rendered pills/counts; the searchable rows
+		// come from /search-blog.json at runtime (search-index.mjs builds it
+		// with the same field assembly as the items below).
+		indexUrl: '/search-blog.json',
 		items,
 		categories: BLOG_CATEGORIES,
 		copy: {

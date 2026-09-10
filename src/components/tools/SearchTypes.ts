@@ -46,6 +46,12 @@ export interface SearchCopy {
 }
 
 export interface SearchConfig {
+	/** The externally generated index this page's modal fetches (see
+	 *  search-index.mjs). Rows are positional: [href, name, nameZh, desc,
+	 *  descZh, category, keywords, slug]. Defaults to the tool index. */
+	indexUrl?: string;
+	/** Rows for the server-rendered pills/counts only; the searchable payload
+	 *  comes from indexUrl at runtime. */
 	items: SearchItem[];
 	categories: SearchCategory[];
 	copy: SearchCopy;

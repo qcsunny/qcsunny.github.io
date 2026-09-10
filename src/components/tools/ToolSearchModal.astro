@@ -60,28 +60,18 @@ const items = config?.items ?? TOOLS_ITEMS;
 const categories = config?.categories ?? TOOLS_CATEGORIES;
 const copy = config?.copy ?? TOOLS_COPY;
 const totalCount = items.length;
-
-// The index ships inline on every page that renders the Header, so it is
-// encoded as positional rows — repeating nine object keys per item across 84
-// tools cost ~5 KB the brotli budget (perf-budget.spec pins the block < 16 KB
-// on the worst page). The row is rehydrated into the SearchItem shape in the
-// first statement of the script below. Order is load-bearing; keep both in
-// sync: [href, name, nameZh, desc, descZh, category, icon, keywords, slug].
-const SEARCH_ROWS = items.map((t) => [
-	t.href,
-	t.name,
-	t.nameZh ?? '',
-	t.desc ?? '',
-	t.descZh ?? '',
-	t.category,
-	t.icon ?? '',
-	t.keywords ?? '',
-	t.slug ?? '',
-]);
+// The row payload (84 tools × bilingual text ≈ 17 KB brotli) used to be inlined
+// into every page's HTML; it now lives in a build-generated JSON the script
+// fetches on open and warms during browser idle (long-cached in _headers, so
+// one download per visitor per deployment instead of one per page). The pills
+// and counts below still render server-side — that markup is a few hundred
+// bytes. Row order in the JSON is load-bearing and mirrors the rehydration in
+// the script: [href, name, nameZh, desc, descZh, category, keywords, slug].
+const indexUrl = config?.indexUrl ?? '/search-index.json';
 ---
 
 <div id="site-search-modal" class="sm-overlay" style="display: none;" aria-hidden="true" role="dialog" aria-modal="true"
-	aria-label="Site search" data-aria-en="Site search" data-aria-zh="站内搜索">
+	aria-label="Site search" data-aria-en="Site search" data-aria-zh="站内搜索" data-index-url={indexUrl}>
 	<div class="sm-backdrop" id="sm-backdrop"></div>
 	<div class="sm-container">
 		<div class="sm-panel">
@@ -164,13 +154,8 @@ const SEARCH_ROWS = items.map((t) => [
 	</div>
 </div>
 
-<script is:inline define:vars={{ searchData: SEARCH_ROWS, searchCategories: categories, searchCopy: copy }}>
+<script is:inline>
 	(() => {
-		// Rehydrate the compact rows injected above into the object shape this
-		// script reads. Unannotated on purpose: is:inline ships plain JavaScript.
-		const idx = searchData.map(function (r) {
-			return { href: r[0], name: r[1], nameZh: r[2], desc: r[3], descZh: r[4], category: r[5], icon: r[6], keywords: r[7], slug: r[8] };
-		});
 		const modal = document.getElementById('site-search-modal');
 		const backdrop = document.getElementById('sm-backdrop');
 		const input = document.getElementById('sm-input');
@@ -197,12 +182,55 @@ const SEARCH_ROWS = items.map((t) => [
 		// leaves window.openSiteSearchModal unset on every page.
 		let lastFocused = null;
 
-		// Category lookup: label pair, icon, and the badge colours, keyed by
-		// the data-cat the rows and the pills both carry.
+		// Category lookup: label pair keyed by the data-cat the rows and the
+		// pills both carry. Read off the server-rendered pills themselves, so
+		// nothing about the categories needs to travel with the script.
 		const CAT_MAP = {};
-		for (const c of searchCategories) {
-			CAT_MAP[c.key] = c;
+		for (const pill of filterPills) {
+			const key = pill.getAttribute('data-cat');
+			if (!key || key === 'all') continue;
+			CAT_MAP[key] = {
+				key,
+				labelEn: (pill.querySelector('.i18n-en') || {}).textContent || key,
+				labelZh: (pill.querySelector('.i18n-zh') || {}).textContent || key,
+			};
 		}
+
+		// The index payload: fetched from the build-generated JSON (see
+		// search-index.mjs), warmed during browser idle so the first "/" press
+		// usually finds it in memory already. Until it lands the list shows a
+		// loading row; keystrokes still work — renderResults re-runs when the
+		// rows arrive. fetch+cache means one download per visitor per deployment
+		// instead of the ~17 KB that used to ride in every page's HTML.
+		let idx = null;
+		let loadPromise = null;
+		const loadIndex = () => {
+			if (idx || loadPromise) return loadPromise;
+			loadPromise = fetch(modal.dataset.indexUrl || '/search-index.json')
+				.then((r) => {
+					if (!r.ok) throw new Error('search index ' + r.status);
+					return r.json();
+				})
+				.then((data) => {
+					// Positional rows → the object shape this script reads:
+					// [href, name, nameZh, desc, descZh, category, keywords, slug].
+					// Blog rows ship descZh empty (same paragraph as desc), so
+					// fall back rather than matching against "".
+					idx = data.rows.map(function (r) {
+						return { href: r[0], name: r[1], nameZh: r[2] || r[1], desc: r[3], descZh: r[4] || r[3], category: r[5], keywords: r[6], slug: r[7] };
+					});
+					renderResults(input.value);
+				})
+				.catch(() => {
+					loadPromise = null; // allow a retry on the next open
+				});
+			return loadPromise;
+		};
+		const warm = () => {
+			loadIndex();
+		};
+		if ('requestIdleCallback' in window) requestIdleCallback(warm, { timeout: 3000 });
+		else setTimeout(warm, 1500);
 
 		// Placeholder sync with site lang. The two buttons' labels use the same
 		// data-* pair as ToolShell's syncLangUI, but that helper only exists on tool
@@ -244,6 +272,7 @@ const SEARCH_ROWS = items.map((t) => [
 			}
 			input.focus();
 			input.select();
+			loadIndex();
 			renderResults(input.value);
 		}
 
@@ -302,7 +331,7 @@ const SEARCH_ROWS = items.map((t) => [
 
 		function searchItems(query, cat) {
 			const q = (query || '').trim().toLowerCase();
-			let pool = idx;
+			let pool = idx || [];
 			if (cat && cat !== 'all') {
 				pool = pool.filter((t) => t.category === cat);
 			}
@@ -369,6 +398,18 @@ const SEARCH_ROWS = items.map((t) => [
 		function renderResults(query) {
 			const q = (query || '').trim();
 			if (clearBtn) clearBtn.style.display = q ? 'inline-flex' : 'none';
+
+			// Rows still loading (or a failed fetch pending retry): say so in the
+			// list instead of flashing "no results", which would read as a lie.
+			if (!idx) {
+				resultsList.innerHTML =
+					'<div class="sm-loading">' +
+					'<span class="i18n-en">Loading search index…</span>' +
+					'<span class="i18n-zh">正在加载搜索索引…</span>' +
+					'</div>';
+				emptyEl.style.display = 'none';
+				return;
+			}
 
 			currentItems = searchItems(q, selectedCat);
 			activeIndex = 0;
@@ -748,6 +789,12 @@ const SEARCH_ROWS = items.map((t) => [
 	.sm-empty {
 		text-align: center;
 		padding: 2.4rem 1rem;
+	}
+	.sm-loading {
+		text-align: center;
+		padding: 2.4rem 1rem;
+		font-size: 0.92rem;
+		color: var(--dim, #6b7280);
 	}
 	.sm-empty-text {
 		font-size: 0.92rem;

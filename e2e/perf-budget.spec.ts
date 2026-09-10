@@ -67,39 +67,34 @@ test('the shared tool bundle stays inside its brotli budget', () => {
 // the 63 tools (bilingual names plus search aliases) on most pages, the blog
 // collection on the blog list and article pages — so the first keystroke has
 // data and search keeps working offline. That is a deliberate trade: inline
-// bytes cannot be cached, so a multi-page visit pays for them again on each
-// page. The reason it is deliberate is that they are small. This pins "small":
-// the 49-tool index sat just under 12 KB brotli per page; ten more tools and
-// growth to 42 articles pushed the worst page to ~14.2 KB, and at 63 tools /
-// 47 articles it was ~15.3 KB. The 2026-09 batch (11 dev/stat tools, then 10
-// daily/dev tools — 84 total, each with bilingual name/description/keywords)
-// moved the marginal cost on 404.html to ~17.2 KB; positional-row encoding of
-// the payload bought little because brotli already crushes the repeated object
-// keys — the weight is the unique bilingual text. 18 KB is still well under an
-// extra round trip to fetch and cache an external file, while keeping search
-// fully functional offline.
-test('the inlined search index stays small enough to justify inlining', () => {
-	const withIndex = distHtml().filter(([, html]) => html.includes('const searchData'));
-	expect(withIndex.length, 'pages carrying the search modal').toBeGreaterThan(50);
+// The search index used to be inlined into every page's HTML via define:vars
+// — 17.2 KB brotli on the worst page at 84 tools, re-downloaded on every
+// navigation since HTML cannot be content-hash cached. Since 2026-09-10 the
+// two indexes are build-generated JSON files (search-index.mjs) that the
+// search UIs fetch on open and warm during browser idle, long-cached in
+// _headers: one download per visitor per deployment. These pins hold both
+// halves of that bargain: no page carries the payload inline any more, and the
+// external files stay small enough that the fetch beats a cached-page render.
+test('the search index is external, and each file stays small', () => {
+	// No page may inline the index any more — the old payload was identified
+	// by its define:vars const; the same string must not reappear.
+	for (const [, html] of distHtml()) {
+		expect(html.includes('const searchData'), 'a page still inlines the search index').toBe(false);
+	}
 
-	// The block carries the same payload on every page, but its brotli *cost* is
-	// the marginal bytes it adds to that page's HTML — and brotli is stateful,
-	// so the same block costs more on a page whose surrounding HTML compresses
-	// worse. Sampling one page (the old withIndex[0]) could miss the worst:
-	// 404.html, which inherits the modal through Header, ran ~9.8 KB while a
-	// tool list page ran ~1.4 KB. Pin the worst page so an index that grows
-	// past the budget is caught regardless of which page the sort hits first.
-	const costs = withIndex.map(([route, html]) => {
-		const block = html.match(/<script>\(function\(\)\{const searchData[\s\S]*?<\/script>/);
-		if (!block) return [route, -1] as const;
-		return [route, brotli(html) - brotli(html.replace(block[0], ''))] as const;
-	});
-	const worst = costs.filter(([, c]) => c >= 0).sort((a, b) => b[1] - a[1])[0];
-	expect(worst, 'no page carried an inline search index block').toBeDefined();
-	expect(
-		worst[1],
-		`search index costs ${worst[1]} B brotli on worst page (${worst[0]})`,
-	).toBeLessThan(18_000);
+	const forIdx = (name: string) => {
+		const buf = readFileSync(join(DIST, name));
+		return [name, buf.length, brotli(buf)] as const;
+	};
+	const tools = forIdx('search-index.json');
+	const blog = forIdx('search-blog.json');
+	// Raw size (the file is on disk; the host compresses in flight — the brotli
+	// numbers land ~13/9 KB, smaller than the old inline block ever was). The
+	// ceilings sit ~30% above the 2026-09 levels (84 tools ≈ 38 KB / 47 posts
+	// ≈ 33 KB) so a couple of tool batches fit without renegotiation, while a
+	// runaway growth still trips the pin.
+	expect(tools[1], `${tools[0]} raw size`).toBeLessThan(50_000);
+	expect(blog[1], `${blog[0]} raw size`).toBeLessThan(45_000);
 });
 
 // Astro emits one hoisted entry chunk per page and puts the <script> in the

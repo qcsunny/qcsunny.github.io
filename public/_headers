@@ -17,4 +17,11 @@
 /apple-touch-icon.png
   Cache-Control: public, max-age=86400
 
+# 搜索索引（search-index.mjs 构建期生成）：URL 固定但内容随工具/文章增删变化，
+# 与 OG 卡片同理给一天缓存——搜到刚下线的工具缓存一天无伤大雅，省下的却是
+# 每次导航的回源校验。immutable 不行：部署后新工具要能被搜到。
+/search-index.json
+/search-blog.json
+  Cache-Control: public, max-age=86400
+
 # HTML 保持默认的 must-revalidate：部署后要立刻可见，不在此覆盖。
