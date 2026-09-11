@@ -2947,6 +2947,15 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: '合并、提取、拆分页面、旋转、加水印、压缩（无损重打包）、查看/清除元数据、PDF 转图片、图片合成 PDF——全程浏览器本地，绝不上传。',
 		kind: 'pdftoolkit',
 	},
+	{
+		slug: 'document-ocr',
+		category: 'devtools',
+		name: 'Document OCR (PDF · Image → Text)',
+		nameZh: '文档 OCR（PDF · 图片转文字）',
+		description: 'Extract editable text from scanned PDFs and JPG/PNG/WebP images — Tesseract running as wasm in your browser, English and Simplified Chinese, with a confidence rating per page. Nothing is uploaded.',
+		descriptionZh: '从扫描版 PDF 与 JPG/PNG/WebP 图片提取可编辑文字——Tesseract 以 wasm 在浏览器内运行，支持英语与简体中文，逐页给出置信度。绝不上传。',
+		kind: 'pdfocr',
+	},
 
 	{
 		slug: 'html-entity-escaper',

@@ -971,6 +971,26 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '支持命名区域吗？', a: '本生成器只用轨道 + 跨度，同样的事更少机关。想要 template-areas，输出的轨道定义就是最难的部分——命名交给你补。' },
 		],
 	},
+	'devtools/document-ocr': {
+		about: [
+			'Drop scanned PDFs or photos (JPG/PNG/WebP) and get editable text back. Tesseract — the open-source OCR engine — runs as WebAssembly inside this tab; the language files (English ~4 MB, Simplified Chinese ~2.5 MB, the speed-optimized "fast" variants) download from this site only when that language is first used.',
+			'Every page reports a confidence percentage, and anything under 70% carries a ⚠ check-manually flag. PDFs are rasterized page by page at 2× before recognition; images are capped at a sane upscale so a 4000-pixel phone photo stays a 4000-pixel canvas.',
+		],
+		aboutZh: [
+			'拖入扫描版 PDF 或照片（JPG/PNG/WebP），取回可编辑文字。开源 OCR 引擎 Tesseract 以 WebAssembly 在本标签页内运行；语言文件（英语约 4MB、简体中文约 2.5MB，速度优化的 fast 版）只在首次选用该语言时从本站下载。',
+			'每页报告置信度百分比，低于 70% 附 ⚠ 人工核对标记。PDF 逐页以 2× 栅格化后再识别；图片限制合理放大倍数，4000 像素的手机照片不会变成超大画布。',
+		],
+		faq: [
+			{ q: 'How accurate is it?', a: 'On clean 300-DPI scans of plain text, very good. On phone photos with perspective skew, low contrast, handwriting or complex multi-column layouts — disappointing. The per-page confidence number tells you which pages to trust; treat anything below 70% as a draft.' },
+			{ q: 'Why is Chinese slow?', a: 'The fast Chinese model still evaluates far more character classes per glyph than English letters, and this is the wasm build on CPU — expect 10-30 s per page. The engine swap planned for a future version (PP-OCR via ONNX Runtime WebGPU) would cut that several-fold.' },
+			{ q: 'Does it OCR handwriting?', a: 'Not usefully — Tesseract is a print-recognition engine. Handwriting needs dedicated models that do not exist in a browser-viable form yet.' },
+		],
+		faqZh: [
+			{ q: '识别准确率如何？', a: '清晰 300 DPI 的纯文本扫描件：很好。带透视倾斜、低对比度、手写体或复杂分栏的拍照件：会失望。逐页置信度数字告诉你哪些页可信；低于 70% 请当作草稿。' },
+			{ q: '为什么中文慢？', a: 'fast 版中文模型每个字形仍需评估远多于英文字母的字符类别，且这是 CPU 上的 wasm 构建——每页约 10-30 秒。未来版本计划的引擎更换（PP-OCR + ONNX Runtime WebGPU）可提速数倍。' },
+			{ q: '能手写识别吗？', a: '不实用——Tesseract 是印刷体识别引擎。手写需要专用模型，目前尚无浏览器可用的形态。' },
+		],
+	},
 	'devtools/pdf-toolkit': {
 		about: [
 			'Nine operations on one dropped file: merge several PDFs, extract pages ("1-3,5,8-" grammar, order as written), split to single pages, rotate by ±90/180, text watermark (stamp or tiled, any size/opacity/angle/colour), lossless compress, view or strip metadata, PDF → PNG/JPG at 1.5–3× scale, and images → PDF.',
