@@ -126,12 +126,12 @@ test('xlsx cleaner emits a download with names and links stripped', async ({ pag
 	// re-unzip the download: names/links gone, sheet data intact
 	const path = await dl.path();
 	const zip = await JSZip.loadAsync(readFileSync(path));
-	const wb = await (zip.file('xl/workbook.xml') ?? fail('workbook.xml missing')).async('string');
+	const wb = await zip.file('xl/workbook.xml')!.async('string');
 	expect(wb).not.toContain('HiddenName');
 	expect(wb).not.toContain('ExtRef');
 	expect(wb).toContain('MyRange'); // the normal name survives
 	expect(wb).not.toContain('<externalReferences>');
-	const sheet = await (zip.file('xl/worksheets/sheet1.xml') ?? fail('sheet1.xml missing')).async('string');
+	const sheet = await zip.file('xl/worksheets/sheet1.xml')!.async('string');
 	expect(sheet).toContain('<v>42</v>');
 	expect(sheet).toContain('world');
 });
@@ -169,11 +169,11 @@ test('xlsx analyzer keeps hidden rows and columns untouched', async ({ page }) =
 	const dl = await dlPromise;
 	const path = await dl.path();
 	const re = await JSZip.loadAsync(readFileSync(path));
-	const sheet = await (re.file('xl/worksheets/sheet1.xml') ?? fail('sheet1.xml missing')).async('string');
+	const sheet = await re.file('xl/worksheets/sheet1.xml')!.async('string');
 	expect(sheet).toContain('<row r="2" hidden="1">'); // hidden row survives
 	expect(sheet).toContain('hidden col'.replace('col', 'row')); // its data too
 	expect(sheet).toMatch(/<col [^>]*hidden="1"/); // hidden column survives
-	const wb = await (re.file('xl/workbook.xml') ?? fail('workbook.xml missing')).async('string');
+	const wb = await re.file('xl/workbook.xml')!.async('string');
 	expect(wb).toContain('KeepMe');
 	expect(wb).not.toContain('HiddenName');
 });
