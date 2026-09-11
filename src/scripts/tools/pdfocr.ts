@@ -143,13 +143,17 @@ export function initPdfOcr(host: HTMLElement): void {
 	const controls = document.createElement('div');
 	controls.className = 't-filerow t-ocr-controls';
 	const langSel = document.createElement('select');
+	// <option> text cannot hold an i18n span pair — use the data-text-*
+	// attributes ToolShell's syncLangUI swaps on language change
 	for (const [v, en, zh] of [
 		['eng', 'English', '英语'],
-		['chi_sim', '简体中文', '简体中文'],
+		['chi_sim', 'Chinese (Simplified)', '简体中文'],
 	] as const) {
 		const o = document.createElement('option');
 		o.value = v;
-		o.append(bilingual(en, zh));
+		o.textContent = en;
+		o.dataset.textEn = en;
+		o.dataset.textZh = zh;
 		langSel.append(o);
 	}
 	langSel.addEventListener('change', () => {
