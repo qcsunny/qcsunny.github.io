@@ -2658,6 +2658,21 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 					ratio >= need
 						? { label: en, labelZh: zh, value: `✓ pass (${r}:1 ≥ ${need}:1)`, valueZh: `✓ 通过（${r}:1 ≥ ${need}:1）` }
 						: { label: en, labelZh: zh, value: `✗ fail (${r}:1 < ${need}:1)`, valueZh: `✗ 未通过（${r}:1 < ${need}:1）` };
+				// Live sample: the actual fg-on-bg pairing, one line of large text
+				// (the 3:1 threshold case) and one of normal text (the 4.5:1 case)
+				// — the numbers above are meaningless without seeing the colors.
+				const toHex = (c: [number, number, number]): string => '#' + c.map((x) => x.toString(16).padStart(2, '0')).join('');
+				const fgHex = toHex(fg);
+				const bgHex = toHex(bg);
+				const svg =
+					`<svg viewBox="0 0 560 190" xmlns="http://www.w3.org/2000/svg" role="img">` +
+					`<rect x="0" y="0" width="560" height="190" rx="12" fill="${bgHex}"/>` +
+					`<text x="280" y="78" text-anchor="middle" font-size="30" font-weight="700" fill="${fgHex}" class="i18n-en">Large 24px bold text</text>` +
+					`<text x="280" y="78" text-anchor="middle" font-size="30" font-weight="700" fill="${fgHex}" class="i18n-zh">大字号文本 24px 粗体</text>` +
+					`<text x="280" y="128" text-anchor="middle" font-size="16" fill="${fgHex}" class="i18n-en">Normal 16px text — the 4.5:1 case</text>` +
+					`<text x="280" y="128" text-anchor="middle" font-size="16" fill="${fgHex}" class="i18n-zh">正文 16px——4.5:1 的情形</text>` +
+					`<text x="280" y="165" text-anchor="middle" font-size="13" font-family="var(--font-mono, monospace)" fill="${fgHex}">${fgHex} on ${bgHex} · ${r}:1</text>` +
+					`</svg>`;
 				return {
 					rows: [
 						{ label: 'Contrast ratio', labelZh: '对比度', value: `${r}:1`, emphasis: true },
@@ -2667,6 +2682,7 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 						verdict(4.5, 'AAA — large text', 'AAA——大字号'),
 						verdict(3, 'UI components & focus indicators', '界面组件与焦点指示'),
 					],
+					chartSvg: svg,
 				};
 			},
 		},
