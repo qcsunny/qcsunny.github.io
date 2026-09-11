@@ -44,7 +44,7 @@ test('port lookup by number and service', async ({ page }) => {
 });
 
 test('timezone converter with world clock table', async ({ page }) => {
-	await page.goto('/utilities/timezone-converter/');
+	await page.goto('/daily/timezone-converter/');
 	const results = page.locator('.t-results');
 	// 2026-09-11 14:30 Shanghai → New York is 02:30 the same day (EDT).
 	await expect(results).toContainText('02:30');
@@ -55,7 +55,7 @@ test('timezone converter with world clock table', async ({ page }) => {
 });
 
 test('css clamp emits px and rem forms', async ({ page }) => {
-	await page.goto('/devtools/css-clamp/');
+	await page.goto('/color/css-clamp/');
 	const results = page.locator('.t-results');
 	// The generated CSS rides in the note (identical in both languages);
 	// sample values live in the rows.
@@ -65,7 +65,7 @@ test('css clamp emits px and rem forms', async ({ page }) => {
 });
 
 test('wcag contrast: 4.54 with pass and fail verdicts', async ({ page }) => {
-	await page.goto('/devtools/wcag-contrast/');
+	await page.goto('/color/wcag-contrast/');
 	const results = page.locator('.t-results');
 	await expect(results).toContainText('4.54'); // #767676 on #ffffff
 	await expect(results).toContainText('✓'); // AA normal passes
@@ -73,14 +73,14 @@ test('wcag contrast: 4.54 with pass and fail verdicts', async ({ page }) => {
 });
 
 test('color palette renders swatches', async ({ page }) => {
-	await page.goto('/devtools/color-palette/');
+	await page.goto('/color/color-palette/');
 	const results = page.locator('.t-results');
 	await expect(results).toContainText('#3b82f6'); // the base color echoes back
 	expect(await page.locator('svg rect').count()).toBeGreaterThanOrEqual(5);
 });
 
 test('lossless checker: full-band WAV reads as true lossless', async ({ page }) => {
-	await page.goto('/devtools/lossless-checker/');
+	await page.goto('/media/lossless-checker/');
 	// A stereo 16-bit WAV whose samples carry sines 1–21 kHz: the cutoff
 	// should reach the Nyquist limit and the verdict should say lossless.
 	const sr = 44100;
@@ -117,7 +117,7 @@ test('lossless checker: full-band WAV reads as true lossless', async ({ page }) 
 });
 
 test('browser info scans navigator, screen and codec support', async ({ page }) => {
-	await page.goto('/devtools/browser-info/');
+	await page.goto('/security/browser-info/');
 	await page.getByRole('button', { name: /Scan this browser|扫描本机浏览器/ }).click();
 	const output = page.locator('textarea[data-role="output"]');
 	await expect(output).toHaveValue(/CPU/);

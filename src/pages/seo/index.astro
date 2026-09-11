@@ -1,0 +1,29 @@
+---
+// seo hub — a single-category view of the Tools hub. Title and blurb
+// come from CATEGORIES so the copy lives in one place.
+import ToolShell from '../../components/tools/ToolShell.astro';
+import ToolSearchBar from '../../components/tools/ToolSearchBar.astro';
+import { CATEGORIES, REGISTRY } from '../../tools/registry';
+
+const cat = CATEGORIES.find((c) => c.id === 'seo')!;
+const entries = REGISTRY.filter((e) => e.category === 'seo' && e.kind !== 'redirect');
+---
+<ToolShell title={cat.label} titleZh={cat.labelZh} description={cat.blurb}>
+	<ToolSearchBar category={cat.id} placeholder="Search SEO tools (e.g. meta, sitemap, robots, slug)..." placeholderZh="搜索 SEO 工具 (如 Meta、站点地图、robots、slug)..." totalCount={entries.length} />
+	<div class="t-cards">
+		{
+			entries.map((e) => (
+				<a class="t-card" href={`/${e.category}/${e.slug}/`} data-slug={e.slug} data-cat={e.category}>
+					<h2>
+						<span class="i18n-en">{e.name}</span>
+						<span class="i18n-zh">{e.nameZh || e.name}</span>
+					</h2>
+					<p>
+						<span class="i18n-en">{e.description}</span>
+						{e.descriptionZh && <span class="i18n-zh">{e.descriptionZh}</span>}
+					</p>
+				</a>
+			))
+		}
+	</div>
+</ToolShell>

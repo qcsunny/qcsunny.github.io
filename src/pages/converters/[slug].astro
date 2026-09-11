@@ -1,5 +1,5 @@
 ---
-import ToolShell from '../../components/tools/ToolShell.astro';
+import DynamicToolPage from '../../components/tools/DynamicToolPage.astro';
 import { REGISTRY, type ToolEntry } from '../../tools/registry';
 
 export function getStaticPaths() {
@@ -9,24 +9,10 @@ export function getStaticPaths() {
 }
 
 const { entry } = Astro.props as { entry: ToolEntry };
-const redirect = entry.kind === 'redirect' ? entry.config.target : undefined;
 ---
 
-<ToolShell
-	title={entry.name}
-	description={entry.description}
-	entry={redirect ? undefined : entry}
-	category="converters"
-	redirectTo={redirect}
->
-	{
-		!redirect && (
-			<>
-				<div id="t-root"></div>
-				<script>
-					import '../../scripts/tools/main';
-				</script>
-			</>
-		)
-	}
-</ToolShell>
+<DynamicToolPage entry={entry} category="converters" />
+
+<script>
+	import '../../scripts/tools/main';
+</script>

@@ -21,15 +21,23 @@ const { config } = Astro.props;
 
 const allTools = getAllSearchItems();
 
+// One chip per registry category — a chip keyed by a category no tool holds
+// (the pre-migration 'tools', or the removed 'utilities') filters to nothing
+// and leaves every badge as the raw key, so this list is kept in lockstep
+// with the CATEGORIES array in registry.ts.
 const TOOLS_CATEGORIES: SearchCategory[] = [
 	{ key: 'finance', labelEn: 'Finance', labelZh: '金融' },
 	{ key: 'calculators', labelEn: 'Calculators', labelZh: '计算' },
 	{ key: 'converters', labelEn: 'Converters', labelZh: '换算' },
-	// 'devtools', not the pre-migration 'tools': the dev tool registry entries
-	// were moved to category 'devtools' (/devtools/<slug>), so a chip keyed
-	// 'tools' would filter to nothing and leave every badge as the raw key.
 	{ key: 'devtools', labelEn: 'Dev Tools', labelZh: '开发' },
-	{ key: 'utilities', labelEn: 'Utilities', labelZh: '实用' },
+	{ key: 'office', labelEn: 'Office', labelZh: '办公' },
+	{ key: 'security', labelEn: 'Security', labelZh: '安全' },
+	{ key: 'text', labelEn: 'Text', labelZh: '文本' },
+	{ key: 'media', labelEn: 'Media', labelZh: '媒体' },
+	{ key: 'color', labelEn: 'Color', labelZh: '颜色' },
+	{ key: 'seo', labelEn: 'SEO', labelZh: 'SEO' },
+	{ key: 'fun', labelEn: 'Fun', labelZh: '趣味' },
+	{ key: 'daily', labelEn: 'Daily', labelZh: '日常' },
 ];
 const TOOLS_COPY: SearchCopy = {
 	placeholderEn: `Search ${allTools.length} tools (e.g. mortgage, irr, tax, uuid, speed)...`,

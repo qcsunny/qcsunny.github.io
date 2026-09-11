@@ -88,7 +88,7 @@ async function dropFixture(page: import('@playwright/test').Page, bytes: Uint8Ar
 }
 
 test('xlsx analyzer reports bloat and offers the matching clean options', async ({ page }) => {
-	await page.goto('/devtools/xlsx-analyzer/');
+	await page.goto('/office/xlsx-analyzer/');
 	await page.waitForSelector('.t-xlsx-drop');
 	await dropFixture(page, await buildFixture());
 	await page.waitForSelector('.t-xlsx-report .t-xlsx-stat');
@@ -110,7 +110,7 @@ test('xlsx analyzer reports bloat and offers the matching clean options', async 
 });
 
 test('xlsx cleaner emits a download with names and links stripped', async ({ page }) => {
-	await page.goto('/devtools/xlsx-analyzer/');
+	await page.goto('/office/xlsx-analyzer/');
 	await page.waitForSelector('.t-xlsx-drop');
 	await dropFixture(page, await buildFixture());
 	await page.waitForSelector('.t-xlsx-clean input[type="checkbox"]');
@@ -139,7 +139,7 @@ test('xlsx cleaner emits a download with names and links stripped', async ({ pag
 test('xlsx analyzer keeps hidden rows and columns untouched', async ({ page }) => {
 	// regression guard for the "will it eat my hidden rows" question: the
 	// cleaner must never rewrite sheet structure beyond style-id remapping
-	await page.goto('/devtools/xlsx-analyzer/');
+	await page.goto('/office/xlsx-analyzer/');
 	await page.waitForSelector('.t-xlsx-drop');
 
 	const zip = new JSZip();

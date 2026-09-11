@@ -38,7 +38,7 @@ test('mime lookup works in both directions', async ({ page }) => {
 });
 
 test('user-agent parser: live stats, full report, bot detection', async ({ page }) => {
-	await page.goto('/devtools/user-agent-parser/');
+	await page.goto('/text/user-agent-parser/');
 	// Default UA is desktop Chrome: stats are live before any click.
 	await expect(page.locator('.t-results')).toContainText('Chrome');
 	await expect(page.locator('.t-results')).toContainText('Windows');
@@ -53,7 +53,7 @@ test('user-agent parser: live stats, full report, bot detection', async ({ page 
 });
 
 test('media-info parses a dropped WAV locally', async ({ page }) => {
-	await page.goto('/devtools/media-info/');
+	await page.goto('/media/media-info/');
 	// A minimal 2-second stereo 44.1 kHz 16-bit WAV, synthesized in the test.
 	const sr = 44100;
 	const dataBytes = sr * 2 * 2 * 2;
@@ -89,7 +89,7 @@ test('media-info parses a dropped WAV locally', async ({ page }) => {
 });
 
 test('robots.txt: generate from DSL, lint catches typos', async ({ page }) => {
-	await page.goto('/devtools/robots-txt-generator/');
+	await page.goto('/seo/robots-txt-generator/');
 	const input = page.locator('textarea[data-role="input"]');
 	const output = page.locator('textarea[data-role="output"]');
 
@@ -105,7 +105,7 @@ test('robots.txt: generate from DSL, lint catches typos', async ({ page }) => {
 });
 
 test('sitemap.xml: generate then round-trip validate', async ({ page }) => {
-	await page.goto('/devtools/sitemap-xml-generator/');
+	await page.goto('/seo/sitemap-xml-generator/');
 	const input = page.locator('textarea[data-role="input"]');
 	const output = page.locator('textarea[data-role="output"]');
 
@@ -121,7 +121,7 @@ test('sitemap.xml: generate then round-trip validate', async ({ page }) => {
 });
 
 test('meta tag generator: tags and share-card preview live together', async ({ page }) => {
-	await page.goto('/devtools/meta-tag-generator/');
+	await page.goto('/seo/meta-tag-generator/');
 	const inputs = page.locator('.t-metafields input');
 	await inputs.nth(0).fill('My Example Page');
 	await inputs.nth(1).fill('A description of the page.');

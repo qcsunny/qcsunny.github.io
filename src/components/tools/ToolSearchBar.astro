@@ -150,16 +150,21 @@ const {
 
 		// Keys must match the registry category values: a miss falls back to
 		// printing the raw slug as the badge text with a ⚡ icon (see the
-		// lookup below). The 5-group refactor renamed devtools out of 'tools'
-		// and added 'utilities', and this map stayed on the old key — so both
-		// new categories rendered as bare slugs. ToolSearchModal.astro keeps
-		// the sibling map and was the one that had been updated.
+		// lookup below). Kept in lockstep with the CATEGORIES array in
+		// registry.ts — a category left out here renders as a bare slug.
 		const CAT_LABELS = {
 			finance: { en: 'Finance', zh: '金融工具', icon: '💰' },
 			calculators: { en: 'Calculator', zh: '计算器', icon: '📐' },
 			converters: { en: 'Converter', zh: '单位换算', icon: '🔄' },
 			devtools: { en: 'Dev Tool', zh: '开发者工具', icon: '🛠️' },
-			utilities: { en: 'Utilities', zh: '实用工具', icon: '🧰' },
+			office: { en: 'Office', zh: '办公工具', icon: '📄' },
+			security: { en: 'Security', zh: '安全工具', icon: '🔐' },
+			text: { en: 'Text', zh: '文本工具', icon: '✍️' },
+			media: { en: 'Media', zh: '媒体工具', icon: '🎬' },
+			color: { en: 'Color', zh: '颜色工具', icon: '🎨' },
+			seo: { en: 'SEO', zh: 'SEO 工具', icon: '🔍' },
+			fun: { en: 'Fun', zh: '趣味工具', icon: '🧪' },
+			daily: { en: 'Daily', zh: '日常工具', icon: '📅' },
 		};
 
 		// Safely collect all cards on the page (supports calling before or after DOMContentLoaded)

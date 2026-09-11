@@ -6,13 +6,13 @@ category: algorithms
 topics: [algorithms]
 searchTerms: ['文本差异', 'LCS', '最长公共子序列', '动态规划', '相似度']
 contentLang: 'zh-CN'
-relatedTools: ['utilities/text-diff', 'devtools/hash-generator', 'devtools/json-formatter']
+relatedTools: ['text/text-diff', 'security/hash-generator', 'devtools/json-formatter']
 relatedPosts: ['calculator-engine-tokenizer-parser-eval', 'regex-catastrophic-backtracking-and-redos']
 ---
 
 git diff 输出的那些红绿行——`-` 开头是删除、`+` 开头是新增——背后是 Myers 差分算法。但 Myers 是 LCS（最长公共子序列）的优化版本，理解差异对比要从 LCS 本身开始。
 
-本站的 [文本差异对比工具](/utilities/text-diff/) 做的是最基础的逐行差异对比：输入两段文本，输出新增行数、删除行数、未变行数和相似度。核心算法是经典 LCS 动态规划。这篇文章拆解实现中的每一步。
+本站的 [文本差异对比工具](/text/text-diff/) 做的是最基础的逐行差异对比：输入两段文本，输出新增行数、删除行数、未变行数和相似度。核心算法是经典 LCS 动态规划。这篇文章拆解实现中的每一步。
 
 ---
 

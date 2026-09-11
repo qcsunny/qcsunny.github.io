@@ -1,21 +1,12 @@
-// Registry entries for the three generators (/devtools/password-generator,
+// Registry entries for the three generators (/security/password-generator,
 // /devtools/uuid-generator, /devtools/random-number). Rendered by
 // src/scripts/tools/generators.ts — these need crypto APIs and copy buttons,
 // which the plain form renderer doesn't cover.
 
 import type { ToolEntry } from './registry';
 
+
 export const DEVTOOLS_GENERATOR_TOOLS: ToolEntry[] = [
-	{
-		slug: 'password-generator',
-		category: 'devtools',
-		name: 'Password Generator',
-		nameZh: '强密码生成器',
-		description: 'Generate strong random passwords with crypto randomness and ambiguous character filtering.',
-		descriptionZh: '高强度随机密码生成器，采用密码学随机数，支持字符集筛选与易混淆字符排除。',
-		kind: 'generator',
-		config: { generator: 'password', minLen: 8, maxLen: 64, defLen: 16 },
-	},
 	{
 		slug: 'uuid-generator',
 		category: 'devtools',
@@ -26,12 +17,9 @@ export const DEVTOOLS_GENERATOR_TOOLS: ToolEntry[] = [
 		kind: 'generator',
 		config: { generator: 'uuid', defCount: 5, maxCount: 100 },
 	},
-];
-
-export const UTILITIES_GENERATOR_TOOLS: ToolEntry[] = [
 	{
 		slug: 'random-number',
-		category: 'utilities',
+		category: 'devtools',
 		name: 'Random Number Generator',
 		nameZh: '随机数生成器',
 		description: 'Draw random integers in any range, with or without duplicates.',
@@ -40,3 +28,17 @@ export const UTILITIES_GENERATOR_TOOLS: ToolEntry[] = [
 		config: { generator: 'random', defMin: 1, defMax: 100, defCount: 6 },
 	},
 ];
+
+export const SECURITY_GENERATOR_TOOLS: ToolEntry[] = [
+	{
+		slug: 'password-generator',
+		category: 'security',
+		name: 'Password Generator',
+		nameZh: '强密码生成器',
+		description: 'Generate strong random passwords with crypto randomness and ambiguous character filtering.',
+		descriptionZh: '高强度随机密码生成器，采用密码学随机数，支持字符集筛选与易混淆字符排除。',
+		kind: 'generator',
+		config: { generator: 'password', minLen: 8, maxLen: 64, defLen: 16 },
+	},
+];
+

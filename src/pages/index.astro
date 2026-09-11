@@ -8,7 +8,7 @@ import ReadingTime from '../components/ReadingTime.astro';
 import Header from '../components/Header.astro';
 import { readingMinutes } from '../blog/blogMetadata';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
-import { REAL_TOOLS, TOOL_COUNT } from '../tools/registry';
+import { CATEGORIES, REAL_TOOLS, TOOL_COUNT } from '../tools/registry';
 
 // REAL_TOOLS is the registry minus the redirect stubs that carry no page, so a
 // featured pick can never resolve to one: the /calculators/ redirect that once
@@ -17,7 +17,8 @@ import { REAL_TOOLS, TOOL_COUNT } from '../tools/registry';
 // goes to — the whole point of picking it by hand.
 const bySlug = (slug: string) => REAL_TOOLS.find((e) => e.slug === slug);
 
-// Hand-picked high-frequency tools across developer, finance, math and utility categories
+// Hand-picked high-frequency tools across the developer, office, security,
+// finance, math and daily categories
 const featuredSlugs = [
 	'mortgage-prepayment',
 	'json-formatter',
@@ -47,7 +48,7 @@ const posts = allPosts.slice(0, 3);
 // this build, whatever it is.
 const toolTotal = TOOL_COUNT;
 const postTotal = allPosts.length;
-const catTotal = new Set(REAL_TOOLS.map((e) => e.category)).size;
+const catTotal = CATEGORIES.length;
 const converterTotal = REAL_TOOLS.filter((e) => e.category === 'converters').length;
 
 

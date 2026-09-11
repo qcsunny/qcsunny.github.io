@@ -1,5 +1,5 @@
 // User-agent string parser, pure regex (no library, no lookup table download).
-// Consumed by the devtools/user-agent-parser text tool; returns bilingual
+// Consumed by the text/user-agent-parser text tool; returns bilingual
 // fields so the report can render both halves.
 
 export interface UaInfo {

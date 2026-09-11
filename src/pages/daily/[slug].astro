@@ -1,0 +1,18 @@
+---
+import DynamicToolPage from '../../components/tools/DynamicToolPage.astro';
+import { REGISTRY, type ToolEntry } from '../../tools/registry';
+
+export function getStaticPaths() {
+	return REGISTRY
+		.filter((e) => e.category === 'daily')
+		.map((e) => ({ params: { slug: e.slug }, props: { entry: e } }));
+}
+
+const { entry } = Astro.props as { entry: ToolEntry };
+---
+
+<DynamicToolPage entry={entry} category="daily" />
+
+<script>
+	import '../../scripts/tools/main';
+</script>

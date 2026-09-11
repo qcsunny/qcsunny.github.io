@@ -6,7 +6,7 @@
 import { test, expect } from '@playwright/test';
 
 test('line organizer cleans, dedupes and sorts naturally', async ({ page }) => {
-	await page.goto('/devtools/line-organizer/');
+	await page.goto('/text/line-organizer/');
 	const input = page.locator('textarea[data-role="input"]');
 	const output = page.locator('textarea[data-role="output"]');
 
@@ -28,7 +28,7 @@ test('line organizer cleans, dedupes and sorts naturally', async ({ page }) => {
 });
 
 test('text extractor pulls urls and emails, bare domains excluded', async ({ page }) => {
-	await page.goto('/devtools/text-extractor/');
+	await page.goto('/text/text-extractor/');
 	const input = page.locator('textarea[data-role="input"]');
 	const output = page.locator('textarea[data-role="output"]');
 
@@ -48,7 +48,7 @@ test('text extractor pulls urls and emails, bare domains excluded', async ({ pag
 });
 
 test('slug generator folds diacritics and keeps CJK', async ({ page }) => {
-	await page.goto('/devtools/slug-generator/');
+	await page.goto('/seo/slug-generator/');
 	const input = page.locator('textarea[data-role="input"]');
 	const output = page.locator('textarea[data-role="output"]');
 

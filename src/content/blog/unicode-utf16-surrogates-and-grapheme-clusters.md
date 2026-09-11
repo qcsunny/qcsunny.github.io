@@ -6,7 +6,7 @@ category: web
 topics: [frontend, web-platform, developer-tools]
 searchTerms: ['Unicode', 'UTF-16', '代理对', '字形簇', 'Emoji', 'Intl.Segmenter']
 contentLang: 'zh-CN'
-relatedTools: ['utilities/word-counter', 'utilities/character-counter']
+relatedTools: ['text/word-counter', 'text/character-counter']
 relatedPosts: ['url-unicode-utf8-base64url-boundaries']
 ---
 
@@ -24,7 +24,7 @@ relatedPosts: ['url-unicode-utf8-base64url-boundaries']
 
 为什么一个人类肉眼可见的“一家四口”Emoji，在 JavaScript 看来竟然占了 11 个字符？为什么生僻字会导致 `length === 2`？
 
-本文将带你跳出朴素的“字符即字节”认知误区，从编码历史推导到现代 Unicode 标准，解析我们在[在线字数统计](/utilities/word-counter/)与[字符计数器](/utilities/character-counter/)中采用的现代字形簇计数方案。
+本文将带你跳出朴素的“字符即字节”认知误区，从编码历史推导到现代 Unicode 标准，解析我们在[在线字数统计](/text/word-counter/)与[字符计数器](/text/character-counter/)中采用的现代字形簇计数方案。
 
 ---
 
@@ -160,7 +160,7 @@ export function getGraphemeCount(text: string, locale: string = 'en'): number {
 }
 ```
 
-在本站的[字符计数器](/utilities/character-counter/)实现中，我们同时输出多维度的指标，让开发者看清全貌：
+在本站的[字符计数器](/text/character-counter/)实现中，我们同时输出多维度的指标，让开发者看清全貌：
 1. **人类可见字符数（Graphemes）**：使用 `Intl.Segmenter` 计算真实独立符号；
 2. **Unicode 码点数（Code Points）**：排除 UTF-16 代理对干扰后的标量值数量；
 3. **UTF-16 存储单元（Code Units）**：传统的 JavaScript `.length`，决定前端内存与很多历史库的切片行为；

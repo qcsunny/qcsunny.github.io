@@ -1,0 +1,29 @@
+---
+// fun hub — a single-category view of the Tools hub. Title and blurb
+// come from CATEGORIES so the copy lives in one place.
+import ToolShell from '../../components/tools/ToolShell.astro';
+import ToolSearchBar from '../../components/tools/ToolSearchBar.astro';
+import { CATEGORIES, REGISTRY } from '../../tools/registry';
+
+const cat = CATEGORIES.find((c) => c.id === 'fun')!;
+const entries = REGISTRY.filter((e) => e.category === 'fun' && e.kind !== 'redirect');
+---
+<ToolShell title={cat.label} titleZh={cat.labelZh} description={cat.blurb}>
+	<ToolSearchBar category={cat.id} placeholder="Search experiments (e.g. mandelbrot, julia, fractal)..." placeholderZh="搜索实验与趣味工具 (如 曼德博、朱利亚、分形)..." totalCount={entries.length} />
+	<div class="t-cards">
+		{
+			entries.map((e) => (
+				<a class="t-card" href={`/${e.category}/${e.slug}/`} data-slug={e.slug} data-cat={e.category}>
+					<h2>
+						<span class="i18n-en">{e.name}</span>
+						<span class="i18n-zh">{e.nameZh || e.name}</span>
+					</h2>
+					<p>
+						<span class="i18n-en">{e.description}</span>
+						{e.descriptionZh && <span class="i18n-zh">{e.descriptionZh}</span>}
+					</p>
+				</a>
+			))
+		}
+	</div>
+</ToolShell>

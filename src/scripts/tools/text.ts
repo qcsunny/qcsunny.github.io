@@ -241,7 +241,11 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 			(config.transforms ?? []).forEach((t, i) => {
 				const btn = btns[i];
 				if (btn) {
+					// Server renders the row disabled so a click can't land before
+					// this handler is attached — enabling it here, not before,
+					// closes the gap.
 					btn.addEventListener('click', () => executeTransform(t));
+					btn.disabled = false;
 				}
 			});
 		} else {

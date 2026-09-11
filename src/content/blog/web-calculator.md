@@ -6,7 +6,7 @@ category: web
 topics: [frontend, web-platform]
 searchTerms: ['科学计算器', '二维码', '工具集']
 contentLang: 'zh-CN'
-relatedTools: ['calculators/standard', 'calculators/graph', 'utilities/qr-code-generator']
+relatedTools: ['calculators/standard', 'calculators/graph', 'devtools/qr-code-generator']
 relatedPosts: ['markdown-parser-and-katex-math']
 ---
 
@@ -113,7 +113,7 @@ tokenizer → parser（递归下降） → AST → compile 为闭包
 
 ### 手写二维码编码器
 
-[二维码生成器](/utilities/qr-code-generator/)是工具集里最硬核的一个——整条编码管线都是手写的，不到 400 行：
+[二维码生成器](/devtools/qr-code-generator/)是工具集里最硬核的一个——整条编码管线都是手写的，不到 400 行：
 
 ```
 UTF-8 字节 → 位流（模式+长度+数据+填充）

@@ -565,7 +565,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '多重折扣叠加如何计算？', a: '叠加折扣是相乘而非相加：例如打 8 折再打 8 折，总折扣是 6.4 折（0.8 × 0.8 = 0.64），省 36% 而非 40%。' },
 		],
 	},
-	'utilities/word-counter': {
+	'text/word-counter': {
 		about: [
 			'Get live word, character, sentence and paragraph counts as you type. Words are counted by whitespace and punctuation boundaries; characters both with and without spaces are reported alongside reading time (at 200 words per minute) and speaking time (at 130 wpm).',
 			'Everything computes in your browser as you type — no text is ever sent to a server. Handy for essays, articles, blog posts and social media character limits.',
@@ -585,7 +585,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '输入文本有长度限制吗？', a: '没有实际限制——全部在浏览器内存中本地运算，轻松应对数万字长文。' },
 		],
 	},
-	'utilities/character-counter': {
+	'text/character-counter': {
 		about: [
 			'Break a text down by character type: total characters, characters without spaces, words, letters, digits, spaces, symbols and the exact UTF-8 byte size — the number that matters for SMS, tweets and database fields.',
 			'Each counter is live. The UTF-8 byte count uses a real encoder, so Chinese characters count as 3 bytes and emoji as 4, matching what servers and length-limited APIs actually see.',
@@ -701,7 +701,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '未知文件该用什么类型？', a: 'application/octet-stream——强制下载，避免浏览器自行猜测（甚至执行）内容类型。' },
 		],
 	},
-	'devtools/user-agent-parser': {
+	'text/user-agent-parser': {
 		about: [
 			'Paste a User-Agent string, get the browser (with version), rendering engine, operating system and device class — plus crawler detection: Googlebot, Bing, Baidu, AI crawlers (GPTBot, ClaudeBot), headless browsers and CLI clients are all recognized.',
 			'Pure regex, no library and no lookup-table download; the classification runs live as you type.',
@@ -719,7 +719,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '为什么我的浏览器显示为 Chrome？', a: 'Edge、Opera、三星浏览器底层都是 Chromium——解析器会优先认品牌标识（Edg/、OPR/），存在时显示真实品牌。' },
 		],
 	},
-	'devtools/media-info': {
+	'media/media-info': {
 		about: [
 			'Drop a media file and read its key facts: container, duration, video codec with resolution and frame rate, audio codec with channels and sample rate, and the overall bit rate — the fields MediaInfo shows, in a browser tab.',
 			'The bytes are parsed locally: MP4/MOV via ISO-BMFF box walking, WebM/MKV via EBML elements, WAV via RIFF chunks. Unknown containers fall back to what the browser itself can decode. Nothing is uploaded, ever.',
@@ -737,7 +737,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '为什么有时没有帧率？', a: '帧率由采样-时间戳表（stts）计算；可变帧率或剪辑过的文件可能没有干净的时间表，此时宁缺毋滥。' },
 		],
 	},
-	'devtools/robots-txt-generator': {
+	'seo/robots-txt-generator': {
 		about: [
 			'Write rules line by line — user-agent, disallow, allow, sitemap, crawl-delay, blank line for a new group — and get a canonical robots.txt. Or paste an existing one and lint it: typos ("disalow"), rules that precede any User-agent, non-absolute sitemap URLs.',
 			'Per-bot groups are where it earns its keep: allow everyone but block /admin, while a specific crawler (an AI bot, say) gets shown the door entirely.',
@@ -755,7 +755,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '文件放在哪里？', a: '域名根目录（https://example.com/robots.txt），全小写，每个主机一份——子域名需要各自独立的文件。' },
 		],
 	},
-	'devtools/sitemap-xml-generator': {
+	'seo/sitemap-xml-generator': {
 		about: [
 			'Paste one URL per line — optionally "url, lastmod" for the last-modified date — and get a valid sitemap.xml with the official namespace. Or paste an existing sitemap and validate it: entry count against the 50,000-URL limit, duplicates, non-absolute URLs.',
 			'URLs are deduplicated automatically; the output includes the entry count and byte size so you can see the 50 MB ceiling coming.',
@@ -773,7 +773,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '需要 lastmod 吗？', a: '它能引导爬虫重抓有变动的页面，但前提是真实——每条都填假 lastmod 只会让搜索引擎学会无视你的数据。' },
 		],
 	},
-	'devtools/meta-tag-generator': {
+	'seo/meta-tag-generator': {
 		about: [
 			'Fill in the page facts — title, description, canonical URL, image, site name, type, Twitter card style — and get the complete <head> block: <title>, meta description, canonical link, the Open Graph set and the Twitter card set, ready to paste.',
 			'The share-card preview beside the tags shows what a link unfurls into: the domain line, the two-line title, the gray description, and where the image would sit. summary cards render the square-thumbnail layout, summary_large_image the big-banner one.',
@@ -863,7 +863,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '同端口号的 TCP 和 UDP？', a: '它们是两个独立命名空间：DNS 两者都用（53），NTP 只有 UDP（123）。防火墙放行一个不等于放行另一个。' },
 		],
 	},
-	'utilities/timezone-converter': {
+	'daily/timezone-converter': {
 		about: [
 			'Convert any moment between two zones and read it across 12 world cities in one table — meeting planning, on-call handoffs, flight sanity checks. DST transitions are handled by the browser\u2019s own IANA tz database, so the same converter is correct in every country and every hemisphere.',
 			'The world-clock table doubles as the "is that hour civilized there" check: the weekday travels with the date across the midnight line.',
@@ -881,7 +881,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '夏令时切换当天准吗？', a: '准——时刻是按时区规则算出的，伦敦切换日的 14:30 换算到纽约依然正确，哪怕纽约那天只有 23 或 25 小时。' },
 		],
 	},
-	'devtools/css-clamp': {
+	'color/css-clamp': {
 		about: [
 			'Fluid typography with a floor and a ceiling: sizes scale linearly between your min and max viewports and clamp() guarantees they never leave the range. The tool emits both the px form and the rem form, plus the effective size at 320, 768 and 1920 px so you can see the floor and ceiling bite.',
 			'The rem form keeps user font-size preferences working: the px in the middle term scales the viewport, the rem endpoints respect the reader.',
@@ -899,7 +899,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '所有字号都该流式吗？', a: '正文受益最大；小标签和按钮通常要固定字号——11–13px 的界面文字流式化后在手机上常变得不可读。' },
 		],
 	},
-	'devtools/wcag-contrast': {
+	'color/wcag-contrast': {
 		about: [
 			'The exact WCAG 2.1 contrast ratio for a foreground/background pair, with pass/fail for every threshold: AA and AAA on normal text, AA and AAA on large text, and the 3:1 line for UI components and focus indicators.',
 			'The luminance math is the spec\u2019s own (sRGB linearization, then the 0.2126/0.7152/0.0722 weighting), so the number matches what auditors compute.',
@@ -917,7 +917,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '4.5:1 就一定可读吗？', a: '它保证正常视力的可分辨。低视力用户需要更高；正文尽量做到 AAA（7:1）。' },
 		],
 	},
-	'devtools/color-palette': {
+	'color/color-palette': {
 		about: [
 			'One base color in, five swatches out, on classic color-wheel harmonies: analogous for calm, complementary for punch, triadic for playgrounds, split-complementary for punch-with-an-escape-hatch, monochrome for a single voice.',
 			'The swatches render as real color blocks with hex codes underneath — pick with your eyes, copy with your keyboard.',
@@ -935,7 +935,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '怎么判断配色可访问？', a: '把组合丢进 WCAG 对比度检查器——一套配色可以很和谐，同时文字组合全部不及格。' },
 		],
 	},
-			'devtools/mandelbrot-explorer': {
+		'fun/mandelbrot-explorer': {
 		about: [
 			'The Mandelbrot set, one GPU thread per pixel: drag to pan, scroll to zoom (anchored at the cursor, down to the ~10⁻¹³ double-precision floor), and iterations deepen automatically as you dive so the filaments stay crisp.',
 			'Flip to Julia mode to explore the set generated by a fixed complex constant — the classic mirror-world of the Mandelbrot boundary. Palette and iteration sliders reshape the coloring; 💾 exports the current frame as PNG.',
@@ -971,7 +971,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '支持命名区域吗？', a: '本生成器只用轨道 + 跨度，同样的事更少机关。想要 template-areas，输出的轨道定义就是最难的部分——命名交给你补。' },
 		],
 	},
-	'devtools/document-ocr': {
+	'office/document-ocr': {
 		about: [
 			'Drop scanned PDFs or photos (JPG/PNG/WebP) and get editable text back. Tesseract — the open-source OCR engine — runs as WebAssembly inside this tab; the language files (English ~4 MB, Simplified Chinese ~2.5 MB, the speed-optimized "fast" variants) download from this site only when that language is first used.',
 			'Every page reports a confidence percentage, and anything under 70% carries a ⚠ check-manually flag. PDFs are rasterized page by page at 2× before recognition; images are capped at a sane upscale so a 4000-pixel phone photo stays a 4000-pixel canvas.',
@@ -991,7 +991,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '能手写识别吗？', a: '不实用——Tesseract 是印刷体识别引擎。手写需要专用模型，目前尚无浏览器可用的形态。' },
 		],
 	},
-	'devtools/pdf-toolkit': {
+	'office/pdf-toolkit': {
 		about: [
 			'Nine operations on one dropped file: merge several PDFs, extract pages ("1-3,5,8-" grammar, order as written), split to single pages, rotate by ±90/180, text watermark (stamp or tiled, any size/opacity/angle/colour), lossless compress, view or strip metadata, PDF → PNG/JPG at 1.5–3× scale, and images → PDF.',
 			'Structure work is pdf-lib, rendering is pdf.js with the worker and standard fonts served from this site. Every byte stays in the page. One honest gap: encryption is not offered — pdf-lib cannot write encrypted PDFs, and a password-protected input is reported clearly rather than failing obscurely.',
@@ -1011,7 +1011,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '为什么不支持加密？', a: '浏览器端唯一成熟的 PDF 结构库（pdf-lib）从未实现写出加密文件——长期的上游缺口。假装支持只会产出悄悄损坏的文件。' },
 		],
 	},
-	'devtools/xlsx-analyzer': {
+	'office/xlsx-analyzer': {
 		about: [
 			'The XLStylesTool idea, in a browser tab: workbooks age by accreting unused cell styles (every paste-special leaves some behind), hidden and external defined names, links to workbooks that no longer exist, embedded media nobody sees and pivot caches of deleted tables. This tool unpacks the .xlsx/.xlsm zip, sizes every part, and lists exactly what is weighing it down.',
 			'The cleaner rewrites only the parts you tick — styles are remapped per sheet so live formatting survives — and the lean copy downloads with a -cleaned suffix. The file never leaves the page.',
@@ -1049,7 +1049,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '为什么用 gap 而不是给子元素加 margin？', a: 'gap 只在元素之间留空——首尾没有多余边、不用 :last-child 补丁、换行也正确。它是 flex 与 grid 通用的现代答案。' },
 		],
 	},
-	'devtools/image-filter-lab': {
+	'media/image-filter-lab': {
 		about: [
 			'Convolution, the operation underneath blur/sharpen/edge detection, made tangible: nine weights, one live preview. Edit the 3×3 kernel and the GPU re-filters the image as you type; presets (identity, box blur, sharpen, Sobel, emboss) show the classics.',
 			'Drop any image or start from the generated sample — the pixels are uploaded to a GPU texture and never leave the page; export the result as PNG.',
@@ -1067,7 +1067,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '除数是干什么的？', a: '归一化核内权重之和：九个 1 除以 9 是盒式模糊（保持亮度）；锐化的和本来就是 1，除以 1 即可。' },
 		],
 	},
-'devtools/browser-info': {
+'security/browser-info': {
 		about: [
 			'Everything the browser knows about the machine it is running on, printed in one report: browser and engine, CPU core count, device memory (browsers cap the reported value at 8 GB), GPU via WebGL, screen geometry and pixel ratio, network class, storage quota, and preference signals like dark mode.',
 			'The codec-support section answers the question people actually come with: can this browser decode HEVC, AV1, VP9, FLAC, Opus — each marked with an honest ✓ / (maybe) / ✗ straight from canPlayType.',
@@ -1085,7 +1085,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '为什么内存显示 ~8 GB，我明明有 16 GB？', a: 'deviceMemory 接口刻意粗粒度并封顶 8 GB——这是反指纹追踪的措施，不是工具的 bug。' },
 		],
 	},
-'devtools/lossless-checker': {
+'media/lossless-checker': {
 		about: [
 			'A "lossless" file that was transcoded from MP3 or AAC carries the lossy codec\u2019s signature: a frequency ceiling around 16-20 kHz where the encoder low-passed. Genuine CD rips carry content up to 22.05 kHz. This tool decodes the file locally, FFTs its loudest windows, and reports the ceiling.',
 			'Be fair to the music: some genuine masters genuinely have little energy up high (old recordings, quiet acoustic genres). The report always shows the raw cutoff frequencies — judge with them, not only the verdict.',
@@ -1121,7 +1121,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '支持哪个版本？', a: '生成面向 draft-07（部署最广）。校验接受常用 draft-07 关键字子集；生僻关键字（$ref、if/then、oneOf）会静默跳过而非报「不支持」错。' },
 		],
 	},
-	'devtools/json-diff': {
+	'text/json-diff': {
 		about: [
 			'Structural comparison of two JSON documents: added, removed and changed values listed by path, with a summary count of each. Key order, indentation and other formatting differences are not changes — the documents are parsed first, compared as trees.',
 			'Arrays compare by index, so an insertion shows as one added row plus the shifted changes after it — honest for data files, where position carries meaning.',
@@ -1193,7 +1193,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '什么时候用泊松代替二项？', a: 'n 大 p 小时（经验法则：n ≥ 20 且 p ≤ 0.05）泊松近似二项——它刻画单位区间内的稀有事件计数。' },
 		],
 	},
-'devtools/line-organizer': {
+'text/line-organizer': {
 		about: [
 			'Paste a list — from a log, a spreadsheet column, a chat transcript — and clean it in one click: trim whitespace, drop empty lines, remove duplicates, then sort alphabetically (version-aware, so v2 comes before v10), by length, or in reverse.',
 			'Live counters show the line total, unique count and duplicate count before you commit to a transform, so a botched paste is obvious immediately.',
@@ -1211,7 +1211,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '数字是怎么排序的？', a: '字母排序带数字感知（自然排序）：2 < 10 < 100，而不是字符串序的 10 < 2 < 100。' },
 		],
 	},
-	'devtools/text-extractor': {
+	'text/text-extractor': {
 		about: [
 			'Pull every URL and email address out of any pasted text — server logs, exported chat transcripts, a page of prose — one match per line. A combined pass returns both kinds deduped, ready to paste into a blocker list or a mailing tool.',
 			'Matching is deliberately conservative: only absolute http(s) links and www.-prefixed hosts count as URLs, because bare domains (example.com without a scheme) collide with filenames and version strings far too often.',
@@ -1229,7 +1229,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '数据会上传吗？', a: '不会——提取就是在页面里对粘贴文本跑一段 JavaScript，什么都不外发。' },
 		],
 	},
-	'devtools/slug-generator': {
+	'seo/slug-generator': {
 		about: [
 			'Turn a title into a clean URL slug: lowercase, diacritics folded (café → cafe), punctuation and whitespace collapsed to a single hyphen or underscore. "10 Tips for Writing Better CSS!" becomes 10-tips-for-writing-better-css.',
 			'Chinese, Japanese and Korean titles keep their characters — browsers percent-encode them when the URL is copied, and stripping them would leave a purely Chinese title with nothing to say.',
@@ -1247,7 +1247,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '中文 Slug 对 SEO 好吗？', a: '主流搜索引擎都能正常匹配中文 slug。若你的 CMS 或受众偏好 ASCII，先把标题翻译成英文再生成。' },
 		],
 	},
-'devtools/jwt-decoder': {
+'security/jwt-decoder': {
 		about: [
 			'Inspect and format JSON Web Tokens (JWT) instantly in your browser. Splits the token into Header, Payload, and Signature, and decodes Base64URL data with UTF-8 character support.',
 			'Automatically parses expiration (exp), issued-at (iat), and not-before (nbf) timestamps into human-readable local time, displaying live validity countdowns and status indicators.',
@@ -1265,7 +1265,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '本工具可以验签或签发 Token 吗？', a: '可以（HMAC 系列）。在上方输入密钥后，"验签 (HMAC)" 可校验 HS256/384/512 Token，"签发 Payload → JWT" 可由 Payload JSON 生成完整 Token。RS/ES 非对称算法需要公钥，暂不支持。' },
 		],
 	},
-	'devtools/hash-generator': {
+	'security/hash-generator': {
 		about: [
 			'Compute MD5, SHA-1, SHA-224, SHA-256, SHA-384, SHA-512, SHA3-256, and SHA3-512 digests of any text, and optionally HMAC-SHA256/384/512 with a secret key.',
 			'Drop a file onto the input box to hash its raw bytes — checksum verification for downloads, without the file ever leaving your device. SHA-1/256/384/512 use the browser\u2019s native Web Crypto; MD5, SHA-224, and SHA-3 are hand-rolled implementations verified against NIST test vectors.',
@@ -1357,7 +1357,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '完全是在本地运行吗？', a: '是的，全部在你的浏览器本地 JavaScript 中执行，速度极快且零网络传输。' },
 		],
 	},
-	'utilities/markdown-preview': {
+	'text/markdown-preview': {
 		about: [
 			'Render and edit Markdown in real-time with comprehensive GitHub Flavored Markdown (GFM) support, including multi-level headings, bold, italic, tables, checklists, code blocks, blockquotes, and LaTeX maths typeset by KaTeX.',
 			'Runs entirely in your browser: the document is never uploaded and nothing is fetched from a third party. Supports one-click HTML/MD copying, file downloading, and word/character statistics.'
@@ -1379,7 +1379,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '支持导出为 HTML 文件吗？', a: '支持，可一键复制渲染后的 HTML 源码，或一键下载独立的 .html 文件。文件里的公式以 MathML 形式导出，浏览器可直接排版，无需依赖本站的样式表或字体。' },
 		],
 	},
-	'devtools/password-generator': {
+	'security/password-generator': {
 		about: [
 			'Generate strong passwords with true cryptographic randomness — every character comes from the browser\'s crypto.getRandomValues, not Math.random. Choose the length (8–64), toggle lowercase, uppercase, digits and symbols, and optionally exclude easily confused ambiguous characters (0, O, o, 1, l, I).',
 			'The strength label estimates entropy from the character pool and length: for example, 16 characters from a 62-symbol alphabet is about 95 bits, far beyond what brute-force attacks can reach.',
@@ -1421,7 +1421,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '两个 UUID 可能发生碰撞重复吗？', a: '概率微乎其微——即使在同一毫秒内也拥有 74 位的随机熵，需要每毫秒生成数十亿个才可能碰撞。' },
 		],
 	},
-	'utilities/random-number': {
+	'devtools/random-number': {
 		about: [
 			'Draw random integers in any range — for giveaways, sampling, games or picking who goes first. Choose the count, the minimum and maximum, and whether repeats are allowed.',
 			'Numbers come from the browser\'s cryptographic random source with rejection sampling, so every value in the range is exactly equally likely. With "no duplicates" the page uses a Fisher–Yates shuffle, like drawing cards from a deck.',
@@ -1441,7 +1441,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '为什么数量上限和范围有关？', a: '在不允许重复的模式下，去重抽取的数量不可能超过范围内的数字个数。' },
 		],
 	},
-	'utilities/qr-code-generator': {
+	'devtools/qr-code-generator': {
 		about: [
 			'Turn any text or URL into a QR code and download it as a PNG. Pick the error-correction level (L/M/Q/H) — higher levels survive more damage and are better for printing; the size and QR version adapt automatically to your input.',
 			'The encoder is written from scratch and runs entirely in your browser: no QR text ever leaves your device, which matters if you encode payment addresses, Wi-Fi credentials or private links.',
@@ -1461,7 +1461,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '二维码可以印多大？', a: '大致按扫描距离的十分之一取边长即可——10 厘米的码在约 1 米外可稳定扫描。' },
 		],
 	},
-	'utilities/color-converter': {
+	'color/color-converter': {
 		about: [
 			'Convert any color between HEX, RGB and HSL. Edit any of the three representations and the others follow instantly, with a live swatch and the complementary color (the hue 180° around the wheel) shown beside it.',
 			'HEX and RGB describe exactly which red, green and blue light to mix; HSL is human-friendly — hue (position on the color wheel), saturation (intensity) and lightness — which makes it the natural way to build palettes.',
@@ -1711,7 +1711,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '1 弧度等于多少度？', a: '约 57.2958°——即弧长恰好等于半径时所对的圆心角。' },
 		],
 	},
-	'utilities/age-calculator': {
+	'daily/age-calculator': {
 		about: [
 			'Enter a date of birth and get an exact age: years, months and days following calendar periods, plus total days, total weeks, the weekday you were born on, and a countdown to your next birthday.',
 			'The breakdown borrows days from the month before the reference date, so "3 months" always means three full calendar months rather than 90 days. A Feb 29 birthday counts Feb 28 in common years.',
@@ -1731,7 +1731,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '用的是哪种历法？', a: '公历（格里高利历），不涉及时区——这也是世界各国法定年龄的通用标准。' },
 		],
 	},
-	'utilities/date-calculator': {
+	'daily/date-calculator': {
 		about: [
 			'Two modes in one page. Difference mode measures the span between two dates: years/months/days, total days, weeks, and business days (Monday–Friday, holidays not included). Add mode does calendar arithmetic — add or subtract days, weeks, months or years from a date.',
 			'Month and year arithmetic is calendar-aware: January 31 + 1 month lands on February 28 (the day is clamped to the target month and the page tells you), and leap years are handled exactly.',
@@ -1751,7 +1751,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '工作日包含法定节假日吗？', a: '不包含——只剔除周末；各国法定节假日不同，请自行留意。' },
 		],
 	},
-	'utilities/bmi-calculator': {
+	'daily/bmi-calculator': {
 		about: [
 			'Enter height, weight, age, sex and activity level to get your Body Mass Index with its WHO category, the healthy weight range for your height, your basal metabolic rate (Mifflin–St Jeor), and the daily calorie targets to maintain, lose or gain weight.',
 			'BMI = weight ÷ height², with height in metres. It is a population screening number, not a body-composition measurement — muscular athletes often read "overweight" while carrying little fat. Several Asian populations use 24 / 28 as the overweight / obesity cutoffs instead of the WHO 25 / 30.',
@@ -1811,7 +1811,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '支持一个文件里多个文档吗？', a: '仅接受并忽略开头的单个 ---；后续的 --- 分隔符不支持，请先拆分文件。' },
 		],
 	},
-	'devtools/csv-json-converter': {
+	'text/csv-json-converter': {
 		about: [
 			'Convert CSV to JSON — the first row becomes the header and each later row an object — or turn a JSON array of objects back into CSV. Both directions speak full RFC 4180: quoted fields, doubled quotes, commas and newlines inside values.',
 			'Validation is strict by design: duplicate headers, ragged rows and unterminated quotes are rejected with the exact row and column counts, so data problems surface here instead of silently corrupting a downstream import.',
