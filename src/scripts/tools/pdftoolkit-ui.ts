@@ -4,7 +4,7 @@
 // pdftoolkit.ts and pdf.js render lives in this module (worker + fonts are
 // vendored under /pdfjs/). Every byte stays in the page.
 
-import { readPdfMeta, mergePdfs, extractPages, splitPdf, rotatePdf, watermarkPdf, clearPdfMeta, compressPdf, imagesToPdf, type PdfMetaInfo } from './pdftoolkit';
+import { readPdfMeta, mergePdfs, extractPages, splitPdf, rotatePdf, watermarkPdf, clearPdfMeta, compressPdf, imagesToPdf } from './pdftoolkit';
 import { bilingual } from './i18n';
 
 /** Minimal pdf.js structural types — see the pdf2img tab for why the real
@@ -381,7 +381,7 @@ export function initPdfToolkit(host: HTMLElement): void {
 			getDocument: (src: { data: Uint8Array; cMapUrl: string; cMapPacked: boolean; standardFontDataUrl: string }) => { promise: PdfJsDoc };
 		};
 		pdfjs.GlobalWorkerOptions.workerSrc = '/pdfjs/worker/pdf.worker.min.mjs';
-		const doc = await pdfjs.getDocument({ data: state.files[0]!.bytes.slice(), cMapUrl: '/pdfjs/cmaps/', cMapPacked: true, standardFontDataUrl: '/pdfjs/standard_fonts/' }).promise;
+		const doc = pdfjs.getDocument({ data: state.files[0]!.bytes.slice(), cMapUrl: '/pdfjs/cmaps/', cMapPacked: true, standardFontDataUrl: '/pdfjs/standard_fonts/' }).promise;
 		const scale = Number(p2iScale.value);
 		const fmtType = p2iFmt.value as 'png' | 'jpeg';
 		for (let i = 1; i <= doc.numPages; i++) {

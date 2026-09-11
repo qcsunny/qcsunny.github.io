@@ -72,12 +72,6 @@ jobs:
       - name: Verify generated assets
         run: npm run check:generated
       - name: Type-check Astro project
-        # the type program (184 pages of .astro + all TS) has outgrown node's
-        # default 2 GB heap — the diagnostics pass OOMs without this. First
-        # seen with pdf-lib's 3 MB .d.ts (since vendored away); the project's
-        # own surface is now past the limit on its own.
-        env:
-          NODE_OPTIONS: --max-old-space-size=6144
         run: npm run check
       - name: Build site
         run: npm run build
