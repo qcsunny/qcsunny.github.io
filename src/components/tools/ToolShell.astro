@@ -751,6 +751,69 @@ const year = new Date().getFullYear();
 				min-width: 2.4em;
 				flex-basis: 4em;
 			}
+			.t-xlsx-drop {
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				gap: 0.7em;
+				padding: 1.6em 1em;
+				margin-bottom: 1.2em;
+				border: 1.5px dashed var(--gridline);
+				border-radius: 10px;
+				color: var(--dim);
+				font-size: 0.9rem;
+				text-align: center;
+			}
+			.t-xlsx-report {
+				margin-bottom: 1.2em;
+			}
+			.t-xlsx-head {
+				display: flex;
+				flex-wrap: wrap;
+				align-items: baseline;
+				gap: 0.4em;
+				margin-bottom: 0.8em;
+				font-size: 0.9rem;
+				color: var(--dim);
+			}
+			.t-xlsx-grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(15em, 1fr));
+				gap: 0.6em;
+				margin-bottom: 1em;
+			}
+			.t-xlsx-stat {
+				display: flex;
+				justify-content: space-between;
+				align-items: baseline;
+				gap: 0.6em;
+				padding: 0.5em 0.8em;
+				border: 1px solid var(--gridline);
+				border-radius: 8px;
+				font-size: 0.82rem;
+			}
+			.t-xlsx-statlabel {
+				color: var(--dim);
+			}
+			.t-xlsx-opt {
+				display: flex;
+				align-items: center;
+				gap: 0.4em;
+				font-size: 0.85rem;
+				cursor: pointer;
+			}
+			.t-xlsx-shrunk {
+				color: #10b981;
+				font-weight: 600;
+			}
+			.t-xlsx-grew {
+				color: var(--dim);
+			}
+			.t-xlsx-opt em {
+				font-style: normal;
+				color: var(--dim);
+				font-size: 0.8rem;
+			}
 			.t-csscode {
 				background: var(--code-bg);
 				color: var(--code-fg);
