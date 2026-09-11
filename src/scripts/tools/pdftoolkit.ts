@@ -76,11 +76,28 @@ interface PdfLib {
 	rgb(r: number, g: number, b: number): { r: number; g: number; b: number };
 }
 
-const loadPdfLib = async (): Promise<PdfLib> => {
-	// node resolves the CJS entry (named exports, no .default wrapper);
-	// vite/browser serves the ESM entry directly. Both expose the same
-	// PDFDocument/degrees/rgb members.
-	return (await import('pdf-lib')) as unknown as PdfLib;
+// Vendored UMD build (public/pdfjs/lib/pdf-lib.min.js) loaded as a classic
+// script: importing the npm package pulled its 3MB .d.ts into astro check's
+// type program and blew the heap — both locally and in CI. The vendored
+// file has no types; the narrow interfaces above are the whole contract.
+let pdfLibCache: Promise<PdfLib> | null = null;
+const loadPdfLib = (): Promise<PdfLib> => {
+	pdfLibCache ??= new Promise<PdfLib>((resolve, reject) => {
+		if (typeof window !== 'undefined' && (window as unknown as { PDFLib?: PdfLib }).PDFLib) {
+			resolve((window as unknown as { PDFLib: PdfLib }).PDFLib);
+			return;
+		}
+		const el = document.createElement('script');
+		el.src = '/pdfjs/lib/pdf-lib.min.js';
+		el.onload = () => {
+			const w = window as unknown as { PDFLib?: PdfLib };
+			if (w.PDFLib) resolve(w.PDFLib);
+			else reject(new Error('pdf-lib failed to initialize'));
+		};
+		el.onerror = () => reject(new Error('could not load pdf-lib'));
+		document.head.append(el);
+	});
+	return pdfLibCache;
 };
 
 export interface PdfMetaInfo {

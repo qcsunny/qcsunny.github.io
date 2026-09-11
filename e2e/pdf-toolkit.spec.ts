@@ -5,7 +5,22 @@
 // downloaded bytes.
 
 import { test, expect } from '@playwright/test';
-import { PDFDocument, StandardFonts } from 'pdf-lib';
+// The vendored UMD build (same file the browser loads) builds our fixtures.
+// pdf-lib the npm package is deliberately NOT installed: its 3MB .d.ts
+// blows astro check's heap. Under node the UMD needs a self global and
+// lands on globalThis.PDFLib; the cast below is unchecked on purpose.
+(globalThis as unknown as Record<string, unknown>).self = globalThis;
+// dynamic specifier so TS does not try to type the .min.js as a module
+const vendorUrl = '../public/pdfjs/lib/pdf-lib.min.js';
+await import(vendorUrl);
+type PdfLibLike = {
+	PDFDocument: {
+		create(): Promise<{ addPage(size: [number, number]): { drawText(t: string, o: { x: number; y: number; size: number; font: unknown }): void }; setTitle(t: string): void; embedFont(f: string): Promise<unknown>; save(): Promise<Uint8Array> }>;
+		load(b: Uint8Array | Buffer): Promise<{ getPageCount(): number; getTitle(): string | undefined }>;
+	};
+	StandardFonts: Record<string, string>;
+};
+const { PDFDocument, StandardFonts } = (globalThis as unknown as { PDFLib: PdfLibLike }).PDFLib;
 import { readFileSync } from 'node:fs';
 
 async function makePdf(pages: { label: string }[], title: string): Promise<Uint8Array> {
