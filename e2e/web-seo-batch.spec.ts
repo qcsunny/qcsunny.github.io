@@ -10,14 +10,14 @@ test('http status lookup: by code and by keyword', async ({ page }) => {
 	const output = page.locator('textarea[data-role="output"]');
 
 	await input.fill('404');
-	await page.getByRole('button', { name: /Look up|查询/ }).click();
+	await page.getByRole('button', { name: 'Look up', exact: true }).click();
 	const out = await output.inputValue();
 	expect(out).toContain('404 Not Found');
 	expect(out).toContain('未找到');
 	expect(out).toContain('Typical causes');
 
 	await input.fill('redirect');
-	await page.getByRole('button', { name: /Look up|查询/ }).click();
+	await page.getByRole('button', { name: 'Look up', exact: true }).click();
 	const family = await output.inputValue();
 	expect(family).toContain('301');
 	expect(family).toContain('308');
@@ -29,7 +29,7 @@ test('mime lookup works in both directions', async ({ page }) => {
 	const output = page.locator('textarea[data-role="output"]');
 
 	await input.fill('.woff2');
-	await page.getByRole('button', { name: /Extension → MIME/ }).click();
+	await page.getByRole('button', { name: 'Extension → MIME', exact: true }).click();
 	await expect(output).toHaveValue(/font\/woff2/);
 
 	await input.fill('application/pdf');

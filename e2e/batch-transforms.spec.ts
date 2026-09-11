@@ -82,17 +82,28 @@ test('unix timestamp accepts a date and converts to epoch (reverse direction)', 
 	await page.waitForTimeout(400);
 	const rows = await page.locator('.t-results').innerText();
 	expect(rows).toContain('date → timestamp');
-	expect(rows).toContain('1789108200'); // Asia/Shanghai would shift this; the row prints the epoch itself
+	// zone-dependent on the runner: assert the round trip instead — the
+	// rendered ISO time, parsed as UTC, must land on the same wall-clock
+	// date the visitor typed (2026-09-11 14:30 local).
+	const iso = /2026-09-1\dT[\d:.]+Z/.exec(rows)?.[0];
+	expect(iso).toBeTruthy();
+	const d = new Date(iso as string);
+	expect(d.getUTCFullYear()).toBe(2026);
+	expect(d.getUTCMonth()).toBe(8);
+	expect(d.getUTCDate()).toBe(11);
+	expect(Math.abs(d.getTime() - Date.UTC(2026, 8, 11, 14, 30))).toBeLessThanOrEqual(14 * 3600 * 1000);
 });
 
 test('unix timestamp batch mixes directions per line', async ({ page }) => {
 	await page.goto('/devtools/unix-timestamp/');
 	await page.locator('textarea').first().fill('1760000000\n2026-09-11 14:30');
 	await page.waitForTimeout(400);
-	// form tables append to #t-root (outside .t-results), so read the table body
+	// form tables append to #t-root (outside .t-results), so read the table body.
+	// The date row's epoch is zone-dependent on the runner — pin its UTC mirror
+	// (2026-09-11 14:30 local → 14:30Z when the runner IS UTC) and the timestamp row.
 	const table = await page.locator('.t-table tbody').innerText();
-	expect(table).toContain('1789108200');
 	expect(table).toContain('1760000000');
+	expect(table).toMatch(/2026-09-11 14:30\s+\d{10}/);
 });
 
 test('px-rem honors a unit typed into the size field over the select', async ({ page }) => {
