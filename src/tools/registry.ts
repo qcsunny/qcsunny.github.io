@@ -49,6 +49,20 @@ export interface ToolMeta {
 	nameZh?: string;
 	description: string;
 	descriptionZh?: string;
+	/** Temporarily hide the tool without deleting its code. It gets no page, so
+	 *  its URL 404s (the site's no-redirect policy), and every listing follows
+	 *  automatically — the category hubs, the tools hub, the homepage counts,
+	 *  the search index, llms.txt and the sitemap all derive from REGISTRY,
+	 *  which drops disabled entries at the one point below. Its client config
+	 *  stays in the category's lazy chunk, because catalog.ts imports the data
+	 *  files rather than REGISTRY, so re-enabling is a flag flip plus a
+	 *  rebuild.
+	 *
+	 *  Two references cannot be pruned for you: a stale `content.ts` key is
+	 *  inert dead weight until the tool comes back, but a blog post's
+	 *  `relatedTools` entry pointing at it fails loudly (e2e/blog-tools-card).
+	 *  e2e/hidden-tools pins that a disabled tool ships no page and no listing. */
+	disabled?: boolean;
 }
 
 // --- editorial content (SEO) -----------------------------------------------------------
@@ -444,8 +458,20 @@ const CATEGORY_GROUPS: { id: ToolCategory; entries: ToolEntry[] }[] = [
 	{ id: 'fun', entries: FUN_TEXT_TOOLS },
 ];
 
-/** Every registry-driven tool page, across all categories. */
-export const REGISTRY: ToolEntry[] = CATEGORY_GROUPS.flatMap((g) => g.entries);
+/** Every registry-driven tool page, across all categories. Disabled entries
+ *  are dropped here, at the single point every page and listing reads — the
+ *  route files' getStaticPaths, the hubs, REAL_TOOLS, findEntry and the search
+ *  index all follow from this array. The category assertion below still walks
+ *  group.entries, so a disabled tool keeps getting its category/group check. */
+export const REGISTRY: ToolEntry[] = CATEGORY_GROUPS.flatMap((g) => g.entries).filter(
+	(e) => !e.disabled,
+);
+
+/** Every entry the data files declare but REGISTRY has hidden — kept out of
+ *  e2e/hidden-tools.spec so that spec can fail if one of these ever ships a
+ *  page or a listing anyway. */
+export const HIDDEN_TOOLS: ToolEntry[] = [...CATEGORY_GROUPS.flatMap((g) => g.entries)]
+	.filter((e) => e.disabled);
 
 // Asserted at build time — registry.ts is imported by every page's frontmatter,
 // so a failure fails the build rather than shipping a broken category.

@@ -12,8 +12,7 @@ import { ADSENSE_CLIENT, AD_SLOTS, SITE_TITLE } from '../../consts';
 import { getCollection } from 'astro:content';
 import { TOOL_CONTENT } from '../../tools/content';
 import {
-	CALCULATOR_FEATURED,
-	REGISTRY,
+	REAL_TOOLS,
 	categoryHref,
 	categoryLabel,
 	categoryLabelZh,
@@ -62,9 +61,7 @@ const pageTitle = entry
 const relatedCategory = entry?.category ?? category;
 const selfSlug = entry?.slug ?? Astro.url.pathname.replace(/\/+$/, '').split('/').pop();
 const relatedPool = relatedCategory
-	? [...CALCULATOR_FEATURED, ...REGISTRY].filter(
-			(e) => e.category === relatedCategory && e.kind !== 'redirect' && e.slug !== selfSlug,
-		)
+	? REAL_TOOLS.filter((e) => e.category === relatedCategory && e.slug !== selfSlug)
 	: [];
 const related = relatedPool.slice(0, 4);
 
