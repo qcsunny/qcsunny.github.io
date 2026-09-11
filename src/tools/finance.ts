@@ -2,7 +2,7 @@
 // tables (compound interest year by year, loan amortization, mortgage prepayment, etc.).
 
 import type { FormConfig, FormResult, FormResultRow, FormTable, TextConfig, ToolEntry } from './registry';
-import { rmbUppercase } from './textTools';
+import { rmbUppercase, runBatch } from './textTools';
 import { formatNumber } from '../scripts/calculator/engine';
 
 const money = (v: number): string => formatNumber(Math.round(v * 100) / 100);
@@ -3138,6 +3138,16 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 									errorZh: '请输入有效金额：纯数字、最多两位小数、小于 10^16。',
 								};
 					},
+				},
+				{
+					id: 'upperLines',
+					label: 'Convert each line (invoice batch)',
+					labelZh: '逐行转换（批量开票）',
+					run: (t) =>
+						runBatch(t, (line) => {
+							const r = rmbUppercase(line);
+							return r || null;
+						}),
 				},
 			],
 		} satisfies TextConfig,
