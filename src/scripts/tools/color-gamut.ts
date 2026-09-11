@@ -239,6 +239,20 @@ export function initColorGamut(
 	controlsRow.append(lLabel, lSlider, lVal);
 	card.append(controlsRow);
 
+	// The colored blob "growing/shrinking" as L sweeps is the physics, not a
+	// zoom: sRGB simply cannot carry saturated color near black or white, so
+	// the representable region on the fixed a-b axes really does collapse to a
+	// point at both ends. Said plainly so nobody files this as a zoom bug.
+	const lNote = document.createElement('p');
+	lNote.className = 't-file-hint t-gamut-lhint';
+	lNote.append(
+		bilingual(
+			'The colored region changes size with lightness — that is the real sRGB gamut shape at each L, not the chart zooming: axes are fixed, and no saturated color exists near black or white.',
+			'彩色区域随亮度变大变小——那是每个 L 下 sRGB 色域的真实形状，不是图表在缩放：坐标轴固定，纯黑与纯白附近本就不存在高饱和颜色。',
+		),
+	);
+	card.append(lNote);
+
 	lSlider.addEventListener('input', () => {
 		// Guard the whole synchronous chain (onSelectRgb → color render →
 		// update()): while the slider drives, it — not the round-tripped
