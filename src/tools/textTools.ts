@@ -28,8 +28,9 @@ function errToZh(e: unknown): string {
 /** Batch engine for the per-line tools (base64, cidr, hash, case…): run f on
  *  every non-empty line, one result per line as "input → output". A line that
  *  throws (or returns null) is marked ✗ WITHOUT aborting the batch — the whole
- *  point of batch mode is that one bad row must not cost you the other 200. */
-function runBatch(text: string, f: (line: string) => string | null): { output: string; error?: string; errorZh?: string } {
+ *  point of batch mode is that one bad row must not cost you the other 200.
+ *  Exported for finance.ts's cny-uppercase (the one text tool living there). */
+export function runBatch(text: string, f: (line: string) => string | null): { output: string; error?: string; errorZh?: string } {
 	const lines = text
 		.split('\n')
 		.map((l) => l.trim())
@@ -2052,6 +2053,16 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 						return s ? { output: s } : { output: '', error: 'Nothing to keep — the title has no letters, digits or CJK characters.', errorZh: '没有可保留的内容——标题里没有字母、数字或汉字。' };
 					},
 				},
+				{
+					id: 'batch',
+					label: 'Slug each line (kebab-case)',
+					labelZh: '逐行生成 Slug（短横线）',
+					run: (t) =>
+						runBatch(t, (line) => {
+							const s = slugify(line, '-');
+							return s || null;
+						}),
+				},
 			],
 		} satisfies TextConfig,
 	},
@@ -2172,6 +2183,22 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 						return { output: blocks.join('\n\n') };
 					},
 				},
+				{
+					id: 'lookupLines',
+					label: 'Look up each line',
+					labelZh: '逐行查询（日志整理）',
+					run: (t) =>
+						// One line = one code (or keyword); the row prints the
+						// bilingual name only — the full meaning block would
+						// make a pasted log unreadable.
+						runBatch(t, (line) => {
+							const found = matchStatuses(line);
+							if (!found.length) return null;
+							const exact = found.find((e) => e.code === Number(line.trim()));
+							const e = exact ?? found[0]!;
+							return `${e.code} ${e.name} / ${e.nameZh}`;
+						}),
+				},
 			],
 		},
 	},
@@ -2211,6 +2238,23 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 						if (!hits.length) return noMime(t);
 						return { output: hits.map((m) => `${m.mime} → .${m.ext}`).join('\n') };
 					},
+				},
+				{
+					id: 'ext2mimeLines',
+					label: 'Extension → MIME, each line',
+					labelZh: '逐行 扩展名 → MIME（配 mime.types）',
+					run: (t) =>
+						runBatch(t, (line) => {
+							const q = line.replace(/^\./, '').toLowerCase();
+							if (!q) return null;
+							// exact extension match first; a line that is itself a
+							// MIME type maps back to its extensions
+							const hit = MIME_MAP.filter((m) => m.ext === q);
+							if (hit.length) return hit.map((m) => m.mime).join(' | ');
+							const back = MIME_MAP.filter((m) => m.mime === line.trim().toLowerCase());
+							if (back.length) return back.map((m) => `.${m.ext}`).join(' ');
+							return null;
+						}),
 				},
 			],
 		},
@@ -2255,6 +2299,20 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 						];
 						return { output: lines.map(([l, v]) => `${l.padEnd(24)} ${v}`).join('\n') };
 					},
+				},
+				{
+					id: 'reportLines',
+					label: 'Parse each line (access log)',
+					labelZh: '逐行解析（访问日志）',
+					run: (t) =>
+						// One line = one UA string; the row prints a compact
+						// browser · OS · device summary, bot-flagged.
+						runBatch(t, (line) => {
+							const ua = parseUa(line);
+							if (!ua) return null;
+							const b = `${ua.browser}${ua.version ? ` ${ua.version}` : ''}`;
+							return ua.bot ? `${b} · ${ua.os} · 🤖 bot` : `${b} · ${ua.os} · ${ua.device}`;
+						}),
 				},
 			],
 		},
@@ -2445,6 +2503,33 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 								.join('\n'),
 						};
 					},
+				},
+				{
+					id: 'lookupLines',
+					label: 'Look up each line',
+					labelZh: '逐行查询（nmap 输出对查）',
+					run: (t) =>
+						// One line = "port", "port/proto" or a service name;
+						// the row prints every matching service compactly.
+						runBatch(t, (line) => {
+							const m = /^(\d+)(?:\/(tcp|udp))?$/i.exec(line.trim());
+							if (m) {
+								const port = Number(m[1]);
+								const proto = m[2]?.toUpperCase();
+								// proto is 'TCP'/'UDP' in the table, 'both' for services
+								// that answer on both — both always matches a filter.
+								const hits = PORTS.filter(
+									(p) => p.port === port && (!proto || p.proto === proto || p.proto === 'both'),
+								);
+								if (!hits.length) return null;
+								return hits.map((p) => `${p.port}/${p.proto} ${p.service} / ${p.serviceZh}`).join(' · ');
+							}
+							const found = matchPorts(line);
+							if (!found.length) return null;
+							const exact = found.find((p) => p.service.toLowerCase() === line.trim().toLowerCase());
+							const p = exact ?? found[0]!;
+							return `${p.port}/${p.proto} ${p.service} / ${p.serviceZh}`;
+						}),
 				},
 			],
 		},
@@ -2861,6 +2946,16 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 							: { output: '', error: 'Contains an unknown entity.', errorZh: '包含无法识别的实体。' };
 					},
 				},
+				{
+					id: 'unescapeLines',
+					label: 'Unescape each line',
+					labelZh: '逐行还原（坏行标 ✗）',
+					run: (t) =>
+						runBatch(t, (line) => {
+							const r = unescapeEntities(line);
+							return r === null ? null : r;
+						}),
+				},
 			],
 		} satisfies TextConfig,
 	},
@@ -2906,6 +3001,20 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 			compute: (v) => {
 				const base = Number(v.str('base') || '16');
 				const raw = v.str('number');
+				// A literal prefix (0x/0X, 0b/0B, 0o/0O) overrides the selected
+				// source base per line — pasting "0xff 0b1010" mixed works, and
+				// the batch table notes the per-line base.
+				const effectiveBase = (line: string): number => {
+					const t = line.trim().toLowerCase();
+					if (t.startsWith('0x')) return 16;
+					if (t.startsWith('0b')) return 2;
+					if (t.startsWith('0o')) return 8;
+					return base;
+				};
+				const stripPrefix = (line: string): string => {
+					const t = line.trim();
+					return t.replace(/^[-+]?(0x|0b|0o)/i, (m) => m.replace(/0x|0b|0o/i, ''));
+				};
 				// Batch: one value per line, one result row per value. A bad line is
 				// marked invalid without sinking the rest of the list.
 				const lines = raw.split('\n').map((s) => s.trim()).filter((s) => s.length > 0);
@@ -2924,14 +3033,14 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 							columns: ['Input', 'Binary', 'Octal', 'Decimal', 'Hexadecimal'],
 							columnsZh: ['输入', '二进制', '八进制', '十进制', '十六进制'],
 							rows: lines.map((line) => {
-								const n = parseBigInt(line, base);
+								const n = parseBigInt(stripPrefix(line), effectiveBase(line));
 								if (n === null) return [line, '—', '—', '—', '✗ invalid'];
 								return [line, bigToBase(n, 2), bigToBase(n, 8), bigToBase(n, 10), '0x' + bigToBase(n, 16)];
 							}),
 						},
 					};
 				}
-				const n = parseBigInt(raw, base);
+				const n = parseBigInt(stripPrefix(raw), effectiveBase(raw));
 				if (n === null) {
 					return {
 						rows: [
@@ -2966,31 +3075,44 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 		category: 'devtools',
 		name: 'Unix Timestamp Converter',
 		nameZh: 'Unix 时间戳转换器',
-		description: 'Convert between Unix seconds / milliseconds and local or UTC wall-clock time, plus ISO 8601.',
-		descriptionZh: '在 Unix 秒、毫秒与本地/UTC 时间、ISO 8601 之间互转。',
+		description: 'Convert between Unix seconds / milliseconds and local or UTC wall-clock time — and back: paste a date to get its timestamp.',
+		descriptionZh: '在 Unix 秒、毫秒与本地/UTC 时间之间互转——粘贴日期也能反向得到时间戳。',
 		kind: 'form',
 		config: {
 			fields: [
 				{
 					id: 'seconds',
-					label: 'Unix timestamp (seconds)',
-					labelZh: 'Unix 时间戳（秒）',
+					label: 'Unix timestamp or date',
+					labelZh: 'Unix 时间戳或日期',
 					// textarea: one timestamp per line — several lines switch the
 					// compute into a batch table (the log-analysis case), a single
 					// line keeps the full breakdown below.
 					type: 'textarea',
 					def: '0',
-					placeholder: 'e.g. 1760000000 — or one per line for batch',
-					placeholderZh: '例如 1760000000——批量时每行一个',
+					placeholder: 'e.g. 1760000000 or 2026-09-11 14:30 — or one per line for batch',
+					placeholderZh: '例如 1760000000 或 2026-09-11 14:30——批量时每行一个',
 					required: true,
-					hint: 'Seconds since 1970-01-01 00:00:00 UTC. Millisecond values (13 digits) are detected automatically.',
-					hintZh: '自 1970-01-01 00:00:00 (UTC) 以来的秒数；13 位毫秒值会自动识别。',
+					hint: 'Seconds since 1970-01-01 00:00:00 UTC. Millisecond values (13 digits) are detected automatically. Paste a date ("2026-09-11 14:30") to convert in the reverse direction.',
+					hintZh: '自 1970-01-01 00:00:00 (UTC) 以来的秒数；13 位毫秒值会自动识别。粘贴日期（"2026-09-11 14:30"）则反向转换为时间戳。',
 				},
 			],
 			compute: (v) => {
 				const raw = v.str('seconds');
 				const lines = raw.split('\n').map((s) => s.trim()).filter((s) => s.length > 0);
-				// Batch: one timestamp per line → one row each (the log-paste case).
+				// Reverse direction: a wall-clock date (with optional time) is
+				// interpreted in the browser's local zone and converted to a
+				// Unix timestamp. Same shape as the forward rows, mirrored.
+				const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{1,2}):(\d{2}))?$/;
+				const dateToSec = (line: string): number | null => {
+					const m = DATE_RE.exec(line);
+					if (!m) return null;
+					const [, y, mo, d, h, mi] = m;
+					// wall time in the local zone -> epoch (Date does this natively;
+					// a "Z" suffix would have been UTC but we accept bare dates only)
+					const ms = new Date(Number(y), Number(mo) - 1, Number(d), Number(h ?? 0), Number(mi ?? 0)).getTime();
+					return Number.isFinite(ms) ? Math.floor(ms / 1000) : null;
+				};
+				// Batch: one entry per line → one row each, direction per line.
 				if (lines.length > 1) {
 					const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 					return {
@@ -2998,23 +3120,59 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 							{
 								label: 'Batch result',
 								labelZh: '批量结果',
-								value: `${lines.length} timestamps · ${localTz}`,
-								valueZh: `共 ${lines.length} 个时间戳 · ${localTz}`,
+								value: `${lines.length} entries · ${localTz}`,
+								valueZh: `共 ${lines.length} 项 · ${localTz}`,
 								emphasis: true,
 							},
 						],
 						table: {
-							columns: ['Timestamp (s)', 'Local Time', 'UTC Time'],
-							columnsZh: ['时间戳 (秒)', '本地时间', 'UTC 时间'],
+							columns: ['Input', 'Unix (s)', 'Local Time', 'UTC Time'],
+							columnsZh: ['输入', 'Unix (秒)', '本地时间', 'UTC 时间'],
 							rows: lines.map((line) => {
+								// a date line runs the reverse direction
+								const rev = dateToSec(line);
+								if (rev !== null) return [line, String(rev), stamp(rev * 1000, localTz, false), stamp(rev * 1000, 'UTC', false)];
 								// 13-digit values are milliseconds; a bare number is seconds.
 								let sec = Number(line);
-								if (!Number.isFinite(sec) || sec < 0) return [line, '—', '—'];
+								if (!Number.isFinite(sec) || sec < 0) return [line, '—', '—', '—'];
 								if (/^\d{13}$/.test(line)) sec = sec / 1000;
 								const ms = Math.round(sec * 1000);
-								return [line, stamp(ms, localTz, false), stamp(ms, 'UTC', false)];
+								return [line, String(Math.round(sec)), stamp(ms, localTz, false), stamp(ms, 'UTC', false)];
 							}),
 						},
+					};
+				}
+				// Single line: a date runs the reverse direction
+				const rev = dateToSec(raw.trim());
+				if (rev !== null) {
+					return {
+						rows: [
+							{
+								label: 'Direction',
+								labelZh: '转换方向',
+								value: `date → timestamp (${Intl.DateTimeFormat().resolvedOptions().timeZone})`,
+								valueZh: `日期 → 时间戳（${Intl.DateTimeFormat().resolvedOptions().timeZone}）`,
+							},
+							{
+								label: 'Unix seconds',
+								labelZh: 'Unix 秒数',
+								value: String(rev),
+								valueZh: String(rev),
+							},
+							{ label: 'Milliseconds', labelZh: '毫秒数', value: String(rev * 1000), valueZh: String(rev * 1000) },
+							{
+								label: 'UTC date & time',
+								labelZh: '协调世界时 (UTC)',
+								value: stamp(rev * 1000, 'UTC', false),
+								valueZh: stamp(rev * 1000, 'UTC', true),
+							},
+							{
+								label: 'ISO 8601 (UTC)',
+								labelZh: 'ISO 8601 (UTC)',
+								value: new Date(rev * 1000).toISOString(),
+								valueZh: new Date(rev * 1000).toISOString(),
+							},
+						],
 					};
 				}
 				const sec = Number(raw);
@@ -3024,8 +3182,8 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 							{
 								label: 'Result',
 								labelZh: '计算结果',
-								value: '— (enter a valid non-negative Unix second)',
-								valueZh: '— (请输入有效的非负 Unix 秒数)',
+								value: '— (enter a Unix timestamp, or a date like 2026-09-11 14:30)',
+								valueZh: '— (请输入 Unix 时间戳，或 2026-09-11 14:30 这样的日期)',
 							},
 						],
 					};
@@ -3383,10 +3541,12 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 					id: 'value',
 					label: 'Size',
 					labelZh: '尺寸值',
-					type: 'number',
+					// text, not number: the value may carry its own unit
+					// ("1.5rem") which overrides the Unit select below.
+					type: 'text',
 					def: '16',
-					step: 'any',
-					min: '0',
+					placeholder: 'e.g. 16, 1.5rem, 24px',
+					placeholderZh: '例如 16、1.5rem、24px',
 					required: true,
 				},
 				{
@@ -3415,7 +3575,14 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 				},
 			],
 			compute: (v) => {
-				const val = v.num('value');
+				// The value field may carry its own unit ("1.5rem", "24px") — a
+				// unit in the input overrides the select, so pasting a value out
+				// of a stylesheet needs no fiddling with the dropdown first.
+				const rawVal = v.str('value').trim().toLowerCase();
+				const unitMatch = /^(-?[\d.]+)(px|rem|em)$/.exec(rawVal);
+				const typedVal = unitMatch ? Number(unitMatch[1]) : v.num('value');
+				const typedUnit = unitMatch ? unitMatch[2] : v.str('unit') || 'px';
+				const val = typedVal;
 				const root = v.num('root');
 				if (!Number.isFinite(val) || val < 0 || !(root > 0)) {
 					return {
@@ -3429,7 +3596,7 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 						],
 					};
 				}
-				const unit = v.str('unit') || 'px';
+				const unit = typedUnit;
 				const px = unit === 'rem' || unit === 'em' ? val * root : val;
 				const fmt = (x: number) => {
 					const r = Math.round(x * 10000) / 10000;
@@ -3841,6 +4008,17 @@ export const UTILITIES_TEXT_TOOLS: ToolEntry[] = [
 							? { output: String(n) }
 							: { output: '', error: 'Not a canonical Roman numeral (1–3999).', errorZh: '这不是规范的罗马数字（1–3999）。' };
 					},
+					},
+				{
+					id: 'batch',
+					label: 'Convert each line (auto-detect)',
+					labelZh: '逐行转换（自动识别方向）',
+					run: (t) =>
+						runBatch(t, (line) => {
+							if (/^-?\d+$/.test(line)) return toRoman(Number(line));
+							const n = fromRoman(line);
+							return n === null ? null : String(n);
+						}),
 				},
 			],
 		} satisfies TextConfig,

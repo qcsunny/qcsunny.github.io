@@ -34,12 +34,12 @@ test('port lookup by number and service', async ({ page }) => {
 	const input = page.locator('textarea[data-role="input"]');
 	const output = page.locator('textarea[data-role="output"]');
 
-	await page.getByRole('button', { name: /Look up|查询/ }).click();
+	await page.getByRole('button', { name: 'Look up', exact: true }).click();
 	await expect(output).toHaveValue(/Redis/);
 	await expect(output).toHaveValue(/3306|6379/); // number column
 
 	await input.fill('mysql');
-	await page.getByRole('button', { name: /Look up|查询/ }).click();
+	await page.getByRole('button', { name: 'Look up', exact: true }).click();
 	await expect(output).toHaveValue(/3306/);
 });
 
