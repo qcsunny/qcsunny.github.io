@@ -2913,6 +2913,15 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: '在真实弹性容器上调 flex-direction、justify-content、align-items、换行与间距并复制 CSS——子元素的排布就是属性的真实效果。',
 		kind: 'flexgen',
 	},
+	{
+		slug: 'xlsx-analyzer',
+		category: 'devtools',
+		name: 'Excel Workbook Analyzer & Cleaner',
+		nameZh: 'Excel 工作簿分析与清理器',
+		description: 'Drop an .xlsx/.xlsm and see what makes it bloated — unused cell styles, hidden and external defined names, dead links, leftover media, pivot caches — then strip them and download the lean copy. All in the browser.',
+		descriptionZh: '拖入 .xlsx/.xlsm 看清它为何臃肿——未使用的单元格样式、隐藏与外部命名区域、失效链接、残留媒体、透视缓存——勾选清理后下载瘦身副本。全程浏览器本地。',
+		kind: 'xlsxanalyzer',
+	},
 
 	{
 		slug: 'html-entity-escaper',

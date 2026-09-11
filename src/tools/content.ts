@@ -971,6 +971,26 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '支持命名区域吗？', a: '本生成器只用轨道 + 跨度，同样的事更少机关。想要 template-areas，输出的轨道定义就是最难的部分——命名交给你补。' },
 		],
 	},
+	'devtools/xlsx-analyzer': {
+		about: [
+			'The XLStylesTool idea, in a browser tab: workbooks age by accreting unused cell styles (every paste-special leaves some behind), hidden and external defined names, links to workbooks that no longer exist, embedded media nobody sees and pivot caches of deleted tables. This tool unpacks the .xlsx/.xlsm zip, sizes every part, and lists exactly what is weighing it down.',
+			'The cleaner rewrites only the parts you tick — styles are remapped per sheet so live formatting survives — and the lean copy downloads with a -cleaned suffix. The file never leaves the page.',
+		],
+		aboutZh: [
+			'把 XLStylesTool 的思路搬进浏览器标签页：工作簿会随年月积累未使用的单元格样式（每次选择性粘贴都会留下几个）、隐藏与外部命名区域、指向早已不存在的工作簿的链接、没人看的内嵌媒体、已删表格的透视缓存。本工具解包 .xlsx/.xlsm，逐部件称重，列出到底是什么在拖累它。',
+			'清理器只重写你勾选的部件——样式逐工作表重映射，在用的格式不丢——瘦身副本以 -cleaned 后缀下载。文件全程不出页面。',
+		],
+		faq: [
+			{ q: 'Is cleaning safe?', a: 'Unused styles and dead references are removed by definition; live formatting is remapped to the collapsed style table. Always keep the original — the download has a -cleaned suffix precisely so both exist side by side.' },
+			{ q: 'Why does the "cleaned" file sometimes grow?', a: 'Excel writes xlsx with its own zip settings; a file Excel already saved tightly (small ones especially) can gain a few bytes of re-zip overhead. Real bloat files shrink dramatically; tiny ones barely move.' },
+			{ q: 'Why not the legacy .xls?', a: '.xls is a binary compound format, not a zip of XML parts — it needs a different parser entirely, and Microsoft itself recommends migrating off it.' },
+		],
+		faqZh: [
+			{ q: '清理安全吗？', a: '未使用的样式与失效引用按定义就是可删的；在用的格式会映射到压缩后的样式表。请保留原文件——下载带 -cleaned 后缀正是为了让两者并存。' },
+			{ q: '为什么清理后文件有时反而变大？', a: 'Excel 用自己的 zip 参数写 xlsx；本来就已经压得很紧的文件（尤其是小文件）重打包会多几个字节开销。真正臃肿的文件会大幅缩小；极小的文件几乎不变。' },
+			{ q: '为什么不支持旧版 .xls？', a: '.xls 是二进制复合文档格式，不是 zip+XML 结构——需要完全不同的解析器，而且微软自己也建议迁移离开它。' },
+		],
+	},
 	'devtools/flexbox-generator': {
 		about: [
 			'The four flex container properties people actually fumble — direction, justify-content, align-items, wrap — on a live container. Pick values and watch the children re-flow; the CSS panel prints exactly the rules in force.',

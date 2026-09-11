@@ -34,6 +34,7 @@ export type ToolKind =
 	| 'imgfilter'
 	| 'gridgen'
 	| 'flexgen'
+	| 'xlsxanalyzer'
 	| 'sql'
 	| 'jwt'
 	| 'url'
@@ -257,6 +258,7 @@ export type ToolEntry = ToolMeta &
 		| { kind: 'imgfilter' }
 		| { kind: 'gridgen' }
 		| { kind: 'flexgen' }
+		| { kind: 'xlsxanalyzer' }
 		| { kind: 'sql' }
 		| { kind: 'jwt' }
 		| { kind: 'url' }
@@ -436,6 +438,7 @@ export const TOOL_KEYWORDS: Record<string, string> = {
 		'mandelbrot-explorer': '曼德博 分形 范数集合 朱利亚 复平面 缩放 mandelbrot julia fractal explorer zoom',
 		'css-grid-generator': 'css grid 网格 布局 生成器 可视化 拖拽 行列 grid template columns span',
 		'flexbox-generator': 'flexbox 弹性 布局 生成器 可视化 justify content align items direction wrap gap',
+		'xlsx-analyzer': 'excel 工作簿 分析 清理 xlsx xlsm 膨胀 体积 优化 样式 cellXfs 命名区域 defined names 外部链接 媒体 透视缓存 pivot cache bloat clean',
 		'image-filter-lab': '图像滤镜 卷积 模糊 锐化 边缘检测 浮雕 卷积核 convolution kernel filter image processing',
 		'http-status-lookup': 'http 状态码 404 500 302 status code 错误码 重定向 查询',
 		'mime-type-lookup': 'mime 类型 content-type 文件类型 扩展名 application/pdf 查询 mime type',
