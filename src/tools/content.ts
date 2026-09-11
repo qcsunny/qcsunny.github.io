@@ -971,6 +971,26 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '支持命名区域吗？', a: '本生成器只用轨道 + 跨度，同样的事更少机关。想要 template-areas，输出的轨道定义就是最难的部分——命名交给你补。' },
 		],
 	},
+	'devtools/pdf-toolkit': {
+		about: [
+			'Nine operations on one dropped file: merge several PDFs, extract pages ("1-3,5,8-" grammar, order as written), split to single pages, rotate by ±90/180, text watermark (stamp or tiled, any size/opacity/angle/colour), lossless compress, view or strip metadata, PDF → PNG/JPG at 1.5–3× scale, and images → PDF.',
+			'Structure work is pdf-lib, rendering is pdf.js with the worker and standard fonts served from this site. Every byte stays in the page. One honest gap: encryption is not offered — pdf-lib cannot write encrypted PDFs, and a password-protected input is reported clearly rather than failing obscurely.',
+		],
+		aboutZh: [
+			'拖入文件即得的九种操作：合并多个 PDF、按页码提取（"1-3,5,8-" 语法，按书写顺序）、拆分为单页、±90/180 旋转、文字水印（居中或平铺，字号/透明度/角度/颜色可调）、无损压缩、查看或清除元数据、PDF 转 PNG/JPG（1.5–3 倍分辨率）、图片合成 PDF。',
+			'结构操作走 pdf-lib，渲染走 pdf.js（worker 与标准字体由本站托管）。所有字节不出页面。一个诚实的缺口：不提供加密——pdf-lib 无法写出加密 PDF，遇到带密码的输入会明确提示而非晦涩报错。',
+		],
+		faq: [
+			{ q: 'How many pages can it handle?', a: 'Structure operations (rotate, watermark, metadata, compress) have no page limit — a 2,000-page file loads in ~0.6s and rotates fully in ~0.6s. Merge is bound by total input size (a few hundred MB is safe). Split caps at 500 pages because every page becomes an in-memory blob. PDF→image renders page by page, so memory stays flat.' },
+			{ q: 'Is the compression lossless?', a: 'Yes — it re-packs objects and cross-references the way Word’s "minimum size" save does. Images are never re-encoded: that would be lossy. Files already saved tightly may gain a few bytes of zip overhead.' },
+			{ q: 'Why no encryption?', a: 'The only mature browser library for PDF structure (pdf-lib) has never implemented writing encrypted files — a long-standing upstream gap. Pretending otherwise would mean shipping something that silently produces broken files.' },
+		],
+		faqZh: [
+			{ q: '最多支持多少页？', a: '结构操作（旋转/水印/元数据/压缩）页数无硬限——2000 页文件载入约 0.6 秒、全页旋转保存约 0.6 秒。合并受总输入体积限制（几百 MB 内安全）。拆分上限 500 页（每页生成一个内存中的 blob）。PDF 转图片逐页渲染，内存恒定。' },
+			{ q: '压缩是无损的吗？', a: '是——重打包对象与交叉引用表，与 Word"最小体积"另存同思路。图片绝不重编码：那是有损的。本已压得很紧的文件可能多几个字节的重打包开销。' },
+			{ q: '为什么不支持加密？', a: '浏览器端唯一成熟的 PDF 结构库（pdf-lib）从未实现写出加密文件——长期的上游缺口。假装支持只会产出悄悄损坏的文件。' },
+		],
+	},
 	'devtools/xlsx-analyzer': {
 		about: [
 			'The XLStylesTool idea, in a browser tab: workbooks age by accreting unused cell styles (every paste-special leaves some behind), hidden and external defined names, links to workbooks that no longer exist, embedded media nobody sees and pivot caches of deleted tables. This tool unpacks the .xlsx/.xlsm zip, sizes every part, and lists exactly what is weighing it down.',

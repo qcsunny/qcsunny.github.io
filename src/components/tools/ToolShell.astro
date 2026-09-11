@@ -802,6 +802,59 @@ const year = new Date().getFullYear();
 				font-size: 0.85rem;
 				cursor: pointer;
 			}
+			.t-pdf-tabs {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.35em;
+				margin-bottom: 1em;
+			}
+			.t-pdf-tab {
+				border: 1px solid var(--gridline);
+				border-radius: 8px;
+				background: var(--card);
+				color: var(--dim);
+				font: inherit;
+				font-size: 0.82rem;
+				padding: 0.35em 0.75em;
+				cursor: pointer;
+			}
+			.t-pdf-tab.t-active {
+				border-color: var(--accent);
+				color: var(--fg);
+				background: var(--accent-soft);
+			}
+			.t-pdf-panel {
+				display: flex;
+				flex-direction: column;
+				gap: 0.8em;
+				margin-bottom: 1em;
+			}
+			.t-pdf-drop {
+				display: flex;
+				flex-wrap: wrap;
+				align-items: center;
+				justify-content: center;
+				gap: 0.7em;
+				padding: 1.4em 1em;
+				border: 1.5px dashed var(--gridline);
+				border-radius: 10px;
+				color: var(--dim);
+				font-size: 0.88rem;
+				text-align: center;
+			}
+			.t-pdf-filelist {
+				list-style: none;
+				font-size: 0.82rem;
+				color: var(--dim);
+				word-break: break-all;
+			}
+			.t-pdf-runline {
+				font-size: 0.85rem;
+				white-space: pre-line;
+			}
+			.t-hidden {
+				display: none;
+			}
 			.t-xlsx-shrunk {
 				color: #10b981;
 				font-weight: 600;

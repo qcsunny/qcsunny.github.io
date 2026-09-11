@@ -2938,6 +2938,15 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: '拖入 .xlsx/.xlsm 看清它为何臃肿——未使用的单元格样式、隐藏与外部命名区域、失效链接、残留媒体、透视缓存——勾选清理后下载瘦身副本。全程浏览器本地。',
 		kind: 'xlsxanalyzer',
 	},
+	{
+		slug: 'pdf-toolkit',
+		category: 'devtools',
+		name: 'PDF Toolkit (Merge · Split · Rotate · Watermark)',
+		nameZh: 'PDF 工具箱（合并 · 拆分 · 旋转 · 水印）',
+		description: 'Merge, extract or split pages, rotate, watermark, compress (lossless repack), read or strip metadata, PDF → images and images → PDF — all in the browser, nothing uploaded.',
+		descriptionZh: '合并、提取、拆分页面、旋转、加水印、压缩（无损重打包）、查看/清除元数据、PDF 转图片、图片合成 PDF——全程浏览器本地，绝不上传。',
+		kind: 'pdftoolkit',
+	},
 
 	{
 		slug: 'html-entity-escaper',
