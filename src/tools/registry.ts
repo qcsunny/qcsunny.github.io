@@ -36,6 +36,7 @@ export type ToolKind =
 	| 'flexgen'
 	| 'xlsxanalyzer'
 	| 'pdftoolkit'
+	| 'pdfocr'
 	| 'sql'
 	| 'jwt'
 	| 'url'
@@ -261,6 +262,7 @@ export type ToolEntry = ToolMeta &
 		| { kind: 'flexgen' }
 		| { kind: 'xlsxanalyzer' }
 		| { kind: 'pdftoolkit' }
+		| { kind: 'pdfocr' }
 		| { kind: 'sql' }
 		| { kind: 'jwt' }
 		| { kind: 'url' }
@@ -442,6 +444,7 @@ export const TOOL_KEYWORDS: Record<string, string> = {
 		'flexbox-generator': 'flexbox 弹性 布局 生成器 可视化 justify content align items direction wrap gap',
 		'xlsx-analyzer': 'excel 工作簿 分析 清理 xlsx xlsm 膨胀 体积 优化 样式 cellXfs 命名区域 defined names 外部链接 媒体 透视缓存 pivot cache bloat clean',
 		'pdf-toolkit': 'pdf 工具箱 合并 拆分 提取 页面 旋转 水印 压缩 元数据 清除 转图片 图片转pdf merge split extract rotate watermark compress metadata pdf to image',
+		'document-ocr': 'ocr 文字识别 光学字符识别 扫描 pdf 转文字 图片转文字 tesseract 识别 中文识别 英文识别 text recognition extract text from image scanned document',
 		'image-filter-lab': '图像滤镜 卷积 模糊 锐化 边缘检测 浮雕 卷积核 convolution kernel filter image processing',
 		'http-status-lookup': 'http 状态码 404 500 302 status code 错误码 重定向 查询',
 		'mime-type-lookup': 'mime 类型 content-type 文件类型 扩展名 application/pdf 查询 mime type',
