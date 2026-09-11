@@ -2,12 +2,14 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
-import { CALCULATOR_FEATURED, REGISTRY } from '../src/tools/registry';
+import { REAL_TOOLS } from '../src/tools/registry';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const DIST = join(ROOT, 'dist');
 const BLOG = join(ROOT, 'src/content/blog');
-const tools = [...CALCULATOR_FEATURED, ...REGISTRY].filter((tool) => tool.kind !== 'redirect');
+// Same list BlogPost.astro renders from, so a tool hidden there via `disabled`
+// fails this suite instead of silently leaving a dangling relatedTools key.
+const tools = REAL_TOOLS;
 const toolKeys = new Set(tools.map((tool) => `${tool.category}/${tool.slug}`));
 const routeOfTool = (key: string) => `/${key}/`;
 const routeOfPost = (slug: string) => `/blog/${slug}/`;

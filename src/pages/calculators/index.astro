@@ -4,12 +4,12 @@
 // the search placeholder is bespoke to this page.
 import ToolShell from '../../components/tools/ToolShell.astro';
 import ToolSearchBar from '../../components/tools/ToolSearchBar.astro';
-import { CATEGORIES, REGISTRY, CALCULATOR_FEATURED } from '../../tools/registry';
+import { CATEGORIES, REAL_TOOLS } from '../../tools/registry';
 
 const cat = CATEGORIES.find((c) => c.id === 'calculators')!;
-const entries = [
-	...CALCULATOR_FEATURED, ...REGISTRY.filter((e) => e.category === 'calculators')
-].filter((e) => e.kind !== 'redirect');
+// REAL_TOOLS includes the three featured calculators (static pages, not
+// registry entries) and already drops redirect stubs and disabled tools.
+const entries = REAL_TOOLS.filter((e) => e.category === 'calculators');
 ---
 
 <ToolShell title={cat.label} titleZh={cat.labelZh} description={cat.blurb}>

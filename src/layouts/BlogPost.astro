@@ -10,7 +10,7 @@ import { buildBlogSearchConfig } from '../components/tools/blogSearchConfig';
 import TableOfContents from '../components/blog/TableOfContents.astro';
 import SupportBox from '../components/SupportBox.astro';
 import { ADSENSE_CLIENT, AD_SLOTS, SITE_TITLE } from '../consts';
-import { CALCULATOR_FEATURED, REGISTRY, TOOL_COUNT } from '../tools/registry';
+import { REAL_TOOLS, TOOL_COUNT } from '../tools/registry';
 import katexHref from '../styles/katex.css?url';
 
 // The tools card used to say "40+"; a hardcoded count ages into a lie as tools
@@ -52,14 +52,16 @@ const {
 	headings = [],
 } = Astro.props as Props;
 
-const allTools = [...CALCULATOR_FEATURED, ...REGISTRY];
+// REAL_TOOLS is the registry plus the featured calculators, minus redirect
+// stubs and disabled tools: a tool hidden from the site can no longer be
+// linked to from an article.
+const allTools = REAL_TOOLS;
 const relatedToolEntries = relatedTools
 	.map((key) => {
 		const [category, toolSlug] = key.split('/');
 		return allTools.find((tool) => tool.category === category && tool.slug === toolSlug);
 	})
-	.filter((tool): tool is NonNullable<typeof tool> => Boolean(tool))
-	.filter((tool) => tool.kind !== 'redirect');
+	.filter((tool): tool is NonNullable<typeof tool> => Boolean(tool));
 
 // The Header's search button stays pointed at the blog collection on a reading
 // page too, so hopping to a neighbouring article never needs a trip back to the

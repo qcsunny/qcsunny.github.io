@@ -3,17 +3,16 @@
 import ToolShell from '../../components/tools/ToolShell.astro';
 import ToolSearchBar from '../../components/tools/ToolSearchBar.astro';
 import {
-	CALCULATOR_FEATURED,
 	CATEGORIES,
-	REGISTRY,
+	REAL_TOOLS,
 	categoryHref,
 	type ToolMeta,
 } from '../../tools/registry';
 
-const byCategory = (id: string): ToolMeta[] => [
-	...(id === 'calculators' ? CALCULATOR_FEATURED : []),
-	...REGISTRY.filter((e) => e.category === id && e.kind !== 'redirect'),
-];
+// REAL_TOOLS is the featured calculators plus the registry, minus redirect
+// stubs and disabled tools, so one of the latter drops out of every hub
+// section without touching this page.
+const byCategory = (id: string): ToolMeta[] => REAL_TOOLS.filter((e) => e.category === id);
 
 const totalTools = CATEGORIES.reduce((acc, cat) => acc + byCategory(cat.id).length, 0);
 ---
