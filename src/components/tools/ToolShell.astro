@@ -1560,8 +1560,11 @@ const year = new Date().getFullYear();
 }
 .t-gamut-viewport {
 	position: relative;
-	width: 100%;
-	height: clamp(220px, 42vw, 320px);
+	/* The slice maps both a and b over the SAME [-0.35, 0.35] span — an
+	   equal-unit square coordinate system by construction. The box must be
+	   square too, or one axis stretches and perceptual distances lie. */
+	aspect-ratio: 1;
+	width: min(100%, 520px);
 	border-radius: 8px;
 	border: 1px solid var(--gridline);
 	overflow: hidden;
@@ -1575,6 +1578,11 @@ const year = new Date().getFullYear();
 	gap: 0.6em;
 	margin-top: 0.6em;
 	font-size: 0.82rem;
+}
+.t-gamut-lhint {
+	margin-top: 0.5em;
+	font-size: 0.78rem;
+	line-height: 1.5;
 }
 .t-gamut-controls label {
 	flex: none;
