@@ -22,7 +22,7 @@ void (async () => {
 	if (!host) throw new Error('tools: #t-root missing');
 
 	// Only config-carrying kinds need their registry entry; every widget kind
-	// (qr, color, json, jsonschema, meta, fractal, imgfilter, sql, jwt, url, xml, css, html, markdown) renders standalone.
+	// (qr, color, json, jsonschema, meta, fractal, imgfilter, gridgen, flexgen, sql, jwt, url, xml, css, html, markdown) renders standalone.
 	if (kind === 'form' || kind === 'converter' || kind === 'text' || kind === 'generator') {
 		const { loadCategoryEntries } = await import('../../tools/catalog');
 		const entries = await loadCategoryEntries(category as ToolCategory);
@@ -67,6 +67,12 @@ void (async () => {
 			break;
 		case 'imgfilter':
 			await import('./imgfilter').then((m) => m.initImgFilter(host));
+			break;
+		case 'gridgen':
+			await import('./csslayout').then((m) => m.initGridGen(host));
+			break;
+		case 'flexgen':
+			await import('./csslayout').then((m) => m.initFlexGen(host));
 			break;
 		case 'sql':
 			await import('./sql').then((m) => m.initSql(host));

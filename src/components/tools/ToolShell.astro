@@ -641,6 +641,129 @@ const year = new Date().getFullYear();
 				outline-offset: -2px;
 			}
 
+			/* --- CSS Grid / Flexbox generators (csslayout.ts) -------------------- */
+			/* item palette — fixed hues with white text read fine on both themes */
+			.t-gridgen-play,
+			.t-flexgen-play {
+				--item-1: hsl(215 70% 46%);
+				--item-2: hsl(152 55% 36%);
+				--item-3: hsl(27 85% 46%);
+				--item-4: hsl(348 70% 50%);
+				--item-5: hsl(262 60% 52%);
+				--item-6: hsl(197 75% 40%);
+			}
+			.t-csslayout-ctrl {
+				align-items: flex-end;
+			}
+			.t-trackeditor {
+				display: flex;
+				align-items: center;
+				gap: 0.3em;
+				font-size: 0.8rem;
+				color: var(--dim);
+			}
+			.t-trackinput {
+				width: 5.5em;
+				border: 1px solid var(--gridline);
+				border-radius: 6px;
+				background: var(--card);
+				color: var(--fg);
+				font: inherit;
+				font-size: 0.8rem;
+				font-family: var(--font-mono);
+				padding: 0.3em 0.45em;
+			}
+			.t-trackeditor .t-trackinput {
+				width: 4.5em;
+			}
+			.t-trackinput:focus-visible {
+				outline: none;
+				border-color: var(--accent);
+			}
+			.t-csslayout-field {
+				min-width: 9em;
+				flex: 0 1 auto;
+				flex-direction: row;
+				align-items: center;
+				gap: 0.5em;
+			}
+			.t-csslayout-field select {
+				flex: 1;
+			}
+			.t-gridgen-play {
+				border: 1px solid var(--gridline);
+				border-radius: 10px;
+				background: color-mix(in srgb, var(--fg) 3%, var(--card));
+				margin: 0 0 1.2em;
+				position: relative; /* anchors the absolutely-positioned drag ghost */
+				touch-action: none; /* the pointer drag owns touch input */
+				overflow: hidden;
+			}
+			.t-gridgen-cell {
+				background: color-mix(in srgb, var(--fg) 5%, transparent);
+				outline: 1px dashed color-mix(in srgb, var(--fg) 15%, transparent);
+				outline-offset: -1px;
+				cursor: crosshair;
+				min-height: 2.2em;
+			}
+			.t-gridgen-item {
+				background: var(--item-color, var(--accent));
+				color: #fff;
+				border-radius: 6px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 0.85rem;
+				font-weight: 600;
+				margin: 2px;
+				z-index: 1;
+				cursor: pointer;
+				user-select: none;
+			}
+			.t-gridgen-ghost {
+				position: absolute;
+				z-index: 2;
+				background: var(--accent);
+				border-radius: 6px;
+				opacity: 0.45;
+				pointer-events: none; /* never intercept elementFromPoint mid-drag */
+				filter: saturate(0.4);
+			}
+			.t-flexgen-play {
+				border: 1px solid var(--gridline);
+				border-radius: 10px;
+				background: color-mix(in srgb, var(--fg) 3%, var(--card));
+				margin: 0 0 1.2em;
+				min-height: 11em;
+				padding: 0.75em;
+				overflow: hidden;
+			}
+			.t-flexgen-item {
+				background: var(--item-color, var(--accent));
+				color: #fff;
+				border-radius: 6px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 0.85rem;
+				font-weight: 600;
+				min-height: 2.4em;
+				min-width: 2.4em;
+				flex-basis: 4em;
+			}
+			.t-csscode {
+				background: var(--code-bg);
+				color: var(--code-fg);
+				border: 1px solid var(--gridline);
+				border-radius: 10px;
+				padding: 0.9em 1.1em;
+				font-family: var(--font-mono);
+				font-size: 0.82rem;
+				line-height: 1.55;
+				overflow-x: auto;
+				white-space: pre;
+			}
+
 			/* --- meta/OG preview (metaog.ts) ---------------------------------------- */
 			.t-metafields {
 				display: flex;

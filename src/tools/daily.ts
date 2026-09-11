@@ -636,7 +636,6 @@ export const DAILY_TOOLS: ToolEntry[] = [
 					};
 				};
 				const target = fmt(to, utc);
-				const source = fmt(from, utc);
 				const diffH = (offsetOf(to, utc) - offsetOf(from, utc)) / 3600000;
 				const rows = [
 					{
