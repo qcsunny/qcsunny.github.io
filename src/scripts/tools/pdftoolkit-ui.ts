@@ -47,15 +47,15 @@ interface PdfFile {
  *  button, result line. Tab switching is plain class toggling. */
 export function initPdfToolkit(host: HTMLElement): void {
 	const TABS: { id: string; en: string; zh: string }[] = [
-		{ id: 'merge', en: 'Merge 合并', zh: '合并' },
-		{ id: 'extract', en: 'Extract 提取', zh: '提取' },
-		{ id: 'split', en: 'Split 拆分', zh: '拆分' },
-		{ id: 'rotate', en: 'Rotate 旋转', zh: '旋转' },
-		{ id: 'watermark', en: 'Watermark 水印', zh: '水印' },
-		{ id: 'compress', en: 'Compress 压缩', zh: '压缩' },
-		{ id: 'meta', en: 'Metadata 元数据', zh: '元数据' },
-		{ id: 'pdf2img', en: 'PDF → Image 转图片', zh: '转图片' },
-		{ id: 'img2pdf', en: 'Image → PDF 转PDF', zh: '转PDF' },
+		{ id: 'merge', en: 'Merge', zh: '合并' },
+		{ id: 'extract', en: 'Extract', zh: '提取' },
+		{ id: 'split', en: 'Split', zh: '拆分' },
+		{ id: 'rotate', en: 'Rotate', zh: '旋转' },
+		{ id: 'watermark', en: 'Watermark', zh: '水印' },
+		{ id: 'compress', en: 'Compress', zh: '压缩' },
+		{ id: 'meta', en: 'Metadata', zh: '元数据' },
+		{ id: 'pdf2img', en: 'PDF → Image', zh: '转图片' },
+		{ id: 'img2pdf', en: 'Image → PDF', zh: '转 PDF' },
 	];
 
 	const bar = document.createElement('div');
@@ -187,7 +187,7 @@ export function initPdfToolkit(host: HTMLElement): void {
 	exInput.placeholder = '1-3,5,8-';
 	exInput.style.width = '10em';
 	panels.extract!.append(exInput);
-	const exBtn = mkRunButton('Extract pages 提取页面', '提取页面', async () => {
+	const exBtn = mkRunButton('Extract pages', '提取页面', async () => {
 		const f = firstPdf();
 		if (!f) return say('extract', 'Drop a PDF first.', '请先拖入 PDF。');
 		const r = await extractPages(f.bytes, exInput.value || '1-');
@@ -197,7 +197,7 @@ export function initPdfToolkit(host: HTMLElement): void {
 	panels.extract!.append(exBtn);
 
 	// split
-	const spBtn = mkRunButton('Split to single pages 拆分为单页', '拆分为单页', async () => {
+	const spBtn = mkRunButton('Split to single pages', '拆分为单页', async () => {
 		const f = firstPdf();
 		if (!f) return say('split', 'Drop a PDF first.', '请先拖入 PDF。');
 		const meta = await readPdfMeta(f.bytes);
@@ -224,7 +224,7 @@ export function initPdfToolkit(host: HTMLElement): void {
 	rotInput.className = 't-trackinput';
 	rotInput.placeholder = 'pages (blank = all)';
 	rotInput.style.width = '12em';
-	const rotBtn = mkRunButton('Rotate 旋转', '旋转', async () => {
+	const rotBtn = mkRunButton('Rotate', '旋转', async () => {
 		const f = firstPdf();
 		if (!f) return say('rotate', 'Drop a PDF first.', '请先拖入 PDF。');
 		const out = await rotatePdf(f.bytes, Number(rotSel.value) as 90 | 180 | 270, rotInput.value);
@@ -269,7 +269,7 @@ export function initPdfToolkit(host: HTMLElement): void {
 		const x = m[1]!;
 		return [parseInt(x.slice(0, 2), 16) / 255, parseInt(x.slice(2, 4), 16) / 255, parseInt(x.slice(4, 6), 16) / 255];
 	};
-	const wmBtn = mkRunButton('Add watermark & download 加水印并下载', '加水印并下载', async () => {
+	const wmBtn = mkRunButton('Add watermark & download', '加水印并下载', async () => {
 		const f = firstPdf();
 		if (!f) return say('watermark', 'Drop a PDF first.', '请先拖入 PDF。');
 		const out = await watermarkPdf(f.bytes, {
@@ -284,11 +284,11 @@ export function initPdfToolkit(host: HTMLElement): void {
 		say('watermark', 'Watermarked and downloaded.', '已加水印并下载。');
 	});
 	for (const [label, el] of [
-		['Text 文案', wmText],
-		['Size 字号', wmSize],
-		['Opacity 透明度', wmOpacity],
-		['Angle 角度', wmAngle],
-		['Color 颜色', wmColor],
+		['Text', wmText],
+		['Size', wmSize],
+		['Opacity', wmOpacity],
+		['Angle', wmAngle],
+		['Colour', wmColor],
 	] as const) {
 		const wrap = document.createElement('label');
 		wrap.className = 't-csslayout-field';
@@ -297,11 +297,11 @@ export function initPdfToolkit(host: HTMLElement): void {
 	}
 	const tileWrap = document.createElement('label');
 	tileWrap.className = 't-csslayout-field';
-	tileWrap.append(wmTile, bilingual('Tile 平铺', '平铺'));
+	tileWrap.append(wmTile, bilingual('Tile', '平铺'));
 	panels.watermark!.append(tileWrap, wmBtn);
 
 	// compress
-	const cpBtn = mkRunButton('Compress & download 压缩并下载', '压缩并下载', async () => {
+	const cpBtn = mkRunButton('Compress & download', '压缩并下载', async () => {
 		const f = firstPdf();
 		if (!f) return say('compress', 'Drop a PDF first.', '请先拖入 PDF。');
 		const out = await compressPdf(f.bytes);
@@ -316,7 +316,7 @@ export function initPdfToolkit(host: HTMLElement): void {
 	panels.compress!.append(cpBtn);
 
 	// metadata: view + clear
-	const mvBtn = mkRunButton('View metadata 查看元数据', '查看元数据', async () => {
+	const mvBtn = mkRunButton('View metadata', '查看元数据', async () => {
 		const f = firstPdf();
 		if (!f) return say('meta', 'Drop a PDF first.', '请先拖入 PDF。');
 		const m = await readPdfMeta(f.bytes);
@@ -327,7 +327,7 @@ export function initPdfToolkit(host: HTMLElement): void {
 			`页数 ${m.pageCount} · ${m.pageSizes[0] ? `${m.pageSizes[0].w}×${m.pageSizes[0].h} pt` : '—'}\n标题 ${m.title ?? '—'} · 作者 ${m.author ?? '—'}\n主题 ${m.subject ?? '—'}\n创建工具 ${m.creator ?? '—'} · 生成器 ${m.producer ?? '—'}\n创建 ${fmt(m.creationDate)} · 修改 ${fmt(m.modDate)}`,
 		);
 	});
-	const mcBtn = mkRunButton('Clear metadata & download 清除元数据并下载', '清除元数据并下载', async () => {
+	const mcBtn = mkRunButton('Clear metadata & download', '清除元数据并下载', async () => {
 		const f = firstPdf();
 		if (!f) return say('meta', 'Drop a PDF first.', '请先拖入 PDF。');
 		const out = await clearPdfMeta(f.bytes);
@@ -337,7 +337,7 @@ export function initPdfToolkit(host: HTMLElement): void {
 	panels.meta!.append(mvBtn, mcBtn);
 
 	// merge
-	const mgBtn = mkRunButton('Merge & download 合并并下载', '合并并下载', async () => {
+	const mgBtn = mkRunButton('Merge & download', '合并并下载', async () => {
 		if (state.files.length < 2) return say('merge', 'Drop at least two PDFs.', '请至少拖入两个 PDF。');
 		const out = await mergePdfs(state.files.map((f) => f.bytes));
 		download(out, 'merged.pdf');
@@ -367,7 +367,7 @@ export function initPdfToolkit(host: HTMLElement): void {
 		o.textContent = t;
 		p2iFmt.append(o);
 	}
-	const p2iBtn = mkRunButton('Render pages & download 逐页渲染并下载', '逐页渲染并下载', async () => {
+	const p2iBtn = mkRunButton('Render pages & download', '逐页渲染并下载', async () => {
 		const f = firstPdf();
 		if (!f) return say('pdf2img', 'Drop a PDF first.', '请先拖入 PDF。');
 		// pdfjs imported through a minimal structural type: the library's own
@@ -408,7 +408,7 @@ export function initPdfToolkit(host: HTMLElement): void {
 	panels.pdf2img!.append(p2iScale, p2iFmt, p2iBtn);
 
 	// image → pdf
-	const i2pBtn = mkRunButton('Combine images to PDF 图片合成PDF并下载', '图片合成PDF并下载', async () => {
+	const i2pBtn = mkRunButton('Combine images to PDF', '图片合成 PDF 并下载', async () => {
 		if (!state.images.length) return say('img2pdf', 'Drop JPG/PNG images first.', '请先拖入 JPG/PNG 图片。');
 		const out = await imagesToPdf(state.images);
 		download(out, 'images.pdf');
