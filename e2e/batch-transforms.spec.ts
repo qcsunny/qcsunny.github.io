@@ -7,7 +7,7 @@
 
 import { test, expect } from '@playwright/test';
 
-const fillAndRun = async (page, cat, slug, input, btn) => {
+const fillAndRun = async (page: import('@playwright/test').Page, cat: string, slug: string, input: string, btn: string | RegExp) => {
 	await page.goto(`/${cat}/${slug}/`);
 	const input$ = page.locator('textarea[data-role="input"]');
 	await input$.fill(input);
