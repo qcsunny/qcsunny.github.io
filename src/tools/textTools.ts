@@ -2810,6 +2810,24 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: '拖入图片，用可编辑的 3×3 卷积核在 GPU 上实时卷积——模糊、锐化、Sobel 边缘、浮雕或自定义——然后导出结果。',
 		kind: 'imgfilter',
 	},
+	{
+		slug: 'css-grid-generator',
+		category: 'devtools',
+		name: 'CSS Grid Visual Generator',
+		nameZh: 'CSS Grid 可视化生成器',
+		description: 'Design a grid layout by dragging: edit column and row tracks, drag across cells to place spanning items, and copy the exact CSS — the preview is a real grid, not a mock.',
+		descriptionZh: '拖拽式设计网格布局：编辑行列轨道、拖拽跨格放置元素、一键复制生成的 CSS——预览就是真实网格，不是示意图。',
+		kind: 'gridgen',
+	},
+	{
+		slug: 'flexbox-generator',
+		category: 'devtools',
+		name: 'Flexbox Visual Generator',
+		nameZh: 'Flexbox 弹性布局生成器',
+		description: 'Tune flex-direction, justify-content, align-items, wrap and gap on a live flex container and copy the CSS — the children react exactly as the properties dictate.',
+		descriptionZh: '在真实弹性容器上调 flex-direction、justify-content、align-items、换行与间距并复制 CSS——子元素的排布就是属性的真实效果。',
+		kind: 'flexgen',
+	},
 
 	{
 		slug: 'html-entity-escaper',

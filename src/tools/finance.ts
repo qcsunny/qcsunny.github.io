@@ -3454,7 +3454,6 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 				const real = (1 + n) / (1 + inf) - 1;
 				const nominalFV = amount * (1 + n) ** years;
 				const realFV = amount * ((1 + n) / (1 + inf)) ** years;
-				const purchasingPower = nominalFV / (1 + inf) ** years;
 				const rows: FormResultRow[] = [
 					row2('Real annual return', '实际年化收益率', `${percent(real * 100)}%`, `${percent(real * 100)}%`),
 					{ label: 'Naive subtraction', labelZh: '简单相减', value: `${percent((n - inf) * 100)}%`, valueZh: `${percent((n - inf) * 100)}%` },

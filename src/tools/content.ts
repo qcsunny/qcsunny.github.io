@@ -953,6 +953,42 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '朱利亚集合是什么？', a: '曼德博从 z=0 出发迭代 z²+c 并让 c 变化；朱利亚固定 c、从你所在的点出发迭代。曼德博边界的每一点都"对应"一个朱利亚集合——探索其一即是窥见其二。' },
 		],
 	},
+	'devtools/css-grid-generator': {
+		about: [
+			'CSS Grid with the guesswork removed: the playground is a real grid container, the track editors write grid-template-columns/rows, and dragging across cells places a spanning item — the generated CSS is read straight off what you built.',
+			'Track values accept anything CSS does (200px, 1fr, minmax(180px, 1fr), auto…); clicking an item removes it; the output uses the span notation so it survives track edits.',
+		],
+		aboutZh: [
+			'把 CSS Grid 的猜测环节去掉：画布就是一个真实网格容器，轨道编辑器直接写 grid-template-columns/rows，拖拽跨格即放置跨行跨列的元素——生成的 CSS 从你搭好的布局上原样读出。',
+			'轨道值接受 CSS 的一切（200px、1fr、minmax(180px, 1fr)、auto……）；点击元素删除；输出用 span 记法，改轨道后依然成立。',
+		],
+		faq: [
+			{ q: 'Why span notation instead of line numbers on both ends?', a: 'grid-column: 2 / span 2 keeps working when you add or reorder tracks; a hard end line (2 / 4) silently breaks. Start line + span is the resilient spelling.' },
+			{ q: 'Can I use named areas?', a: 'This generator sticks to tracks + spans, which covers the same ground with less machinery. If you want template-areas, the emitted tracks are the hard part — the names are yours to add.' },
+		],
+		faqZh: [
+			{ q: '为什么用 span 记法而不是两端行号？', a: 'grid-column: 2 / span 2 在增删、重排轨道后依然成立；写死终点行号（2 / 4）会悄悄失效。起点 + 跨度是更稳的写法。' },
+			{ q: '支持命名区域吗？', a: '本生成器只用轨道 + 跨度，同样的事更少机关。想要 template-areas，输出的轨道定义就是最难的部分——命名交给你补。' },
+		],
+	},
+	'devtools/flexbox-generator': {
+		about: [
+			'The four flex container properties people actually fumble — direction, justify-content, align-items, wrap — on a live container. Pick values and watch the children re-flow; the CSS panel prints exactly the rules in force.',
+			'The children carry different flex-grow values so grow behavior is visible, and wrap + gap show how the two spacing systems stack.',
+		],
+		aboutZh: [
+			'大家真正容易犯晕的四个弹性容器属性——direction、justify-content、align-items、wrap——摆在真实容器上。选值即看子元素重排；CSS 面板打印的正是生效的规则。',
+			'子元素带不同的 flex-grow，让伸展行为可见；wrap 与 gap 一起展示两套间距系统如何叠加。',
+		],
+		faq: [
+			{ q: 'justify-content vs align-items — which is which?', a: 'Both follow the axes set by flex-direction. Justify runs along the main axis (row by default); align crosses it. Flip direction to column and they swap roles — try it here, that flip is the whole confusion.' },
+			{ q: 'Why gap and not margin on children?', a: 'gap spaces only between items — no leading/trailing edge, no :last-child hacks, and it wraps correctly. It is the modern answer for both flex and grid.' },
+		],
+		faqZh: [
+			{ q: 'justify-content 和 align-items 到底谁是谁？', a: '两者都跟着 flex-direction 设的轴走。justify 沿主轴（默认横）；align 垂直于它。把 direction 换成 column 它们就互换角色——在这里切一下，困惑的全部来源就是这一下。' },
+			{ q: '为什么用 gap 而不是给子元素加 margin？', a: 'gap 只在元素之间留空——首尾没有多余边、不用 :last-child 补丁、换行也正确。它是 flex 与 grid 通用的现代答案。' },
+		],
+	},
 	'devtools/image-filter-lab': {
 		about: [
 			'Convolution, the operation underneath blur/sharpen/edge detection, made tangible: nine weights, one live preview. Edit the 3×3 kernel and the GPU re-filters the image as you type; presets (identity, box blur, sharpen, Sobel, emboss) show the classics.',

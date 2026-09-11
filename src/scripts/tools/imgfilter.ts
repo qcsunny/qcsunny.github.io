@@ -108,7 +108,7 @@ void main() {
 	}
 	controls.append(grid);
 
-	const applyPreset = (name: string, k: number[], d: number, o: number): void => {
+	const applyPreset = (k: number[], d: number, o: number): void => {
 		kernel = [...k];
 		divisor = d;
 		offset = o;
@@ -126,11 +126,11 @@ void main() {
 	const presets = document.createElement('div');
 	presets.className = 't-filter-presets';
 	presets.append(
-		mkBtn('Identity', () => applyPreset('identity', [0, 0, 0, 0, 1, 0, 0, 0, 0], 1, 0)),
-		mkBtn('Blur', () => applyPreset('blur', [1, 1, 1, 1, 1, 1, 1, 1, 1], 9, 0)),
-		mkBtn('Sharpen', () => applyPreset('sharpen', [0, -1, 0, -1, 5, -1, 0, -1, 0], 1, 0)),
-		mkBtn('Edge (Sobel)', () => applyPreset('sobel', [-1, 0, 1, -2, 0, 2, -1, 0, 1], 1, 0.5)),
-		mkBtn('Emboss', () => applyPreset('emboss', [-2, -1, 0, -1, 1, 1, 0, 1, 2], 1, 0)),
+		mkBtn('Identity', () => applyPreset([0, 0, 0, 0, 1, 0, 0, 0, 0], 1, 0)),
+		mkBtn('Blur', () => applyPreset([1, 1, 1, 1, 1, 1, 1, 1, 1], 9, 0)),
+		mkBtn('Sharpen', () => applyPreset([0, -1, 0, -1, 5, -1, 0, -1, 0], 1, 0)),
+		mkBtn('Edge (Sobel)', () => applyPreset([-1, 0, 1, -2, 0, 2, -1, 0, 1], 1, 0.5)),
+		mkBtn('Emboss', () => applyPreset([-2, -1, 0, -1, 1, 1, 0, 1, 2], 1, 0)),
 	);
 	controls.append(presets);
 

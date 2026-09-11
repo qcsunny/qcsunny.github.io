@@ -32,6 +32,8 @@ export type ToolKind =
 	| 'meta'
 	| 'fractal'
 	| 'imgfilter'
+	| 'gridgen'
+	| 'flexgen'
 	| 'sql'
 	| 'jwt'
 	| 'url'
@@ -253,6 +255,8 @@ export type ToolEntry = ToolMeta &
 		| { kind: 'meta' }
 		| { kind: 'fractal' }
 		| { kind: 'imgfilter' }
+		| { kind: 'gridgen' }
+		| { kind: 'flexgen' }
 		| { kind: 'sql' }
 		| { kind: 'jwt' }
 		| { kind: 'url' }
@@ -430,6 +434,8 @@ export const TOOL_KEYWORDS: Record<string, string> = {
 		'lossless-checker': '无损音乐 真假无损 flac 频谱 转码 检测 lossless spectrum transcode',
 		'browser-info': '浏览器信息 硬件信息 gpu 显卡 核心数 屏幕 分辨率 解码支持 hevc av1 browser hardware info navigator',
 		'mandelbrot-explorer': '曼德博 分形 范数集合 朱利亚 复平面 缩放 mandelbrot julia fractal explorer zoom',
+		'css-grid-generator': 'css grid 网格 布局 生成器 可视化 拖拽 行列 grid template columns span',
+		'flexbox-generator': 'flexbox 弹性 布局 生成器 可视化 justify content align items direction wrap gap',
 		'image-filter-lab': '图像滤镜 卷积 模糊 锐化 边缘检测 浮雕 卷积核 convolution kernel filter image processing',
 		'http-status-lookup': 'http 状态码 404 500 302 status code 错误码 重定向 查询',
 		'mime-type-lookup': 'mime 类型 content-type 文件类型 扩展名 application/pdf 查询 mime type',
