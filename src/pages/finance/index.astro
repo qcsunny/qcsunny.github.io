@@ -1,13 +1,16 @@
 ---
+// finance hub — a single-category view of the Tools hub. Title, Chinese
+// title and blurb come from CATEGORIES so the copy lives in one place; only
+// the search placeholder is bespoke to this page.
 import ToolShell from '../../components/tools/ToolShell.astro';
 import ToolSearchBar from '../../components/tools/ToolSearchBar.astro';
-import { REGISTRY } from '../../tools/registry';
+import { CATEGORIES, REGISTRY } from '../../tools/registry';
 
-const entries = [
-	...REGISTRY.filter((e) => e.category === 'finance')
-].filter((e) => e.kind !== 'redirect');
+const cat = CATEGORIES.find((c) => c.id === 'finance')!;
+const entries = REGISTRY.filter((e) => e.category === 'finance' && e.kind !== 'redirect');
 ---
-<ToolShell title="Finance & Investment" titleZh="金融理财与投资计算" description="Compound interest, loans, mortgages, investments, ROI, discounts, salary and tax calculators.">
+
+<ToolShell title={cat.label} titleZh={cat.labelZh} description={cat.blurb}>
 	<ToolSearchBar category="finance" placeholder="Search finance tools (e.g. mortgage, irr, tax, salary)..." placeholderZh="搜索金融工具 (如 房贷、公积金、IRR、个税、薪资、复利)..." totalCount={entries.length} />
 	<div class="t-cards">
 		{

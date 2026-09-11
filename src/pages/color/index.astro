@@ -1,0 +1,29 @@
+---
+// color hub — a single-category view of the Tools hub. Title and blurb
+// come from CATEGORIES so the copy lives in one place.
+import ToolShell from '../../components/tools/ToolShell.astro';
+import ToolSearchBar from '../../components/tools/ToolSearchBar.astro';
+import { CATEGORIES, REGISTRY } from '../../tools/registry';
+
+const cat = CATEGORIES.find((c) => c.id === 'color')!;
+const entries = REGISTRY.filter((e) => e.category === 'color' && e.kind !== 'redirect');
+---
+<ToolShell title={cat.label} titleZh={cat.labelZh} description={cat.blurb}>
+	<ToolSearchBar category={cat.id} placeholder="Search color tools (e.g. hex, palette, contrast, clamp)..." placeholderZh="搜索颜色工具 (如 十六进制、配色、对比度、clamp)..." totalCount={entries.length} />
+	<div class="t-cards">
+		{
+			entries.map((e) => (
+				<a class="t-card" href={`/${e.category}/${e.slug}/`} data-slug={e.slug} data-cat={e.category}>
+					<h2>
+						<span class="i18n-en">{e.name}</span>
+						<span class="i18n-zh">{e.nameZh || e.name}</span>
+					</h2>
+					<p>
+						<span class="i18n-en">{e.description}</span>
+						{e.descriptionZh && <span class="i18n-zh">{e.descriptionZh}</span>}
+					</p>
+				</a>
+			))
+		}
+	</div>
+</ToolShell>

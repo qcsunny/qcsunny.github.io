@@ -1168,6 +1168,7 @@ export function jsonToCsv(text: string): { output: string; error?: string; error
 	return { output: lines.join('\n') };
 }
 
+
 export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 	{
 		slug: 'json-formatter',
@@ -1178,7 +1179,6 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: '格式化、校验、压缩与转义 JSON，精准定位语法错误行号与列号。',
 		kind: 'json',
 	},
-
 	{
 		slug: 'sql-formatter',
 		category: 'devtools',
@@ -1188,7 +1188,6 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: 'SQL 查询格式化美化与压缩工具，支持关键字自动大写与本地隐私安全。',
 		kind: 'sql',
 	},
-
 	{
 		slug: 'html-formatter',
 		category: 'devtools',
@@ -1198,7 +1197,6 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: 'HTML 网页代码规范缩进排版与单行 Minify 压缩工具。',
 		kind: 'html',
 	},
-
 	{
 		slug: 'css-formatter',
 		category: 'devtools',
@@ -1208,7 +1206,6 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: 'CSS 样式表格式化排版与单行 Minify 压缩工具。',
 		kind: 'css',
 	},
-
 	{
 		slug: 'xml-formatter',
 		category: 'devtools',
@@ -1218,8 +1215,6 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: 'XML 与 SVG 矢量代码格式化、层级缩进与语法校验工具。',
 		kind: 'xml',
 	},
-
-	// --- JS / TS Code Formatter ---------------------------------------------------------
 	{
 		slug: 'js-formatter',
 		category: 'devtools',
@@ -1258,9 +1253,6 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 			],
 		},
 	},
-
-
-	// --- GraphQL Formatter --------------------------------------------------------------
 	{
 		slug: 'graphql-formatter',
 		category: 'devtools',
@@ -1299,7 +1291,6 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 			],
 		},
 	},
-
 	{
 		slug: 'yaml-formatter',
 		category: 'devtools',
@@ -1362,7 +1353,6 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 			],
 		} satisfies TextConfig,
 	},
-
 	{
 		slug: 'toml-formatter',
 		category: 'devtools',
@@ -1422,7 +1412,6 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 			],
 		} satisfies TextConfig,
 	},
-
 	{
 		slug: 'json-to-typescript',
 		category: 'devtools',
@@ -1455,7 +1444,6 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 			],
 		} satisfies TextConfig,
 	},
-
 	{
 		slug: 'xml-json-converter',
 		category: 'devtools',
@@ -1501,7 +1489,6 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 			],
 		} satisfies TextConfig,
 	},
-
 	{
 		slug: 'env-json-converter',
 		category: 'devtools',
@@ -1548,37 +1535,6 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 			],
 		} satisfies TextConfig,
 	},
-
-	{
-		slug: 'csv-json-converter',
-		category: 'devtools',
-		name: 'CSV ⇄ JSON Converter',
-		nameZh: 'CSV 与 JSON 互转工具',
-		description: 'Convert CSV to JSON (first row as header) or a JSON array of objects to CSV, with full RFC 4180 quoting support.',
-		descriptionZh: 'CSV 转 JSON（首行为表头），或将 JSON 对象数组转为 CSV，完整支持 RFC 4180 引号规则。',
-		kind: 'text',
-		config: {
-			def: 'name,role,city\nAlice,Engineer,Shanghai\nBob,Designer,"Downtown, Hangzhou"',
-			placeholder: 'Paste CSV or a JSON array…',
-			placeholderZh: '粘贴 CSV 或 JSON 数组…',
-			mono: true,
-			transforms: [
-				{
-					id: 'csv2json',
-					label: 'CSV → JSON',
-					labelZh: 'CSV → JSON',
-					run: (t) => csvToJson(t),
-				},
-				{
-					id: 'json2csv',
-					label: 'JSON → CSV',
-					labelZh: 'JSON → CSV',
-					run: (t) => jsonToCsv(t),
-				},
-			],
-		} satisfies TextConfig,
-	},
-
 	{
 		slug: 'base64',
 		category: 'devtools',
@@ -1649,17 +1605,6 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 			],
 		} satisfies TextConfig,
 	},
-
-	{
-		slug: 'jwt-decoder',
-		category: 'devtools',
-		name: 'JWT Decoder & Formatter',
-		nameZh: 'JWT 令牌解码与格式化',
-		description: 'Decode JSON Web Tokens (JWT) into Header and Payload, inspect expiration timestamps, and verify claims safely with zero data upload.',
-		descriptionZh: '解析 JWT 令牌 Header 与 Payload，快速检验过期时间与 Claims 字段。',
-		kind: 'jwt',
-	},
-
 	{
 		slug: 'url-parser',
 		category: 'devtools',
@@ -1669,475 +1614,6 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: '解析 URL 协议、域名、路径与参数，支持参数排序与去除营销追踪参数。',
 		kind: 'url',
 	},
-
-
-	{
-		slug: 'hash-generator',
-		category: 'devtools',
-		name: 'Hash & HMAC Generator (Text & File)',
-		nameZh: '哈希与 HMAC 生成器 (文本 / 文件)',
-		description: 'MD5, SHA-1/224/256/384/512 and SHA-3 digests of text or dropped files, plus HMAC-SHA256/384/512 — all locally in your browser.',
-		descriptionZh: '文本或拖入文件计算 MD5、SHA-1/224/256/384/512、SHA-3 摘要，并支持 HMAC-SHA256/384/512，全程本地运算。',
-		kind: 'text',
-		config: {
-			def: 'hello world',
-			placeholder: 'Type or paste text to hash…',
-			placeholderZh: '输入或粘贴需要求哈希的文本…',
-			mono: true,
-			live: true,
-			// Bytes in, digests out — shared by the text and the file paths.
-			// hashlib lazily imported: the hand-rolled MD5/SHA-224/SHA-3 cores
-			// (~6 KB) stay out of the chunk every tool page downloads.
-			fileTransform: async (data, name, size, secret = '') => {
-				const { hashBytes, HASH_ALGOS, hmacBytes } = await import('../scripts/tools/hashlib');
-				const bytes = new Uint8Array(data);
-				const lines: string[] = [`File: ${name} (${size.toLocaleString()} bytes)`, ''];
-				for (const algo of HASH_ALGOS) lines.push(`${algo.padEnd(10)} ${await hashBytes(algo, bytes)}`);
-				if (secret) {
-					lines.push('', '-- HMAC --');
-					for (const algo of (['SHA-256', 'SHA-384', 'SHA-512'] as const)) lines.push(`${algo.padEnd(10)} ${await hmacBytes(algo, secret, bytes)}`);
-				}
-				return { output: lines.join('\n') };
-			},
-			secretInput: {
-				label: 'Secret key (for HMAC)',
-				labelZh: '密钥（HMAC 用）',
-				placeholder: 'leave empty to skip HMAC',
-				placeholderZh: '留空则不计算 HMAC',
-			},
-			stats: (text: string) => {
-				const charCount = text.length;
-				const byteCount = new TextEncoder().encode(text).length;
-				return [
-					{
-						label: 'Characters',
-						labelZh: '字符数',
-						value: String(charCount),
-					},
-					{
-						label: 'UTF-8 Bytes',
-						labelZh: '字节数 (UTF-8)',
-						value: String(byteCount),
-					},
-				];
-			},
-			transforms: [
-				{
-					id: 'hash',
-					label: 'Generate all hashes',
-					labelZh: '计算全部哈希',
-					run: async (text: string, secret = '') => {
-						if (!text) return { output: '—' };
-						const { hashBytes, HASH_ALGOS, hmacBytes } = await import('../scripts/tools/hashlib');
-						const bytes = new TextEncoder().encode(text);
-						const lines: string[] = [];
-						for (const algo of HASH_ALGOS) lines.push(`${algo.padEnd(10)} ${await hashBytes(algo, bytes)}`);
-						if (secret) {
-							lines.push('', '-- HMAC --');
-							for (const algo of (['SHA-256', 'SHA-384', 'SHA-512'] as const)) lines.push(`${algo.padEnd(10)} ${await hmacBytes(algo, secret, bytes)}`);
-						}
-						return { output: lines.join('\n') };
-					},
-				},
-				{
-					id: 'hmac',
-					label: 'HMAC only',
-					labelZh: '仅计算 HMAC',
-					run: async (text: string, secret = '') => {
-						if (!text) return { output: '', error: 'Enter text first.', errorZh: '请先输入文本。' };
-						if (!secret) return { output: '', error: 'Enter the secret key above.', errorZh: '请先在上方输入密钥。' };
-						const { hmacBytes } = await import('../scripts/tools/hashlib');
-						const bytes = new TextEncoder().encode(text);
-						const lines: string[] = [];
-						for (const algo of (['SHA-256', 'SHA-384', 'SHA-512'] as const)) lines.push(`${algo.padEnd(10)} ${await hmacBytes(algo, secret, bytes)}`);
-						return { output: lines.join('\n') };
-					},
-				},
-				{
-					id: 'hashLines',
-					label: 'Hash each line (SHA-256)',
-					labelZh: '逐行生成哈希 (SHA-256)',
-					run: async (text: string) => {
-						const lines = text.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
-						if (!lines.length) return { output: '', error: 'Enter at least one line.', errorZh: '请至少输入一行内容。' };
-						const { hashBytes } = await import('../scripts/tools/hashlib');
-						const out: string[] = [];
-						for (const line of lines) out.push(`${line} → ${await hashBytes('SHA-256', new TextEncoder().encode(line))}`);
-						return { output: out.join('\n') };
-					},
-				},
-			],
-		},
-	},
-
-	{
-		slug: 'case-converter',
-		category: 'devtools',
-		name: 'Case & Naming Converter',
-		nameZh: '大小写与命名风格转换器',
-		description: 'Convert identifiers or sentences between camelCase, PascalCase, snake_case, kebab-case, CONSTANT_CASE and more.',
-		descriptionZh: '标识符或句子在 camelCase、PascalCase、snake_case、kebab-case、常量与标题式之间互转。',
-		kind: 'text',
-		config: {
-			def: 'user profile XMLHttpRequest api_key',
-			placeholder: 'e.g. "user profile XMLHttp api_key"…',
-			placeholderZh: '例如 "user profile XMLHttp api_key"…',
-			transforms: [
-				{
-					id: 'camel',
-					label: 'camelCase',
-					labelZh: '驼峰 (camelCase)',
-					run: (t) => ({ output: toCamel(t), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
-				},
-				{
-					id: 'pascal',
-					label: 'PascalCase',
-					labelZh: '帕斯卡 (PascalCase)',
-					run: (t) => ({ output: toPascal(t), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
-				},
-				{
-					id: 'snake',
-					label: 'snake_case',
-					labelZh: '下划线 (snake_case)',
-					run: (t) => ({ output: toSnake(t), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
-				},
-				{
-					id: 'kebab',
-					label: 'kebab-case',
-					labelZh: '短横线 (kebab-case)',
-					run: (t) => ({ output: toKebab(t), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
-				},
-				{
-					id: 'constant',
-					label: 'CONSTANT_CASE',
-					labelZh: '常量 (CONSTANT_CASE)',
-					run: (t) => ({ output: toConstant(t), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
-				},
-				{
-					id: 'title',
-					label: 'Title Case',
-					labelZh: '标题式 (Title Case)',
-					run: (t) => ({ output: toTitle(t), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
-				},
-				{
-					id: 'sentence',
-					label: 'Sentence case',
-					labelZh: '句首大写 (Sentence case)',
-					run: (t) => ({ output: toSentence(t), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
-				},
-				{
-					id: 'upper',
-					label: 'UPPERCASE',
-					labelZh: '全大写',
-					run: (t) => ({ output: t.toUpperCase(), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
-				},
-				{
-					id: 'lower',
-					label: 'lowercase',
-					labelZh: '全小写',
-					run: (t) => ({ output: t.toLowerCase(), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
-				},
-				{
-					id: 'batch',
-					label: 'Convert each line (all styles)',
-					labelZh: '逐行转换 (四种风格对照)',
-					// One row per input line, four naming styles side by side — batch mode is
-					// exactly the 'not sure which style I need' moment, so show them all.
-					run: (t) => {
-						const r = runBatch(t, (line) => `${toCamel(line)} | ${toSnake(line)} | ${toKebab(line)} | ${toConstant(line)}`);
-						if (!r.output) return r;
-						return { output: `# input → camelCase | snake_case | kebab-case | CONSTANT_CASE\n${r.output}` };
-					},
-				},
-			],
-		} satisfies TextConfig,
-	},
-
-	{
-		slug: 'line-organizer',
-		category: 'devtools',
-		name: 'Line Organizer (Dedupe · Sort · Clean)',
-		nameZh: '文本行整理器（去重 · 排序 · 清理）',
-		description: 'Clean up pasted lists in one click: remove duplicates, sort alphabetically or by length, trim whitespace and drop empty lines.',
-		descriptionZh: '一键整理粘贴进来的列表：去除重复行、按字母或长度排序、去除行首尾空白与空行。',
-		kind: 'text',
-		config: {
-			def: 'banana\napple\n  apple  \ncherry\n\nbanana\n42\n7',
-			placeholder: 'Paste one item per line…',
-			placeholderZh: '每行一条，粘贴待整理的列表…',
-			mono: true,
-			stats: (text: string) => {
-				const lines = text.split('\n');
-				const nonEmpty = lines.filter((l) => l.trim()).length;
-				const unique = new Set(lines.map((l) => l.trim()).filter(Boolean)).size;
-				return [
-					{ label: 'Lines', labelZh: '总行数', value: String(lines.length) },
-					{ label: 'Non-empty', labelZh: '非空行', value: String(nonEmpty) },
-					{ label: 'Unique', labelZh: '去重后', value: String(unique) },
-					{ label: 'Duplicates', labelZh: '重复行', value: String(nonEmpty - unique) },
-				];
-			},
-			transforms: [
-				{
-					id: 'clean',
-					label: 'Clean (trim · dedupe · drop empty)',
-					labelZh: '一键清理（去空白 · 去重 · 删空行）',
-					// The 90% case: paste a noisy list, get a clean one, order kept.
-					run: (t) => {
-						const seen = new Set<string>();
-						const out: string[] = [];
-						for (const line of t.split('\n')) {
-							const s = line.trim();
-							if (!s || seen.has(s)) continue;
-							seen.add(s);
-							out.push(s);
-						}
-						if (!out.length) return { output: '', error: 'Nothing to keep — the input is empty or blank.', errorZh: '没有可保留的内容——输入为空或全是空白。' };
-						return { output: out.join('\n') };
-					},
-				},
-				{
-					id: 'dedupe',
-					label: 'Remove duplicates',
-					labelZh: '仅去重',
-					run: (t) => {
-						const seen = new Set<string>();
-						const out: string[] = [];
-						for (const line of t.split('\n')) {
-							if (seen.has(line)) continue;
-							seen.add(line);
-							out.push(line);
-						}
-						return { output: out.join('\n') };
-					},
-				},
-				{
-					id: 'sortAz',
-					label: 'Sort A → Z',
-					labelZh: '排序 A → Z',
-					// numeric: true so v2 sorts before v10; undefined stays last so
-					// the blanks survive for the dedicated buttons to handle.
-					run: (t) => ({
-						output: t
-							.split('\n')
-							.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
-						.join('\n'),
-					}),
-				},
-				{
-					id: 'sortZa',
-					label: 'Sort Z → A',
-					labelZh: '排序 Z → A',
-					run: (t) => ({
-						output: t
-							.split('\n')
-							.sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))
-						.join('\n'),
-					}),
-				},
-				{
-					id: 'sortLen',
-					label: 'Sort by length',
-					labelZh: '按长度排序',
-					run: (t) => ({
-						output: t
-							.split('\n')
-							.sort((a, b) => a.length - b.length || a.localeCompare(b, undefined, { numeric: true }))
-						.join('\n'),
-					}),
-				},
-				{
-					id: 'reverse',
-					label: 'Reverse order',
-					labelZh: '反转顺序',
-					run: (t) => ({ output: t.split('\n').reverse().join('\n') }),
-				},
-				{
-					id: 'removeEmpty',
-					label: 'Remove empty lines',
-					labelZh: '删除空行',
-					run: (t) => ({ output: t.split('\n').filter((l) => l.trim()).join('\n') }),
-				},
-				{
-					id: 'trim',
-					label: 'Trim each line',
-					labelZh: '去除行首尾空白',
-					run: (t) => ({ output: t.split('\n').map((l) => l.trim()).join('\n') }),
-				},
-			],
-		} satisfies TextConfig,
-	},
-
-	{
-		slug: 'text-extractor',
-		category: 'devtools',
-		name: 'Text Extractor (URLs · Emails)',
-		nameZh: '文本提取器（网址 · 邮箱）',
-		description: 'Pull every URL and email address out of pasted text — logs, chat transcripts, pages of prose — one match per line, duplicates optional.',
-		descriptionZh: '从粘贴的任意文本（日志、聊天记录、长文）中提取全部网址和邮箱地址，每行一条，可选择去重。',
-		kind: 'text',
-		config: {
-			// Fictional sample data only (example.com, RFC 2606 domains).
-			def: 'Contact alice@example.com or sales@example.org.\nDocs: https://docs.example.com/getting-started#install\nSee also www.example.net/pricing and https://example.dev/api\nReach bob.smith+support@example.io for help.',
-			placeholder: 'Paste text with URLs or emails inside…',
-			placeholderZh: '粘贴包含网址或邮箱的文本…',
-			mono: true,
-			stats: (text: string) => [
-				{ label: 'URLs found', labelZh: '网址数', value: String((text.match(URL_RE_G) ?? []).length) },
-				{ label: 'Emails found', labelZh: '邮箱数', value: String((text.match(EMAIL_RE_G) ?? []).length) },
-				{ label: 'Characters', labelZh: '字符数', value: String(text.length) },
-			],
-			transforms: [
-				{
-					id: 'urls',
-					label: 'Extract URLs',
-					labelZh: '提取网址',
-					run: (t) => extractMatches(t, URL_RE_G, 'URL'),
-				},
-				{
-					id: 'emails',
-					label: 'Extract emails',
-					labelZh: '提取邮箱',
-					run: (t) => extractMatches(t, EMAIL_RE_G, 'Email'),
-				},
-				{
-					id: 'all',
-					label: 'Extract all (unique)',
-					labelZh: '全部提取（去重）',
-					// Combined pass, deduped across both kinds — the "give me every
-					// contact point in this dump" button.
-					run: (t) => {
-						const urls = t.match(URL_RE_G) ?? [];
-						const emails = t.match(EMAIL_RE_G) ?? [];
-						const all = [...urls, ...emails];
-						if (!all.length) return { output: '', error: 'No URLs or emails found in the text.', errorZh: '文本中没有找到网址或邮箱。' };
-						return { output: [...new Set(all)].join('\n') };
-					},
-				},
-			],
-		} satisfies TextConfig,
-	},
-
-	{
-		slug: 'slug-generator',
-		category: 'devtools',
-		name: 'URL Slug Generator',
-		nameZh: 'URL Slug 生成器',
-		description: 'Turn any title into a clean SEO-friendly URL slug: lowercased, diacritics folded, punctuation collapsed to one separator. Chinese titles are kept as-is.',
-		descriptionZh: '把任意标题转成干净的 SEO 友好 URL Slug：转小写、折叠变音符号、标点合并为单个分隔符，中文标题原样保留。',
-		kind: 'text',
-		config: {
-			def: '10 Tips for Writing Better CSS!',
-			placeholder: 'Type a title…',
-			placeholderZh: '输入文章标题…',
-			stats: (text: string) => [
-				{ label: 'Characters', labelZh: '字符数', value: String(text.length) },
-				{ label: 'Slug length', labelZh: 'Slug 长度', value: String(slugify(text, '-').length) },
-			],
-			transforms: [
-				{
-					id: 'hyphen',
-					label: 'Slug (kebab-case)',
-					labelZh: 'Slug（短横线）',
-					run: (t) => {
-						const s = slugify(t, '-');
-						return s ? { output: s } : { output: '', error: 'Nothing to keep — the title has no letters, digits or CJK characters.', errorZh: '没有可保留的内容——标题里没有字母、数字或汉字。' };
-					},
-				},
-				{
-					id: 'underscore',
-					label: 'Slug (snake_case)',
-					labelZh: 'Slug（下划线）',
-					run: (t) => {
-						const s = slugify(t, '_');
-						return s ? { output: s } : { output: '', error: 'Nothing to keep — the title has no letters, digits or CJK characters.', errorZh: '没有可保留的内容——标题里没有字母、数字或汉字。' };
-					},
-				},
-				{
-					id: 'batch',
-					label: 'Slug each line (kebab-case)',
-					labelZh: '逐行生成 Slug（短横线）',
-					run: (t) =>
-						runBatch(t, (line) => {
-							const s = slugify(line, '-');
-							return s || null;
-						}),
-				},
-			],
-		} satisfies TextConfig,
-	},
-
-	{
-		slug: 'json-diff',
-		category: 'devtools',
-		name: 'JSON Diff (Structural)',
-		nameZh: 'JSON 结构化对比',
-		description: 'Compare two JSON documents structurally: added, removed and changed values listed by path — key order and formatting differences are not noise.',
-		descriptionZh: '结构化比较两个 JSON 文档：按路径列出新增、删除与变更的值——键顺序和格式差异不算噪音。',
-		kind: 'form',
-		config: {
-			intro: 'Paste two JSON documents. The comparison is structural (parsed trees, not text), so reordered keys and different indentation do not show up as changes.',
-			introZh: '粘贴两个 JSON 文档。比较基于解析后的树而非文本，键顺序不同、缩进不同都不会被当作变更。',
-			fields: [
-				{
-					id: 'left',
-					label: 'JSON A',
-					labelZh: 'JSON A（左）',
-					type: 'textarea',
-					def: '{\n  "name": "example",\n  "version": "1.0.0",\n  "tags": ["a", "b"],\n  "price": 9.99\n}',
-				},
-				{
-					id: 'right',
-					label: 'JSON B',
-					labelZh: 'JSON B（右）',
-					type: 'textarea',
-					def: '{\n  "version": "1.1.0",\n  "name": "example",\n  "tags": ["a", "b", "c"],\n  "price": 12.5,\n  "deprecated": false\n}',
-				},
-			],
-			compute: (v) => {
-				const row = (label: string, labelZh: string, value: string, valueZh = value) => ({ label, labelZh, value, valueZh });
-				let a: unknown, b: unknown;
-				try {
-					a = JSON.parse(v.str('left'));
-				} catch (e) {
-					return { rows: [row('JSON A is invalid', 'JSON A 无效', e instanceof Error ? e.message : 'invalid JSON')] };
-				}
-				try {
-					b = JSON.parse(v.str('right'));
-				} catch (e) {
-					return { rows: [row('JSON B is invalid', 'JSON B 无效', e instanceof Error ? e.message : 'invalid JSON')] };
-				}
-				const diffs = jsonDiff(a, b);
-				if (!diffs.length) {
-					return { rows: [row('Result', '结果', 'Identical — the two documents are structurally equal.', '完全一致——两个文档结构相等。')] };
-				}
-				const count = (k: JsonDiff['kind']) => diffs.filter((d) => d.kind === k).length;
-				const capNote = diffs.length >= 200;
-				return {
-					rows: [
-						row('Changed', '变更', String(count('changed'))),
-						row('Added in B', 'B 中新增', String(count('added'))),
-						row('Removed from A', 'A 中已删除', String(count('removed'))),
-					],
-					table: {
-						columns: ['Path', 'Change', 'A value', 'B value'],
-						columnsZh: ['路径', '变更类型', 'A 的值', 'B 的值'],
-						rows: diffs.map((d) => [
-							d.path,
-							d.kind === 'added' ? '+ added' : d.kind === 'removed' ? '− removed' : '~ changed',
-							d.a || '—',
-							d.b || '—',
-						]),
-					},
-					note: capNote
-						? 'Showing the first 200 differences — the documents diverge massively.'
-						: undefined,
-					noteZh: capNote ? '仅显示前 200 条差异——两份文档差异过大。' : undefined,
-				};
-			},
-		},
-	},
-
 	{
 		slug: 'json-schema',
 		category: 'devtools',
@@ -2147,7 +1623,6 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: '从 JSON 文档推导 draft-07 Schema，再据此校验其他文档——错误按 JSON 路径列出，全程浏览器本地。',
 		kind: 'jsonschema',
 	},
-
 	{
 		slug: 'http-status-lookup',
 		category: 'devtools',
@@ -2260,213 +1735,6 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 		},
 	},
 	{
-		slug: 'user-agent-parser',
-		category: 'devtools',
-		name: 'User-Agent Parser',
-		nameZh: 'User-Agent 解析器',
-		description: 'Paste any User-Agent string and get browser, version, engine, operating system and device class — with crawler and bot detection.',
-		descriptionZh: '粘贴任意 User-Agent 字符串，解析浏览器、版本、引擎、操作系统与设备类型——并识别爬虫与机器人。',
-		kind: 'text',
-		config: {
-			def: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-			placeholder: 'Paste a User-Agent string…',
-			placeholderZh: '粘贴 User-Agent 字符串…',
-			mono: true,
-			stats: (text: string) => {
-				const ua = parseUa(text);
-				if (!ua) return [{ label: 'Status', labelZh: '状态', value: '— (paste a UA string)' }];
-				return [
-					{ label: 'Browser', labelZh: '浏览器', value: ua.browser },
-					{ label: 'OS', labelZh: '操作系统', value: ua.os },
-					{ label: 'Device', labelZh: '设备类型', value: ua.device },
-					...(ua.bot ? [{ label: 'Bot', labelZh: '爬虫', value: 'YES' }] : []),
-				];
-			},
-			transforms: [
-				{
-					id: 'report',
-					label: 'Full report',
-					labelZh: '完整报告',
-					run: (t) => {
-						const ua = parseUa(t);
-						if (!ua) return { output: '', error: 'Paste a User-Agent string first.', errorZh: '请先粘贴 User-Agent 字符串。' };
-						const lines = [
-							['Browser 浏览器', `${ua.browser} / ${ua.browserZh}${ua.version ? ` · v${ua.version}` : ''}`],
-							['Engine 引擎', `${ua.engine} / ${ua.engineZh}`],
-							['OS 操作系统', `${ua.os} / ${ua.osZh}`],
-							['Device 设备', `${ua.device} / ${ua.deviceZh}`],
-							['Bot 爬虫', ua.bot ? 'YES · detected as a bot' : 'NO · human-facing browser'],
-						];
-						return { output: lines.map(([l, v]) => `${l.padEnd(24)} ${v}`).join('\n') };
-					},
-				},
-				{
-					id: 'reportLines',
-					label: 'Parse each line (access log)',
-					labelZh: '逐行解析（访问日志）',
-					run: (t) =>
-						// One line = one UA string; the row prints a compact
-						// browser · OS · device summary, bot-flagged.
-						runBatch(t, (line) => {
-							const ua = parseUa(line);
-							if (!ua) return null;
-							const b = `${ua.browser}${ua.version ? ` ${ua.version}` : ''}`;
-							return ua.bot ? `${b} · ${ua.os} · 🤖 bot` : `${b} · ${ua.os} · ${ua.device}`;
-						}),
-				},
-			],
-		},
-	},
-	{
-		slug: 'media-info',
-		category: 'devtools',
-		name: 'Media Info (Video · Audio Metadata)',
-		nameZh: '媒体信息查看器（视频/音频元数据）',
-		description: 'Drop an MP4/MOV, WebM/MKV or WAV file and read codec, resolution, duration, frame rate and audio channels — parsed byte-by-byte in your browser, never uploaded.',
-		descriptionZh: '拖入 MP4/MOV、WebM/MKV 或 WAV 文件，读取编码、分辨率、时长、帧率与音频声道——逐字节本地解析，绝不上传。',
-		kind: 'text',
-		config: {
-			placeholder: 'Drop a media file onto this box — or pick one below…',
-			placeholderZh: '把媒体文件拖到此框——或点击下方按钮选择…',
-			mono: true,
-			// Binary path: bytes straight into the box parsers (MP4 boxes, EBML,
-			// RIFF), with the browser's own media stack as a fallback. The bytes
-			// never leave the page.
-			fileTransform: async (data, name, size) => {
-				const { mediaInfo } = await import('../scripts/tools/mediainfo');
-				return mediaInfo(data, name, size);
-			},
-			transforms: [
-				{
-					id: 'how',
-					label: 'How it works',
-					labelZh: '工作原理',
-					run: () => ({
-						output:
-							'Drop a file (or use the 📄 button). The bytes are parsed locally:\n' +
-							'  · MP4 / MOV — ISO-BMFF boxes (ftyp / moov / trak / stsd / stts)\n' +
-							'  · WebM / MKV — EBML elements (Duration / Tracks / CodecID)\n' +
-							'  · WAV — RIFF fmt/data chunks\n' +
-							'Unknown containers fall back to the browser\u2019s decoder for what it can read.\n' +
-							'\n文件拖入后完全本地解析：MP4/MOV 走 box 结构，WebM/MKV 走 EBML，WAV 读 RIFF 头；未知容器由浏览器解码兜底。文件不会上传。',
-					}),
-				},
-			],
-		},
-	},
-	{
-		slug: 'robots-txt-generator',
-		category: 'devtools',
-		name: 'robots.txt Generator & Validator',
-		nameZh: 'robots.txt 生成与校验',
-		description: 'Write rules in a simple line format (user-agent / disallow / allow / sitemap) and get a valid robots.txt — or lint an existing one for typos and order mistakes.',
-		descriptionZh: '用简单的行格式（user-agent / disallow / allow / sitemap）书写规则并生成合法的 robots.txt——或校验现有文件，揪出拼写与顺序错误。',
-		kind: 'text',
-		config: {
-			def: 'user-agent: *\ndisallow: /admin\ndisallow: /private/\nallow: /private/public/\n\nuser-agent: GPTBot\ndisallow: /\n\nsitemap: https://example.com/sitemap.xml',
-			placeholder: 'user-agent: *\ndisallow: /private',
-			placeholderZh: 'user-agent: *\ndisallow: /private',
-			mono: true,
-			live: false,
-			transforms: [
-				{
-					id: 'generate',
-					label: 'Generate robots.txt',
-					labelZh: '生成 robots.txt',
-					run: (t) => {
-						const { output, errors } = robotsFromDsl(t);
-						if (errors.length) return { output: '', error: errors[0], errorZh: errors[1] ?? errors[0] };
-						return { output };
-					},
-				},
-				{
-					id: 'validate',
-					label: 'Validate / lint',
-					labelZh: '校验 / 检查',
-					run: (t) => {
-						const problems = lintRobots(t);
-						if (!problems.length)
-							return { output: '✓ No problems found — directives, order and sitemap all check out.\n✓ 未发现问题——指令、顺序与 sitemap 均合规。' };
-						return { output: problems.join('\n') };
-					},
-				},
-			],
-		},
-	},
-	{
-		slug: 'sitemap-xml-generator',
-		category: 'devtools',
-		name: 'sitemap.xml Generator & Validator',
-		nameZh: 'sitemap.xml 生成与校验',
-		description: 'Paste one URL per line (optionally "url, lastmod") and get a valid sitemap.xml — or validate a pasted sitemap: URL count, limits, malformed entries.',
-		descriptionZh: '每行一个 URL（可选 "url, lastmod"）生成合法 sitemap.xml——或校验粘贴的 sitemap：URL 数量、上限与格式问题。',
-		kind: 'text',
-		config: {
-			def: 'https://example.com/\nhttps://example.com/about\nhttps://example.com/tools, 2026-09-01',
-			placeholder: 'https://example.com/page\nhttps://example.com/other, 2026-09-01',
-			placeholderZh: 'https://example.com/page\nhttps://example.com/other, 2026-09-01',
-			mono: true,
-			transforms: [
-				{
-					id: 'generate',
-					label: 'Generate sitemap.xml',
-					labelZh: '生成 sitemap.xml',
-					run: (t) => {
-						const entries = t
-							.split('\n')
-							.map((l) => l.trim())
-							.filter(Boolean)
-							.map((l) => {
-								const [url, lastmod] = l.split(',').map((s) => s.trim());
-								return { url: url ?? '', lastmod };
-							});
-						const bad = entries.filter((e) => !/^https?:\/\//.test(e.url));
-						if (!entries.length) return { output: '', error: 'Enter at least one URL.', errorZh: '请至少输入一个 URL。' };
-						if (bad.length) return { output: '', error: `These lines are not absolute URLs: ${bad.slice(0, 3).map((e) => e.url).join(', ')}`, errorZh: `以下行不是绝对 URL：${bad.slice(0, 3).map((e) => e.url).join('、')}` };
-						const urls = [...new Set(entries.map((e) => e.url))];
-						const xml =
-							'<?xml version="1.0" encoding="UTF-8"?>\n' +
-							'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
-							urls
-								.map((url) => {
-									const e = entries.find((x) => x.url === url) as { url: string; lastmod?: string };
-									return `  <url>\n    <loc>${escXml(url)}</loc>\n${e.lastmod ? `    <lastmod>${e.lastmod}</lastmod>\n` : ''}  </url>`;
-								})
-								.join('\n') +
-							'\n</urlset>\n';
-						return { output: `${urls.length} URLs · ${humanCount(xml.length)}\n\n${xml}` };
-					},
-				},
-				{
-					id: 'validate',
-					label: 'Validate sitemap.xml',
-					labelZh: '校验 sitemap.xml',
-					run: (t) => {
-						const locs = [...t.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
-						if (!locs.length) return { output: '', error: 'No <loc> entries found — paste a sitemap.xml to validate.', errorZh: '未找到 <loc> 条目——请粘贴待校验的 sitemap.xml。' };
-						const bad = locs.filter((u) => !/^https?:\/\//.test(u));
-						const lines = [
-							`URLs URL 数: ${locs.length}${locs.length > 50000 ? '  ⚠ over the 50,000 limit · 超过 5 万上限!' : ''}`,
-							`Unique 去重后: ${new Set(locs).size}`,
-							`Non-absolute 非绝对 URL: ${bad.length}${bad.length ? ` (${bad.slice(0, 3).join(', ')})` : ''}`,
-						];
-						return { output: lines.join('\n') };
-					},
-				},
-			],
-		},
-	},
-	{
-		slug: 'meta-tag-generator',
-		category: 'devtools',
-		name: 'Meta Tag Generator & OG Preview',
-		nameZh: 'Meta 标签生成与 OG 预览',
-		description: 'Fill in title, description, URL and image — get the full <head> tag block (meta + Open Graph + Twitter) with a live social share card preview.',
-		descriptionZh: '填写标题、描述、URL 与图片——生成完整 <head> 标签块（meta + Open Graph + Twitter），并实时预览社交分享卡片。',
-		kind: 'meta',
-	},
-
-	{
 		slug: 'port-lookup',
 		category: 'devtools',
 		name: 'Port Lookup (TCP / UDP)',
@@ -2535,383 +1803,6 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 		},
 	},
 	{
-		slug: 'lossless-checker',
-		category: 'devtools',
-		name: 'Fake-Lossless Detector (Audio Spectrum)',
-		nameZh: '真假无损音乐判别（频谱分析）',
-		description: 'Drop a FLAC/WAV file and check whether it is truly lossless: lossy MP3/AAC transcodes leave a frequency ceiling that a real CD rip does not have.',
-		descriptionZh: '拖入 FLAC/WAV 文件判别是否真无损：MP3/AAC 有损转码会留下频率天花板，真 CD 抓轨则延伸到奈奎斯特频率。',
-		kind: 'text',
-		config: {
-			placeholder: 'Drop an audio file onto this box — or pick one below…',
-			placeholderZh: '把音频文件拖到此框——或点击下方按钮选择…',
-			mono: true,
-			// The file is decoded by the browser's own audio stack and FFT'd in
-			// the page; nothing is uploaded.
-			fileTransform: async (data, name) => {
-				const { losslessCheck } = await import('../scripts/tools/lossless');
-				return losslessCheck(data, name);
-			},
-			transforms: [
-				{
-					id: 'how',
-					label: 'How it works',
-					labelZh: '工作原理',
-					run: () => ({
-						output:
-							'Drop a file (or use the 📄 button). The audio is decoded locally and the loudest windows are FFT-analysed:\n' +
-							'  · true lossless: energy reaches ~22 kHz (the CD Nyquist limit)\n' +
-							'  · MP3/AAC transcode: a hard ceiling at ~16-20 kHz (lower bitrate = lower ceiling)\n' +
-							'\nHeuristic 判定为启发式：部分真无损母带高频本就偏少，请结合截止频率本身判断。文件全程本地解码，绝不上传。',
-					}),
-				},
-			],
-		},
-	},
-	{
-		slug: 'css-clamp',
-		category: 'devtools',
-		name: 'CSS clamp() Calculator',
-		nameZh: 'CSS clamp() 计算器',
-		description: 'Generate a responsive clamp() from min/max viewport widths and font sizes — fluid type with hard floors and ceilings, in px or rem, with sample values at real breakpoints.',
-		descriptionZh: '由最小/最大视口与字号生成响应式 clamp()——带下限上限的流式字号，支持 px 或 rem，附真实断点的取值示例。',
-		kind: 'form',
-		config: {
-			intro: 'Sizes scale linearly between the two viewports and never leave the [min, max] range.',
-			introZh: '字号在两个视口之间线性变化，且永远不超出 [最小, 最大] 区间。',
-			fields: [
-				{ id: 'minVw', label: 'Min viewport', labelZh: '最小视口', suffix: '(px)', type: 'number', def: '375', step: 'any', required: true },
-				{ id: 'maxVw', label: 'Max viewport', labelZh: '最大视口', suffix: '(px)', type: 'number', def: '1440', step: 'any', required: true },
-				{ id: 'minSize', label: 'Font size at min viewport', labelZh: '最小视口字号', suffix: '(px)', type: 'number', def: '16', step: 'any', required: true },
-				{ id: 'maxSize', label: 'Font size at max viewport', labelZh: '最大视口字号', suffix: '(px)', type: 'number', def: '24', step: 'any', required: true },
-			],
-			compute: (v) => {
-				const row = (label: string, labelZh: string, value: string, valueZh = value) => ({ label, labelZh, value, valueZh });
-				const minVw = v.num('minVw');
-				const maxVw = v.num('maxVw');
-				const minSize = v.num('minSize');
-				const maxSize = v.num('maxSize');
-				if (!(maxVw > minVw) || !Number.isFinite(minSize) || !Number.isFinite(maxSize))
-					return { rows: [row('Result', '结果', '— (max viewport must exceed min viewport)', '—（最大视口需大于最小视口）')] };
-				const slope = (maxSize - minSize) / (maxVw - minVw);
-				const px = `clamp(${minSize}px, calc(${(minSize - slope * minVw).toFixed(2)}px + ${(slope * 100).toFixed(4)}vw), ${maxSize}px)`;
-				const rem16 = (n: number): string => (n / 16).toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
-				const rem = `clamp(${rem16(minSize)}rem, calc(${rem16(minSize)}rem + ${(rem16(maxSize - minSize))} * (100vw - ${minVw}px) / ${maxVw - minVw}), ${rem16(maxSize)}rem)`;
-				const at = (vw: number): string => `${Math.round(minSize + slope * (vw - minVw))}px @ ${vw}px`;
-				return {
-					rows: [
-						row('At 320px', '320px 时', at(320)),
-						row('At 768px', '768px 时', at(768)),
-						row('At 1920px', '1920px 时', at(1920)),
-						row('Slope', '斜率', `${(slope * 100).toFixed(4)}vw / 100px`),
-					],
-					// The generated CSS is code — identical in both views, so it
-					// rides in the note (which allows same-content halves) rather
-					// than a value row (whose zh half must not carry Latin words).
-					note: `${px}\n${rem}`,
-					noteZh: `${px}\n${rem}`,
-				};
-			},
-		},
-	},
-	{
-		slug: 'wcag-contrast',
-		category: 'devtools',
-		name: 'WCAG Contrast Checker',
-		nameZh: 'WCAG 颜色对比度检查',
-		description: 'Check a foreground/background pair against WCAG 2.1: the exact contrast ratio plus pass/fail for AA and AAA on normal text, large text and UI components.',
-		descriptionZh: '检查前景/背景色组合是否满足 WCAG 2.1：精确对比度，以及正文、大字号、界面组件的 AA 与 AAA 判定。',
-		kind: 'form',
-		config: {
-			intro: 'AA needs 4.5:1 (normal text) or 3:1 (large text); AAA needs 7:1 or 4.5:1. UI components and focus rings need 3:1.',
-			introZh: 'AA 要求 4.5:1（正文）或 3:1（大字号）；AAA 要求 7:1 或 4.5:1。界面组件与焦点框要求 3:1。',
-			fields: [
-				{ id: 'fg', label: 'Foreground color', labelZh: '前景色', type: 'text', def: '#767676', placeholder: '#767676 or 767676', required: true },
-				{ id: 'bg', label: 'Background color', labelZh: '背景色', type: 'text', def: '#ffffff', placeholder: '#ffffff', required: true },
-			],
-			compute: (v) => {
-				const row = (label: string, labelZh: string, value: string, valueZh = value) => ({ label, labelZh, value, valueZh });
-				const parse = (s: string): [number, number, number] | null => {
-					const h = s.trim().replace(/^#/, '');
-					if (/^[0-9a-f]{3}$/i.test(h))
-						return [parseInt(h[0]! + h[0]!, 16), parseInt(h[1]! + h[1]!, 16), parseInt(h[2]! + h[2]!, 16)];
-					if (/^[0-9a-f]{6}$/i.test(h))
-						return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
-					return null;
-				};
-				const fg = parse(v.str('fg'));
-				const bg = parse(v.str('bg'));
-				if (!fg || !bg)
-					return { rows: [row('Result', '结果', '— (colors must be hex, e.g. #767676)', '—（颜色须为十六进制，如 #767676）')] };
-				const lum = ([r, g, b]: [number, number, number]): number => {
-					const lin = (c: number): number => {
-						const s = c / 255;
-						return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
-					};
-					return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
-				};
-				const l1 = lum(fg);
-				const l2 = lum(bg);
-				const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
-				const r = Math.round(ratio * 100) / 100;
-				const verdict = (need: number, en: string, zh: string) =>
-					ratio >= need
-						? { label: en, labelZh: zh, value: `✓ pass (${r}:1 ≥ ${need}:1)`, valueZh: `✓ 通过（${r}:1 ≥ ${need}:1）` }
-						: { label: en, labelZh: zh, value: `✗ fail (${r}:1 < ${need}:1)`, valueZh: `✗ 未通过（${r}:1 < ${need}:1）` };
-				// Live sample: the actual fg-on-bg pairing, one line of large text
-				// (the 3:1 threshold case) and one of normal text (the 4.5:1 case)
-				// — the numbers above are meaningless without seeing the colors.
-				const toHex = (c: [number, number, number]): string => '#' + c.map((x) => x.toString(16).padStart(2, '0')).join('');
-				const fgHex = toHex(fg);
-				const bgHex = toHex(bg);
-				const svg =
-					`<svg viewBox="0 0 560 190" xmlns="http://www.w3.org/2000/svg" role="img">` +
-					`<rect x="0" y="0" width="560" height="190" rx="12" fill="${bgHex}"/>` +
-					`<text x="280" y="78" text-anchor="middle" font-size="30" font-weight="700" fill="${fgHex}" class="i18n-en">Large 24px bold text</text>` +
-					`<text x="280" y="78" text-anchor="middle" font-size="30" font-weight="700" fill="${fgHex}" class="i18n-zh">大字号文本 24px 粗体</text>` +
-					`<text x="280" y="128" text-anchor="middle" font-size="16" fill="${fgHex}" class="i18n-en">Normal 16px text — the 4.5:1 case</text>` +
-					`<text x="280" y="128" text-anchor="middle" font-size="16" fill="${fgHex}" class="i18n-zh">正文 16px——4.5:1 的情形</text>` +
-					`<text x="280" y="165" text-anchor="middle" font-size="13" font-family="var(--font-mono, monospace)" fill="${fgHex}">${fgHex} on ${bgHex} · ${r}:1</text>` +
-					`</svg>`;
-				return {
-					rows: [
-						{ label: 'Contrast ratio', labelZh: '对比度', value: `${r}:1`, emphasis: true },
-						verdict(4.5, 'AA — normal text', 'AA——正文'),
-						verdict(3, 'AA — large text (≥18.7px bold / 24px)', 'AA——大字号（≥18.7px 粗体 / 24px）'),
-						verdict(7, 'AAA — normal text', 'AAA——正文'),
-						verdict(4.5, 'AAA — large text', 'AAA——大字号'),
-						verdict(3, 'UI components & focus indicators', '界面组件与焦点指示'),
-					],
-					chartSvg: svg,
-				};
-			},
-		},
-	},
-	{
-		slug: 'color-palette',
-		category: 'devtools',
-		name: 'Color Palette Generator',
-		nameZh: '配色方案生成器',
-		description: 'Build a five-swatch palette from one base color: complementary, analogous, triadic, split-complementary or monochrome — shown as actual swatches with hex codes.',
-		descriptionZh: '从一个基准色生成五色配色：互补、邻近、三角、分裂互补或单色——以真实色块展示并附十六进制码。',
-		kind: 'form',
-		config: {
-			intro: 'The base color is always the middle swatch; the harmony rotates hue and adjusts lightness/saturation around it.',
-			introZh: '基准色固定为中间色块；其余颜色按和谐规则旋转色相并调整明度饱和度。',
-			fields: [
-				{ id: 'base', label: 'Base color', labelZh: '基准色', type: 'text', def: '#3b82f6', placeholder: '#3b82f6', required: true },
-				{
-					id: 'harmony',
-					label: 'Harmony',
-					labelZh: '配色和谐',
-					type: 'select',
-					def: 'analogous',
-					options: [
-						{ value: 'analogous', label: 'Analogous (±30°)' },
-						{ value: 'complementary', label: 'Complementary (180°)' },
-						{ value: 'triadic', label: 'Triadic (±120°)' },
-						{ value: 'split', label: 'Split-complementary (150°/210°)' },
-						{ value: 'monochrome', label: 'Monochrome' },
-					],
-				},
-			],
-			compute: (v) => {
-				const row = (label: string, labelZh: string, value: string, valueZh = value) => ({ label, labelZh, value, valueZh });
-				const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(v.str('base').trim());
-				if (!m) return { rows: [row('Result', '结果', '— (base color must be hex, e.g. #3b82f6)', '—（基准色须为十六进制，如 #3b82f6）')] };
-				const h = m[1]!;
-				const rgb: [number, number, number] =
-					h.length === 3
-						? [parseInt(h[0]! + h[0]!, 16), parseInt(h[1]! + h[1]!, 16), parseInt(h[2]! + h[2]!, 16)]
-						: [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
-				// rgb -> hsl
-				const [r, g, b] = rgb.map((c) => c / 255) as [number, number, number];
-				const max = Math.max(r, g, b);
-				const min = Math.min(r, g, b);
-				const l = (max + min) / 2;
-				const d = max - min;
-				const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
-				let hue = 0;
-				if (d !== 0) {
-					if (max === r) hue = 60 * (((g - b) / d) % 6);
-					else if (max === g) hue = 60 * ((b - r) / d + 2);
-					else hue = 60 * ((r - g) / d + 4);
-				}
-				if (hue < 0) hue += 360;
-				const hslToHex = (hh: number, ss: number, ll: number): string => {
-					const c = (1 - Math.abs(2 * ll - 1)) * ss;
-					const x = c * (1 - Math.abs(((hh / 60) % 2) - 1));
-					const mo = ll - c / 2;
-					let rr = 0;
-					let gg = 0;
-					let bb = 0;
-					if (hh < 60) [rr, gg, bb] = [c, x, 0];
-					else if (hh < 120) [rr, gg, bb] = [x, c, 0];
-					else if (hh < 180) [rr, gg, bb] = [0, c, x];
-					else if (hh < 240) [rr, gg, bb] = [0, x, c];
-					else if (hh < 300) [rr, gg, bb] = [x, 0, c];
-					else [rr, gg, bb] = [c, 0, x];
-					const to = (n: number): string => Math.round((n + mo) * 255).toString(16).padStart(2, '0');
-					return `#${to(rr)}${to(gg)}${to(bb)}`;
-				};
-				const harmony = v.str('harmony');
-				let swatches: string[];
-				if (harmony === 'monochrome') {
-					swatches = [hslToHex(hue, Math.min(1, s * 1.1), 0.88), hslToHex(hue, s, 0.72), hslToHex(hue, s, l), hslToHex(hue, s, 0.35), hslToHex(hue, s, 0.18)];
-				} else if (harmony === 'analogous') {
-					swatches = [hslToHex((hue + 330) % 360, s, Math.min(0.85, l + 0.12)), hslToHex((hue + 340) % 360, s, l), hslToHex(hue, s, l), hslToHex((hue + 20) % 360, s, l), hslToHex((hue + 30) % 360, s, Math.max(0.2, l - 0.12))];
-				} else if (harmony === 'complementary') {
-					swatches = [hslToHex(hue, s, 0.92), hslToHex(hue, s * 0.5, l), hslToHex(hue, s, l), hslToHex((hue + 180) % 360, s, l), hslToHex((hue + 180) % 360, s, 0.3)];
-				} else if (harmony === 'triadic') {
-					swatches = [hslToHex((hue + 120) % 360, s, 0.85), hslToHex(hue, s, l), hslToHex((hue + 240) % 360, s, l), hslToHex((hue + 120) % 360, s, l), hslToHex((hue + 240) % 360, s, 0.3)];
-				} else {
-					swatches = [hslToHex((hue + 150) % 360, s, 0.85), hslToHex(hue, s, l), hslToHex((hue + 210) % 360, s, l), hslToHex((hue + 150) % 360, s, 0.4), hslToHex((hue + 210) % 360, s, 0.25)];
-				}
-				// chartSvg swatch strip: rects + hex labels under each
-				const W = 120;
-				const svg =
-					`<svg viewBox="0 0 ${5 * W} 150" xmlns="http://www.w3.org/2000/svg" role="img">` +
-					swatches
-						.map(
-							(hex, i) =>
-								`<rect x="${i * W}" y="0" width="${W}" height="110" fill="${hex}"/>` +
-								`<text x="${i * W + W / 2}" y="135" text-anchor="middle" font-family="var(--font-mono, monospace)" font-size="15" fill="currentColor">${hex}</text>`,
-						)
-						.join('') +
-					`</svg>`;
-				return {
-					rows: [row('Base color', '基准色', `#${h.toLowerCase()}`)],
-					// hex codes are language-neutral; the note accepts identical
-					// halves, a value row's zh half would not.
-					note: swatches.join('  '),
-					noteZh: swatches.join('  '),
-					chartSvg: svg,
-				};
-			},
-		},
-	},
-
-	{
-		slug: 'browser-info',
-		category: 'devtools',
-		name: 'Browser & Hardware Info',
-		nameZh: '浏览器与硬件信息',
-		description: 'Read what the browser knows about this machine — CPU cores, memory, GPU, screen, network, codec support — and copy it as a report. Nothing is sent anywhere; the page just prints its own APIs.',
-		descriptionZh: '读取浏览器可知的本机信息——CPU 核数、内存、GPU、屏幕、网络、解码支持——一键生成可复制报告。纯本地读取，不向任何地方发送。',
-		kind: 'text',
-		config: {
-			placeholder: 'Click "Scan this browser" below — the report fills in here…',
-			placeholderZh: '点击下方"扫描本机浏览器"——报告将显示在此处…',
-			mono: true,
-			transforms: [
-				{
-					id: 'scan',
-					label: 'Scan this browser',
-					labelZh: '扫描本机浏览器',
-					// Every field below is a standard browser API reading — the
-					// report is literally the page describing itself, client-side.
-					run: async () => {
-						const nav = navigator as Navigator & {
-							hardwareConcurrency?: number;
-							deviceMemory?: number;
-							connection?: { effectiveType?: string; downlink?: number; rtt?: number };
-							userAgentData?: { platform?: string };
-						};
-						const L = (label: string, value: string): string => `${label.padEnd(30)} ${value}`;
-						const lines: string[] = [];
-						// --- browser / engine (reuse the UA parser) ---
-						const ua = parseUa(nav.userAgent);
-						if (ua) {
-							lines.push(L('Browser 浏览器', `${ua.browser} / ${ua.browserZh}${ua.version ? ` · v${ua.version}` : ''}`));
-							lines.push(L('Engine 引擎', `${ua.engine} / ${ua.engineZh}`));
-							lines.push(L('OS 操作系统', `${ua.os} / ${ua.osZh}`));
-							lines.push(L('Device 设备', `${ua.device} / ${ua.deviceZh}`));
-						}
-						lines.push(L('Platform 平台', nav.userAgentData?.platform ?? nav.platform ?? '—'));
-						lines.push(L('Languages 语言', nav.languages?.join(', ') ?? nav.language));
-						lines.push(L('Time zone 时区', Intl.DateTimeFormat().resolvedOptions().timeZone ?? '—'));
-						// --- hardware ---
-						lines.push(L('CPU cores 逻辑核心', String(nav.hardwareConcurrency ?? '—')));
-						lines.push(L('Device memory 设备内存', nav.deviceMemory ? `~${nav.deviceMemory} GB (browser caps at 8)` : '— (not exposed)'));
-						lines.push(L('Touch points 触控点', String(nav.maxTouchPoints ?? 0)));
-						// --- screen ---
-						const s = screen;
-						lines.push(L('Screen 屏幕', `${s.width}×${s.height} @ ${s.colorDepth}-bit`));
-						lines.push(L('Available 可用区域', `${s.availWidth}×${s.availHeight}`));
-						lines.push(L('Pixel ratio 像素比', String(window.devicePixelRatio)));
-						// --- GPU via WebGL ---
-						try {
-							const canvas = document.createElement('canvas');
-							const gl = (canvas.getContext('webgl2') ?? canvas.getContext('webgl')) as WebGLRenderingContext | null;
-							if (gl) {
-								const ext = gl.getExtension('WEBGL_debug_renderer_info');
-								const renderer = ext ? (gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) as string) : (gl.getParameter(gl.RENDERER) as string);
-								lines.push(L('GPU 显卡', renderer || '—'));
-							} else lines.push(L('GPU 显卡', '— (WebGL unavailable)'));
-						} catch {
-							lines.push(L('GPU 显卡', '— (WebGL blocked)'));
-						}
-						// --- network ---
-						const conn = nav.connection;
-						if (conn) lines.push(L('Network 网络', `${conn.effectiveType ?? '—'}${conn.downlink ? ` · ~${conn.downlink} Mbps` : ''}${conn.rtt ? ` · ${conn.rtt} ms RTT` : ''}`));
-						else lines.push(L('Network 网络', '— (not exposed)'));
-						// --- storage ---
-						try {
-							const est = await navigator.storage.estimate();
-							if (est.quota) lines.push(L('Storage quota 存储配额', `${(est.quota / 1024 ** 3).toFixed(1)} GB (used ${((est.usage ?? 0) / 1024 ** 2).toFixed(0)} MB)`));
-						} catch { /* API absent — skip silently */ }
-						// --- preferences ---
-						lines.push(L('Color scheme 配色偏好', matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
-						lines.push(L('Reduced motion 减少动效', matchMedia('(prefers-reduced-motion: reduce)').matches ? 'yes' : 'no'));
-						// --- codec support: the honest answer for "can my browser play HEVC?" ---
-						const v = document.createElement('video');
-						const a = document.createElement('audio');
-						const can = (el: HTMLMediaElement, type: string): string => {
-							const r = el.canPlayType(type);
-							return r === 'probably' ? '✓' : r === 'maybe' ? '(maybe)' : '✗';
-						};
-						const codecs: [string, string][] = [
-							['H.264 / AVC', 'video/mp4; codecs="avc1.42E01E"'],
-							['H.265 / HEVC', 'video/mp4; codecs="hvc1.1.6.L93.B0"'],
-							['VP9', 'video/webm; codecs="vp9"'],
-							['AV1', 'video/mp4; codecs="av01.0.05M.08"'],
-							['AAC', 'audio/mp4; codecs="mp4a.40.2"'],
-							['MP3', 'audio/mpeg'],
-							['Opus', 'audio/webm; codecs="opus"'],
-							['FLAC', 'audio/flac'],
-						];
-						lines.push('', '--- Codec support 解码支持 ---');
-						for (const [name, type] of codecs) {
-							const el = name === 'MP3' || name === 'AAC' || name === 'Opus' || name === 'FLAC' ? a : v;
-							lines.push(L(name, can(el, type)));
-						}
-						lines.push('', '🔒 Everything above was read locally 报告完全本地生成，未向任何服务器发送。');
-						return { output: lines.join('\n') };
-					},
-				},
-			],
-		},
-	},
-
-	{
-		slug: 'mandelbrot-explorer',
-		category: 'devtools',
-		name: 'Mandelbrot & Julia Set Explorer',
-		nameZh: '曼德博与朱利亚集合浏览器',
-		description: 'Explore the Mandelbrot set on the GPU: drag to pan, wheel to zoom toward 10⁻¹⁵ scale, switch to Julia sets, tune iterations and palette, export PNG.',
-		descriptionZh: 'GPU 上探索曼德博集合：拖动平移、滚轮缩放至 10⁻¹⁵ 尺度、切换朱利亚集合、调节迭代与配色、导出 PNG。',
-		kind: 'fractal',
-	},
-	{
-		slug: 'image-filter-lab',
-		category: 'devtools',
-		name: 'Image Filter Lab (GPU Convolution)',
-		nameZh: '图像滤镜实验室（GPU 卷积）',
-		description: 'Drop an image and convolve it live on the GPU with an editable 3×3 kernel — blur, sharpen, Sobel edges, emboss, or your own — then export the result.',
-		descriptionZh: '拖入图片，用可编辑的 3×3 卷积核在 GPU 上实时卷积——模糊、锐化、Sobel 边缘、浮雕或自定义——然后导出结果。',
-		kind: 'imgfilter',
-	},
-	{
 		slug: 'css-grid-generator',
 		category: 'devtools',
 		name: 'CSS Grid Visual Generator',
@@ -2929,81 +1820,6 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: '在真实弹性容器上调 flex-direction、justify-content、align-items、换行与间距并复制 CSS——子元素的排布就是属性的真实效果。',
 		kind: 'flexgen',
 	},
-	{
-		slug: 'xlsx-analyzer',
-		category: 'devtools',
-		name: 'Excel Workbook Analyzer & Cleaner',
-		nameZh: 'Excel 工作簿分析与清理器',
-		description: 'Drop an .xlsx/.xlsm and see what makes it bloated — unused cell styles, hidden and external defined names, dead links, leftover media, pivot caches — then strip them and download the lean copy. All in the browser.',
-		descriptionZh: '拖入 .xlsx/.xlsm 看清它为何臃肿——未使用的单元格样式、隐藏与外部命名区域、失效链接、残留媒体、透视缓存——勾选清理后下载瘦身副本。全程浏览器本地。',
-		kind: 'xlsxanalyzer',
-	},
-	{
-		slug: 'pdf-toolkit',
-		category: 'devtools',
-		name: 'PDF Toolkit (Merge · Split · Rotate · Watermark)',
-		nameZh: 'PDF 工具箱（合并 · 拆分 · 旋转 · 水印）',
-		description: 'Merge, extract or split pages, rotate, watermark, compress (lossless repack), read or strip metadata, PDF → images and images → PDF — all in the browser, nothing uploaded.',
-		descriptionZh: '合并、提取、拆分页面、旋转、加水印、压缩（无损重打包）、查看/清除元数据、PDF 转图片、图片合成 PDF——全程浏览器本地，绝不上传。',
-		kind: 'pdftoolkit',
-	},
-	{
-		slug: 'document-ocr',
-		category: 'devtools',
-		name: 'Document OCR (PDF · Image → Text)',
-		nameZh: '文档 OCR（PDF · 图片转文字）',
-		description: 'Extract editable text from scanned PDFs and JPG/PNG/WebP images — Tesseract running as wasm in your browser, English and Simplified Chinese, with a confidence rating per page. Nothing is uploaded.',
-		descriptionZh: '从扫描版 PDF 与 JPG/PNG/WebP 图片提取可编辑文字——Tesseract 以 wasm 在浏览器内运行，支持英语与简体中文，逐页给出置信度。绝不上传。',
-		kind: 'pdfocr',
-	},
-
-	{
-		slug: 'html-entity-escaper',
-		category: 'devtools',
-		name: 'HTML Entity Escape / Unescape',
-		nameZh: 'HTML 实体转义工具',
-		description: 'Escape text to HTML entities (&amp; &lt; &quot;) or unescape named and numeric entities back to characters.',
-		descriptionZh: '把文本转义为 HTML 实体，或将命名实体与数字实体还原为字符。',
-		kind: 'text',
-		config: {
-			def: '<a href="https://example.com">Alice &amp; Bob</a>',
-			placeholder: 'Text to escape, or entities to decode…',
-			placeholderZh: '待转义的文本，或待解码的 HTML 实体…',
-			mono: true,
-			live: true,
-			transforms: [
-				{
-					id: 'escape',
-					label: 'Escape → entities',
-					labelZh: '转义为 HTML 实体',
-					run: (t) => ({ output: escapeEntities(t), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
-				},
-				{
-					id: 'unescape',
-					label: 'Unescape ← entities',
-					labelZh: '实体还原为文本',
-					run: (t) => {
-						const r = unescapeEntities(t);
-						return r !== null
-							? { output: r }
-							: { output: '', error: 'Contains an unknown entity.', errorZh: '包含无法识别的实体。' };
-					},
-				},
-				{
-					id: 'unescapeLines',
-					label: 'Unescape each line',
-					labelZh: '逐行还原（坏行标 ✗）',
-					run: (t) =>
-						runBatch(t, (line) => {
-							const r = unescapeEntities(line);
-							return r === null ? null : r;
-						}),
-				},
-			],
-		} satisfies TextConfig,
-	},
-
-
 	{
 		slug: 'number-base-converter',
 		category: 'devtools',
@@ -3112,7 +1928,6 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 			},
 		},
 	},
-
 	{
 		slug: 'unix-timestamp',
 		category: 'devtools',
@@ -3264,7 +2079,6 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 			},
 		},
 	},
-
 	{
 		slug: 'cron-expression-parser',
 		category: 'devtools',
@@ -3473,8 +2287,6 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 			},
 		},
 	},
-
-
 	{
 		slug: 'regex-tester',
 		category: 'devtools',
@@ -3569,106 +2381,6 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 			},
 		},
 	},
-
-	{
-		slug: 'css-px-rem-converter',
-		category: 'devtools',
-		name: 'CSS Size Converter (px / rem / em / %)',
-		nameZh: 'CSS 尺寸换算 (px / rem / em / %)',
-		description: 'Convert font and spacing sizes between px, rem and em, given the root font size.',
-		descriptionZh: '在 px、rem、em 之间换算字号与间距，可指定根字号。',
-		kind: 'form',
-		config: {
-			fields: [
-				{
-					id: 'value',
-					label: 'Size',
-					labelZh: '尺寸值',
-					// text, not number: the value may carry its own unit
-					// ("1.5rem") which overrides the Unit select below.
-					type: 'text',
-					def: '16',
-					placeholder: 'e.g. 16, 1.5rem, 24px',
-					placeholderZh: '例如 16、1.5rem、24px',
-					required: true,
-				},
-				{
-					id: 'unit',
-					label: 'Unit',
-					labelZh: '单位',
-					type: 'select',
-					def: 'px',
-					options: [
-						{ value: 'px', label: 'px', labelZh: 'px（像素）' },
-						{ value: 'rem', label: 'rem', labelZh: 'rem（根字号倍数）' },
-						{ value: 'em', label: 'em', labelZh: 'em（字号倍数）' },
-					],
-				},
-				{
-					id: 'root',
-					label: 'Root font size',
-					labelZh: '根字号',
-					type: 'number',
-					def: '16',
-					step: 'any',
-					min: '1',
-					required: true,
-					suffix: '(px)',
-					suffixZh: '（像素）',
-				},
-			],
-			compute: (v) => {
-				// The value field may carry its own unit ("1.5rem", "24px") — a
-				// unit in the input overrides the select, so pasting a value out
-				// of a stylesheet needs no fiddling with the dropdown first.
-				const rawVal = v.str('value').trim().toLowerCase();
-				const unitMatch = /^(-?[\d.]+)(px|rem|em)$/.exec(rawVal);
-				const typedVal = unitMatch ? Number(unitMatch[1]) : v.num('value');
-				const typedUnit = unitMatch ? unitMatch[2] : v.str('unit') || 'px';
-				const val = typedVal;
-				const root = v.num('root');
-				if (!Number.isFinite(val) || val < 0 || !(root > 0)) {
-					return {
-						rows: [
-							{
-								label: 'Result',
-								labelZh: '计算结果',
-								value: '— (enter a size and a positive root font size)',
-								valueZh: '— (请输入尺寸值且根字号需大于 0)',
-							},
-						],
-					};
-				}
-				const unit = typedUnit;
-				const px = unit === 'rem' || unit === 'em' ? val * root : val;
-				const fmt = (x: number) => {
-					const r = Math.round(x * 10000) / 10000;
-					return String(r);
-				};
-				return {
-					rows: [
-						{ label: 'Pixels (px)', labelZh: '像素 (px)', value: fmt(px), valueZh: fmt(px) },
-						{ label: 'rem', labelZh: 'rem', value: fmt(px / root), valueZh: fmt(px / root) },
-						{
-							label: 'em (relative to root)',
-							labelZh: 'em（以根字号为基准）',
-							value: fmt(px / root),
-							valueZh: fmt(px / root),
-						},
-						{
-							label: '% of root font',
-							labelZh: '根字号百分比',
-							value: fmt((px / root) * 100) + '%',
-							valueZh: fmt((px / root) * 100) + '%',
-						},
-					],
-				};
-			},
-		},
-	},
-
-
-	// --- cURL to Code Converter --------------------------------------------------------
 	{
 		slug: 'curl-to-code',
 		category: 'devtools',
@@ -3731,12 +2443,250 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 			],
 		},
 	},
+];
 
+export const OFFICE_TEXT_TOOLS: ToolEntry[] = [
+	{
+		slug: 'xlsx-analyzer',
+		category: 'office',
+		name: 'Excel Workbook Analyzer & Cleaner',
+		nameZh: 'Excel 工作簿分析与清理器',
+		description: 'Drop an .xlsx/.xlsm and see what makes it bloated — unused cell styles, hidden and external defined names, dead links, leftover media, pivot caches — then strip them and download the lean copy. All in the browser.',
+		descriptionZh: '拖入 .xlsx/.xlsm 看清它为何臃肿——未使用的单元格样式、隐藏与外部命名区域、失效链接、残留媒体、透视缓存——勾选清理后下载瘦身副本。全程浏览器本地。',
+		kind: 'xlsxanalyzer',
+	},
+	{
+		slug: 'pdf-toolkit',
+		category: 'office',
+		name: 'PDF Toolkit (Merge · Split · Rotate · Watermark)',
+		nameZh: 'PDF 工具箱（合并 · 拆分 · 旋转 · 水印）',
+		description: 'Merge, extract or split pages, rotate, watermark, compress (lossless repack), read or strip metadata, PDF → images and images → PDF — all in the browser, nothing uploaded.',
+		descriptionZh: '合并、提取、拆分页面、旋转、加水印、压缩（无损重打包）、查看/清除元数据、PDF 转图片、图片合成 PDF——全程浏览器本地，绝不上传。',
+		kind: 'pdftoolkit',
+	},
+	{
+		slug: 'document-ocr',
+		category: 'office',
+		name: 'Document OCR (PDF · Image → Text)',
+		nameZh: '文档 OCR（PDF · 图片转文字）',
+		description: 'Extract editable text from scanned PDFs and JPG/PNG/WebP images — Tesseract running as wasm in your browser, English and Simplified Chinese, with a confidence rating per page. Nothing is uploaded.',
+		descriptionZh: '从扫描版 PDF 与 JPG/PNG/WebP 图片提取可编辑文字——Tesseract 以 wasm 在浏览器内运行，支持英语与简体中文，逐页给出置信度。绝不上传。',
+		kind: 'pdfocr',
+	},
+];
 
-	// --- IP Subnet / CIDR Calculator ---------------------------------------------------
+export const SECURITY_TEXT_TOOLS: ToolEntry[] = [
+	{
+		slug: 'jwt-decoder',
+		category: 'security',
+		name: 'JWT Decoder & Formatter',
+		nameZh: 'JWT 令牌解码与格式化',
+		description: 'Decode JSON Web Tokens (JWT) into Header and Payload, inspect expiration timestamps, and verify claims safely with zero data upload.',
+		descriptionZh: '解析 JWT 令牌 Header 与 Payload，快速检验过期时间与 Claims 字段。',
+		kind: 'jwt',
+	},
+	{
+		slug: 'hash-generator',
+		category: 'security',
+		name: 'Hash & HMAC Generator (Text & File)',
+		nameZh: '哈希与 HMAC 生成器 (文本 / 文件)',
+		description: 'MD5, SHA-1/224/256/384/512 and SHA-3 digests of text or dropped files, plus HMAC-SHA256/384/512 — all locally in your browser.',
+		descriptionZh: '文本或拖入文件计算 MD5、SHA-1/224/256/384/512、SHA-3 摘要，并支持 HMAC-SHA256/384/512，全程本地运算。',
+		kind: 'text',
+		config: {
+			def: 'hello world',
+			placeholder: 'Type or paste text to hash…',
+			placeholderZh: '输入或粘贴需要求哈希的文本…',
+			mono: true,
+			live: true,
+			// Bytes in, digests out — shared by the text and the file paths.
+			// hashlib lazily imported: the hand-rolled MD5/SHA-224/SHA-3 cores
+			// (~6 KB) stay out of the chunk every tool page downloads.
+			fileTransform: async (data, name, size, secret = '') => {
+				const { hashBytes, HASH_ALGOS, hmacBytes } = await import('../scripts/tools/hashlib');
+				const bytes = new Uint8Array(data);
+				const lines: string[] = [`File: ${name} (${size.toLocaleString()} bytes)`, ''];
+				for (const algo of HASH_ALGOS) lines.push(`${algo.padEnd(10)} ${await hashBytes(algo, bytes)}`);
+				if (secret) {
+					lines.push('', '-- HMAC --');
+					for (const algo of (['SHA-256', 'SHA-384', 'SHA-512'] as const)) lines.push(`${algo.padEnd(10)} ${await hmacBytes(algo, secret, bytes)}`);
+				}
+				return { output: lines.join('\n') };
+			},
+			secretInput: {
+				label: 'Secret key (for HMAC)',
+				labelZh: '密钥（HMAC 用）',
+				placeholder: 'leave empty to skip HMAC',
+				placeholderZh: '留空则不计算 HMAC',
+			},
+			stats: (text: string) => {
+				const charCount = text.length;
+				const byteCount = new TextEncoder().encode(text).length;
+				return [
+					{
+						label: 'Characters',
+						labelZh: '字符数',
+						value: String(charCount),
+					},
+					{
+						label: 'UTF-8 Bytes',
+						labelZh: '字节数 (UTF-8)',
+						value: String(byteCount),
+					},
+				];
+			},
+			transforms: [
+				{
+					id: 'hash',
+					label: 'Generate all hashes',
+					labelZh: '计算全部哈希',
+					run: async (text: string, secret = '') => {
+						if (!text) return { output: '—' };
+						const { hashBytes, HASH_ALGOS, hmacBytes } = await import('../scripts/tools/hashlib');
+						const bytes = new TextEncoder().encode(text);
+						const lines: string[] = [];
+						for (const algo of HASH_ALGOS) lines.push(`${algo.padEnd(10)} ${await hashBytes(algo, bytes)}`);
+						if (secret) {
+							lines.push('', '-- HMAC --');
+							for (const algo of (['SHA-256', 'SHA-384', 'SHA-512'] as const)) lines.push(`${algo.padEnd(10)} ${await hmacBytes(algo, secret, bytes)}`);
+						}
+						return { output: lines.join('\n') };
+					},
+				},
+				{
+					id: 'hmac',
+					label: 'HMAC only',
+					labelZh: '仅计算 HMAC',
+					run: async (text: string, secret = '') => {
+						if (!text) return { output: '', error: 'Enter text first.', errorZh: '请先输入文本。' };
+						if (!secret) return { output: '', error: 'Enter the secret key above.', errorZh: '请先在上方输入密钥。' };
+						const { hmacBytes } = await import('../scripts/tools/hashlib');
+						const bytes = new TextEncoder().encode(text);
+						const lines: string[] = [];
+						for (const algo of (['SHA-256', 'SHA-384', 'SHA-512'] as const)) lines.push(`${algo.padEnd(10)} ${await hmacBytes(algo, secret, bytes)}`);
+						return { output: lines.join('\n') };
+					},
+				},
+				{
+					id: 'hashLines',
+					label: 'Hash each line (SHA-256)',
+					labelZh: '逐行生成哈希 (SHA-256)',
+					run: async (text: string) => {
+						const lines = text.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
+						if (!lines.length) return { output: '', error: 'Enter at least one line.', errorZh: '请至少输入一行内容。' };
+						const { hashBytes } = await import('../scripts/tools/hashlib');
+						const out: string[] = [];
+						for (const line of lines) out.push(`${line} → ${await hashBytes('SHA-256', new TextEncoder().encode(line))}`);
+						return { output: out.join('\n') };
+					},
+				},
+			],
+		},
+	},
+	{
+		slug: 'browser-info',
+		category: 'security',
+		name: 'Browser & Hardware Info',
+		nameZh: '浏览器与硬件信息',
+		description: 'Read what the browser knows about this machine — CPU cores, memory, GPU, screen, network, codec support — and copy it as a report. Nothing is sent anywhere; the page just prints its own APIs.',
+		descriptionZh: '读取浏览器可知的本机信息——CPU 核数、内存、GPU、屏幕、网络、解码支持——一键生成可复制报告。纯本地读取，不向任何地方发送。',
+		kind: 'text',
+		config: {
+			placeholder: 'Click "Scan this browser" below — the report fills in here…',
+			placeholderZh: '点击下方"扫描本机浏览器"——报告将显示在此处…',
+			mono: true,
+			transforms: [
+				{
+					id: 'scan',
+					label: 'Scan this browser',
+					labelZh: '扫描本机浏览器',
+					// Every field below is a standard browser API reading — the
+					// report is literally the page describing itself, client-side.
+					run: async () => {
+						const nav = navigator as Navigator & {
+							hardwareConcurrency?: number;
+							deviceMemory?: number;
+							connection?: { effectiveType?: string; downlink?: number; rtt?: number };
+							userAgentData?: { platform?: string };
+						};
+						const L = (label: string, value: string): string => `${label.padEnd(30)} ${value}`;
+						const lines: string[] = [];
+						// --- browser / engine (reuse the UA parser) ---
+						const ua = parseUa(nav.userAgent);
+						if (ua) {
+							lines.push(L('Browser 浏览器', `${ua.browser} / ${ua.browserZh}${ua.version ? ` · v${ua.version}` : ''}`));
+							lines.push(L('Engine 引擎', `${ua.engine} / ${ua.engineZh}`));
+							lines.push(L('OS 操作系统', `${ua.os} / ${ua.osZh}`));
+							lines.push(L('Device 设备', `${ua.device} / ${ua.deviceZh}`));
+						}
+						lines.push(L('Platform 平台', nav.userAgentData?.platform ?? nav.platform ?? '—'));
+						lines.push(L('Languages 语言', nav.languages?.join(', ') ?? nav.language));
+						lines.push(L('Time zone 时区', Intl.DateTimeFormat().resolvedOptions().timeZone ?? '—'));
+						// --- hardware ---
+						lines.push(L('CPU cores 逻辑核心', String(nav.hardwareConcurrency ?? '—')));
+						lines.push(L('Device memory 设备内存', nav.deviceMemory ? `~${nav.deviceMemory} GB (browser caps at 8)` : '— (not exposed)'));
+						lines.push(L('Touch points 触控点', String(nav.maxTouchPoints ?? 0)));
+						// --- screen ---
+						const s = screen;
+						lines.push(L('Screen 屏幕', `${s.width}×${s.height} @ ${s.colorDepth}-bit`));
+						lines.push(L('Available 可用区域', `${s.availWidth}×${s.availHeight}`));
+						lines.push(L('Pixel ratio 像素比', String(window.devicePixelRatio)));
+						// --- GPU via WebGL ---
+						try {
+							const canvas = document.createElement('canvas');
+							const gl = (canvas.getContext('webgl2') ?? canvas.getContext('webgl')) as WebGLRenderingContext | null;
+							if (gl) {
+								const ext = gl.getExtension('WEBGL_debug_renderer_info');
+								const renderer = ext ? (gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) as string) : (gl.getParameter(gl.RENDERER) as string);
+								lines.push(L('GPU 显卡', renderer || '—'));
+							} else lines.push(L('GPU 显卡', '— (WebGL unavailable)'));
+						} catch {
+							lines.push(L('GPU 显卡', '— (WebGL blocked)'));
+						}
+						// --- network ---
+						const conn = nav.connection;
+						if (conn) lines.push(L('Network 网络', `${conn.effectiveType ?? '—'}${conn.downlink ? ` · ~${conn.downlink} Mbps` : ''}${conn.rtt ? ` · ${conn.rtt} ms RTT` : ''}`));
+						else lines.push(L('Network 网络', '— (not exposed)'));
+						// --- storage ---
+						try {
+							const est = await navigator.storage.estimate();
+							if (est.quota) lines.push(L('Storage quota 存储配额', `${(est.quota / 1024 ** 3).toFixed(1)} GB (used ${((est.usage ?? 0) / 1024 ** 2).toFixed(0)} MB)`));
+						} catch { /* API absent — skip silently */ }
+						// --- preferences ---
+						lines.push(L('Color scheme 配色偏好', matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+						lines.push(L('Reduced motion 减少动效', matchMedia('(prefers-reduced-motion: reduce)').matches ? 'yes' : 'no'));
+						// --- codec support: the honest answer for "can my browser play HEVC?" ---
+						const v = document.createElement('video');
+						const a = document.createElement('audio');
+						const can = (el: HTMLMediaElement, type: string): string => {
+							const r = el.canPlayType(type);
+							return r === 'probably' ? '✓' : r === 'maybe' ? '(maybe)' : '✗';
+						};
+						const codecs: [string, string][] = [
+							['H.264 / AVC', 'video/mp4; codecs="avc1.42E01E"'],
+							['H.265 / HEVC', 'video/mp4; codecs="hvc1.1.6.L93.B0"'],
+							['VP9', 'video/webm; codecs="vp9"'],
+							['AV1', 'video/mp4; codecs="av01.0.05M.08"'],
+							['AAC', 'audio/mp4; codecs="mp4a.40.2"'],
+							['MP3', 'audio/mpeg'],
+							['Opus', 'audio/webm; codecs="opus"'],
+							['FLAC', 'audio/flac'],
+						];
+						lines.push('', '--- Codec support 解码支持 ---');
+						for (const [name, type] of codecs) {
+							const el = name === 'MP3' || name === 'AAC' || name === 'Opus' || name === 'FLAC' ? a : v;
+							lines.push(L(name, can(el, type)));
+						}
+						lines.push('', '🔒 Everything above was read locally 报告完全本地生成，未向任何服务器发送。');
+						return { output: lines.join('\n') };
+					},
+				},
+			],
+		},
+	},
 	{
 		slug: 'cidr-calculator',
-		category: 'devtools',
+		category: 'security',
 		name: 'IP Subnet & CIDR Calculator (IPv4 / IPv6)',
 		nameZh: 'IPv4 / IPv6 子网掩码与 CIDR 计算器',
 		description: 'Compute network address, netmask, broadcast, host range from IPv4/CIDR — plus full IPv6 breakdowns with :: expansion and 128-bit prefix math.',
@@ -3846,13 +2796,459 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 			],
 		},
 	},
-
 ];
 
-export const UTILITIES_TEXT_TOOLS: ToolEntry[] = [
+export const TEXT_TOOLS: ToolEntry[] = [
+	{
+		slug: 'csv-json-converter',
+		category: 'text',
+		name: 'CSV ⇄ JSON Converter',
+		nameZh: 'CSV 与 JSON 互转工具',
+		description: 'Convert CSV to JSON (first row as header) or a JSON array of objects to CSV, with full RFC 4180 quoting support.',
+		descriptionZh: 'CSV 转 JSON（首行为表头），或将 JSON 对象数组转为 CSV，完整支持 RFC 4180 引号规则。',
+		kind: 'text',
+		config: {
+			def: 'name,role,city\nAlice,Engineer,Shanghai\nBob,Designer,"Downtown, Hangzhou"',
+			placeholder: 'Paste CSV or a JSON array…',
+			placeholderZh: '粘贴 CSV 或 JSON 数组…',
+			mono: true,
+			transforms: [
+				{
+					id: 'csv2json',
+					label: 'CSV → JSON',
+					labelZh: 'CSV → JSON',
+					run: (t) => csvToJson(t),
+				},
+				{
+					id: 'json2csv',
+					label: 'JSON → CSV',
+					labelZh: 'JSON → CSV',
+					run: (t) => jsonToCsv(t),
+				},
+			],
+		} satisfies TextConfig,
+	},
+	{
+		slug: 'case-converter',
+		category: 'text',
+		name: 'Case & Naming Converter',
+		nameZh: '大小写与命名风格转换器',
+		description: 'Convert identifiers or sentences between camelCase, PascalCase, snake_case, kebab-case, CONSTANT_CASE and more.',
+		descriptionZh: '标识符或句子在 camelCase、PascalCase、snake_case、kebab-case、常量与标题式之间互转。',
+		kind: 'text',
+		config: {
+			def: 'user profile XMLHttpRequest api_key',
+			placeholder: 'e.g. "user profile XMLHttp api_key"…',
+			placeholderZh: '例如 "user profile XMLHttp api_key"…',
+			transforms: [
+				{
+					id: 'camel',
+					label: 'camelCase',
+					labelZh: '驼峰 (camelCase)',
+					run: (t) => ({ output: toCamel(t), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
+				},
+				{
+					id: 'pascal',
+					label: 'PascalCase',
+					labelZh: '帕斯卡 (PascalCase)',
+					run: (t) => ({ output: toPascal(t), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
+				},
+				{
+					id: 'snake',
+					label: 'snake_case',
+					labelZh: '下划线 (snake_case)',
+					run: (t) => ({ output: toSnake(t), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
+				},
+				{
+					id: 'kebab',
+					label: 'kebab-case',
+					labelZh: '短横线 (kebab-case)',
+					run: (t) => ({ output: toKebab(t), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
+				},
+				{
+					id: 'constant',
+					label: 'CONSTANT_CASE',
+					labelZh: '常量 (CONSTANT_CASE)',
+					run: (t) => ({ output: toConstant(t), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
+				},
+				{
+					id: 'title',
+					label: 'Title Case',
+					labelZh: '标题式 (Title Case)',
+					run: (t) => ({ output: toTitle(t), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
+				},
+				{
+					id: 'sentence',
+					label: 'Sentence case',
+					labelZh: '句首大写 (Sentence case)',
+					run: (t) => ({ output: toSentence(t), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
+				},
+				{
+					id: 'upper',
+					label: 'UPPERCASE',
+					labelZh: '全大写',
+					run: (t) => ({ output: t.toUpperCase(), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
+				},
+				{
+					id: 'lower',
+					label: 'lowercase',
+					labelZh: '全小写',
+					run: (t) => ({ output: t.toLowerCase(), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
+				},
+				{
+					id: 'batch',
+					label: 'Convert each line (all styles)',
+					labelZh: '逐行转换 (四种风格对照)',
+					// One row per input line, four naming styles side by side — batch mode is
+					// exactly the 'not sure which style I need' moment, so show them all.
+					run: (t) => {
+						const r = runBatch(t, (line) => `${toCamel(line)} | ${toSnake(line)} | ${toKebab(line)} | ${toConstant(line)}`);
+						if (!r.output) return r;
+						return { output: `# input → camelCase | snake_case | kebab-case | CONSTANT_CASE\n${r.output}` };
+					},
+				},
+			],
+		} satisfies TextConfig,
+	},
+	{
+		slug: 'line-organizer',
+		category: 'text',
+		name: 'Line Organizer (Dedupe · Sort · Clean)',
+		nameZh: '文本行整理器（去重 · 排序 · 清理）',
+		description: 'Clean up pasted lists in one click: remove duplicates, sort alphabetically or by length, trim whitespace and drop empty lines.',
+		descriptionZh: '一键整理粘贴进来的列表：去除重复行、按字母或长度排序、去除行首尾空白与空行。',
+		kind: 'text',
+		config: {
+			def: 'banana\napple\n  apple  \ncherry\n\nbanana\n42\n7',
+			placeholder: 'Paste one item per line…',
+			placeholderZh: '每行一条，粘贴待整理的列表…',
+			mono: true,
+			stats: (text: string) => {
+				const lines = text.split('\n');
+				const nonEmpty = lines.filter((l) => l.trim()).length;
+				const unique = new Set(lines.map((l) => l.trim()).filter(Boolean)).size;
+				return [
+					{ label: 'Lines', labelZh: '总行数', value: String(lines.length) },
+					{ label: 'Non-empty', labelZh: '非空行', value: String(nonEmpty) },
+					{ label: 'Unique', labelZh: '去重后', value: String(unique) },
+					{ label: 'Duplicates', labelZh: '重复行', value: String(nonEmpty - unique) },
+				];
+			},
+			transforms: [
+				{
+					id: 'clean',
+					label: 'Clean (trim · dedupe · drop empty)',
+					labelZh: '一键清理（去空白 · 去重 · 删空行）',
+					// The 90% case: paste a noisy list, get a clean one, order kept.
+					run: (t) => {
+						const seen = new Set<string>();
+						const out: string[] = [];
+						for (const line of t.split('\n')) {
+							const s = line.trim();
+							if (!s || seen.has(s)) continue;
+							seen.add(s);
+							out.push(s);
+						}
+						if (!out.length) return { output: '', error: 'Nothing to keep — the input is empty or blank.', errorZh: '没有可保留的内容——输入为空或全是空白。' };
+						return { output: out.join('\n') };
+					},
+				},
+				{
+					id: 'dedupe',
+					label: 'Remove duplicates',
+					labelZh: '仅去重',
+					run: (t) => {
+						const seen = new Set<string>();
+						const out: string[] = [];
+						for (const line of t.split('\n')) {
+							if (seen.has(line)) continue;
+							seen.add(line);
+							out.push(line);
+						}
+						return { output: out.join('\n') };
+					},
+				},
+				{
+					id: 'sortAz',
+					label: 'Sort A → Z',
+					labelZh: '排序 A → Z',
+					// numeric: true so v2 sorts before v10; undefined stays last so
+					// the blanks survive for the dedicated buttons to handle.
+					run: (t) => ({
+						output: t
+							.split('\n')
+							.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+						.join('\n'),
+					}),
+				},
+				{
+					id: 'sortZa',
+					label: 'Sort Z → A',
+					labelZh: '排序 Z → A',
+					run: (t) => ({
+						output: t
+							.split('\n')
+							.sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))
+						.join('\n'),
+					}),
+				},
+				{
+					id: 'sortLen',
+					label: 'Sort by length',
+					labelZh: '按长度排序',
+					run: (t) => ({
+						output: t
+							.split('\n')
+							.sort((a, b) => a.length - b.length || a.localeCompare(b, undefined, { numeric: true }))
+						.join('\n'),
+					}),
+				},
+				{
+					id: 'reverse',
+					label: 'Reverse order',
+					labelZh: '反转顺序',
+					run: (t) => ({ output: t.split('\n').reverse().join('\n') }),
+				},
+				{
+					id: 'removeEmpty',
+					label: 'Remove empty lines',
+					labelZh: '删除空行',
+					run: (t) => ({ output: t.split('\n').filter((l) => l.trim()).join('\n') }),
+				},
+				{
+					id: 'trim',
+					label: 'Trim each line',
+					labelZh: '去除行首尾空白',
+					run: (t) => ({ output: t.split('\n').map((l) => l.trim()).join('\n') }),
+				},
+			],
+		} satisfies TextConfig,
+	},
+	{
+		slug: 'text-extractor',
+		category: 'text',
+		name: 'Text Extractor (URLs · Emails)',
+		nameZh: '文本提取器（网址 · 邮箱）',
+		description: 'Pull every URL and email address out of pasted text — logs, chat transcripts, pages of prose — one match per line, duplicates optional.',
+		descriptionZh: '从粘贴的任意文本（日志、聊天记录、长文）中提取全部网址和邮箱地址，每行一条，可选择去重。',
+		kind: 'text',
+		config: {
+			// Fictional sample data only (example.com, RFC 2606 domains).
+			def: 'Contact alice@example.com or sales@example.org.\nDocs: https://docs.example.com/getting-started#install\nSee also www.example.net/pricing and https://example.dev/api\nReach bob.smith+support@example.io for help.',
+			placeholder: 'Paste text with URLs or emails inside…',
+			placeholderZh: '粘贴包含网址或邮箱的文本…',
+			mono: true,
+			stats: (text: string) => [
+				{ label: 'URLs found', labelZh: '网址数', value: String((text.match(URL_RE_G) ?? []).length) },
+				{ label: 'Emails found', labelZh: '邮箱数', value: String((text.match(EMAIL_RE_G) ?? []).length) },
+				{ label: 'Characters', labelZh: '字符数', value: String(text.length) },
+			],
+			transforms: [
+				{
+					id: 'urls',
+					label: 'Extract URLs',
+					labelZh: '提取网址',
+					run: (t) => extractMatches(t, URL_RE_G, 'URL'),
+				},
+				{
+					id: 'emails',
+					label: 'Extract emails',
+					labelZh: '提取邮箱',
+					run: (t) => extractMatches(t, EMAIL_RE_G, 'Email'),
+				},
+				{
+					id: 'all',
+					label: 'Extract all (unique)',
+					labelZh: '全部提取（去重）',
+					// Combined pass, deduped across both kinds — the "give me every
+					// contact point in this dump" button.
+					run: (t) => {
+						const urls = t.match(URL_RE_G) ?? [];
+						const emails = t.match(EMAIL_RE_G) ?? [];
+						const all = [...urls, ...emails];
+						if (!all.length) return { output: '', error: 'No URLs or emails found in the text.', errorZh: '文本中没有找到网址或邮箱。' };
+						return { output: [...new Set(all)].join('\n') };
+					},
+				},
+			],
+		} satisfies TextConfig,
+	},
+	{
+		slug: 'json-diff',
+		category: 'text',
+		name: 'JSON Diff (Structural)',
+		nameZh: 'JSON 结构化对比',
+		description: 'Compare two JSON documents structurally: added, removed and changed values listed by path — key order and formatting differences are not noise.',
+		descriptionZh: '结构化比较两个 JSON 文档：按路径列出新增、删除与变更的值——键顺序和格式差异不算噪音。',
+		kind: 'form',
+		config: {
+			intro: 'Paste two JSON documents. The comparison is structural (parsed trees, not text), so reordered keys and different indentation do not show up as changes.',
+			introZh: '粘贴两个 JSON 文档。比较基于解析后的树而非文本，键顺序不同、缩进不同都不会被当作变更。',
+			fields: [
+				{
+					id: 'left',
+					label: 'JSON A',
+					labelZh: 'JSON A（左）',
+					type: 'textarea',
+					def: '{\n  "name": "example",\n  "version": "1.0.0",\n  "tags": ["a", "b"],\n  "price": 9.99\n}',
+				},
+				{
+					id: 'right',
+					label: 'JSON B',
+					labelZh: 'JSON B（右）',
+					type: 'textarea',
+					def: '{\n  "version": "1.1.0",\n  "name": "example",\n  "tags": ["a", "b", "c"],\n  "price": 12.5,\n  "deprecated": false\n}',
+				},
+			],
+			compute: (v) => {
+				const row = (label: string, labelZh: string, value: string, valueZh = value) => ({ label, labelZh, value, valueZh });
+				let a: unknown, b: unknown;
+				try {
+					a = JSON.parse(v.str('left'));
+				} catch (e) {
+					return { rows: [row('JSON A is invalid', 'JSON A 无效', e instanceof Error ? e.message : 'invalid JSON')] };
+				}
+				try {
+					b = JSON.parse(v.str('right'));
+				} catch (e) {
+					return { rows: [row('JSON B is invalid', 'JSON B 无效', e instanceof Error ? e.message : 'invalid JSON')] };
+				}
+				const diffs = jsonDiff(a, b);
+				if (!diffs.length) {
+					return { rows: [row('Result', '结果', 'Identical — the two documents are structurally equal.', '完全一致——两个文档结构相等。')] };
+				}
+				const count = (k: JsonDiff['kind']) => diffs.filter((d) => d.kind === k).length;
+				const capNote = diffs.length >= 200;
+				return {
+					rows: [
+						row('Changed', '变更', String(count('changed'))),
+						row('Added in B', 'B 中新增', String(count('added'))),
+						row('Removed from A', 'A 中已删除', String(count('removed'))),
+					],
+					table: {
+						columns: ['Path', 'Change', 'A value', 'B value'],
+						columnsZh: ['路径', '变更类型', 'A 的值', 'B 的值'],
+						rows: diffs.map((d) => [
+							d.path,
+							d.kind === 'added' ? '+ added' : d.kind === 'removed' ? '− removed' : '~ changed',
+							d.a || '—',
+							d.b || '—',
+						]),
+					},
+					note: capNote
+						? 'Showing the first 200 differences — the documents diverge massively.'
+						: undefined,
+					noteZh: capNote ? '仅显示前 200 条差异——两份文档差异过大。' : undefined,
+				};
+			},
+		},
+	},
+	{
+		slug: 'user-agent-parser',
+		category: 'text',
+		name: 'User-Agent Parser',
+		nameZh: 'User-Agent 解析器',
+		description: 'Paste any User-Agent string and get browser, version, engine, operating system and device class — with crawler and bot detection.',
+		descriptionZh: '粘贴任意 User-Agent 字符串，解析浏览器、版本、引擎、操作系统与设备类型——并识别爬虫与机器人。',
+		kind: 'text',
+		config: {
+			def: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+			placeholder: 'Paste a User-Agent string…',
+			placeholderZh: '粘贴 User-Agent 字符串…',
+			mono: true,
+			stats: (text: string) => {
+				const ua = parseUa(text);
+				if (!ua) return [{ label: 'Status', labelZh: '状态', value: '— (paste a UA string)' }];
+				return [
+					{ label: 'Browser', labelZh: '浏览器', value: ua.browser },
+					{ label: 'OS', labelZh: '操作系统', value: ua.os },
+					{ label: 'Device', labelZh: '设备类型', value: ua.device },
+					...(ua.bot ? [{ label: 'Bot', labelZh: '爬虫', value: 'YES' }] : []),
+				];
+			},
+			transforms: [
+				{
+					id: 'report',
+					label: 'Full report',
+					labelZh: '完整报告',
+					run: (t) => {
+						const ua = parseUa(t);
+						if (!ua) return { output: '', error: 'Paste a User-Agent string first.', errorZh: '请先粘贴 User-Agent 字符串。' };
+						const lines = [
+							['Browser 浏览器', `${ua.browser} / ${ua.browserZh}${ua.version ? ` · v${ua.version}` : ''}`],
+							['Engine 引擎', `${ua.engine} / ${ua.engineZh}`],
+							['OS 操作系统', `${ua.os} / ${ua.osZh}`],
+							['Device 设备', `${ua.device} / ${ua.deviceZh}`],
+							['Bot 爬虫', ua.bot ? 'YES · detected as a bot' : 'NO · human-facing browser'],
+						];
+						return { output: lines.map(([l, v]) => `${l.padEnd(24)} ${v}`).join('\n') };
+					},
+				},
+				{
+					id: 'reportLines',
+					label: 'Parse each line (access log)',
+					labelZh: '逐行解析（访问日志）',
+					run: (t) =>
+						// One line = one UA string; the row prints a compact
+						// browser · OS · device summary, bot-flagged.
+						runBatch(t, (line) => {
+							const ua = parseUa(line);
+							if (!ua) return null;
+							const b = `${ua.browser}${ua.version ? ` ${ua.version}` : ''}`;
+							return ua.bot ? `${b} · ${ua.os} · 🤖 bot` : `${b} · ${ua.os} · ${ua.device}`;
+						}),
+				},
+			],
+		},
+	},
+	{
+		slug: 'html-entity-escaper',
+		category: 'text',
+		name: 'HTML Entity Escape / Unescape',
+		nameZh: 'HTML 实体转义工具',
+		description: 'Escape text to HTML entities (&amp; &lt; &quot;) or unescape named and numeric entities back to characters.',
+		descriptionZh: '把文本转义为 HTML 实体，或将命名实体与数字实体还原为字符。',
+		kind: 'text',
+		config: {
+			def: '<a href="https://example.com">Alice &amp; Bob</a>',
+			placeholder: 'Text to escape, or entities to decode…',
+			placeholderZh: '待转义的文本，或待解码的 HTML 实体…',
+			mono: true,
+			live: true,
+			transforms: [
+				{
+					id: 'escape',
+					label: 'Escape → entities',
+					labelZh: '转义为 HTML 实体',
+					run: (t) => ({ output: escapeEntities(t), error: t ? undefined : 'Enter text first.', errorZh: t ? undefined : '请先输入文本。' }),
+				},
+				{
+					id: 'unescape',
+					label: 'Unescape ← entities',
+					labelZh: '实体还原为文本',
+					run: (t) => {
+						const r = unescapeEntities(t);
+						return r !== null
+							? { output: r }
+							: { output: '', error: 'Contains an unknown entity.', errorZh: '包含无法识别的实体。' };
+					},
+				},
+				{
+					id: 'unescapeLines',
+					label: 'Unescape each line',
+					labelZh: '逐行还原（坏行标 ✗）',
+					run: (t) =>
+						runBatch(t, (line) => {
+							const r = unescapeEntities(line);
+							return r === null ? null : r;
+						}),
+				},
+			],
+		} satisfies TextConfig,
+	},
 	{
 		slug: 'word-counter',
-		category: 'utilities',
+		category: 'text',
 		name: 'Word Counter',
 		nameZh: '在线字数统计',
 		description: 'Live word, character, sentence and paragraph counts plus reading time.',
@@ -3865,10 +3261,9 @@ export const UTILITIES_TEXT_TOOLS: ToolEntry[] = [
 			stats: wordStats,
 		} satisfies TextConfig,
 	},
-
 	{
 		slug: 'character-counter',
-		category: 'utilities',
+		category: 'text',
 		name: 'Character Counter',
 		nameZh: '字符计数器',
 		description: 'Count characters, letters, digits, spaces, symbols and UTF-8 bytes.',
@@ -3881,22 +3276,18 @@ export const UTILITIES_TEXT_TOOLS: ToolEntry[] = [
 			stats: charStats,
 		} satisfies TextConfig,
 	},
-
 	{
 		slug: 'markdown-preview',
-		category: 'utilities',
+		category: 'text',
 		name: 'Markdown Live Editor & Previewer',
 		nameZh: 'Markdown 实时渲染与预览编辑器',
 		description: 'Live split-screen Markdown rendering with GitHub Flavored Markdown (GFM), tables, task lists, code syntax, KaTeX-typeset maths, and HTML export.',
 		descriptionZh: '纯本地双栏实时 Markdown 渲染编辑器，支持 GFM 全语法、LaTeX 公式排版与 HTML 导出。',
 		kind: 'markdown',
 	},
-
-
-	// --- Markdown Table Formatter -------------------------------------------------------
 	{
 		slug: 'markdown-table-formatter',
-		category: 'utilities',
+		category: 'text',
 		name: 'Markdown Table Auto-Align Formatter',
 		nameZh: 'Markdown 表格自动对齐与格式化',
 		description: 'Format messy Markdown tables into clean, readable, column-aligned ASCII markdown tables with Unicode-aware auto-fitted widths.',
@@ -3930,10 +3321,9 @@ export const UTILITIES_TEXT_TOOLS: ToolEntry[] = [
 			],
 		},
 	},
-
 	{
 		slug: 'text-diff',
-		category: 'utilities',
+		category: 'text',
 		name: 'Text Diff',
 		nameZh: '文本差异对比',
 		description: 'Compare two texts line by line and report added, removed and unchanged lines plus similarity.',
@@ -3994,10 +3384,9 @@ export const UTILITIES_TEXT_TOOLS: ToolEntry[] = [
 			},
 		},
 	},
-
 	{
 		slug: 'roman-numeral',
-		category: 'utilities',
+		category: 'text',
 		name: 'Roman Numeral Converter',
 		nameZh: '罗马数字转换器',
 		description: 'Convert between Roman numerals and Arabic numbers (1–3999), with strict validation of non-canonical forms.',
@@ -4066,8 +3455,587 @@ export const UTILITIES_TEXT_TOOLS: ToolEntry[] = [
 			],
 		} satisfies TextConfig,
 	},
-
 ];
+
+export const MEDIA_TEXT_TOOLS: ToolEntry[] = [
+	{
+		slug: 'media-info',
+		category: 'media',
+		name: 'Media Info (Video · Audio Metadata)',
+		nameZh: '媒体信息查看器（视频/音频元数据）',
+		description: 'Drop an MP4/MOV, WebM/MKV or WAV file and read codec, resolution, duration, frame rate and audio channels — parsed byte-by-byte in your browser, never uploaded.',
+		descriptionZh: '拖入 MP4/MOV、WebM/MKV 或 WAV 文件，读取编码、分辨率、时长、帧率与音频声道——逐字节本地解析，绝不上传。',
+		kind: 'text',
+		config: {
+			placeholder: 'Drop a media file onto this box — or pick one below…',
+			placeholderZh: '把媒体文件拖到此框——或点击下方按钮选择…',
+			mono: true,
+			// Binary path: bytes straight into the box parsers (MP4 boxes, EBML,
+			// RIFF), with the browser's own media stack as a fallback. The bytes
+			// never leave the page.
+			fileTransform: async (data, name, size) => {
+				const { mediaInfo } = await import('../scripts/tools/mediainfo');
+				return mediaInfo(data, name, size);
+			},
+			transforms: [
+				{
+					id: 'how',
+					label: 'How it works',
+					labelZh: '工作原理',
+					run: () => ({
+						output:
+							'Drop a file (or use the 📄 button). The bytes are parsed locally:\n' +
+							'  · MP4 / MOV — ISO-BMFF boxes (ftyp / moov / trak / stsd / stts)\n' +
+							'  · WebM / MKV — EBML elements (Duration / Tracks / CodecID)\n' +
+							'  · WAV — RIFF fmt/data chunks\n' +
+							'Unknown containers fall back to the browser\u2019s decoder for what it can read.\n' +
+							'\n文件拖入后完全本地解析：MP4/MOV 走 box 结构，WebM/MKV 走 EBML，WAV 读 RIFF 头；未知容器由浏览器解码兜底。文件不会上传。',
+					}),
+				},
+			],
+		},
+	},
+	{
+		slug: 'lossless-checker',
+		category: 'media',
+		name: 'Fake-Lossless Detector (Audio Spectrum)',
+		nameZh: '真假无损音乐判别（频谱分析）',
+		description: 'Drop a FLAC/WAV file and check whether it is truly lossless: lossy MP3/AAC transcodes leave a frequency ceiling that a real CD rip does not have.',
+		descriptionZh: '拖入 FLAC/WAV 文件判别是否真无损：MP3/AAC 有损转码会留下频率天花板，真 CD 抓轨则延伸到奈奎斯特频率。',
+		kind: 'text',
+		config: {
+			placeholder: 'Drop an audio file onto this box — or pick one below…',
+			placeholderZh: '把音频文件拖到此框——或点击下方按钮选择…',
+			mono: true,
+			// The file is decoded by the browser's own audio stack and FFT'd in
+			// the page; nothing is uploaded.
+			fileTransform: async (data, name) => {
+				const { losslessCheck } = await import('../scripts/tools/lossless');
+				return losslessCheck(data, name);
+			},
+			transforms: [
+				{
+					id: 'how',
+					label: 'How it works',
+					labelZh: '工作原理',
+					run: () => ({
+						output:
+							'Drop a file (or use the 📄 button). The audio is decoded locally and the loudest windows are FFT-analysed:\n' +
+							'  · true lossless: energy reaches ~22 kHz (the CD Nyquist limit)\n' +
+							'  · MP3/AAC transcode: a hard ceiling at ~16-20 kHz (lower bitrate = lower ceiling)\n' +
+							'\nHeuristic 判定为启发式：部分真无损母带高频本就偏少，请结合截止频率本身判断。文件全程本地解码，绝不上传。',
+					}),
+				},
+			],
+		},
+	},
+	{
+		slug: 'image-filter-lab',
+		category: 'media',
+		name: 'Image Filter Lab (GPU Convolution)',
+		nameZh: '图像滤镜实验室（GPU 卷积）',
+		description: 'Drop an image and convolve it live on the GPU with an editable 3×3 kernel — blur, sharpen, Sobel edges, emboss, or your own — then export the result.',
+		descriptionZh: '拖入图片，用可编辑的 3×3 卷积核在 GPU 上实时卷积——模糊、锐化、Sobel 边缘、浮雕或自定义——然后导出结果。',
+		kind: 'imgfilter',
+	},
+];
+
+export const COLOR_TEXT_TOOLS: ToolEntry[] = [
+	{
+		slug: 'css-clamp',
+		category: 'color',
+		name: 'CSS clamp() Calculator',
+		nameZh: 'CSS clamp() 计算器',
+		description: 'Generate a responsive clamp() from min/max viewport widths and font sizes — fluid type with hard floors and ceilings, in px or rem, with sample values at real breakpoints.',
+		descriptionZh: '由最小/最大视口与字号生成响应式 clamp()——带下限上限的流式字号，支持 px 或 rem，附真实断点的取值示例。',
+		kind: 'form',
+		config: {
+			intro: 'Sizes scale linearly between the two viewports and never leave the [min, max] range.',
+			introZh: '字号在两个视口之间线性变化，且永远不超出 [最小, 最大] 区间。',
+			fields: [
+				{ id: 'minVw', label: 'Min viewport', labelZh: '最小视口', suffix: '(px)', type: 'number', def: '375', step: 'any', required: true },
+				{ id: 'maxVw', label: 'Max viewport', labelZh: '最大视口', suffix: '(px)', type: 'number', def: '1440', step: 'any', required: true },
+				{ id: 'minSize', label: 'Font size at min viewport', labelZh: '最小视口字号', suffix: '(px)', type: 'number', def: '16', step: 'any', required: true },
+				{ id: 'maxSize', label: 'Font size at max viewport', labelZh: '最大视口字号', suffix: '(px)', type: 'number', def: '24', step: 'any', required: true },
+			],
+			compute: (v) => {
+				const row = (label: string, labelZh: string, value: string, valueZh = value) => ({ label, labelZh, value, valueZh });
+				const minVw = v.num('minVw');
+				const maxVw = v.num('maxVw');
+				const minSize = v.num('minSize');
+				const maxSize = v.num('maxSize');
+				if (!(maxVw > minVw) || !Number.isFinite(minSize) || !Number.isFinite(maxSize))
+					return { rows: [row('Result', '结果', '— (max viewport must exceed min viewport)', '—（最大视口需大于最小视口）')] };
+				const slope = (maxSize - minSize) / (maxVw - minVw);
+				const px = `clamp(${minSize}px, calc(${(minSize - slope * minVw).toFixed(2)}px + ${(slope * 100).toFixed(4)}vw), ${maxSize}px)`;
+				const rem16 = (n: number): string => (n / 16).toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
+				const rem = `clamp(${rem16(minSize)}rem, calc(${rem16(minSize)}rem + ${(rem16(maxSize - minSize))} * (100vw - ${minVw}px) / ${maxVw - minVw}), ${rem16(maxSize)}rem)`;
+				const at = (vw: number): string => `${Math.round(minSize + slope * (vw - minVw))}px @ ${vw}px`;
+				return {
+					rows: [
+						row('At 320px', '320px 时', at(320)),
+						row('At 768px', '768px 时', at(768)),
+						row('At 1920px', '1920px 时', at(1920)),
+						row('Slope', '斜率', `${(slope * 100).toFixed(4)}vw / 100px`),
+					],
+					// The generated CSS is code — identical in both views, so it
+					// rides in the note (which allows same-content halves) rather
+					// than a value row (whose zh half must not carry Latin words).
+					note: `${px}\n${rem}`,
+					noteZh: `${px}\n${rem}`,
+				};
+			},
+		},
+	},
+	{
+		slug: 'wcag-contrast',
+		category: 'color',
+		name: 'WCAG Contrast Checker',
+		nameZh: 'WCAG 颜色对比度检查',
+		description: 'Check a foreground/background pair against WCAG 2.1: the exact contrast ratio plus pass/fail for AA and AAA on normal text, large text and UI components.',
+		descriptionZh: '检查前景/背景色组合是否满足 WCAG 2.1：精确对比度，以及正文、大字号、界面组件的 AA 与 AAA 判定。',
+		kind: 'form',
+		config: {
+			intro: 'AA needs 4.5:1 (normal text) or 3:1 (large text); AAA needs 7:1 or 4.5:1. UI components and focus rings need 3:1.',
+			introZh: 'AA 要求 4.5:1（正文）或 3:1（大字号）；AAA 要求 7:1 或 4.5:1。界面组件与焦点框要求 3:1。',
+			fields: [
+				{ id: 'fg', label: 'Foreground color', labelZh: '前景色', type: 'text', def: '#767676', placeholder: '#767676 or 767676', required: true },
+				{ id: 'bg', label: 'Background color', labelZh: '背景色', type: 'text', def: '#ffffff', placeholder: '#ffffff', required: true },
+			],
+			compute: (v) => {
+				const row = (label: string, labelZh: string, value: string, valueZh = value) => ({ label, labelZh, value, valueZh });
+				const parse = (s: string): [number, number, number] | null => {
+					const h = s.trim().replace(/^#/, '');
+					if (/^[0-9a-f]{3}$/i.test(h))
+						return [parseInt(h[0]! + h[0]!, 16), parseInt(h[1]! + h[1]!, 16), parseInt(h[2]! + h[2]!, 16)];
+					if (/^[0-9a-f]{6}$/i.test(h))
+						return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+					return null;
+				};
+				const fg = parse(v.str('fg'));
+				const bg = parse(v.str('bg'));
+				if (!fg || !bg)
+					return { rows: [row('Result', '结果', '— (colors must be hex, e.g. #767676)', '—（颜色须为十六进制，如 #767676）')] };
+				const lum = ([r, g, b]: [number, number, number]): number => {
+					const lin = (c: number): number => {
+						const s = c / 255;
+						return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+					};
+					return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+				};
+				const l1 = lum(fg);
+				const l2 = lum(bg);
+				const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+				const r = Math.round(ratio * 100) / 100;
+				const verdict = (need: number, en: string, zh: string) =>
+					ratio >= need
+						? { label: en, labelZh: zh, value: `✓ pass (${r}:1 ≥ ${need}:1)`, valueZh: `✓ 通过（${r}:1 ≥ ${need}:1）` }
+						: { label: en, labelZh: zh, value: `✗ fail (${r}:1 < ${need}:1)`, valueZh: `✗ 未通过（${r}:1 < ${need}:1）` };
+				// Live sample: the actual fg-on-bg pairing, one line of large text
+				// (the 3:1 threshold case) and one of normal text (the 4.5:1 case)
+				// — the numbers above are meaningless without seeing the colors.
+				const toHex = (c: [number, number, number]): string => '#' + c.map((x) => x.toString(16).padStart(2, '0')).join('');
+				const fgHex = toHex(fg);
+				const bgHex = toHex(bg);
+				const svg =
+					`<svg viewBox="0 0 560 190" xmlns="http://www.w3.org/2000/svg" role="img">` +
+					`<rect x="0" y="0" width="560" height="190" rx="12" fill="${bgHex}"/>` +
+					`<text x="280" y="78" text-anchor="middle" font-size="30" font-weight="700" fill="${fgHex}" class="i18n-en">Large 24px bold text</text>` +
+					`<text x="280" y="78" text-anchor="middle" font-size="30" font-weight="700" fill="${fgHex}" class="i18n-zh">大字号文本 24px 粗体</text>` +
+					`<text x="280" y="128" text-anchor="middle" font-size="16" fill="${fgHex}" class="i18n-en">Normal 16px text — the 4.5:1 case</text>` +
+					`<text x="280" y="128" text-anchor="middle" font-size="16" fill="${fgHex}" class="i18n-zh">正文 16px——4.5:1 的情形</text>` +
+					`<text x="280" y="165" text-anchor="middle" font-size="13" font-family="var(--font-mono, monospace)" fill="${fgHex}">${fgHex} on ${bgHex} · ${r}:1</text>` +
+					`</svg>`;
+				return {
+					rows: [
+						{ label: 'Contrast ratio', labelZh: '对比度', value: `${r}:1`, emphasis: true },
+						verdict(4.5, 'AA — normal text', 'AA——正文'),
+						verdict(3, 'AA — large text (≥18.7px bold / 24px)', 'AA——大字号（≥18.7px 粗体 / 24px）'),
+						verdict(7, 'AAA — normal text', 'AAA——正文'),
+						verdict(4.5, 'AAA — large text', 'AAA——大字号'),
+						verdict(3, 'UI components & focus indicators', '界面组件与焦点指示'),
+					],
+					chartSvg: svg,
+				};
+			},
+		},
+	},
+	{
+		slug: 'color-palette',
+		category: 'color',
+		name: 'Color Palette Generator',
+		nameZh: '配色方案生成器',
+		description: 'Build a five-swatch palette from one base color: complementary, analogous, triadic, split-complementary or monochrome — shown as actual swatches with hex codes.',
+		descriptionZh: '从一个基准色生成五色配色：互补、邻近、三角、分裂互补或单色——以真实色块展示并附十六进制码。',
+		kind: 'form',
+		config: {
+			intro: 'The base color is always the middle swatch; the harmony rotates hue and adjusts lightness/saturation around it.',
+			introZh: '基准色固定为中间色块；其余颜色按和谐规则旋转色相并调整明度饱和度。',
+			fields: [
+				{ id: 'base', label: 'Base color', labelZh: '基准色', type: 'text', def: '#3b82f6', placeholder: '#3b82f6', required: true },
+				{
+					id: 'harmony',
+					label: 'Harmony',
+					labelZh: '配色和谐',
+					type: 'select',
+					def: 'analogous',
+					options: [
+						{ value: 'analogous', label: 'Analogous (±30°)' },
+						{ value: 'complementary', label: 'Complementary (180°)' },
+						{ value: 'triadic', label: 'Triadic (±120°)' },
+						{ value: 'split', label: 'Split-complementary (150°/210°)' },
+						{ value: 'monochrome', label: 'Monochrome' },
+					],
+				},
+			],
+			compute: (v) => {
+				const row = (label: string, labelZh: string, value: string, valueZh = value) => ({ label, labelZh, value, valueZh });
+				const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(v.str('base').trim());
+				if (!m) return { rows: [row('Result', '结果', '— (base color must be hex, e.g. #3b82f6)', '—（基准色须为十六进制，如 #3b82f6）')] };
+				const h = m[1]!;
+				const rgb: [number, number, number] =
+					h.length === 3
+						? [parseInt(h[0]! + h[0]!, 16), parseInt(h[1]! + h[1]!, 16), parseInt(h[2]! + h[2]!, 16)]
+						: [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+				// rgb -> hsl
+				const [r, g, b] = rgb.map((c) => c / 255) as [number, number, number];
+				const max = Math.max(r, g, b);
+				const min = Math.min(r, g, b);
+				const l = (max + min) / 2;
+				const d = max - min;
+				const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+				let hue = 0;
+				if (d !== 0) {
+					if (max === r) hue = 60 * (((g - b) / d) % 6);
+					else if (max === g) hue = 60 * ((b - r) / d + 2);
+					else hue = 60 * ((r - g) / d + 4);
+				}
+				if (hue < 0) hue += 360;
+				const hslToHex = (hh: number, ss: number, ll: number): string => {
+					const c = (1 - Math.abs(2 * ll - 1)) * ss;
+					const x = c * (1 - Math.abs(((hh / 60) % 2) - 1));
+					const mo = ll - c / 2;
+					let rr = 0;
+					let gg = 0;
+					let bb = 0;
+					if (hh < 60) [rr, gg, bb] = [c, x, 0];
+					else if (hh < 120) [rr, gg, bb] = [x, c, 0];
+					else if (hh < 180) [rr, gg, bb] = [0, c, x];
+					else if (hh < 240) [rr, gg, bb] = [0, x, c];
+					else if (hh < 300) [rr, gg, bb] = [x, 0, c];
+					else [rr, gg, bb] = [c, 0, x];
+					const to = (n: number): string => Math.round((n + mo) * 255).toString(16).padStart(2, '0');
+					return `#${to(rr)}${to(gg)}${to(bb)}`;
+				};
+				const harmony = v.str('harmony');
+				let swatches: string[];
+				if (harmony === 'monochrome') {
+					swatches = [hslToHex(hue, Math.min(1, s * 1.1), 0.88), hslToHex(hue, s, 0.72), hslToHex(hue, s, l), hslToHex(hue, s, 0.35), hslToHex(hue, s, 0.18)];
+				} else if (harmony === 'analogous') {
+					swatches = [hslToHex((hue + 330) % 360, s, Math.min(0.85, l + 0.12)), hslToHex((hue + 340) % 360, s, l), hslToHex(hue, s, l), hslToHex((hue + 20) % 360, s, l), hslToHex((hue + 30) % 360, s, Math.max(0.2, l - 0.12))];
+				} else if (harmony === 'complementary') {
+					swatches = [hslToHex(hue, s, 0.92), hslToHex(hue, s * 0.5, l), hslToHex(hue, s, l), hslToHex((hue + 180) % 360, s, l), hslToHex((hue + 180) % 360, s, 0.3)];
+				} else if (harmony === 'triadic') {
+					swatches = [hslToHex((hue + 120) % 360, s, 0.85), hslToHex(hue, s, l), hslToHex((hue + 240) % 360, s, l), hslToHex((hue + 120) % 360, s, l), hslToHex((hue + 240) % 360, s, 0.3)];
+				} else {
+					swatches = [hslToHex((hue + 150) % 360, s, 0.85), hslToHex(hue, s, l), hslToHex((hue + 210) % 360, s, l), hslToHex((hue + 150) % 360, s, 0.4), hslToHex((hue + 210) % 360, s, 0.25)];
+				}
+				// chartSvg swatch strip: rects + hex labels under each
+				const W = 120;
+				const svg =
+					`<svg viewBox="0 0 ${5 * W} 150" xmlns="http://www.w3.org/2000/svg" role="img">` +
+					swatches
+						.map(
+							(hex, i) =>
+								`<rect x="${i * W}" y="0" width="${W}" height="110" fill="${hex}"/>` +
+								`<text x="${i * W + W / 2}" y="135" text-anchor="middle" font-family="var(--font-mono, monospace)" font-size="15" fill="currentColor">${hex}</text>`,
+						)
+						.join('') +
+					`</svg>`;
+				return {
+					rows: [row('Base color', '基准色', `#${h.toLowerCase()}`)],
+					// hex codes are language-neutral; the note accepts identical
+					// halves, a value row's zh half would not.
+					note: swatches.join('  '),
+					noteZh: swatches.join('  '),
+					chartSvg: svg,
+				};
+			},
+		},
+	},
+	{
+		slug: 'css-px-rem-converter',
+		category: 'color',
+		name: 'CSS Size Converter (px / rem / em / %)',
+		nameZh: 'CSS 尺寸换算 (px / rem / em / %)',
+		description: 'Convert font and spacing sizes between px, rem and em, given the root font size.',
+		descriptionZh: '在 px、rem、em 之间换算字号与间距，可指定根字号。',
+		kind: 'form',
+		config: {
+			fields: [
+				{
+					id: 'value',
+					label: 'Size',
+					labelZh: '尺寸值',
+					// text, not number: the value may carry its own unit
+					// ("1.5rem") which overrides the Unit select below.
+					type: 'text',
+					def: '16',
+					placeholder: 'e.g. 16, 1.5rem, 24px',
+					placeholderZh: '例如 16、1.5rem、24px',
+					required: true,
+				},
+				{
+					id: 'unit',
+					label: 'Unit',
+					labelZh: '单位',
+					type: 'select',
+					def: 'px',
+					options: [
+						{ value: 'px', label: 'px', labelZh: 'px（像素）' },
+						{ value: 'rem', label: 'rem', labelZh: 'rem（根字号倍数）' },
+						{ value: 'em', label: 'em', labelZh: 'em（字号倍数）' },
+					],
+				},
+				{
+					id: 'root',
+					label: 'Root font size',
+					labelZh: '根字号',
+					type: 'number',
+					def: '16',
+					step: 'any',
+					min: '1',
+					required: true,
+					suffix: '(px)',
+					suffixZh: '（像素）',
+				},
+			],
+			compute: (v) => {
+				// The value field may carry its own unit ("1.5rem", "24px") — a
+				// unit in the input overrides the select, so pasting a value out
+				// of a stylesheet needs no fiddling with the dropdown first.
+				const rawVal = v.str('value').trim().toLowerCase();
+				const unitMatch = /^(-?[\d.]+)(px|rem|em)$/.exec(rawVal);
+				const typedVal = unitMatch ? Number(unitMatch[1]) : v.num('value');
+				const typedUnit = unitMatch ? unitMatch[2] : v.str('unit') || 'px';
+				const val = typedVal;
+				const root = v.num('root');
+				if (!Number.isFinite(val) || val < 0 || !(root > 0)) {
+					return {
+						rows: [
+							{
+								label: 'Result',
+								labelZh: '计算结果',
+								value: '— (enter a size and a positive root font size)',
+								valueZh: '— (请输入尺寸值且根字号需大于 0)',
+							},
+						],
+					};
+				}
+				const unit = typedUnit;
+				const px = unit === 'rem' || unit === 'em' ? val * root : val;
+				const fmt = (x: number) => {
+					const r = Math.round(x * 10000) / 10000;
+					return String(r);
+				};
+				return {
+					rows: [
+						{ label: 'Pixels (px)', labelZh: '像素 (px)', value: fmt(px), valueZh: fmt(px) },
+						{ label: 'rem', labelZh: 'rem', value: fmt(px / root), valueZh: fmt(px / root) },
+						{
+							label: 'em (relative to root)',
+							labelZh: 'em（以根字号为基准）',
+							value: fmt(px / root),
+							valueZh: fmt(px / root),
+						},
+						{
+							label: '% of root font',
+							labelZh: '根字号百分比',
+							value: fmt((px / root) * 100) + '%',
+							valueZh: fmt((px / root) * 100) + '%',
+						},
+					],
+				};
+			},
+		},
+	},
+];
+
+export const SEO_TEXT_TOOLS: ToolEntry[] = [
+	{
+		slug: 'slug-generator',
+		category: 'seo',
+		name: 'URL Slug Generator',
+		nameZh: 'URL Slug 生成器',
+		description: 'Turn any title into a clean SEO-friendly URL slug: lowercased, diacritics folded, punctuation collapsed to one separator. Chinese titles are kept as-is.',
+		descriptionZh: '把任意标题转成干净的 SEO 友好 URL Slug：转小写、折叠变音符号、标点合并为单个分隔符，中文标题原样保留。',
+		kind: 'text',
+		config: {
+			def: '10 Tips for Writing Better CSS!',
+			placeholder: 'Type a title…',
+			placeholderZh: '输入文章标题…',
+			stats: (text: string) => [
+				{ label: 'Characters', labelZh: '字符数', value: String(text.length) },
+				{ label: 'Slug length', labelZh: 'Slug 长度', value: String(slugify(text, '-').length) },
+			],
+			transforms: [
+				{
+					id: 'hyphen',
+					label: 'Slug (kebab-case)',
+					labelZh: 'Slug（短横线）',
+					run: (t) => {
+						const s = slugify(t, '-');
+						return s ? { output: s } : { output: '', error: 'Nothing to keep — the title has no letters, digits or CJK characters.', errorZh: '没有可保留的内容——标题里没有字母、数字或汉字。' };
+					},
+				},
+				{
+					id: 'underscore',
+					label: 'Slug (snake_case)',
+					labelZh: 'Slug（下划线）',
+					run: (t) => {
+						const s = slugify(t, '_');
+						return s ? { output: s } : { output: '', error: 'Nothing to keep — the title has no letters, digits or CJK characters.', errorZh: '没有可保留的内容——标题里没有字母、数字或汉字。' };
+					},
+				},
+				{
+					id: 'batch',
+					label: 'Slug each line (kebab-case)',
+					labelZh: '逐行生成 Slug（短横线）',
+					run: (t) =>
+						runBatch(t, (line) => {
+							const s = slugify(line, '-');
+							return s || null;
+						}),
+				},
+			],
+		} satisfies TextConfig,
+	},
+	{
+		slug: 'robots-txt-generator',
+		category: 'seo',
+		name: 'robots.txt Generator & Validator',
+		nameZh: 'robots.txt 生成与校验',
+		description: 'Write rules in a simple line format (user-agent / disallow / allow / sitemap) and get a valid robots.txt — or lint an existing one for typos and order mistakes.',
+		descriptionZh: '用简单的行格式（user-agent / disallow / allow / sitemap）书写规则并生成合法的 robots.txt——或校验现有文件，揪出拼写与顺序错误。',
+		kind: 'text',
+		config: {
+			def: 'user-agent: *\ndisallow: /admin\ndisallow: /private/\nallow: /private/public/\n\nuser-agent: GPTBot\ndisallow: /\n\nsitemap: https://example.com/sitemap.xml',
+			placeholder: 'user-agent: *\ndisallow: /private',
+			placeholderZh: 'user-agent: *\ndisallow: /private',
+			mono: true,
+			live: false,
+			transforms: [
+				{
+					id: 'generate',
+					label: 'Generate robots.txt',
+					labelZh: '生成 robots.txt',
+					run: (t) => {
+						const { output, errors } = robotsFromDsl(t);
+						if (errors.length) return { output: '', error: errors[0], errorZh: errors[1] ?? errors[0] };
+						return { output };
+					},
+				},
+				{
+					id: 'validate',
+					label: 'Validate / lint',
+					labelZh: '校验 / 检查',
+					run: (t) => {
+						const problems = lintRobots(t);
+						if (!problems.length)
+							return { output: '✓ No problems found — directives, order and sitemap all check out.\n✓ 未发现问题——指令、顺序与 sitemap 均合规。' };
+						return { output: problems.join('\n') };
+					},
+				},
+			],
+		},
+	},
+	{
+		slug: 'sitemap-xml-generator',
+		category: 'seo',
+		name: 'sitemap.xml Generator & Validator',
+		nameZh: 'sitemap.xml 生成与校验',
+		description: 'Paste one URL per line (optionally "url, lastmod") and get a valid sitemap.xml — or validate a pasted sitemap: URL count, limits, malformed entries.',
+		descriptionZh: '每行一个 URL（可选 "url, lastmod"）生成合法 sitemap.xml——或校验粘贴的 sitemap：URL 数量、上限与格式问题。',
+		kind: 'text',
+		config: {
+			def: 'https://example.com/\nhttps://example.com/about\nhttps://example.com/tools, 2026-09-01',
+			placeholder: 'https://example.com/page\nhttps://example.com/other, 2026-09-01',
+			placeholderZh: 'https://example.com/page\nhttps://example.com/other, 2026-09-01',
+			mono: true,
+			transforms: [
+				{
+					id: 'generate',
+					label: 'Generate sitemap.xml',
+					labelZh: '生成 sitemap.xml',
+					run: (t) => {
+						const entries = t
+							.split('\n')
+							.map((l) => l.trim())
+							.filter(Boolean)
+							.map((l) => {
+								const [url, lastmod] = l.split(',').map((s) => s.trim());
+								return { url: url ?? '', lastmod };
+							});
+						const bad = entries.filter((e) => !/^https?:\/\//.test(e.url));
+						if (!entries.length) return { output: '', error: 'Enter at least one URL.', errorZh: '请至少输入一个 URL。' };
+						if (bad.length) return { output: '', error: `These lines are not absolute URLs: ${bad.slice(0, 3).map((e) => e.url).join(', ')}`, errorZh: `以下行不是绝对 URL：${bad.slice(0, 3).map((e) => e.url).join('、')}` };
+						const urls = [...new Set(entries.map((e) => e.url))];
+						const xml =
+							'<?xml version="1.0" encoding="UTF-8"?>\n' +
+							'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+							urls
+								.map((url) => {
+									const e = entries.find((x) => x.url === url) as { url: string; lastmod?: string };
+									return `  <url>\n    <loc>${escXml(url)}</loc>\n${e.lastmod ? `    <lastmod>${e.lastmod}</lastmod>\n` : ''}  </url>`;
+								})
+								.join('\n') +
+							'\n</urlset>\n';
+						return { output: `${urls.length} URLs · ${humanCount(xml.length)}\n\n${xml}` };
+					},
+				},
+				{
+					id: 'validate',
+					label: 'Validate sitemap.xml',
+					labelZh: '校验 sitemap.xml',
+					run: (t) => {
+						const locs = [...t.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+						if (!locs.length) return { output: '', error: 'No <loc> entries found — paste a sitemap.xml to validate.', errorZh: '未找到 <loc> 条目——请粘贴待校验的 sitemap.xml。' };
+						const bad = locs.filter((u) => !/^https?:\/\//.test(u));
+						const lines = [
+							`URLs URL 数: ${locs.length}${locs.length > 50000 ? '  ⚠ over the 50,000 limit · 超过 5 万上限!' : ''}`,
+							`Unique 去重后: ${new Set(locs).size}`,
+							`Non-absolute 非绝对 URL: ${bad.length}${bad.length ? ` (${bad.slice(0, 3).join(', ')})` : ''}`,
+						];
+						return { output: lines.join('\n') };
+					},
+				},
+			],
+		},
+	},
+	{
+		slug: 'meta-tag-generator',
+		category: 'seo',
+		name: 'Meta Tag Generator & OG Preview',
+		nameZh: 'Meta 标签生成与 OG 预览',
+		description: 'Fill in title, description, URL and image — get the full <head> tag block (meta + Open Graph + Twitter) with a live social share card preview.',
+		descriptionZh: '填写标题、描述、URL 与图片——生成完整 <head> 标签块（meta + Open Graph + Twitter），并实时预览社交分享卡片。',
+		kind: 'meta',
+	},
+];
+
+/** Experiments & fun: GPU fractals. */
+export const FUN_TEXT_TOOLS: ToolEntry[] = [
+	{
+		slug: 'mandelbrot-explorer',
+		category: 'fun',
+		name: 'Mandelbrot & Julia Set Explorer',
+		nameZh: '曼德博与朱利亚集合浏览器',
+		description: 'Explore the Mandelbrot set on the GPU: drag to pan, wheel to zoom toward 10⁻¹⁵ scale, switch to Julia sets, tune iterations and palette, export PNG.',
+		descriptionZh: 'GPU 上探索曼德博集合：拖动平移、滚轮缩放至 10⁻¹⁵ 尺度、切换朱利亚集合、调节迭代与配色、导出 PNG。',
+		kind: 'fractal',
+	},
+];
+
 
 interface ParsedCurl {
 	url: string;

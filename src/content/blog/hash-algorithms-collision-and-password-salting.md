@@ -6,7 +6,7 @@ category: security
 topics: [security, cryptography, developer-tools]
 searchTerms: ['哈希算法', 'SHA-256', 'MD5碰撞', 'Argon2id', '密码加盐', '密码学']
 contentLang: 'zh-CN'
-relatedTools: ['devtools/hash-generator', 'devtools/password-generator']
+relatedTools: ['security/hash-generator', 'security/password-generator']
 relatedPosts: ['password-entropy-and-secure-random', 'jwt-security-and-decoder-pitfalls']
 ---
 
@@ -17,7 +17,7 @@ relatedPosts: ['password-entropy-and-secure-random', 'jwt-security-and-decoder-p
 - “MD5 已经被宣布‘不安全’了，为什么很多文件下载站还在用它提供校验码？”
 - “给密码加了盐（Salt），为什么在 GPU 算力面前依然形同虚设？”
 
-本文结合本站[SHA-256 哈希生成器](/devtools/hash-generator/)与[安全随机密码生成器](/devtools/password-generator/)的设计实践，系统拆解密码学哈希函数的三大数学性质、碰撞攻击历史以及密码持久化选型的本质逻辑。
+本文结合本站[SHA-256 哈希生成器](/security/hash-generator/)与[安全随机密码生成器](/security/password-generator/)的设计实践，系统拆解密码学哈希函数的三大数学性质、碰撞攻击历史以及密码持久化选型的本质逻辑。
 
 ---
 
@@ -124,7 +124,7 @@ $$\text{HMAC}(K, m) = H\Big(\big(K' \oplus \text{opad}\big) \parallel H\big((K' 
 
 ## 5. 浏览器端原生实战：利用 Web Cryptography API
 
-在本站的[SHA-256 哈希生成器](/devtools/hash-generator/)中，我们坚持**零第三方外部库**，直接调用浏览器 W3C 标准的 Web Cryptography 原生接口：
+在本站的[SHA-256 哈希生成器](/security/hash-generator/)中，我们坚持**零第三方外部库**，直接调用浏览器 W3C 标准的 Web Cryptography 原生接口：
 
 ```ts
 /**

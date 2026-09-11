@@ -16,14 +16,14 @@ const fillAndRun = async (page: import('@playwright/test').Page, cat: string, sl
 };
 
 test('roman batch converts per line in both directions, bad rows marked', async ({ page }) => {
-	const out = await fillAndRun(page, 'utilities', 'roman-numeral', '1987\nMMXXVI\n404\nbanana', /Convert each line/);
+	const out = await fillAndRun(page, 'text', 'roman-numeral', '1987\nMMXXVI\n404\nbanana', /Convert each line/);
 	await expect(out).toHaveValue(
 		['1987 → MCMLXXXVII', 'MMXXVI → 2026', '404 → CDIV', 'banana → ✗'].join('\n'),
 	);
 });
 
 test('slug batch keeps CJK and folds diacritics per line', async ({ page }) => {
-	const out = await fillAndRun(page, 'devtools', 'slug-generator', 'Hello World!\n10 Tips for CSS\n你好世界', /Slug each line/);
+	const out = await fillAndRun(page, 'seo', 'slug-generator', 'Hello World!\n10 Tips for CSS\n你好世界', /Slug each line/);
 	await expect(out).toHaveValue(['Hello World! → hello-world', '10 Tips for CSS → 10-tips-for-css', '你好世界 → 你好世界'].join('\n'));
 });
 
@@ -46,7 +46,7 @@ test('mime batch resolves extensions and mime types both ways', async ({ page })
 test('user-agent batch summarizes browsers and flags bots', async ({ page }) => {
 	const out = await fillAndRun(
 		page,
-		'devtools',
+		'text',
 		'user-agent-parser',
 		'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36\nGooglebot/2.1 (+http://www.google.com/bot.html)',
 		/Parse each line/,
@@ -65,7 +65,7 @@ test('port batch accepts port, port/proto and service name', async ({ page }) =>
 });
 
 test('html entity batch unescapes per line, unknown entity fails alone', async ({ page }) => {
-	const out = await fillAndRun(page, 'devtools', 'html-entity-escaper', '&amp; &lt; hi\n&bogus; Tom', /Unescape each line/);
+	const out = await fillAndRun(page, 'text', 'html-entity-escaper', '&amp; &lt; hi\n&bogus; Tom', /Unescape each line/);
 	await expect(out).toHaveValue(['&amp; &lt; hi → & < hi', '&bogus; Tom → ✗'].join('\n'));
 });
 
@@ -107,7 +107,7 @@ test('unix timestamp batch mixes directions per line', async ({ page }) => {
 });
 
 test('px-rem honors a unit typed into the size field over the select', async ({ page }) => {
-	await page.goto('/devtools/css-px-rem-converter/');
+	await page.goto('/color/css-px-rem-converter/');
 	await page.locator('#t-f-value').fill('1.5rem');
 	await page.waitForTimeout(400);
 	// the values themselves are language-neutral numbers — read the whole

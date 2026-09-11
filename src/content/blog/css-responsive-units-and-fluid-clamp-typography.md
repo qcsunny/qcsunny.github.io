@@ -6,7 +6,7 @@ category: web
 topics: [frontend, web-platform, mathematics]
 searchTerms: ['CSS排版', 'rem与px', '流体排版', 'clamp函数', '无障碍设计', '视口单位']
 contentLang: 'zh-CN'
-relatedTools: ['devtools/css-px-rem-converter']
+relatedTools: ['color/css-px-rem-converter']
 relatedPosts: ['static-site-byte-ledger']
 ---
 
@@ -29,7 +29,7 @@ h1 { font-size: 24px; }
 2. **断点泛滥（Breakpoint Hell）**：面对折叠屏、超宽带鱼屏、平板分屏等碎片化视口，媒体查询断点越补越多，维护成本陡增；
 3. **无障碍灾难**：盲目使用绝对 `px` 会彻底破坏视力受损人群在操作系统或浏览器设置中的字体放大选项，直接违背 **WCAG 2.1 成功准则 1.4.4（文本缩放）**。
 
-本文结合本站[CSS 尺寸换算工具](/devtools/css-px-rem-converter/)的设计思考，从底层单位特性出发，利用初等线性代数推导一套基于 `clamp()` 的纯数学**无断点流体排版（Fluid Typography）体系**。
+本文结合本站[CSS 尺寸换算工具](/color/css-px-rem-converter/)的设计思考，从底层单位特性出发，利用初等线性代数推导一套基于 `clamp()` 的纯数学**无断点流体排版（Fluid Typography）体系**。
 
 ---
 
@@ -65,7 +65,7 @@ html { font-size: 62.5%; } /* 16px * 62.5% = 10px，方便 1.6rem = 16px 心算 
 
 这是一种极其业余的偷懒做法：
 1. 它污染了第三方引入的 UI 组件库，导致外部模块的 `rem` 整体偏小近 40%；
-2. 现代 IDE 早已有自动化 px-to-rem 插件，或者借助本站[CSS 尺寸换算工具](/devtools/css-px-rem-converter/)，完全无需为了口算 10 进位而破坏现代 Web 标准。
+2. 现代 IDE 早已有自动化 px-to-rem 插件，或者借助本站[CSS 尺寸换算工具](/color/css-px-rem-converter/)，完全无需为了口算 10 进位而破坏现代 Web 标准。
 
 ---
 

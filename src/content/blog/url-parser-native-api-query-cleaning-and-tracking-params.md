@@ -6,7 +6,7 @@ category: engineering
 topics: [web-platform, developer-tools, frontend]
 searchTerms: ['URL 解析', 'URL API', '查询参数', '跟踪参数', 'utm_source', 'URLSearchParams']
 contentLang: 'zh-CN'
-relatedTools: ['devtools/url-parser', 'devtools/base64', 'devtools/jwt-decoder']
+relatedTools: ['devtools/url-parser', 'devtools/base64', 'security/jwt-decoder']
 relatedPosts: ['url-unicode-utf8-base64url-boundaries', 'jwt-security-and-decoder-pitfalls']
 ---
 

@@ -53,7 +53,7 @@ async function drop(page: import('@playwright/test').Page, b64: string, name: st
 }
 
 test('tabs switch and each panel has its dropzone', async ({ page }) => {
-	await page.goto('/devtools/pdf-toolkit/');
+	await page.goto('/office/pdf-toolkit/');
 	await page.waitForSelector('.t-pdf-tabs');
 	const tabs = page.locator('.t-pdf-tab');
 	expect(await tabs.count()).toBe(9);
@@ -65,7 +65,7 @@ test('tabs switch and each panel has its dropzone', async ({ page }) => {
 });
 
 test('extract honors the page-range grammar', async ({ page }) => {
-	await page.goto('/devtools/pdf-toolkit/');
+	await page.goto('/office/pdf-toolkit/');
 	await page.waitForSelector('.t-pdf-tabs');
 	await page.locator('.t-pdf-tab', { hasText: /Extract|提取/ }).click();
 	const b64 = toB64(await makePdf([{ label: 'p1' }, { label: 'p2' }, { label: 'p3' }, { label: 'p4' }, { label: 'p5' }], 'five'));
@@ -80,7 +80,7 @@ test('extract honors the page-range grammar', async ({ page }) => {
 });
 
 test('watermark round-trips and metadata survives', async ({ page }) => {
-	await page.goto('/devtools/pdf-toolkit/');
+	await page.goto('/office/pdf-toolkit/');
 	await page.waitForSelector('.t-pdf-tabs');
 	await page.locator('.t-pdf-tab', { hasText: /Watermark|水印/ }).click();
 	const b64 = toB64(await makePdf([{ label: 'hello' }], 'wm-doc'));
@@ -94,7 +94,7 @@ test('watermark round-trips and metadata survives', async ({ page }) => {
 });
 
 test('metadata view reads and clear strips', async ({ page }) => {
-	await page.goto('/devtools/pdf-toolkit/');
+	await page.goto('/office/pdf-toolkit/');
 	await page.waitForSelector('.t-pdf-tabs');
 	await page.locator('.t-pdf-tab', { hasText: /Metadata|元数据/ }).click();
 	const b64 = toB64(await makePdf([{ label: 'x' }], 'secret-title'));
@@ -111,7 +111,7 @@ test('metadata view reads and clear strips', async ({ page }) => {
 });
 
 test('merge combines two files in order', async ({ page }) => {
-	await page.goto('/devtools/pdf-toolkit/');
+	await page.goto('/office/pdf-toolkit/');
 	await page.waitForSelector('.t-pdf-tabs');
 	// merge is the default first tab
 	const b1 = toB64(await makePdf([{ label: 'a1' }, { label: 'a2' }], 'A'));

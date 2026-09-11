@@ -34,7 +34,7 @@ test('json schema generates draft-07 and validates with typed errors', async ({ 
 });
 
 test('json diff reports structural changes by path, not by formatting', async ({ page }) => {
-	await page.goto('/devtools/json-diff/');
+	await page.goto('/text/json-diff/');
 	const results = page.locator('.t-results');
 	const table = page.locator('.t-table');
 

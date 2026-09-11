@@ -32,7 +32,7 @@ const dropCanvasPng = async (page: import('@playwright/test').Page, text: string
 
 test('document ocr recognizes clear print text through the wasm pipeline', async ({ page }) => {
 	test.setTimeout(180_000); // wasm + language load on first run is the slow path
-	await page.goto('/devtools/document-ocr/');
+	await page.goto('/office/document-ocr/');
 	await page.waitForSelector('.t-ocr-drop');
 
 	await dropCanvasPng(page, 'Hello OCR World 12345');
@@ -46,7 +46,7 @@ test('document ocr recognizes clear print text through the wasm pipeline', async
 });
 
 test('document ocr language select offers english and chinese, page stays bilingual-clean', async ({ page }) => {
-	await page.goto('/devtools/document-ocr/');
+	await page.goto('/office/document-ocr/');
 	await page.waitForSelector('.t-ocr-controls select');
 	const opts = page.locator('.t-ocr-controls select option');
 	expect(await opts.count()).toBe(2);

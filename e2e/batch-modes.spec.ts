@@ -5,7 +5,7 @@
 import { test, expect } from '@playwright/test';
 
 test('cidr batch transform summarizes each line, invalid lines flagged', async ({ page }) => {
-	await page.goto('/devtools/cidr-calculator/');
+	await page.goto('/security/cidr-calculator/');
 	await page.locator('textarea[data-role="input"]').fill('192.168.1.1/24\nnot-a-cidr\n10.0.0.0/8');
 	await page.getByRole('button', { name: /Calculate each line|逐行批量计算/ }).click();
 	// Polling assertion: this tool is live-mode, and the debounced live

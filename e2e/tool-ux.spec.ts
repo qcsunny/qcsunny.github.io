@@ -6,7 +6,7 @@
 import { test, expect } from '@playwright/test';
 
 test('gamut slider keeps exactly the dragged value (no round-trip snap-back)', async ({ page }) => {
-	await page.goto('/utilities/color-converter/');
+	await page.goto('/color/color-converter/');
 	const slider = page.locator('#t-gamut-l');
 	// Simulate a drag: several input events in sequence, each reading what the
 	// handler chain left behind. The bug: update() rewrote slider.value from the
@@ -24,7 +24,7 @@ test('gamut slider keeps exactly the dragged value (no round-trip snap-back)', a
 });
 
 test('password generator batch mode emits exactly N lines, one per password', async ({ page }) => {
-	await page.goto('/devtools/password-generator/');
+	await page.goto('/security/password-generator/');
 	await page.locator('.t-countsel').selectOption('5');
 	const multi = page.locator('.t-passmulti');
 	await expect(multi).toBeVisible();

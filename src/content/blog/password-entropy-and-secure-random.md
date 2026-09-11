@@ -6,11 +6,11 @@ category: security
 topics: [security, cryptography]
 searchTerms: ['密码熵', 'CSPRNG', '取模偏差']
 contentLang: 'zh-CN'
-relatedTools: ['devtools/password-generator']
+relatedTools: ['security/password-generator']
 relatedPosts: ['jwt-security-and-decoder-pitfalls']
 ---
 
-本站有三个都靠随机性吃饭的工具：[强密码生成器](/devtools/password-generator/)、[UUID 生成器](/devtools/uuid-generator/)和[随机数生成器](/utilities/random-number/)。它们看着简单——"生成一串随机东西"——但真正做对要回答三个各自独立、又都容易做错的问题：
+本站有三个都靠随机性吃饭的工具：[强密码生成器](/security/password-generator/)、[UUID 生成器](/devtools/uuid-generator/)和[随机数生成器](/devtools/random-number/)。它们看着简单——"生成一串随机东西"——但真正做对要回答三个各自独立、又都容易做错的问题：
 
 1. **怎么衡量一个密码"强不强"**？答案是比特，不是"你用了几种字符"。
 2. **随机从哪来**？`Math.random` 在这里是不合格的，必须用密码学安全随机源（CSPRNG）。

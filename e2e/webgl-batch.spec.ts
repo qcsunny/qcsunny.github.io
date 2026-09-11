@@ -8,7 +8,7 @@ test('mandelbrot renders, zooms and switches to julia', async ({ browser }) => {
 	const ctx = await browser.newContext();
 	const page = await ctx.newPage();
 	await page.setViewportSize({ width: 1200, height: 900 });
-	await page.goto('/devtools/mandelbrot-explorer/');
+	await page.goto('/fun/mandelbrot-explorer/');
 	await page.waitForSelector('.t-fractal-canvas');
 	await page.waitForTimeout(800);
 
@@ -48,7 +48,7 @@ test('mandelbrot renders, zooms and switches to julia', async ({ browser }) => {
 test('image filter lab convolves live from an editable kernel', async ({ browser }) => {
 	const ctx = await browser.newContext();
 	const page = await ctx.newPage();
-	await page.goto('/devtools/image-filter-lab/');
+	await page.goto('/media/image-filter-lab/');
 	await page.waitForSelector('.t-kernel-grid input');
 	await page.waitForTimeout(800);
 

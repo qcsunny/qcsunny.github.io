@@ -6,7 +6,7 @@ category: engineering
 topics: [performance, static-sites]
 searchTerms: ['静态站', '字节账', '性能']
 contentLang: 'zh-CN'
-relatedTools: ['utilities/markdown-preview']
+relatedTools: ['text/markdown-preview']
 relatedPosts: ['canvas-2d-surface-plot']
 ---
 
@@ -167,7 +167,7 @@ _slug_.astro_astro_type_script_index_0_lang.x-5ajGim.js
 
 108 个字节、4 个请求、4 个缓存条目，做同一件事。
 
-这条链子最长的一页是 `/utilities/markdown-preview/`：**16 个请求、211,358 B**，其中 110,848 B 是 JavaScript——因为它在文档里出现第一个公式时才会动态 import KaTeX，而那个 chunk 自己就有 63,345 B（brotli 后）。那 258,633 B 原始的 chunk **不被任何 HTML 引用**，只能通过运行时的 `import()` 到达，所以它连"HTML 里能看见"这一栏都进不去。那是正确的按需加载，逐字节的账已经写在[第 12 篇的第 8 节](/blog/markdown-parser-and-katex-math/)里——但它和上面那个 27 字节的桩是同一个物理事实的两面：**浏览器只能发现它已经解析过的东西**。区别只在于一个是有意让它晚发现，另一个是白晚了一步。
+这条链子最长的一页是 `/text/markdown-preview/`：**16 个请求、211,358 B**，其中 110,848 B 是 JavaScript——因为它在文档里出现第一个公式时才会动态 import KaTeX，而那个 chunk 自己就有 63,345 B（brotli 后）。那 258,633 B 原始的 chunk **不被任何 HTML 引用**，只能通过运行时的 `import()` 到达，所以它连"HTML 里能看见"这一栏都进不去。那是正确的按需加载，逐字节的账已经写在[第 12 篇的第 8 节](/blog/markdown-parser-and-katex-math/)里——但它和上面那个 27 字节的桩是同一个物理事实的两面：**浏览器只能发现它已经解析过的东西**。区别只在于一个是有意让它晚发现，另一个是白晚了一步。
 
 修法是构建期后处理 HTML，把哈希后的文件名写进 `<link rel="modulepreload">`——这需要一个 Astro integration 才能拿到最终文件名，而这个仓库里已经有两个先例（`llms-txt.mjs` 和 `og-images.mjs` 都在构建后阶段读写产物），所以不是新机制，只是还没做。量了，没修，价钱是 46 个工具页各一次往返。
 

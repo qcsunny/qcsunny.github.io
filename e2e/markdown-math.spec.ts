@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 
-// /devtools/markdown-preview/ used to *say* it supported maths and then print the
+// /text/markdown-preview/ used to *say* it supported maths and then print the
 // LaTeX source: `$$E = mc^2$$` came out as the characters `$$E = mc^2$$` inside a
 // centred box. It now typesets with KaTeX, which is a local dependency (vendored
 // stylesheet + woff2 under src/, nothing from a CDN) pulled in as its own chunk
@@ -12,7 +12,7 @@ import { expect, test } from '@playwright/test';
 // surviving is the signal that typesetting did not happen — which these specs
 // use in both directions.
 
-const TOOL = '/utilities/markdown-preview/';
+const TOOL = '/text/markdown-preview/';
 
 test('inline and display formulas typeset, CJK inside them included', async ({ page }) => {
 	await page.goto(TOOL);

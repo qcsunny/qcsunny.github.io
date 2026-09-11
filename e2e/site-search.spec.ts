@@ -172,12 +172,12 @@ test('non-blog pages keep searching the tool registry', async ({ browser }) => {
 		for (const badge of await devBadges.all()) {
 			expect((await badge.textContent())?.trim()).toBe('Dev Tools');
 		}
-		await page.locator('#site-search-modal .sm-filter-pill[data-cat="utilities"]').click();
+		await page.locator('#site-search-modal .sm-filter-pill[data-cat="text"]').click();
 		await expect(page.locator('#sm-results-list .sm-item').first()).toBeVisible();
-		const utilBadges = page.locator('#sm-results-list .sm-item-badge');
-		expect(await utilBadges.count()).toBeGreaterThan(0);
-		for (const badge of await utilBadges.all()) {
-			expect((await badge.textContent())?.trim()).toBe('Utilities');
+		const textBadges = page.locator('#sm-results-list .sm-item-badge');
+		expect(await textBadges.count()).toBeGreaterThan(0);
+		for (const badge of await textBadges.all()) {
+			expect((await badge.textContent())?.trim()).toBe('Text');
 		}
 		await page.locator('#site-search-modal .sm-filter-pill[data-cat="all"]').click();
 		await page.keyboard.press('Escape');
@@ -225,7 +225,7 @@ test('the inline category bar labels cross-category matches, never raw slugs', a
 	// Compared case-sensitively on purpose: the fallback emits the raw key
 	// (already lowercase) while the labels are title case, and folding case would
 	// make the real 'Finance' / 'Utilities' labels look like their own keys.
-	const CAT_KEYS = new Set(['finance', 'calculators', 'converters', 'devtools', 'utilities']);
+	const CAT_KEYS = new Set(['finance', 'calculators', 'converters', 'devtools', 'office', 'security', 'text', 'media', 'color', 'seo', 'fun', 'daily']);
 
 	const checkAllBadges = async () => {
 		const badges = page.locator('.t-cross-cat-badge');
@@ -245,12 +245,14 @@ test('the inline category bar labels cross-category matches, never raw slugs', a
 	await expect(page.locator('.t-cross-cat-item[href*="/json-formatter/"] .t-cross-cat-badge')).toHaveText('Dev Tool');
 	await checkAllBadges();
 
-	// 'utilities' had no map entry at all, so it fell through the same way.
-	// 'qr' matches no devtools card, so this page also shows only cross-category rows.
+	// 'ocr' matches no devtools card (document-ocr moved to /office/), so this
+	// page also shows only cross-category rows — the badge must read 'Office',
+	// not the raw 'office' key (the old 'utilities' case had no map entry at all
+	// and fell through the same way).
 	await page.goto('/devtools/');
-	await page.locator('#tool-search-input').fill('qr');
-	await expect(page.locator('.t-cross-cat-item[href*="/qr-code-generator/"]')).toBeVisible();
-	await expect(page.locator('.t-cross-cat-item[href*="/qr-code-generator/"] .t-cross-cat-badge')).toHaveText('Utilities');
+	await page.locator('#tool-search-input').fill('ocr');
+	await expect(page.locator('.t-cross-cat-item[href*="/document-ocr/"]')).toBeVisible();
+	await expect(page.locator('.t-cross-cat-item[href*="/document-ocr/"] .t-cross-cat-badge')).toHaveText('Office');
 	await checkAllBadges();
 
 	// ToolShell pages render no Header, so the toggle is .t-lang. Because the list
@@ -258,7 +260,7 @@ test('the inline category bar labels cross-category matches, never raw slugs', a
 	// hiding half of a span pair.
 	await page.evaluate(() => document.querySelector<HTMLButtonElement>('.t-lang')?.click());
 	await expect(page.locator('html')).toHaveAttribute('data-lang', 'zh');
-	await expect(page.locator('.t-cross-cat-item[href*="/qr-code-generator/"] .t-cross-cat-badge')).toHaveText('实用工具');
+	await expect(page.locator('.t-cross-cat-item[href*="/document-ocr/"] .t-cross-cat-badge')).toHaveText('办公工具');
 
 	await ctx.close();
 });

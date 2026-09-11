@@ -6,11 +6,11 @@ category: algorithms
 topics: [algorithms, developer-tools]
 searchTerms: ['二维码', 'Reed-Solomon', 'GF(256)']
 contentLang: 'zh-CN'
-relatedTools: ['utilities/qr-code-generator']
+relatedTools: ['devtools/qr-code-generator']
 relatedPosts: ['hash-algorithms-collision-and-password-salting']
 ---
 
-二维码看起来像一张图片，本质上却是一条**编译流水线**：文本 → 比特流 → 有限域多项式除法 → 矩阵排布 → 掩码优选。本站的[二维码生成器](/utilities/qr-code-generator/)没有引入任何第三方库，用 415 行 TypeScript 从零实现了 ISO/IEC 18004 的核心路径。这篇文章按流水线顺序把它拆开。
+二维码看起来像一张图片，本质上却是一条**编译流水线**：文本 → 比特流 → 有限域多项式除法 → 矩阵排布 → 掩码优选。本站的[二维码生成器](/devtools/qr-code-generator/)没有引入任何第三方库，用 415 行 TypeScript 从零实现了 ISO/IEC 18004 的核心路径。这篇文章按流水线顺序把它拆开。
 
 ---
 
@@ -318,7 +318,7 @@ const dark = (row: number, col: number): boolean => {
 
 ## 12. 在线试试
 
-- **[二维码生成器](/utilities/qr-code-generator/)**：本文拆解的这份实现，可切换 L/M/Q/H 纠错级别，实时显示版本号、矩阵尺寸与已编码字节数，一键下载 PNG；
+- **[二维码生成器](/devtools/qr-code-generator/)**：本文拆解的这份实现，可切换 L/M/Q/H 纠错级别，实时显示版本号、矩阵尺寸与已编码字节数，一键下载 PNG；
 - **[URL 解析器](/devtools/url-parser/)**：编码前先检查查询参数与转义是否正确，避免生成一个扫出来打不开的链接；
 - **[Base64 编解码](/devtools/base64/)**：处理需要塞进二维码的二进制载荷；
 - **[UUID 生成器](/devtools/uuid-generator/)**：需要往码里放唯一标识时，用 `crypto.getRandomValues()` 生成 v4/v7。

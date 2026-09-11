@@ -1,7 +1,6 @@
-// Registry entries for /utilities/* form tools — the daily-life calculators
-// (age, date math, BMI & calories). The utilities category's text tools live
-// in textTools.ts; these FormConfig entries are kept in their own file so each
-// file stays one widget kind. Dates are handled as {y, m, d} triples parsed
+// Registry entries for the daily-life calculators (age, date math, BMI &
+// calories). These FormConfig entries are kept in their own file so each file
+// stays one widget kind. Dates are handled as {y, m, d} triples parsed
 // from the ISO strings the form's 'date' inputs produce, and every day
 // arithmetic goes through Date.UTC so a DST gap can never shift a count.
 
@@ -518,7 +517,7 @@ const bmiConfig: FormConfig = {
 export const DAILY_TOOLS: ToolEntry[] = [
 	{
 		slug: 'age-calculator',
-		category: 'utilities',
+		category: 'daily',
 		name: 'Age Calculator',
 		nameZh: '年龄计算器',
 		description: 'Exact age in years, months and days, plus total days lived and a countdown to your next birthday.',
@@ -528,7 +527,7 @@ export const DAILY_TOOLS: ToolEntry[] = [
 	},
 	{
 		slug: 'date-calculator',
-		category: 'utilities',
+		category: 'daily',
 		name: 'Date Calculator',
 		nameZh: '日期计算器',
 		description: 'Difference between two dates (with business days) and date arithmetic — add or subtract days, weeks, months or years.',
@@ -538,7 +537,7 @@ export const DAILY_TOOLS: ToolEntry[] = [
 	},
 	{
 		slug: 'bmi-calculator',
-		category: 'utilities',
+		category: 'daily',
 		name: 'BMI & Calorie Calculator',
 		nameZh: 'BMI 与每日热量计算器',
 		description: 'BMI with WHO category, healthy weight range, BMR (Mifflin–St Jeor) and daily calories to maintain or change weight.',
@@ -548,7 +547,7 @@ export const DAILY_TOOLS: ToolEntry[] = [
 	},
 	{
 		slug: 'timezone-converter',
-		category: 'utilities',
+		category: 'daily',
 		name: 'Time Zone Converter & World Clock',
 		nameZh: '时区转换与世界时钟',
 		description: 'Convert a moment between any two time zones (DST handled by the browser\u2019s own tz database) and see it across 12 world cities at once.',

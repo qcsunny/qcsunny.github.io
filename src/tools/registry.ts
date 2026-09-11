@@ -10,15 +10,12 @@
 import { CALCULATOR_TOOLS } from './calculators';
 import { CONVERTER_TOOLS } from './converters';
 import { DAILY_TOOLS } from './daily';
+import { SECURITY_GENERATOR_TOOLS, DEVTOOLS_GENERATOR_TOOLS } from './generators';
+import { DEVTOOLS_WIDGETS, COLOR_WIDGETS } from './widgets';
 import { FINANCE_TOOLS } from './finance';
-import {
-	DEVTOOLS_GENERATOR_TOOLS,
-	UTILITIES_GENERATOR_TOOLS,
-} from './generators';
-import { DEVTOOLS_TEXT_TOOLS, UTILITIES_TEXT_TOOLS } from './textTools';
-import { TOOL_WIDGETS } from './widgets';
+import { DEVTOOLS_TEXT_TOOLS, OFFICE_TEXT_TOOLS, SECURITY_TEXT_TOOLS, TEXT_TOOLS, MEDIA_TEXT_TOOLS, COLOR_TEXT_TOOLS, SEO_TEXT_TOOLS, FUN_TEXT_TOOLS } from './textTools';
 
-export type ToolCategory = 'calculators' | 'converters' | 'finance' | 'tools' | 'devtools' | 'utilities';
+export type ToolCategory = 'calculators' | 'converters' | 'finance' | 'devtools' | 'office' | 'security' | 'text' | 'media' | 'color' | 'seo' | 'fun' | 'daily';
 export type ToolKind =
 	| 'form'
 	| 'converter'
@@ -282,6 +279,62 @@ export const CATEGORIES: {
 	blurbZh: string;
 }[] = [
 	{
+		id: 'office',
+		label: 'Office & Documents',
+		labelZh: 'Office 办公与文档处理',
+		blurb: 'Excel workbook analysis and cleaning, the PDF toolkit (merge, split, watermark), and document OCR for PDFs and images.',
+		blurbZh: 'Excel 工作簿分析与清理、PDF 工具箱（合并/拆分/水印）、PDF 与图片的文档 OCR 识别。',
+	},
+	{
+		id: 'security',
+		label: 'Security & Privacy',
+		labelZh: '安全与隐私',
+		blurb: 'Password strength, hashing and HMAC, JWT inspection, subnet math, and what your browser reveals about you.',
+		blurbZh: '强密码生成、哈希与 HMAC、JWT 检查、子网计算、浏览器隐私指纹自查。',
+	},
+	{
+		id: 'text',
+		label: 'Text Processing',
+		labelZh: '文本处理',
+		blurb: 'Case conversion, dedupe and sort, extraction, diffs, CSV ⇄ JSON, markdown tools, word and character counts.',
+		blurbZh: '大小写转换、去重排序、内容提取、文本对比、CSV ⇄ JSON、Markdown 工具、字数统计。',
+	},
+	{
+		id: 'media',
+		label: 'Media Files',
+		labelZh: '媒体文件',
+		blurb: 'Video and audio metadata parsing, true-lossless detection, and a GPU convolution filter lab.',
+		blurbZh: '视频音频元数据解析、真假无损判别、GPU 卷积滤镜实验室。',
+	},
+	{
+		id: 'color',
+		label: 'Color & Design',
+		labelZh: '颜色与设计',
+		blurb: 'Color conversion, palettes, WCAG contrast, and the CSS size/clamp helpers designers reach for.',
+		blurbZh: '颜色转换、配色方案、WCAG 对比度检查、CSS 尺寸与 clamp 助手。',
+	},
+	{
+		id: 'seo',
+		label: 'SEO & Site',
+		labelZh: 'SEO 与站点',
+		blurb: 'Meta tags with OG preview, robots.txt, sitemap.xml, and URL slug generation.',
+		blurbZh: 'Meta 标签与 OG 预览、robots.txt、sitemap.xml、URL slug 生成。',
+	},
+	{
+		id: 'fun',
+		label: 'Experiments & Fun',
+		labelZh: '实验与趣味',
+		blurb: 'The Mandelbrot and Julia explorer — one GPU thread per pixel.',
+		blurbZh: '曼德博与朱利亚集合浏览器——每像素一个 GPU 线程。',
+	},
+	{
+		id: 'daily',
+		label: 'Daily Calculators',
+		labelZh: '日常计算',
+		blurb: 'Age, date and BMI calculators, plus the time zone converter with a world clock.',
+		blurbZh: '年龄、日期与 BMI 计算器，以及带世界时钟的时区转换。',
+	},
+	{
 		id: 'finance',
 		label: 'Finance & Investment',
 		labelZh: '金融理财与投资计算',
@@ -289,18 +342,18 @@ export const CATEGORIES: {
 		blurbZh: '房贷提前还款、复利定投、真实年化利率 IRR、通货膨胀、目标储蓄与 FIRE 财务自由。',
 	},
 	{
+		id: 'devtools',
+		label: 'Developer Tools',
+		labelZh: '开发调试工具',
+		blurb: 'JSON, SQL, YAML, XML, HTML, CSS and JS formatters, base64, regex, cron, timestamps, ports, mime and status-code lookups.',
+		blurbZh: 'JSON/SQL/YAML/XML/HTML/CSS/JS 格式化，base64、正则、cron、时间戳、端口、MIME 与状态码查询。',
+	},
+	{
 		id: 'calculators',
 		label: 'Math & Statistics',
 		labelZh: '数学与统计计算',
-		blurb: 'Scientific calculator, function graphing, percentage, ratios, fractions, and summary statistics.',
-		blurbZh: '科学计算器、函数图像绘制、百分比增减、比例方程、最简分数与统计分析。',
-	},
-	{
-		id: 'devtools',
-		label: 'Developer & Security Tools',
-		labelZh: '开发调试与安全工具',
-		blurb: 'JSON, SQL, JWT, URL, XML, CSS, HTML formatters, UUID v4/v7, and strong passwords.',
-		blurbZh: 'JSON/SQL 格式化、JWT 解码、UUID v4/v7、代码压缩美化与强密码生成。',
+		blurb: 'Every calculator: scientific calculator, function graphing, percentages, fractions, ratios, summary statistics and linear regression.',
+		blurbZh: '全部计算工具：科学计算器、函数图像绘制、百分比增减、比例方程、最简分数、统计分析与线性回归。',
 	},
 	{
 		id: 'converters',
@@ -308,13 +361,6 @@ export const CATEGORIES: {
 		labelZh: '多功能单位换算',
 		blurb: 'Length, weight, temperature, area, volume, speed, time, data storage, energy, power, and pressure.',
 		blurbZh: '长度、重量、温度、面积、体积、速度、时间、数据存储、能量热量、功率马力与压力压强换算。',
-	},
-	{
-		id: 'utilities',
-		label: 'Daily Calculators & Text Utilities',
-		labelZh: '日常计算与文本工具',
-		blurb: 'Age and date calculators, BMI and calories, word and character counters, text diff, markdown editor, QR code generator, random numbers, and color converter.',
-		blurbZh: '年龄与日期计算器、BMI 与每日热量、字数统计、文本差异对比、Markdown 预览、二维码生成、随机数生成与颜色换算。',
 	},
 ];
 
@@ -359,30 +405,68 @@ export function categoryLabelZh(id: ToolCategory): string {
 
 /** Breadcrumb href for a category — each category has its own hub page, so a
  *  category link always lands on a page whose title is that category's name.
- *  All four map 1:1 onto their route segment: /finance/, /calculators/,
- *  /converters/ and /devtools/ (the dev-tool pages live under /devtools/<slug>
- *  since the migration off /tools/<slug>). The old 'tools' id survives only as
- *  a defensive alias for callers that still hold it. */
+ *  Every category maps 1:1 onto its route segment: /finance/, /calculators/,
+ *  /converters/, /devtools/, /office/, /security/, /text/, /media/, /color/,
+ *  /seo/, /fun/ and /daily/. */
 export function categoryHref(id: ToolCategory): string {
-	return id === 'tools' ? '/devtools/' : `/${id}/`;
+	return `/${id}/`;
 }
 
 
-/** Every registry-driven tool page, all four categories. */
-export const REGISTRY: ToolEntry[] = [
-	...CALCULATOR_TOOLS,
-	...CONVERTER_TOOLS,
-	...FINANCE_TOOLS,
-	// DAILY before the text/generator arrays so the age/date/BMI calculators
-	// lead the utilities listing (they are its highest-traffic entries); array
-	// order is per-category display order everywhere.
-	...DAILY_TOOLS,
-	...DEVTOOLS_TEXT_TOOLS,
-	...UTILITIES_TEXT_TOOLS,
-	...DEVTOOLS_GENERATOR_TOOLS,
-	...UTILITIES_GENERATOR_TOOLS,
-	...TOOL_WIDGETS,
+/** The category table — the one place a data group is filed under a category.
+ *
+ * Every entry declares exactly one `category`, and that field is the single
+ * source of truth: it decides the URL segment (/office/<slug>/), which hub and
+ * breadcrumb the page sits under, and the search index row. To recategorize a
+ * tool, change that field and move its entry to the matching group below.
+ *
+ * The groups exist only to split the client bundle — catalog.ts imports one
+ * group per page, so a text tool never downloads the finance configs (the
+ * perf-budget spec pins this). That is why a move is two edits rather than
+ * one: REGISTRY routes off the `category` field, while the client chunk off
+ * group membership, and if the two disagree you get a page whose script cannot
+ * find its own config. So they are cross-checked at every build instead of by
+ * eyeball — the drift was what silently dropped mandelbrot-explorer, whose
+ * entry had been removed from its group while `category: 'fun'` still stood.
+ */
+const CATEGORY_GROUPS: { id: ToolCategory; entries: ToolEntry[] }[] = [
+	{ id: 'calculators', entries: CALCULATOR_TOOLS },
+	{ id: 'converters', entries: CONVERTER_TOOLS },
+	{ id: 'finance', entries: FINANCE_TOOLS },
+	{ id: 'daily', entries: DAILY_TOOLS },
+	{ id: 'devtools', entries: [...DEVTOOLS_TEXT_TOOLS, ...DEVTOOLS_GENERATOR_TOOLS, ...DEVTOOLS_WIDGETS] },
+	{ id: 'text', entries: TEXT_TOOLS },
+	{ id: 'office', entries: OFFICE_TEXT_TOOLS },
+	{ id: 'security', entries: [...SECURITY_TEXT_TOOLS, ...SECURITY_GENERATOR_TOOLS] },
+	{ id: 'media', entries: MEDIA_TEXT_TOOLS },
+	{ id: 'color', entries: [...COLOR_TEXT_TOOLS, ...COLOR_WIDGETS] },
+	{ id: 'seo', entries: SEO_TEXT_TOOLS },
+	{ id: 'fun', entries: FUN_TEXT_TOOLS },
 ];
+
+/** Every registry-driven tool page, across all categories. */
+export const REGISTRY: ToolEntry[] = CATEGORY_GROUPS.flatMap((g) => g.entries);
+
+// Asserted at build time — registry.ts is imported by every page's frontmatter,
+// so a failure fails the build rather than shipping a broken category.
+for (const group of CATEGORY_GROUPS) {
+	for (const entry of group.entries) {
+		if (entry.category !== group.id) {
+			throw new Error(
+				`registry: "${entry.slug}" sits in the "${group.id}" group but declares category "${entry.category}". ` +
+					`Move the entry to the matching group or change its category — they must agree.`,
+			);
+		}
+	}
+	if (!CATEGORIES.some((c) => c.id === group.id)) {
+		throw new Error(`registry: group "${group.id}" has no CATEGORIES entry, so its hub page would render no title.`);
+	}
+}
+for (const cat of CATEGORIES) {
+	if (!CATEGORY_GROUPS.some((g) => g.id === cat.id)) {
+		throw new Error(`registry: category "${cat.id}" is in CATEGORIES but has no data group, so its hub would be empty.`);
+	}
+}
 
 /** Every real tool page the site has: the calculators CALCULATOR_FEATURED
  *  lists (they are static pages, not registry entries) plus every registry

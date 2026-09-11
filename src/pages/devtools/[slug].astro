@@ -1,6 +1,6 @@
 ---
-import ToolShell from '../../components/tools/ToolShell.astro';
-import { REGISTRY, type ToolEntry, type TextConfig } from '../../tools/registry';
+import DynamicToolPage from '../../components/tools/DynamicToolPage.astro';
+import { REGISTRY, type ToolEntry } from '../../tools/registry';
 
 export function getStaticPaths() {
 	return REGISTRY
@@ -9,87 +9,10 @@ export function getStaticPaths() {
 }
 
 const { entry } = Astro.props as { entry: ToolEntry };
-const redirect = entry.kind === 'redirect' ? entry.config.target : undefined;
-const textConfig = entry.kind === 'text' ? (entry.config as TextConfig) : undefined;
 ---
 
-<ToolShell
-	title={entry.name}
-	description={entry.description}
-	entry={redirect ? undefined : entry}
-	category="devtools"
-	redirectTo={redirect}
->
-	{
-		!redirect && (
-			<>
-				<div id="t-root">
-					{textConfig && (
-						<>
-							<textarea
-								class={textConfig.mono ? 't-textarea t-mono' : 't-textarea'}
-								rows="6"
-								spellcheck="false"
-								data-role="input"
-								placeholder={textConfig.placeholder}
-								data-placeholder-en={textConfig.placeholder}
-								data-placeholder-zh={textConfig.placeholderZh}
-								aria-label="Text input"
-								data-aria-en="Text input"
-								data-aria-zh="文本输入"
-							>{textConfig.def ?? ''}</textarea>
-							{textConfig.stats && (
-								<>
-									<span class="t-label t-stats-label">
-										<span class="i18n-en">Statistics</span>
-										<span class="i18n-zh">统计数据</span>
-									</span>
-									<div class="t-results" />
-								</>
-							)}
-							{textConfig.transforms && textConfig.transforms.length > 0 && (
-								<>
-									<div class="t-btnrow">
-										{textConfig.transforms.map((t) => (
-										<button type="button" class="t-btn">
-											{t.labelZh && t.labelZh !== t.label ? (
-												<>
-													<span class="i18n-en">{t.label}</span>
-													<span class="i18n-zh">{t.labelZh}</span>
-												</>
-											) : (
-												// identical in both languages: a bare text node, NOT a lone
-												// .i18n-en span — the global CSS hides .i18n-en in the Chinese
-												// view, which left these buttons blank (csv-json-converter).
-												t.label
-											)}
-										</button>
-									))}
-									</div>
-									<span class="t-label t-out-label">
-										<span class="i18n-en">Output</span>
-										<span class="i18n-zh">转换输出</span>
-									</span>
-									<textarea
-										class="t-textarea t-mono t-out"
-										rows="8"
-										readonly
-										data-role="output"
-										aria-label="Output"
-										data-aria-en="Output"
-										data-aria-zh="输出"
-									/>
-									<p class="t-error" />
-								</>
-							)}
-						</>
-					)}
-				</div>
-				<script>
-					import '../../scripts/tools/main';
-				</script>
-			</>
-		)
-	}
-</ToolShell>
+<DynamicToolPage entry={entry} category="devtools" />
 
+<script>
+	import '../../scripts/tools/main';
+</script>

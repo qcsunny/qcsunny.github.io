@@ -6,7 +6,7 @@ category: security
 topics: [security, cryptography]
 searchTerms: ['JWT', 'None算法', '密钥混淆']
 contentLang: 'zh-CN'
-relatedTools: ['devtools/jwt-decoder']
+relatedTools: ['security/jwt-decoder']
 relatedPosts: ['password-entropy-and-secure-random']
 ---
 
@@ -17,7 +17,7 @@ relatedPosts: ['password-entropy-and-secure-random']
 
 事实上，**签名（Signature）保护的是数据的完整性（Integrity）与不可篡改性，但对保密性（Confidentiality）完全没有任何保护作用**。任何人只要拿到一段 JWT，不仅不需要任何密码就能直接看光里面的全部内容；如果后端的签名校验逻辑实现有瑕疵，攻击者甚至可以伪造身份绕过整个系统的鉴权防线。
 
-本站的 [JWT 在线解码器](/devtools/jwt-decoder/) 与 [Base64 编解码器](/devtools/base64/) 正是基于纯本地零网络请求的原则构建的。这篇文章系统剖析 JWT 的底层结构、经典安全漏洞与生产防御要则。
+本站的 [JWT 在线解码器](/security/jwt-decoder/) 与 [Base64 编解码器](/devtools/base64/) 正是基于纯本地零网络请求的原则构建的。这篇文章系统剖析 JWT 的底层结构、经典安全漏洞与生产防御要则。
 
 ---
 
@@ -94,7 +94,7 @@ def verify_token(token, secret):
 
 ## 3. 浏览器端解码工具的安全边界
 
-本站的 [JWT 在线解码器](/devtools/jwt-decoder/) 遵守了一套严格的安全原则：
+本站的 [JWT 在线解码器](/security/jwt-decoder/) 遵守了一套严格的安全原则：
 
 1. **零服务端网络传输（100% Client-side）**：所有解码与格式化操作均通过原生 JavaScript 的 `TextDecoder` 与 `atob` 在本地完成。你的 Token 绝不会被发送到任何第三方服务器；
 2. **明确的“只解不验”语义**：在浏览器前端工具中，由于没有（也不应该有）服务端的私钥或签名密钥，前端工具展示的仅仅是该 Token 内部所携带的声明内容。解码成功**绝不代表**该 Token 目前在业务后端是有效或合法的；

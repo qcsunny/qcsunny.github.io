@@ -1,14 +1,28 @@
 ---
-import ToolShell from '../../components/tools/ToolShell.astro';
-import { REGISTRY, type ToolEntry, type TextConfig } from '../../tools/registry';
+// Shared dynamic tool page body for the category routes that have no static
+// page of their own. Every registry entry resolves here: ToolShell wraps the
+// tool, main.ts finds and hydrates it. The text-config branch (textarea +
+// transforms) is what the form-only categories (finance/converters) do not
+// need, so those keep their own thin [slug].astro; this component serves the
+// text-heavy categories (devtools, office, security, text, media, color, seo,
+// fun, daily).
+//
+// The dispatcher <script>import '../../scripts/tools/main'</script> is kept in
+// the 12 route files on purpose, NOT here: Vite names a single-owner inline
+// script after the .astro file that contains it, and only dedupes *identical
+// owners* into one shared chunk — that dedupe is what names it main.<hash>.js.
+// Pulled into this component the chunk was renamed after it and lost its
+// modulepreload hint, so the first interactive byte went back on the entry →
+// chunk → engine chain. perf-budget.spec pins both halves.
+import ToolShell from './ToolShell.astro';
+import { type ToolCategory, type ToolEntry, type TextConfig } from '../../tools/registry';
 
-export function getStaticPaths() {
-	return REGISTRY
-		.filter((e) => e.category === 'utilities')
-		.map((e) => ({ params: { slug: e.slug }, props: { entry: e } }));
+interface Props {
+	entry: ToolEntry;
+	category: ToolCategory;
 }
 
-const { entry } = Astro.props as { entry: ToolEntry };
+const { entry, category } = Astro.props;
 const redirect = entry.kind === 'redirect' ? entry.config.target : undefined;
 const textConfig = entry.kind === 'text' ? (entry.config as TextConfig) : undefined;
 ---
@@ -17,7 +31,7 @@ const textConfig = entry.kind === 'text' ? (entry.config as TextConfig) : undefi
 	title={entry.name}
 	description={entry.description}
 	entry={redirect ? undefined : entry}
-	category="utilities"
+	category={category}
 	redirectTo={redirect}
 >
 	{
@@ -51,7 +65,7 @@ const textConfig = entry.kind === 'text' ? (entry.config as TextConfig) : undefi
 								<>
 									<div class="t-btnrow">
 										{textConfig.transforms.map((t) => (
-										<button type="button" class="t-btn">
+										<button type="button" class="t-btn" disabled>
 											{t.labelZh && t.labelZh !== t.label ? (
 												<>
 													<span class="i18n-en">{t.label}</span>
@@ -85,9 +99,6 @@ const textConfig = entry.kind === 'text' ? (entry.config as TextConfig) : undefi
 						</>
 					)}
 				</div>
-				<script>
-					import '../../scripts/tools/main';
-				</script>
 			</>
 		)
 	}

@@ -1,13 +1,16 @@
 ---
+// converters hub — a single-category view of the Tools hub. Title, Chinese
+// title and blurb come from CATEGORIES so the copy lives in one place; only
+// the search placeholder is bespoke to this page.
 import ToolShell from '../../components/tools/ToolShell.astro';
 import ToolSearchBar from '../../components/tools/ToolSearchBar.astro';
-import { REGISTRY } from '../../tools/registry';
+import { CATEGORIES, REGISTRY } from '../../tools/registry';
 
-const entries = [
-	...REGISTRY.filter((e) => e.category === 'converters')
-].filter((e) => e.kind !== 'redirect');
+const cat = CATEGORIES.find((c) => c.id === 'converters')!;
+const entries = REGISTRY.filter((e) => e.category === 'converters' && e.kind !== 'redirect');
 ---
-<ToolShell title="Unit Converters" titleZh="多功能单位换算" description="Unit converters for length, weight, temperature, area, volume, speed, time and data sizes.">
+
+<ToolShell title={cat.label} titleZh={cat.labelZh} description={cat.blurb}>
 	<ToolSearchBar category="converters" placeholder="Search converters (e.g. weight, length, speed, temperature)..." placeholderZh="搜索换算器 (如 重量、长度、速度、温度、面积、数据)..." totalCount={entries.length} />
 	<div class="t-cards">
 		{

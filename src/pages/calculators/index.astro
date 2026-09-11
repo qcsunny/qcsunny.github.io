@@ -1,13 +1,18 @@
 ---
+// calculators hub — a single-category view of the Tools hub. Title, Chinese
+// title and blurb come from CATEGORIES so the copy lives in one place; only
+// the search placeholder is bespoke to this page.
 import ToolShell from '../../components/tools/ToolShell.astro';
 import ToolSearchBar from '../../components/tools/ToolSearchBar.astro';
-import { REGISTRY, CALCULATOR_FEATURED } from '../../tools/registry';
+import { CATEGORIES, REGISTRY, CALCULATOR_FEATURED } from '../../tools/registry';
 
+const cat = CATEGORIES.find((c) => c.id === 'calculators')!;
 const entries = [
 	...CALCULATOR_FEATURED, ...REGISTRY.filter((e) => e.category === 'calculators')
 ].filter((e) => e.kind !== 'redirect');
 ---
-<ToolShell title="Math & Statistics" titleZh="数学与统计计算" description="Every calculator: scientific calculator, grapher, percentages, fractions, ratios, statistics and linear regression.">
+
+<ToolShell title={cat.label} titleZh={cat.labelZh} description={cat.blurb}>
 	<ToolSearchBar category="calculators" placeholder="Search calculators (e.g. percentage, fraction, ratio, graph)..." placeholderZh="搜索计算器 (如 百分比、分数、比例、函数图像、科学计算)..." totalCount={entries.length} />
 	<div class="t-cards">
 		{
