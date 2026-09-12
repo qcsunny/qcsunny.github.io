@@ -10,21 +10,21 @@ relatedTools: ['text/word-counter', 'text/character-counter']
 relatedPosts: ['url-unicode-utf8-base64url-boundaries']
 ---
 
-在前端开发与后台数据接口中，“计算文本长度”看似是一行 `text.length` 就能搞定的最基础操作。然而在实际工程中，它却是引发数据库截断崩溃、短信超额扣费、表单验证失真乃至界面乱码的高发地带。
+做 Web 开发时，“算一下文本长度”看起来只要随手调个 `text.length`。但几乎每个工程师都在生产环境踩过这个暗坑：数据库字段因莫名其妙截断而出错、短信按 70 字计费时突然多算了一倍费用、或者用户在输入框里贴了个表情包表单校验直接报“超出长度”。
 
-尝试在浏览器的开发者控制台里输入以下几行代码：
+不信你直接打开浏览器的 F12 控制台，敲入这几行代码试一试：
 
 ```js
 "A".length;                 // 1
 "中".length;                // 1
-"𠮷".length;                // 2（汉字生僻字）
-"é".length;                 // 1 或 2（取决于组合形式）
+"𠮷".length;                // 2（生僻字“吉”）
+"é".length;                 // 1 或 2（取决于 NFD 还是 NFC）
 "👨‍👩‍👧‍👦".length;            // 11（家庭 Emoji）
 ```
 
-为什么一个人类肉眼可见的“一家四口”Emoji，在 JavaScript 看来竟然占了 11 个字符？为什么生僻字会导致 `length === 2`？
+明明肉眼看起来就是一个“一家四口”的 Emoji，为什么在 JavaScript 眼里却占了 11 个字符？生僻字又凭什么算 2 个字符？
 
-本文将带你跳出朴素的“字符即字节”认知误区，从编码历史推导到现代 Unicode 标准，解析我们在[在线字数统计](/text/word-counter/)与[字符计数器](/text/character-counter/)中采用的现代字形簇计数方案。
+这篇文章我们聊透 Unicode 底层的历史包袱，拆解代码单元（Code Unit）、码点（Code Point）与字形簇（Grapheme Cluster）的三层模型，并结合本站 [字符数统计工具](/text/character-counter/) 里的方案，聊聊现代 Web API 是怎么完美解决这个问题的。
 
 ---
 
