@@ -2717,6 +2717,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 					labelZh: '数值列表（逗号或空格分隔）',
 					type: 'textarea',
 					def: '1, 2, 3, 4, 5',
+					wide: true,
 				},
 				{
 					id: 'x',
@@ -2724,6 +2725,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 					labelZh: '可选 x 列表（用于线性回归）',
 					type: 'textarea',
 					def: '',
+					wide: true,
 				},
 			],
 			compute: (v) => {
@@ -3015,6 +3017,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 					labelZh: '数据点（每行 x, y）',
 					type: 'textarea',
 					def: '0, 1\n1, 2.1\n2, 4.4\n3, 9.2\n4, 15.8\n5, 25.1',
+					wide: true,
 				},
 				{
 					id: 'degree',
@@ -3190,6 +3193,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						labelZh: '数据（每行 x1 … xk, y）',
 						type: 'textarea',
 						def: 'ad_spend, price, sales\n1.2, 19.9, 98\n2.5, 21.0, 105\n3.1, 18.5, 118\n4.8, 22.1, 124\n5.0, 19.2, 138\n6.3, 23.4, 141\n7.1, 20.8, 152\n8.4, 22.7, 163\n9.0, 21.5, 171\n10.2, 24.0, 178\n11.5, 22.3, 194\n12.8, 23.9, 203\n13.5, 21.1, 216\n15.0, 23.6, 228',
+						wide: true,
 					},
 					{
 						id: 'est',
@@ -3210,6 +3214,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						type: 'textarea',
 						def: '1\n1\n1\n2\n2\n2\n3\n3\n3\n4\n4\n4\n5\n5\n5',
 						showIf: (v) => v.str('est') === 'wls',
+						wide: true,
 					},
 					{
 						id: 'rho',
@@ -3251,6 +3256,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						type: 'textarea',
 						def: '1\n1\n1\n1\n1\n2\n2\n2\n2\n2\n3\n3\n3\n3\n3',
 						showIf: (v) => v.str('vcov') === 'cluster',
+						wide: true,
 					},
 				],
 				compute: (v) => {
@@ -3347,6 +3353,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						labelZh: '数据（每行 x1 … xk, y）',
 						type: 'textarea',
 						def: 'month, ad_spend, sales\n1, 1.2, 96\n2, 1.8, 99\n3, 2.6, 108\n4, 3.1, 112\n5, 3.9, 121\n6, 4.4, 124\n7, 5.3, 133\n8, 6.0, 138\n9, 6.8, 145\n10, 7.5, 149\n11, 8.3, 158\n12, 9.1, 164\n13, 9.7, 167\n14, 10.6, 177\n15, 11.2, 180\n16, 12.0, 188\n17, 12.9, 197\n18, 13.6, 202\n19, 14.4, 209\n20, 15.1, 214',
+						wide: true,
 					},
 					{ id: 'bgLag', label: 'Breusch–Godfrey lags', labelZh: 'Breusch–Godfrey 滞后阶数', type: 'number', def: '4', step: '1' },
 					{ id: 'lbLag', label: 'Ljung–Box lags', labelZh: 'Ljung–Box 滞后阶数', type: 'number', def: '10', step: '1' },
@@ -3422,6 +3429,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						labelZh: '数据（每行 x1 … xk, y）',
 						type: 'textarea',
 						def: 'hours, score\n1, 52\n2, 55\n2.5, 61\n3, 58\n3.5, 64\n4, 66\n5, 71\n5.5, 68\n6, 74\n7, 78\n7.5, 75\n8, 82\n9, 86\n9.5, 99\n10, 88\n11, 93\n12, 97\n13, 95\n14, 130\n15, 99',
+						wide: true,
 					},
 					{
 						id: 'tau',
@@ -3484,6 +3492,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						labelZh: '数据（每行 组, x1 … xk, y）',
 						type: 'textarea',
 						def: 'school, hours, score\n1, 2, 55\n1, 4, 62\n1, 6, 68\n1, 8, 74\n2, 2, 63\n2, 4, 70\n2, 6, 78\n2, 8, 84\n3, 2, 48\n3, 4, 55\n3, 6, 61\n3, 8, 66\n4, 2, 70\n4, 4, 77\n4, 6, 84\n4, 8, 92\n5, 2, 52\n5, 4, 59\n5, 6, 66\n5, 8, 73',
+						wide: true,
 					},
 					{
 						id: 'slope',
@@ -3555,6 +3564,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						labelZh: '数据（每行 x1 … xk, y ∈ {0, 1}）',
 						type: 'textarea',
 						def: 'hours, attended, passed\n2, 1, 0\n3, 0, 0\n4, 1, 0\n5, 0, 1\n6, 1, 0\n6, 0, 1\n7, 1, 1\n8, 0, 1\n8, 1, 1\n9, 0, 1\n9, 1, 0\n10, 0, 1\n10, 1, 1\n11, 0, 1\n11, 1, 1\n12, 1, 1\n12, 0, 1\n13, 1, 1\n13, 0, 1\n14, 1, 1',
+						wide: true,
 					},
 					{
 						id: 'family',
@@ -3633,6 +3643,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						labelZh: '数据（每行 x1 … xk, y 计数）',
 						type: 'textarea',
 						def: 'visitors, complaints, tickets\n12, 1, 0\n18, 0, 1\n25, 2, 3\n30, 1, 2\n35, 3, 4\n40, 2, 3\n44, 1, 5\n50, 4, 6\n55, 3, 7\n60, 5, 8\n65, 4, 9\n70, 6, 11\n75, 5, 12\n80, 7, 14\n85, 6, 15\n90, 8, 17\n95, 7, 18\n100, 9, 21\n105, 8, 22\n110, 10, 25',
+						wide: true,
 					},
 					{
 						id: 'family',
@@ -3730,6 +3741,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						labelZh: '序列（每行一个数值）',
 						type: 'textarea',
 						def: '100.2\n101.1\n100.8\n102.3\n103.0\n102.5\n104.1\n105.3\n104.8\n106.2\n107.0\n106.5\n108.1\n109.0\n108.4\n110.2\n111.1\n110.6\n112.3\n113.0\n112.5\n114.1\n115.0\n114.6\n116.2\n117.1\n116.5\n118.0\n119.2\n118.7\n120.1\n121.0\n120.6\n122.3\n123.0\n122.5\n124.1\n125.2\n124.8\n126.0',
+						wide: true,
 					},
 					{
 						id: 'adfTrend',
@@ -3851,6 +3863,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						labelZh: '序列（每行一个数值）',
 						type: 'textarea',
 						def: '42\n43\n45\n44\n46\n48\n47\n49\n52\n51\n54\n53\n56\n58\n57\n60\n62\n61\n64\n63\n66\n68\n67\n70\n73\n72\n75\n74\n77\n79\n78\n81\n80\n83\n85\n84\n87\n86\n89\n91\n90\n93\n92\n95\n97\n96\n99\n98\n101\n103\n102\n105\n104\n107\n109\n108\n111\n110\n113\n115',
+						wide: true,
 					},
 					{ id: 'p', label: 'p (AR order)', labelZh: 'p（AR 阶数）', type: 'number', def: '1', step: '1' },
 					{ id: 'd', label: 'd (differences)', labelZh: 'd（差分阶数）', type: 'number', def: '1', step: '1' },
@@ -3923,6 +3936,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						labelZh: '数据（每列一个序列）',
 						type: 'textarea',
 						def: 'rate, price, volume\n5.1, 100, 42\n5.0, 101, 45\n4.9, 103, 51\n4.8, 102, 48\n4.7, 105, 55\n4.6, 107, 60\n4.6, 106, 58\n4.5, 109, 64\n4.4, 111, 70\n4.3, 110, 66\n4.3, 113, 73\n4.2, 115, 79\n4.1, 114, 74\n4.0, 117, 82\n4.0, 119, 88\n3.9, 118, 83\n3.8, 121, 90\n3.8, 123, 96\n3.7, 122, 91\n3.6, 125, 98\n3.6, 127, 104\n3.5, 126, 99\n3.4, 129, 106\n3.4, 131, 112',
+						wide: true,
 					},
 					{
 						id: 'p',
@@ -4013,6 +4027,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						labelZh: '序列（每行一个数值）',
 						type: 'textarea',
 						def: '102\n104\n103\n106\n108\n107\n110\n112\n111\n114\n116\n118\n117\n120\n122\n121\n124\n126\n128\n127\n130\n132\n131\n134\n136\n135\n138\n140\n142\n141\n144\n146\n145\n148\n150\n149\n152\n154\n153\n156',
+						wide: true,
 					},
 					{
 						id: 'spec',
