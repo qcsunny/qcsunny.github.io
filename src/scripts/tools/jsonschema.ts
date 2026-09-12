@@ -7,6 +7,23 @@
 import { isZh, onLang } from './i18n';
 import { createWorkbench } from './workbench';
 
+/** True when obj has an own property named key. The `in` operator walks the
+ *  prototype chain, so "constructor" would count as present on every object. */
+function hasOwn(obj: object, key: string): boolean {
+	return Object.prototype.hasOwnProperty.call(obj, key);
+}
+
+/** Build a RegExp for a JSON Schema "pattern", or null if it is malformed. A
+ *  pattern is an unflagged ECMA-262 regular expression; a bad one used to throw
+ *  out of the whole run instead of being reported as an error for that string. */
+function patternRe(pattern: string): RegExp | null {
+	try {
+		return new RegExp(pattern);
+	} catch {
+		return null;
+	}
+}
+
 // --- schema inference --------------------------------------------------------------------
 
 type Schema = Record<string, unknown>;
@@ -103,8 +120,14 @@ function validate(v: unknown, schema: unknown, path: string, out: VError[]): voi
 			out.push({ path, en: `length ${v.length} is below minLength ${s.minLength}`, zh: `长度 ${v.length} 小于 minLength ${s.minLength}` });
 		if (typeof s.maxLength === 'number' && v.length > s.maxLength)
 			out.push({ path, en: `length ${v.length} is above maxLength ${s.maxLength}`, zh: `长度 ${v.length} 大于 maxLength ${s.maxLength}` });
-		if (typeof s.pattern === 'string' && !new RegExp(s.pattern).test(v))
-			out.push({ path, en: `does not match the pattern /${s.pattern}/`, zh: `不匹配 pattern /${s.pattern}/` });
+		if (typeof s.pattern === 'string') {
+			const re = patternRe(s.pattern);
+			if (re === null) {
+				out.push({ path, en: `invalid pattern /${s.pattern}/`, zh: `pattern 无效 /${s.pattern}/` });
+			} else if (!re.test(v)) {
+				out.push({ path, en: `does not match the pattern /${s.pattern}/`, zh: `不匹配 pattern /${s.pattern}/` });
+			}
+		}
 	}
 	if (Array.isArray(v)) {
 		if (typeof s.minItems === 'number' && v.length < s.minItems)
@@ -116,16 +139,16 @@ function validate(v: unknown, schema: unknown, path: string, out: VError[]): voi
 	if (v && typeof v === 'object' && !Array.isArray(v)) {
 		const obj = v as Record<string, unknown>;
 		for (const key of (s.required as string[]) ?? []) {
-			if (!(key in obj))
+			if (!hasOwn(obj, key))
 				out.push({ path, en: `missing required property "${key}"`, zh: `缺少必填属性 "${key}"` });
 		}
 		const props = (s.properties as Record<string, unknown>) ?? {};
 		for (const [key, sub] of Object.entries(props)) {
-			if (key in obj) validate(obj[key], sub, /^\w+$/.test(key) ? `${path}.${key}` : `${path}[${JSON.stringify(key)}]`, out);
+			if (hasOwn(obj, key)) validate(obj[key], sub, /^\w+$/.test(key) ? `${path}.${key}` : `${path}[${JSON.stringify(key)}]`, out);
 		}
 		if (s.additionalProperties === false) {
 			for (const key of Object.keys(obj)) {
-				if (!(key in props))
+				if (!hasOwn(props, key))
 					out.push({ path: `${path}.${key}`, en: `additional property "${key}" is not allowed`, zh: `不允许出现额外属性 "${key}"` });
 			}
 		}

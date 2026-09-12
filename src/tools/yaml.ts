@@ -108,7 +108,7 @@ function parseScalar(tok: string): unknown {
 	}
 	if (t.startsWith('[')) return parseFlowSeq(t);
 	if (t.startsWith('{')) return parseFlowMap(t);
-	if (t in SCALAR_MAP) return SCALAR_MAP[t];
+	if (Object.prototype.hasOwnProperty.call(SCALAR_MAP, t)) return SCALAR_MAP[t];
 	// YAML 1.2 core schema number forms.
 	if (/^[-+]?\d+$/.test(t)) return parseInt(t, 10);
 	if (/^[-+]?(\d+\.\d*|\.\d+|\d+)([eE][-+]?\d+)?$/.test(t) && /[.eE]/.test(t)) return Number(t);
@@ -149,6 +149,13 @@ function parseFlowSeq(t: string): unknown[] {
 	return splitFlow(body).map((p) => parseScalar(p));
 }
 
+// Record a parsed key as a real own property. Bracket assignment would reach
+// Object.prototype.__proto__ for a "__proto__" key and silently change the
+// prototype instead of storing the key, so defineProperty keeps the value.
+function setKey(obj: Record<string, unknown>, key: string, value: unknown): void {
+	Object.defineProperty(obj, key, { value, enumerable: true, writable: true, configurable: true });
+}
+
 function parseFlowMap(t: string): Record<string, unknown> {
 	if (!t.endsWith('}')) throw new Error(`flow map is missing its closing "}"`);
 	const body = t.slice(1, -1).trim();
@@ -157,7 +164,7 @@ function parseFlowMap(t: string): Record<string, unknown> {
 		const colon = part.indexOf(':');
 		if (colon === -1) throw new Error(`flow map item "${part.trim()}" has no ':'`);
 		const key = parseScalar(part.slice(0, colon));
-		out[String(key)] = parseScalar(part.slice(colon + 1));
+		setKey(out, String(key), parseScalar(part.slice(colon + 1)));
 	}
 	return out;
 }
@@ -274,7 +281,7 @@ function parseBlockMap(lines: Line[], pos: number, indent: number): [Record<stri
 			const next = lines[i + 1];
 			if (next && next.indent === indent && (next.content.startsWith('- ') || next.content === '-')) {
 				const [val, p] = parseBlockSeq(lines, i + 1, indent);
-				map[kv.key] = val;
+				setKey(map, kv.key, val);
 				i = p;
 				continue;
 			}
@@ -282,14 +289,14 @@ function parseBlockMap(lines: Line[], pos: number, indent: number): [Record<stri
 			while (j < lines.length && lines[j].indent > indent) j++;
 			if (j > i + 1) {
 				const [val] = parseBlock(lines, i + 1, indent + 1);
-				map[kv.key] = val;
+				setKey(map, kv.key, val);
 			} else {
-				map[kv.key] = null;
+				setKey(map, kv.key, null);
 			}
 			i = j;
 			continue;
 		}
-		map[kv.key] = parseScalar(kv.rest);
+		setKey(map, kv.key, parseScalar(kv.rest));
 		i++;
 	}
 	return [map, i];
@@ -341,6 +348,12 @@ function emit(value: unknown, indent: number): string {
 				lines.push(`${pad}- ${subLines[0]}`);
 				for (const l of subLines.slice(1)) lines.push(`${pad}  ${l}`);
 			} else if (Array.isArray(item)) {
+				// emit() returns "[]" for an empty array, which would land at
+				// column 0 — an unattached collection, not a sequence item.
+				if (item.length === 0) {
+					lines.push(`${pad}- []`);
+					continue;
+				}
 				const sub = emit(item, indent + 1).split('\n');
 				lines.push(`${pad}-`);
 				for (const l of sub) lines.push(l);
