@@ -66,8 +66,9 @@ function unescapeBasic(body: string): string {
 }
 
 /** Join multiline strings and multiline arrays into single logical lines.
- *  Comments inside a joined array body would corrupt the bracket count, so
- *  comments are only stripped AFTER this pass (stripCommentAtValue). */
+ *  Comments inside an array body would corrupt the bracket count and hide the
+ *  continuation, so they are stripped per line here; comments after a
+ *  non-array value are stripped later, in parseKeyValue. */
 function logicalLines(text: string): LogicalLine[] {
 	const phys = text.replace(/\r\n/g, '\n').split('\n');
 	const out: LogicalLine[] = [];
@@ -115,12 +116,17 @@ function logicalLines(text: string): LogicalLine[] {
 			i++;
 			continue;
 		}
-		// An array whose brackets are still open swallows following lines.
-		if (openArrayDepth(line) > 0) {
-			let joined = line;
+		// An array whose brackets are still open swallows following lines. A
+		// comment is stripped from each physical line as we go: left in the joined
+		// text it would hide the continuation (the later stripComment would cut
+		// the line at the "#"), and a "]" inside one could lie about the depth.
+		if (openArrayDepth(stripComment(line)) > 0) {
+			let joined = stripComment(line);
 			while (i + 1 < phys.length && openArrayDepth(joined) > 0) {
 				i++;
-				joined += ' ' + phys[i].trim();
+				const cont = stripComment(phys[i].trim());
+				if (!cont) continue;
+				joined += ' ' + cont;
 			}
 			if (openArrayDepth(joined) > 0) throw new Error(`line ${lineNo}: array is missing its closing "]"`);
 			line = joined;
@@ -294,21 +300,33 @@ function parseKeyValue(s: string): { keys: string[]; value: unknown } {
 	return { keys: parseKeyPath(keyPart), value: parseValue(valuePart) };
 }
 
+/** True when obj has an own property named key (Object.prototype keys are not). */
+function hasOwn(obj: object, key: string): boolean {
+	return Object.prototype.hasOwnProperty.call(obj, key);
+}
+
+/** Record a parsed key as a real own property. Bracket assignment would reach
+ *  Object.prototype.__proto__ for a "__proto__" key and change the prototype
+ *  instead of storing the key, so defineProperty keeps the value. */
+function setKey(obj: Record<string, unknown>, key: string, value: unknown): void {
+	Object.defineProperty(obj, key, { value, enumerable: true, writable: true, configurable: true });
+}
+
 /** Set keys[...last] = value inside obj, creating intermediate tables.
  *  Redefining an existing scalar key is an error (TOML forbids duplicates). */
 function assignDotted(obj: Record<string, unknown>, keys: string[], value: unknown): void {
 	let cur = obj;
 	for (let i = 0; i < keys.length - 1; i++) {
 		const k = keys[i]!;
-		if (cur[k] === undefined) cur[k] = {};
+		if (!hasOwn(cur, k)) setKey(cur, k, {});
 		else if (typeof cur[k] !== 'object' || cur[k] === null) {
 			throw new Error(`key "${k}" is already defined as a value, cannot extend it`);
 		}
 		cur = cur[k] as Record<string, unknown>;
 	}
 	const last = keys[keys.length - 1]!;
-	if (last in cur) throw new Error(`duplicate key "${keys.join('.')}"`);
-	cur[last] = value;
+	if (hasOwn(cur, last)) throw new Error(`duplicate key "${keys.join('.')}"`);
+	setKey(cur, last, value);
 }
 
 // --- parser --------------------------------------------------------------------------
@@ -329,9 +347,9 @@ export function parseToml(text: string): Record<string, unknown> {
 			const k = path[i]!;
 			if (i === path.length - 1 && kind === 'array') {
 				let arr: unknown = cur[k];
-				if (arr === undefined) {
+				if (!hasOwn(cur, k)) {
 					arr = [];
-					cur[k] = arr;
+					setKey(cur, k, arr);
 					arrayTables.add(path.join('.'));
 				} else if (!Array.isArray(arr)) {
 					throw new Error(`"${path.join('.')}" is already defined as a table, cannot redefine as array of tables`);
@@ -341,9 +359,9 @@ export function parseToml(text: string): Record<string, unknown> {
 				return item;
 			}
 			let sub: unknown = cur[k];
-			if (sub === undefined) {
+			if (!hasOwn(cur, k)) {
 				sub = {};
-				cur[k] = sub;
+				setKey(cur, k, sub);
 			} else if (Array.isArray(sub)) {
 				// Continuing a path THROUGH an array of tables targets its last item.
 				if (!sub.length || typeof sub[sub.length - 1] !== 'object') {

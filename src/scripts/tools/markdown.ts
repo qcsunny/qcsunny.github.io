@@ -374,7 +374,11 @@ export function parseMarkdownToHtml(markdown: string, lang: 'zh' | 'en' = 'zh'):
 		const isTableSep = /^\|?\s*:?-+:?\s*(\|?\s*:?-+:?\s*)+\|?$/.test(trimmed);
 		if (isTableSep && !tableHeaderDone && output.length > 0) {
 			const prevLine = lines[i - 1]?.trim() || '';
-			if (prevLine.includes('|')) {
+			// The header is the block we just emitted, but only if that block is a
+			// plain row. A heading, list item, blockquote or code placeholder that
+			// merely contains a "|" would be popped here and re-emitted as table
+			// cells - and popping an <h1> or an <li> leaves its opener unbalanced.
+			if (prevLine.includes('|') && (output[output.length - 1] ?? '').startsWith('<p>')) {
 				inTable = true;
 				// Pop previous line as table header
 				output.pop();

@@ -334,17 +334,27 @@ function parseBigInt(value: string, base: number): bigint | null {
 	return sign * out;
 }
 
-/** Render a non-negative BigInt in a base without using Number (no precision loss). */
+/** Render a BigInt in a base without using Number (no precision loss).
+ * The sign is preserved: parseBigInt keeps it, and dropping it would print
+ * -255 as the digits of 255 (0xff) - a different number entirely. */
 function bigToBase(n: bigint, base: number): string {
-	if (n === 0n) return '0';
 	const chars = BASE_CHARS[base];
+	if (!chars) return '—';
+	if (n === 0n) return '0';
+	const sign = n < 0n ? '-' : '';
 	let out = '';
 	let x = n < 0n ? -n : n;
 	while (x > 0n) {
 		out = chars[Number(x % BigInt(base))] + out;
 		x /= BigInt(base);
 	}
-	return out;
+	return sign + out;
+}
+
+/** `0x` goes after the sign: `0x-ff` is not a hex literal, `-0xff` is. */
+function hexPrefixed(n: bigint): string {
+	const d = bigToBase(n, 16);
+	return d.startsWith('-') ? '-' + '0x' + d.slice(1) : '0x' + d;
 }
 
 // --- Unix timestamp converter (devtools) ---------------------------------------------
@@ -1894,7 +1904,7 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 							rows: lines.map((line) => {
 								const n = parseBigInt(stripPrefix(line), effectiveBase(line));
 								if (n === null) return [line, '—', '—', '—', '✗ invalid'];
-								return [line, bigToBase(n, 2), bigToBase(n, 8), bigToBase(n, 10), '0x' + bigToBase(n, 16)];
+								return [line, bigToBase(n, 2), bigToBase(n, 8), bigToBase(n, 10), hexPrefixed(n)];
 							}),
 						},
 					};
@@ -1920,7 +1930,7 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 						{
 							label: 'Hexadecimal',
 							labelZh: '十六进制',
-							value: '0x' + bigToBase(n, 16),
+							value: hexPrefixed(n),
 							valueZh: bigToBase(n, 16),
 						},
 					],
@@ -2033,7 +2043,10 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 						],
 					};
 				}
-				const sec = Number(raw);
+				let sec = Number(raw);
+				// 13 digits are milliseconds, exactly like the batch table above - without
+				// this the single-line view would land a thousand years in the future.
+				if (/^\d{13}$/.test(raw.trim())) sec = sec / 1000;
 				if (!Number.isFinite(sec) || sec < 0) {
 					return {
 						rows: [
@@ -2350,23 +2363,30 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 					};
 				}
 				const matches: string[] = [];
+				let total = 0;
 				if (re.global || re.sticky) {
 					re.lastIndex = 0;
 					let m: RegExpExecArray | null;
-					while ((m = re.exec(text)) !== null && matches.length < 12) {
-						matches.push(m[0]);
+					// Count every match, keep only a sample for the report - the old
+					// matches.length < 12 guard capped the total as well.
+					while ((m = re.exec(text)) !== null) {
+						total++;
+						if (matches.length < 12) matches.push(m[0]);
 						if (m[0] === '') re.lastIndex++;
 					}
 				} else {
 					const m = re.exec(text);
-					if (m) matches.push(m[0]);
+					if (m) {
+						total = 1;
+						matches.push(m[0]);
+					}
 				}
 				const rows: { label: string; labelZh: string; value: string; valueZh: string }[] = [
 					{
 						label: 'Matches found',
 						labelZh: '命中次数',
-						value: String(matches.length),
-						valueZh: String(matches.length),
+						value: total + (total > matches.length ? ' (first ' + matches.length + ' shown)' : ''),
+						valueZh: total + (total > matches.length ? '（仅显示前 ' + matches.length + ' 处）' : ''),
 					},
 				];
 				matches.slice(0, 5).forEach((s, i) => {
@@ -4251,6 +4271,9 @@ function ipv6Scope(v: bigint): { en: string; zh: string } {
 export function parseCidr6(input: string) {
 	const parts = input.trim().split('/');
 	if (parts.length > 2) return null;
+	// A trailing "/" must not silently become /0: Number('') is 0, which would
+	// answer for the whole 2^128 address space instead of the default /64.
+	if (parts.length === 2 && parts[1]!.trim() === '') return null;
 	const prefix = parts[1] !== undefined ? Number(parts[1]) : 64;
 	if (!Number.isInteger(prefix) || prefix < 0 || prefix > 128) return null;
 	const ip = parseIpv6(parts[0]!);
@@ -4277,6 +4300,8 @@ export function parseCidr6(input: string) {
 function parseCidrCalc(input: string) {
 	const parts = input.trim().split('/');
 	if (parts.length > 2) return null;
+	// A trailing "/" must not silently become /0: Number('') is 0.
+	if (parts.length === 2 && parts[1]!.trim() === '') return null;
 	const ipStr = parts[0]!;
 	const maskBits = parts[1] !== undefined ? Number(parts[1]) : 24;
 	if (!Number.isInteger(maskBits) || maskBits < 0 || maskBits > 32) return null;
