@@ -814,7 +814,7 @@ export function breuschPagan(m: OlsModel): TestResult | null {
 export function white(m: OlsModel): TestResult | null {
 	const nc = m.x.map((row) => row.slice(1));
 	if (!nc.length) return null;
-	const aux: Mat = m.x.map((row, i) => {
+	const aux: Mat = m.x.map((_row, i) => {
 		const out: number[] = [1, ...nc[i]];
 		for (let a = 0; a < nc[i].length; a++) out.push(nc[i][a] * nc[i][a]);
 		for (let a = 0; a < nc[i].length; a++) for (let b = a + 1; b < nc[i].length; b++) out.push(nc[i][a] * nc[i][b]);
@@ -1623,8 +1623,8 @@ export function arimaForecast(mod: ArimaModel, hist: Vec, h: number): ArimaForec
 	const { spec } = mod;
 	const np = spec.p + spec.q + spec.P + spec.Q;
 	const raw: Vec = [...mod.phi, ...mod.theta, ...mod.Phi, ...mod.Theta];
-	const { c, d, maxLag } = np === 0
-		? { c: [] as number[], d: [] as number[], maxLag: 0 }
+	const { c, d } = np === 0
+		? { c: [] as number[], d: [] as number[] }
 		: armaPolys(spec, raw);
 	// ψ weights of the MA(∞) representation, for forecast variances
 	const psi: Vec = [1];
@@ -2129,7 +2129,7 @@ export function kalmanFit(y: Vec, spec: KalmanSpec, horizon: number): KalmanMode
 		const xS: Vec = new Array<number>(T).fill(0);
 		xS[T - 1] = xs;
 		for (let t = T - 2; t >= 0; t--) {
-			const pp = predAt(t, { x: xF[t], P: xP[t], phi, c, sigA });
+			const pp = predAt({ x: xF[t], P: xP[t], phi, c, sigA });
 			const J = (xP[t] * phi) / pp.P;
 			xs = xF[t] + J * (xs - pp.x);
 			xS[t] = xs;
@@ -2148,7 +2148,7 @@ export function kalmanFit(y: Vec, spec: KalmanSpec, horizon: number): KalmanMode
 		}
 		return { ll, xF, xS, fc, fcSe };
 	};
-	const predAt = (t: number, st: { x: number; P: number; phi: number; c: number; sigA: number }) => predAt2(st.x, st.P, st.phi, st.c, st.sigA);
+	const predAt = (st: { x: number; P: number; phi: number; c: number; sigA: number }) => predAt2(st.x, st.P, st.phi, st.c, st.sigA);
 	const predAt2 = (x: number, P: number, phi: number, c: number, sigA: number): { x: number; P: number } => ({ x: c + phi * x, P: phi * phi * P + sigA * sigA });
 	const obj = (theta: Vec): number => {
 		const r = run(theta);

@@ -3579,19 +3579,21 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						columnsZh: ['变量', '估计值', '标准误', 'z 值', 'p 值'],
 						rows: names.map((nm, i) => [nm, ecoFmt(fit.beta[i] as number), ecoFmt(fit.se[i] as number), ecoFmt(fit.zstat[i] as number), ecoP(fit.pval[i] as number)]),
 					};
-					const ameTable = {
-						columns: ['Term', 'Avg. marginal effect', 'Marginal effect at mean'],
-						columnsZh: ['变量', '平均边际效应', '均值处边际效应'],
-						rows: names.map((nm, i) => [nm, ecoFmt(me ? (me.ame[i] as number) : NaN), ecoFmt(me ? (me.mem[i] as number) : NaN)]),
-					};
-					const rows = [
+					const rows: { label: string; labelZh: string; value: string; valueZh?: string }[] = [
 						ecoRow('Observations (1s / 0s)', '观测数（1 / 0）', `${n} (${y.filter((v2) => v2 === 1).length} / ${y.filter((v2) => v2 === 0).length})`),
 						ecoRow('Log-likelihood', '对数似然', ecoFmt(fit.logLik)),
 						ecoRow('LR test vs intercept-only', '对仅截距模型的似然比检验', `χ²(${fit.lrDf}) = ${ecoFmt(fit.lrStat)} (p = ${ecoP(fit.lrP)})`, `χ²(${fit.lrDf}) = ${ecoFmt(fit.lrStat)}（p = ${ecoP(fit.lrP)}）`),
 						ecoRow('AIC / BIC', 'AIC / BIC', `${ecoFmt(fit.aic)} / ${ecoFmt(fit.bic)}`),
 					];
+					for (let i = 1; i < names.length; i++) {
+						rows.push(ecoRow(
+							`Avg. marginal effect of ${names[i]}`,
+							`${names[i]} 的平均边际效应`,
+							ecoFmt(me ? (me.ame[i] as number) : NaN),
+						));
+					}
 					if (parsed.bad.length) rows.push(ecoRow('Ignored invalid lines', '已忽略的无效行', parsed.bad.slice(0, 5).join('  ')));
-					return { rows, table, note: 'Marginal effects are on the probability scale; the table alternates coefficient and effect rows are separate.', noteZh: '边际效应以概率为单位；系数与效应分表显示。' };
+					return { rows, table };
 				},
 			},
 		},
@@ -3871,23 +3873,17 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						columnsZh: ['步数', '预测值', '95% 下界', '95% 上界'],
 						rows: fc.point.map((pt, i) => [String(i + 1), ecoFmt(pt), ecoFmt(fc.lo[i] as number), ecoFmt(fc.hi[i] as number)]),
 					};
-					const coefRows: string[][] = [];
-					fit.phi.forEach((c, i) => coefRows.push([`AR(${i + 1})`, ecoFmt(c)]));
-					fit.theta.forEach((c, i) => coefRows.push([`MA(${i + 1})`, ecoFmt(c)]));
-					fit.Phi.forEach((c, i) => coefRows.push([`SAR(${i + 1})×${m}`, ecoFmt(c)]));
-					fit.Theta.forEach((c, i) => coefRows.push([`SMA(${i + 1})×${m}`, ecoFmt(c)]));
-					coefRows.push(['σ²', ecoFmt(fit.sigma2)]);
-					const coefTable = {
-						columns: ['Parameter', 'Estimate'],
-						columnsZh: ['参数', '估计值'],
-						rows: coefRows,
-					};
-					const rows = [
+					const rows: { label: string; labelZh: string; value: string; valueZh?: string }[] = [
 						ecoRow(`Model ARIMA(${p},${d},${q})${seasonal ? `(${P},${D},${Q})[${m}]` : ''}`, `模型 ARIMA(${p},${d},${q})${seasonal ? `(${P},${D},${Q})[${m}]` : ''}`, `${fit.nused} differenced observations`, `差分后观测数 ${fit.nused}`),
 						ecoRow('Log-likelihood (CSS)', '对数似然（CSS）', ecoFmt(fit.logLik)),
 						ecoRow('AIC / AICc / BIC', 'AIC / AICc / BIC', `${ecoFmt(fit.aic)} / ${ecoFmt(fit.aicc)} / ${ecoFmt(fit.bic)}`),
 					];
-					return { rows, table: coefTable, note: d + D > 0 ? 'Intervals for differenced models carry the differenced-scale variance without accumulating level uncertainty — treat them as approximate.' : undefined, noteZh: d + D > 0 ? '含差分模型的区间沿用差分尺度方差、未累积水平不确定性，应视为近似值。' : undefined };
+					fit.phi.forEach((c, i) => rows.push(ecoRow(`AR(${i + 1}) coefficient`, `AR(${i + 1}) 系数`, ecoFmt(c))));
+					fit.theta.forEach((c, i) => rows.push(ecoRow(`MA(${i + 1}) coefficient`, `MA(${i + 1}) 系数`, ecoFmt(c))));
+					fit.Phi.forEach((c, i) => rows.push(ecoRow(`SAR(${i + 1})×${m} coefficient`, `季节 AR(${i + 1})×${m} 系数`, ecoFmt(c))));
+					fit.Theta.forEach((c, i) => rows.push(ecoRow(`SMA(${i + 1})×${m} coefficient`, `季节 MA(${i + 1})×${m} 系数`, ecoFmt(c))));
+					rows.push(ecoRow('Innovation variance σ²', '新息方差 σ²', ecoFmt(fit.sigma2)));
+					return { rows, table, note: d + D > 0 ? 'Intervals for differenced models carry the differenced-scale variance without accumulating level uncertainty — treat them as approximate.' : undefined, noteZh: d + D > 0 ? '含差分模型的区间沿用差分尺度方差、未累积水平不确定性，应视为近似值。' : undefined };
 				},
 			},
 		},
