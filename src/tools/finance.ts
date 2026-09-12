@@ -2981,7 +2981,11 @@ const rentVsBuy: FormConfig = {
 		for (let m = 1; m <= horizon * 12; m++) {
 			const yearIndex = Math.floor((m - 1) / 12);
 			const currentMonthlyRent = initRent * Math.pow(1 + rentInfl, yearIndex);
-			const monthSavings = origPayment - currentMonthlyRent;
+			// Once the mortgage is paid off (m > totalMonths) the buyer stops
+			// paying it, so the renter's monthly savings shrink to −rent —
+			// keep crediting origPayment past payoff and the renter is gifted
+			// savings the buyer no longer forgoes.
+			const monthSavings = (m <= totalMonths ? origPayment : 0) - currentMonthlyRent;
 			rentInvestPool = rentInvestPool * (1 + monthlyInvestRate) + monthSavings;
 		}
 

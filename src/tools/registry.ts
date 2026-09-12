@@ -285,6 +285,12 @@ export type ToolEntry = ToolMeta &
 
 // --- categories ----------------------------------------------------------------
 
+/** Presentation order of the 12 categories on the /tools/ hub (nav pills,
+ *  section order) and the search modal chips. Sorted by popularity — a blend
+ *  of per-category tool count (as of 135 tools: calculators 29, devtools 28,
+ *  finance 24, converters/text 13) and general-audience demand; no per-page
+ *  traffic analytics exists at build time. CATEGORY_GROUPS below is the
+ *  internal aggregation order and is deliberately left independent. */
 export const CATEGORIES: {
 	id: ToolCategory;
 	label: string;
@@ -293,18 +299,32 @@ export const CATEGORIES: {
 	blurbZh: string;
 }[] = [
 	{
-		id: 'office',
-		label: 'Office & Documents',
-		labelZh: 'Office 办公与文档处理',
-		blurb: 'Excel workbook analysis and cleaning, the PDF toolkit (merge, split, watermark), and document OCR for PDFs and images.',
-		blurbZh: 'Excel 工作簿分析与清理、PDF 工具箱（合并/拆分/水印）、PDF 与图片的文档 OCR 识别。',
+		id: 'calculators',
+		label: 'Math & Statistics',
+		labelZh: '数学与统计计算',
+		blurb: 'Every calculator: scientific calculator, function graphing, percentages, fractions, ratios, summary statistics and linear regression.',
+		blurbZh: '全部计算工具：科学计算器、函数图像绘制、百分比增减、比例方程、最简分数、统计分析与线性回归。',
 	},
 	{
-		id: 'security',
-		label: 'Security & Privacy',
-		labelZh: '安全与隐私',
-		blurb: 'Password strength, hashing and HMAC, JWT inspection, subnet math, and what your browser reveals about you.',
-		blurbZh: '强密码生成、哈希与 HMAC、JWT 检查、子网计算、浏览器隐私指纹自查。',
+		id: 'devtools',
+		label: 'Developer Tools',
+		labelZh: '开发调试工具',
+		blurb: 'JSON, SQL, YAML, XML, HTML, CSS and JS formatters, base64, regex, cron, timestamps, ports, mime and status-code lookups.',
+		blurbZh: 'JSON/SQL/YAML/XML/HTML/CSS/JS 格式化，base64、正则、cron、时间戳、端口、MIME 与状态码查询。',
+	},
+	{
+		id: 'converters',
+		label: 'Unit Converters',
+		labelZh: '多功能单位换算',
+		blurb: 'Length, weight, temperature, area, volume, speed, time, data storage, energy, power, and pressure.',
+		blurbZh: '长度、重量、温度、面积、体积、速度、时间、数据存储、能量热量、功率马力与压力压强换算。',
+	},
+	{
+		id: 'finance',
+		label: 'Finance & Investment',
+		labelZh: '金融理财与投资计算',
+		blurb: 'Mortgage prepayment, compound interest, true APR/IRR, inflation, savings goals, and FIRE freedom.',
+		blurbZh: '房贷提前还款、复利定投、真实年化利率 IRR、通货膨胀、目标储蓄与 FIRE 财务自由。',
 	},
 	{
 		id: 'text',
@@ -314,11 +334,25 @@ export const CATEGORIES: {
 		blurbZh: '大小写转换、去重排序、内容提取、文本对比、CSV ⇄ JSON、Markdown 工具、字数统计。',
 	},
 	{
-		id: 'media',
-		label: 'Media Files',
-		labelZh: '媒体文件',
-		blurb: 'Video and audio metadata parsing, true-lossless detection, and a GPU convolution filter lab.',
-		blurbZh: '视频音频元数据解析、真假无损判别、GPU 卷积滤镜实验室。',
+		id: 'security',
+		label: 'Security & Privacy',
+		labelZh: '安全与隐私',
+		blurb: 'Password strength, hashing and HMAC, JWT inspection, subnet math, and what your browser reveals about you.',
+		blurbZh: '强密码生成、哈希与 HMAC、JWT 检查、子网计算、浏览器隐私指纹自查。',
+	},
+	{
+		id: 'office',
+		label: 'Office & Documents',
+		labelZh: 'Office 办公与文档处理',
+		blurb: 'Excel workbook analysis and cleaning, the PDF toolkit (merge, split, watermark), and document OCR for PDFs and images.',
+		blurbZh: 'Excel 工作簿分析与清理、PDF 工具箱（合并/拆分/水印）、PDF 与图片的文档 OCR 识别。',
+	},
+	{
+		id: 'daily',
+		label: 'Daily Calculators',
+		labelZh: '日常计算',
+		blurb: 'Age, date and BMI calculators, plus the time zone converter with a world clock.',
+		blurbZh: '年龄、日期与 BMI 计算器，以及带世界时钟的时区转换。',
 	},
 	{
 		id: 'color',
@@ -335,46 +369,18 @@ export const CATEGORIES: {
 		blurbZh: 'Meta 标签与 OG 预览、robots.txt、sitemap.xml、URL slug 生成。',
 	},
 	{
+		id: 'media',
+		label: 'Media Files',
+		labelZh: '媒体文件',
+		blurb: 'Video and audio metadata parsing, true-lossless detection, and a GPU convolution filter lab.',
+		blurbZh: '视频音频元数据解析、真假无损判别、GPU 卷积滤镜实验室。',
+	},
+	{
 		id: 'fun',
 		label: 'Experiments & Fun',
 		labelZh: '实验与趣味',
 		blurb: 'The Mandelbrot and Julia explorer — one GPU thread per pixel.',
 		blurbZh: '曼德博与朱利亚集合浏览器——每像素一个 GPU 线程。',
-	},
-	{
-		id: 'daily',
-		label: 'Daily Calculators',
-		labelZh: '日常计算',
-		blurb: 'Age, date and BMI calculators, plus the time zone converter with a world clock.',
-		blurbZh: '年龄、日期与 BMI 计算器，以及带世界时钟的时区转换。',
-	},
-	{
-		id: 'finance',
-		label: 'Finance & Investment',
-		labelZh: '金融理财与投资计算',
-		blurb: 'Mortgage prepayment, compound interest, true APR/IRR, inflation, savings goals, and FIRE freedom.',
-		blurbZh: '房贷提前还款、复利定投、真实年化利率 IRR、通货膨胀、目标储蓄与 FIRE 财务自由。',
-	},
-	{
-		id: 'devtools',
-		label: 'Developer Tools',
-		labelZh: '开发调试工具',
-		blurb: 'JSON, SQL, YAML, XML, HTML, CSS and JS formatters, base64, regex, cron, timestamps, ports, mime and status-code lookups.',
-		blurbZh: 'JSON/SQL/YAML/XML/HTML/CSS/JS 格式化，base64、正则、cron、时间戳、端口、MIME 与状态码查询。',
-	},
-	{
-		id: 'calculators',
-		label: 'Math & Statistics',
-		labelZh: '数学与统计计算',
-		blurb: 'Every calculator: scientific calculator, function graphing, percentages, fractions, ratios, summary statistics and linear regression.',
-		blurbZh: '全部计算工具：科学计算器、函数图像绘制、百分比增减、比例方程、最简分数、统计分析与线性回归。',
-	},
-	{
-		id: 'converters',
-		label: 'Unit Converters',
-		labelZh: '多功能单位换算',
-		blurb: 'Length, weight, temperature, area, volume, speed, time, data storage, energy, power, and pressure.',
-		blurbZh: '长度、重量、温度、面积、体积、速度、时间、数据存储、能量热量、功率马力与压力压强换算。',
 	},
 ];
 

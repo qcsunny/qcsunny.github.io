@@ -4080,7 +4080,9 @@ function parseCurl(cmd: string): ParsedCurl {
 
 	for (let i = 0; i < tokens.length; i++) {
 		const t = tokens[i]!;
-		if (t === 'curl' || t.startsWith('curl')) continue;
+		// Skip only the leading command name — startsWith would also swallow a
+		// real URL like curl.dev/api.
+		if (i === 0 && t.startsWith('curl')) continue;
 
 		if (t === '-X' || t === '--request') {
 			method = (tokens[++i] || 'GET').toUpperCase();
@@ -4097,7 +4099,11 @@ function parseCurl(cmd: string): ParsedCurl {
 			if (!method) method = 'POST';
 		} else if (t === '-u' || t === '--user') {
 			const userPass = tokens[++i] || '';
-			headers['Authorization'] = `Basic ${btoa(userPass)}`;
+			// btoa throws on non-Latin1 input; basic auth credentials are
+			// UTF-8-encoded per RFC 7617 before base64.
+			const utf8 = new TextEncoder().encode(userPass);
+			const bin = String.fromCharCode(...utf8);
+			headers['Authorization'] = `Basic ${btoa(bin)}`;
 		} else if (!t.startsWith('-') && !url) {
 			url = t;
 		}
