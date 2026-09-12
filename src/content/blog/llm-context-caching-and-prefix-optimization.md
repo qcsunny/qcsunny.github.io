@@ -6,7 +6,7 @@ category: ai
 topics: [ai, llm, performance]
 searchTerms: ['Context Caching', '上下文缓存', 'KV Cache复用', 'RadixAttention', 'Prompt优化', 'TTFT']
 contentLang: 'zh-CN'
-relatedTools: []
+relatedTools: ['text/character-counter']
 relatedPosts: ['five-flash-models-comparison']
 ---
 

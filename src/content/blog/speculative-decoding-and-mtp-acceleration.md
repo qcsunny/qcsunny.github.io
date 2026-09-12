@@ -6,7 +6,7 @@ category: ai
 topics: [ai, llm, algorithms]
 searchTerms: ['推测解码', 'MTP', 'Speculative Decoding', '内存带宽', 'Flash模型', '吞吐加速']
 contentLang: 'zh-CN'
-relatedTools: []
+relatedTools: ['text/character-counter']
 relatedPosts: ['five-flash-models-comparison']
 ---
 

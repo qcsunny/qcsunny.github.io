@@ -6,7 +6,7 @@ category: productivity
 topics: [date-time, frontend]
 searchTerms: ['日历', '周数', '日期算法']
 contentLang: 'zh-CN'
-relatedTools: []
+relatedTools: ['daily/date-calculator', 'calculators/descriptive-statistics']
 relatedPosts: ['clock-page']
 ---
 

@@ -1193,6 +1193,190 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 			{ q: '什么时候用泊松代替二项？', a: 'n 大 p 小时（经验法则：n ≥ 20 且 p ≤ 0.05）泊松近似二项——它刻画单位区间内的稀有事件计数。' },
 		],
 	},
+	'calculators/linear-regression': {
+		about: [
+			'Multiple regression through one weighted least squares core: OLS, weighted least squares (row weights) and GLS for AR(1) errors all reduce to the same algebra, so the coefficients, t tests and R² come from the same well-tested path.',
+			'Robust standard errors follow the Stata conventions: HC1 is White\'s heteroskedasticity-consistent estimator with the small-sample factor, HC2/HC3 add leverage corrections (HC3 is the usual recommendation for small samples), Newey–West HAC handles serial correlation with Bartlett weights, and the cluster estimator sums scores within groups before the outer product.',
+			'Every routine is cross-validated against statsmodels on fixed seed data — coefficients, standard errors and p-values agree to six or more significant digits.',
+		],
+		aboutZh: [
+			'通过同一个加权最小二乘核心做多元回归：OLS、加权最小二乘（按行权重）与处理 AR(1) 误差的 GLS 在代数上同源，系数、t 检验与 R² 走的是同一条经过验证的路径。',
+			'稳健标准误遵循 Stata 惯例：HC1 是带小样本修正的 White 异方差稳健估计，HC2/HC3 加入杠杆校正（小样本通常推荐 HC3），Newey–West HAC 用 Bartlett 权重处理序列相关，聚类估计则先在组内求和得分再做外积。',
+			'所有例程都已在固定种子数据上与 statsmodels 交叉验证——系数、标准误与 p 值在六位以上有效数字一致。',
+		],
+		faq: [
+			{ q: 'When do I need robust standard errors?', a: 'When residuals are heteroskedastic (variance grows with a regressor) use HC1–HC3; when they are autocorrelated (time series) use HAC; when observations share a group (students in schools, months in years) use cluster.' },
+			{ q: 'Why did it call my design singular?', a: 'One column is constant or a perfect multiple of another (a common accident: including both a percentage and its parts). Remove the duplicate column.' },
+		],
+		faqZh: [
+			{ q: '什么时候需要稳健标准误？', a: '残差异方差（方差随某个自变量增大）用 HC1–HC3；残差自相关（时间序列）用 HAC；观测共享分组（同校学生、同年月份）用聚类稳健。' },
+			{ q: '为什么提示设计矩阵奇异？', a: '某一列是常数或与另一列完全成比例（常见事故：同时放入百分比及其分量）。删掉重复列即可。' },
+		],
+	},
+	'calculators/ols-diagnostics': {
+		about: [
+			'One fitted regression, seven lenses: Durbin–Watson for first-order autocorrelation, Breusch–Godfrey for higher-order (its auxiliary regression zero-fills the pre-sample residuals, the Greene convention), Ljung–Box on the residual autocorrelations, Breusch–Pagan and White for heteroskedasticity, Jarque–Bera for normality, and the influence trio of leverage, Cook\'s distance and DFFITS.',
+			'The thresholds are the standard ones: leverage above 2k/n, |DFFITS| above 2√(k/n), Cook\'s distance near 1 as a danger sign. The p-values come from the exact χ² and t distribution functions, not tables.',
+		],
+		aboutZh: [
+			'一次拟合、七重视角：一阶自相关看 Durbin–Watson，高阶自相关看 Breusch–Godfrey（辅助回归对样本前残差零填充，Greene 惯例），残差自相关看 Ljung–Box，异方差看 Breusch–Pagan 与 White，正态性看 Jarque–Bera，强影响点看杠杆值、Cook 距离与 DFFITS 三件套。',
+			'阈值均取标准值：杠杆值高于 2k/n、|DFFITS| 高于 2√(k/n)、Cook 距离接近 1 视为危险信号。p 值来自精确的 χ² 与 t 分布函数，而非查表。',
+		],
+		faq: [
+			{ q: 'Which test decides between robust errors and GLS?', a: 'Breusch–Pagan or White rejecting heteroskedasticity points to HC standard errors (or WLS with known weights); Breusch–Godfrey rejecting points to HAC or the AR(1) GLS option in the linear regression tool.' },
+			{ q: 'Does a high Cook\'s distance mean I should delete the row?', a: 'No — it means the row deserves inspection. Deleting valid extreme observations biases results; first check whether it is a data-entry error, then decide.' },
+		],
+		faqZh: [
+			{ q: '这些检验如何指导选稳健标准误还是 GLS？', a: 'Breusch–Pagan 或 White 拒绝同方差 → 用 HC 稳健标准误（或已知权重时用 WLS）；Breusch–Godfrey 拒绝无自相关 → 用 HAC 或线性回归工具里的 AR(1) GLS。' },
+			{ q: 'Cook 距离大就要删行吗？', a: '不——它只说明该行值得检查。删除有效的极端观测会引入偏差；先确认是否录入错误，再决定。' },
+		],
+	},
+	'calculators/quantile-regression': {
+		about: [
+			'Least squares estimates the conditional mean; quantile regression estimates any conditional quantile (τ = 0.5 is the median) by minimising the asymmetric check loss, so a few outliers or a skewed error distribution tilt the fit far less.',
+			'The fit uses Schlossmacher\'s iteratively reweighted least squares with an annealed threshold: each round solves a weighted least squares problem, and the threshold shrinks tenfold so the answer converges to the exact check-loss minimiser. Pseudo-R² is Koenker–Machado\'s local fit measure.',
+		],
+		aboutZh: [
+			'最小二乘估计条件均值；分位数回归通过最小化不对称检查损失估计任意条件分位数（τ = 0.5 即中位数），因此少数离群值或偏态误差分布对拟合的影响小得多。',
+			'拟合采用 Schlossmacher 迭代重加权最小二乘并退火阈值：每轮解一个加权最小二乘问题，阈值逐轮缩小十倍，使解收敛到检查损失的精确最小化点。伪 R² 采用 Koenker–Machado 局部拟合指标。',
+		],
+		faq: [
+			{ q: 'Why compare τ = 0.1 with τ = 0.9?', a: 'If the slopes differ across quantiles, the effect of x is not just shifting the distribution but changing its spread — something mean regression averages away.' },
+			{ q: 'Does it give standard errors?', a: 'This tool reports point estimates and pseudo-R². Inference for quantile regression needs bootstrap or kernel methods, which are a different machinery from the closed-form t tests of OLS.' },
+		],
+		faqZh: [
+			{ q: '为什么要对比 τ = 0.1 与 τ = 0.9？', a: '若不同分位数的斜率不同，说明 x 不只是平移分布、还在改变离散程度——这是均值回归会平均掉的信息。' },
+			{ q: '为什么没有标准误？', a: '本工具给出点估计与伪 R²。分位数回归的推断需要自助法或核方法，与 OLS 的闭式 t 检验是两套机制。' },
+		],
+	},
+	'calculators/mixed-effects-model': {
+		about: [
+			'A linear mixed model separates fixed effects (shared by every group) from random intercepts and optional random slopes (one draw per group): y = Xβ + ZGu + ε. This tool fits it by maximum profile likelihood — the variance components are optimised directly and the fixed effects are the GLS solution at each candidate.',
+			'The ICC (intra-class correlation) is the share of total variance that sits between groups — the single number that says whether clustering matters. Group-specific blocks are inverted through the Woodbury identity, so cost grows with group size squared, not sample size squared.',
+		],
+		aboutZh: [
+			'线性混合模型把固定效应（各组共享）与随机截距、可选随机斜率（每组一次抽取）分开：y = Xβ + ZGu + ε。本工具以极大剖面似然拟合——直接优化方差成分，固定效应取每个候选点的 GLS 解。',
+			'ICC（组内相关系数）是组间方差占总方差的比例——它一个数就能说明“分组是否重要”。组内分块经 Woodbury 恒等式求逆，代价随组大小平方而非样本量平方增长。',
+		],
+		faq: [
+			{ q: 'Mixed model or clustered standard errors?', a: 'Clustered SEs answer "are my fixed-effect standard errors right given grouping?"; a mixed model additionally estimates how much groups differ and predicts each group\'s offset. Use the former for population-average claims, the latter for group-level structure.' },
+			{ q: 'Why is my random slope variance near zero?', a: 'Often the data genuinely has no slope variation between groups. The optimiser in log-space can then push that variance toward the boundary — the fixed effects remain valid.' },
+		],
+		faqZh: [
+			{ q: '用混合模型还是聚类稳健标准误？', a: '聚类标准误回答“考虑分组后固定效应的标准误对不对”；混合模型还估计组间差异并预测每组的偏移。总体平均结论用前者，组级结构用后者。' },
+			{ q: '随机斜率方差为什么接近 0？', a: '常见原因是各组斜率确实没有差异。对数空间优化会把该方差推向边界——固定效应依然有效。' },
+		],
+	},
+	'calculators/logistic-regression': {
+		about: [
+			'Binary outcomes break least squares (predictions outside [0, 1], heteroskedastic errors by construction). Logit and Probit model the probability through a link function and are fitted by iteratively reweighted least squares — Newton\'s method on the likelihood, which is why it converges in a handful of steps.',
+			'Reported alongside the coefficients: the likelihood-ratio test against an intercept-only model, AIC/BIC, and marginal effects — the average derivative of the probability (AME) and the derivative at the average covariate (MEM). Coefficients are on the log-odds scale; marginal effects are on the probability scale, which is usually what a reader wants.',
+			'Standard errors use the expected information matrix, the convention of statsmodels\' GLM family. A fit that fails to converge usually signals perfect separation — one combination of regressors predicts the outcome exactly — which is a data problem, not a numerical one.',
+		],
+		aboutZh: [
+			'二分类结果会破坏最小二乘（预测越出 [0, 1]、误差天然异方差）。Logit 与 Probit 通过连接函数刻画概率，用迭代重加权最小二乘拟合——即似然上的牛顿法，因此几步就收敛。',
+			'系数之外还报告：对仅截距模型的似然比检验、AIC/BIC，以及边际效应——概率的平均导数（AME）与平均协变量处的导数（MEM）。系数在对数发生比尺度；边际效应在概率尺度，通常才是读者要的数。',
+			'标准误采用期望信息矩阵（statsmodels 的 GLM 家族惯例）。拟合不收敛通常意味着完全分离——某个自变量组合完美预测了结果——这是数据问题，不是数值问题。',
+		],
+		faq: [
+			{ q: 'Logit or Probit?', a: 'Statistically they rarely disagree in practice; logit\'s coefficients read as log-odds and its odds ratios are easy to exponentiate. Probit implies normal errors, which matters when the model feeds a simulation.' },
+			{ q: 'Why trust AME over the coefficient?', a: 'A logit coefficient of 0.8 does not mean "80% more likely". The probability change per unit of x depends on where you stand — AME averages that over the sample, which is the honest summary.' },
+		],
+		faqZh: [
+			{ q: '选 Logit 还是 Probit？', a: '实践中两者结论很少分歧；logit 系数可读作对数发生比、取幂即得发生率比。若模型要接入模拟且误差需正态，则用 probit。' },
+			{ q: '为什么看 AME 而不是系数？', a: 'logit 系数 0.8 不等于“可能性高 80%”。x 每单位的概率变化取决于所处位置——AME 在样本上取平均，是诚实的摘要。' },
+		],
+	},
+	'calculators/count-regression': {
+		about: [
+			'Poisson regression assumes variance = mean; real count data usually over-disperse (variance > mean). This tool fits Poisson, the negative binomial NB2 (its dispersion α estimated by profile likelihood, variance μ + αμ²), and zero-inflated versions where a separate structural-zero probability absorbs excess zeros — fitted by EM, the count arm re-weighted each round.',
+			'The Poisson fit reports Pearson χ²/df: values well above 1 signal overdispersion and point to the negative binomial. Model choice should be driven by AIC and the zero counts, not just significance.',
+		],
+		aboutZh: [
+			'泊松回归假设方差等于均值；真实计数数据通常过散（方差 > 均值）。本工具拟合泊松、负二项 NB2（离散参数 α 由剖面似然估计，方差 μ + αμ²），以及用 EM 拟合的零膨胀版本——一个独立的结构零概率吸收多余的零，计数部分逐轮重加权。',
+			'泊松结果会报告 Pearson χ²/自由度：明显高于 1 提示过散、应改用负二项。模型选择看 AIC 与零的个数，而不只是显著性。',
+		],
+		faq: [
+			{ q: 'When is zero-inflation warranted?', a: 'When zeros come from two different processes — "never happens" and "happened but recorded zero" (insurance claims, fishing catches). If the Poisson/NB already predicts your zero count well, ZIP adds parameters without adding fit.' },
+			{ q: 'How do I read α?', a: 'α = 0 collapses to Poisson. Larger α means more overdispersion; the variance formula μ + αμ² shows the extra spread growing with the square of the mean.' },
+		],
+		faqZh: [
+			{ q: '什么时候该用零膨胀？', a: '当零来自两个过程——“从不发生”与“发生但记为零”（保险理赔、渔获）。若泊松/负二项已能预测零的个数，ZIP 只是加参数不加拟合。' },
+			{ q: 'α 怎么读？', a: 'α = 0 退化为泊松；α 越大过散越强。方差公式 μ + αμ² 表明额外离散度随均值平方增长。' },
+		],
+	},
+	'calculators/time-series-stationarity': {
+		about: [
+			'Two tests facing each other: the Augmented Dickey–Fuller test takes a unit root as the null (hard to reject in small samples), while KPSS takes stationarity as the null. When both agree — reject unit root, keep stationarity — the evidence is strong; when both fail to reject, your sample is probably too small or the series is fractionally integrated.',
+			'ADF lags can be chosen by AIC over Schwert\'s maximum; the deterministic terms matter — a trending series needs constant + trend or the test answers a different question. Critical values are MacKinnon\'s (2010) asymptotic table for the ADF t statistic and Kwiatkowski–Phillips–Schmidt–Shin (1992) for KPSS, read directly from the statsmodels reference implementation rather than a textbook reprint.',
+		],
+		aboutZh: [
+			'两个面对面的检验：增广 Dickey–Fuller 以单位根为原假设（小样本难以拒绝），KPSS 以平稳为原假设。两者一致——拒绝单位根且不拒绝平稳——证据才强；两者都不拒绝时，多半样本太小或序列分数单整。',
+			'ADF 滞后阶数可按 AIC 在 Schwert 上限内自动选择；确定性项很关键——趋势序列需要常数 + 趋势设定，否则检验回答的是另一个问题。临界值取 MacKinnon（2010）ADF t 统计量渐近表与 Kwiatkowski–Phillips–Schmidt–Shin（1992）KPSS 表，直接来自 statsmodels 参考实现而非教科书转印。',
+		],
+		faq: [
+			{ q: 'What do I do with a unit root?', a: 'Difference the series (that is the d in ARIMA) and test again. Most economic and financial series are I(1): one difference makes them stationary.' },
+			{ q: 'Why does KPSS lag matter so much?', a: 'The long-run variance in the denominator is estimated with Bartlett weights out to the lag; too few lags over-rejects stationarity under serial correlation. The default uses Schwert\'s rule.' },
+		],
+		faqZh: [
+			{ q: '检验出单位根怎么办？', a: '对序列差分（即 ARIMA 里的 d）再检验。多数经济与金融序列是 I(1)：差分一次即平稳。' },
+			{ q: 'KPSS 的滞后为什么影响这么大？', a: '分母中的长期方差用 Bartlett 权重加权到该滞后阶估计；序列相关下滞后太少会过度拒绝平稳。默认用 Schwert 准则。' },
+		],
+	},
+	'calculators/arima-forecast': {
+		about: [
+			'ARIMA(p, d, q) models a differenced series as autoregression plus moving average; seasonal orders add the same structure at multiples of the period m. This tool fits by conditional sum of squares — the exact likelihood conditional on the first observations — with every AR/MA parameter constrained inside the stable and invertible region, so a forecast can never come back explosive.',
+			'Forecasts extend the recursion with future innovations set to zero; the 95% intervals come from the ψ-weight accumulation of the estimated innovation variance. AIC/AICc/BIC allow honest comparison across (p, d, q) — prefer the smallest model within about 2 AIC points of the best.',
+		],
+		aboutZh: [
+			'ARIMA(p, d, q) 把差分后的序列建模为自回归加移动平均；季节阶数在周期 m 的倍数上叠加同样结构。本工具用条件平方和拟合——给定首批观测下的精确似然——且所有 AR/MA 参数被约束在稳定可逆区域内，预测永远不会发散。',
+			'预测将递推外推、未来扰动置零；95% 区间由 ψ 权重累积估计的新息方差给出。AIC/AICc/BIC 支持跨 (p, d, q) 的诚实比较——在最优模型约 2 个 AIC 点以内选最简者。',
+		],
+		faq: [
+			{ q: 'How do I pick p, d, q?', a: 'Differencing follows the stationarity tests; then compare a few small candidates by AICc. The Stationarity and ARIMA Forecast tools are designed to be used in that order.' },
+			{ q: 'Why are the intervals for d > 0 "approximate"?', a: 'They accumulate the differenced-scale variance without adding uncertainty about the level the differences hang from. For long horizons with d ≥ 1, treat the bands as a rough guide.' },
+		],
+		faqZh: [
+			{ q: '怎么选 p、d、q？', a: '差分阶数跟着平稳性检验走；再用 AICc 比较几个小候选。平稳性检验与 ARIMA 预测两个工具就是设计成按此顺序使用的。' },
+			{ q: '为什么 d > 0 的区间标为“近似”？', a: '区间累积的是差分尺度方差，未叠加“差分所挂的水平”本身的不确定性。d ≥ 1 且预测较长时，应把区间当作粗略参考。' },
+		],
+	},
+	'calculators/var-vecm': {
+		about: [
+			'A vector autoregression treats every series as a function of all series\' own lags — no "independent/dependent" asymmetry. This tool fits each equation by OLS, checks stability through the companion-matrix eigenvalues (all inside the unit circle or forecasts explode), and computes Granger-causality F tests and Johansen reduced-rank statistics for cointegration.',
+			'Information criteria follow Lütkepohl\'s convention. Granger causality is prediction, not philosophy: "x Granger-causes y" means x\'s lags improve y\'s forecasts. The Johansen trace statistics are reported for comparison against the published Osterwald-Lumenau/MacKinnon tables for your number of series and deterministic specification — this site deliberately does not hardcode a table it cannot verify.',
+		],
+		aboutZh: [
+			'向量自回归把每个序列都写成所有序列自身滞后的函数——没有“自变量/因变量”的不对称。本工具对每个方程做 OLS，用伴随矩阵特征值检查稳定性（全部落在单位圆内，否则预测发散），并计算 Granger 因果 F 检验与 Johansen 降秩协整统计量。',
+			'信息准则采用 Lütkepohl 口径。Granger 因果是预测意义上的、不是哲学意义上的：“x Granger 引致 y”指 x 的滞后改进 y 的预测。Johansen 迹统计量供对照已发表的 Osterwald-Lumenau/MacKinnon 临界值表（按你的序列数与确定性设定）——本站刻意不硬编码无法亲自验证的表。',
+		],
+		faq: [
+			{ q: 'How many series can I paste?', a: 'Two to four. The lag-count explosion (K² p parameters per equation) makes larger systems need structural priors rather than unconstrained VAR.' },
+			{ q: 'What is cointegration in one sentence?', a: 'Several non-stationary series whose linear combination IS stationary — they drift together. The Johansen rank r counts how many such stationary combinations exist; r ≥ 1 means a VECM, not a VAR in differences.' },
+		],
+		faqZh: [
+			{ q: '最多能贴几个序列？', a: '二到四个。参数量随 K² p 爆炸，更大的系统需要结构性先验，而不是无约束 VAR。' },
+			{ q: '一句话解释协整？', a: '几个非平稳序列的某个线性组合本身平稳——它们同向漂移。Johansen 的秩 r 是这种平稳组合的个数；r ≥ 1 就该用 VECM 而非对差分建 VAR。' },
+		],
+	},
+	'calculators/state-space-kalman': {
+		about: [
+			'A state space model splits a series into an unobserved signal plus noise: y_t = x_t + e_t, with the state x_t evolving as a random walk (local level), a random walk with drift, or a stationary AR(1). The Kalman filter computes the optimal state estimate and the exact likelihood by prediction-error decomposition; the RTS smoother then re-estimates every state using the full sample.',
+			'Variances are estimated by maximum likelihood over log-scale parameters, so the optimiser can never propose a negative variance. The forecast standard errors are the filter\'s own, not a t-distribution bolt-on.',
+		],
+		aboutZh: [
+			'状态空间模型把序列拆成未观测信号加噪声：y_t = x_t + e_t，状态 x_t 按随机游走（局部水平）、带漂移随机游走或平稳 AR(1) 演化。卡尔曼滤波通过预测误差分解给出最优状态估计与精确似然；RTS 平滑器再用全样本重估每个状态。',
+			'方差经对数尺度参数极大似然估计，优化器不可能提出负方差。预测标准误来自滤波器本身，而非外挂的 t 分布。',
+		],
+		faq: [
+			{ q: 'Local level or ARIMA(0,1,1)?', a: 'They are the same model family — an exponentially weighted moving average of the past. The state space view adds smoothed states and exact small-sample likelihood; the ARIMA view is easier to extend with seasonality.' },
+			{ q: 'What does σ_a ≈ 0 mean?', a: 'The state barely moves — the series is essentially constant plus measurement noise, and the best forecast is today\'s smoothed level, flat.' },
+		],
+		faqZh: [
+			{ q: '局部水平与 ARIMA(0,1,1) 什么关系？', a: '同族模型——历史值的指数加权移动平均。状态空间视角多了平滑状态与精确小样本似然；ARIMA 视角更容易扩展季节项。' },
+			{ q: 'σ_a ≈ 0 意味着什么？', a: '状态几乎不动——序列约等于常数加观测噪声，最优预测就是今天的平滑水平，一条平线。' },
+		],
+	},
 'text/line-organizer': {
 		about: [
 			'Paste a list — from a log, a spreadsheet column, a chat transcript — and clean it in one click: trim whitespace, drop empty lines, remove duplicates, then sort alphabetically (version-aware, so v2 comes before v10), by length, or in reverse.',
@@ -1903,6 +2087,204 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 		faqZh: [
 			{ q: '行内注释怎么处理？', a: '未加引号的值后面出现 " #" 即视为注释（与 dotenv 行为一致）；引号内的 # 保留为值的一部分。' },
 			{ q: '能转换嵌套 JSON 吗？', a: '不能——.env 是扁平的 KEY=VALUE 格式；嵌套对象与数组会被拒绝，并指出具体的键名。' },
+		],
+	},
+	'security/cidr-calculator': {
+		about: [
+			'IP subnetting arithmetic for IPv4 and IPv6: paste an address with a prefix length (/26, /112) and get the network address, broadcast, usable host range, host count, wildcard mask and the binary expansion that shows where the network/host boundary falls.',
+			'The IPv4 host count applies the 2^(32−n) − 2 rule and knows the /31 point-to-point and /32 host exceptions. Everything is bit arithmetic on BigInt — IPv6 works exactly, not through lossy decimal shortcuts.',
+		],
+		aboutZh: [
+			'IPv4 与 IPv6 的子网算术：输入地址加前缀长度（/26、/112），一次得到网络地址、广播地址、可用主机范围、主机数、反掩码与展示网络/主机边界的二进制展开。',
+			'IPv4 主机数按 2^(32−n) − 2 计算，并处理 /31 点对点链路与 /32 单主机两个特例。全部基于 BigInt 位运算——IPv6 是精确计算，没有经过有损的十进制捷径。',
+		],
+		faq: [
+			{ q: 'Why is the usable host count not a power of two?', a: 'The all-zeros host address identifies the subnet and the all-ones address is reserved for broadcast, so 2 are subtracted — a /26 offers 62, not 64.' },
+			{ q: 'Can I use this to plan a split?', a: 'Yes — compute the target subnet size first (how many host bits you need), then the prefix length follows as 32 − bits (or 128 − bits for IPv6); subnets must align to multiples of their own size.' },
+		],
+		faqZh: [
+			{ q: '可用主机数为什么不是 2 的幂？', a: '主机位全 0 的地址标识子网本身、全 1 保留作广播，所以要减 2——/26 是 62 而不是 64。' },
+			{ q: '能用它规划子网切分吗？', a: '能——先算目标子网需要多少主机位，前缀长度就是 32 − 位数（IPv6 为 128 − 位数）；子网边界必须对齐自身大小的整数倍。' },
+		],
+	},
+	'calculators/normal-distribution': {
+		about: [
+			'The normal (Gaussian) distribution: density, cumulative probability and quantiles at any μ and σ, with a curve drawn on canvas so you can see exactly which area the CDF is reporting.',
+			'The CDF is the complementary error function evaluated by power series and continued fraction to double precision (not the 1e-7 rational fits from Abramowitz & Stegun), and the quantile function is Acklam\'s approximation polished by one Halley step — accurate to the last displayed digit.',
+		],
+		aboutZh: [
+			'正态（高斯）分布：任意 μ、σ 下的密度、累积概率与分位数，并在 Canvas 上画出曲线，让 CDF 报告的面积一目了然。',
+			'CDF 用幂级数与连分式求补误差函数，精确到双精度（而非 Abramowitz & Stegun 的 1e-7 有理近似）；分位数函数用 Acklam 近似加一步 Halley 抛光——精确到最后一位显示数字。',
+		],
+		faq: [
+			{ q: 'How do I read a z-score from this?', a: 'Set μ = 0 and σ = 1: the CDF at your value is Φ(z), and the two-sided tail P(|Z| > z) is 1 − Φ(z) + Φ(−z). The 68/95/99.7 rule falls out of the same function.' },
+			{ q: 'Why not just use a statistics table?', a: 'Tables round to four decimals and cover a grid of z values; the exact functions here give every digit at every point, and tie directly into the confidence-interval and hypothesis-testing tools.' },
+		],
+		faqZh: [
+			{ q: '怎么用这个读 z 分数？', a: '把 μ 设 0、σ 设 1：你输入值处的 CDF 就是 Φ(z)，双侧尾部 P(|Z| > z) = 1 − Φ(z) + Φ(−z)。68/95/99.7 法则也是同一函数算出来的。' },
+			{ q: '为什么不直接查表？', a: '表只到四位小数、且只有网格上的 z 值；这里的精确函数在任意点给出全部位数，并直接衔接置信区间与假设检验工具。' },
+		],
+	},
+	'calculators/confidence-interval': {
+		about: [
+			'A confidence interval for the mean from your sample: x̄ ± t(0.975, n−1) · s/√n. Paste the numbers, get the interval plus the standard error and margin of error.',
+			'The critical value comes from the exact t distribution (incomplete beta), so small samples get correctly wider intervals — at n = 5 the multiplier is 2.78, not the 1.96 many people quote from memory. A proportion mode uses the Wilson score interval, which stays sane near 0 and 1 where the textbook Wald interval misbehaves.',
+		],
+		aboutZh: [
+			'用你的样本算均值的置信区间：x̄ ± t(0.975, n−1) · s/√n。粘贴数据，得到区间以及标准误与误差边际。',
+			'临界值来自精确 t 分布（不完全 beta 函数），小样本自动得到更宽的区间——n = 5 时乘数是 2.78 而不是很多人背的 1.96。比例模式用 Wilson 得分区间，在接近 0 和 1 的地方不像教科书 Wald 区间那样失真。',
+		],
+		faq: [
+			{ q: 'What does "95%" mean here?', a: 'It describes the procedure: across many random samples, 95% of the intervals constructed this way cover the true mean. The true value is not random — the interval is.' },
+			{ q: 'Why is my interval so wide?', a: 'Width is driven by the sample standard deviation and, through the square root, by n. Halving the width needs four times the data — see the article on inferential statistics for the arithmetic.' },
+		],
+		faqZh: [
+			{ q: '这里的 95% 是什么意思？', a: '它描述的是构造程序：多次随机抽样下，这样构造的区间有 95% 会盖住真值。真值不随机——随机的是区间。' },
+			{ q: '为什么我的区间这么宽？', a: '宽度由样本标准差和（经平方根）样本量决定。宽度减半需要四倍数据——算术细节见推断统计一文。' },
+		],
+	},
+	'calculators/hypothesis-testing': {
+		about: [
+			'One- and two-sample t tests with exact p-values: the test statistic is signal over noise (x̄ − μ₀)/(s/√n), and the p-value is the two-sided tail of the t distribution at your degrees of freedom.',
+			'The two-sample mode uses Welch\'s unequal-variance test by default — the pooled-variance version is only safe when the sample variances agree, and Welch is the honest default modern statistics recommends. Both directions (one- and two-sided) are reported so the choice is visible.',
+		],
+		aboutZh: [
+			'单样本与双样本 t 检验，p 值精确计算：统计量是信号除以噪声 (x̄ − μ₀)/(s/√n)，p 值是 t 分布在你自由度下的双侧尾部面积。',
+			'双样本模式默认用方差不等时的 Welch 检验——合并方差版本只有在两组方差接近时才可靠，Welch 是现代统计推荐的诚实默认。单侧与双侧结果都给出，让方向选择摆在明面上。',
+		],
+		faq: [
+			{ q: 'Is p the probability the null is true?', a: 'No. It is the probability of data at least this extreme, computed assuming the null is true. It says nothing directly about the hypothesis — only about the data under it.' },
+			{ q: 'My p is 0.06 — did I waste the experiment?', a: 'No: report the effect size and confidence interval alongside. Non-significance is weak evidence of absence, and the CI shows whether an important effect was ruled out or merely not pinned down.' },
+		],
+		faqZh: [
+			{ q: 'p 是“原假设为真”的概率吗？', a: '不是。它是在假定原假设为真的前提下，出现至少这么极端数据的概率。它直接说的是数据在假设下的表现，不是假设本身。' },
+			{ q: 'p = 0.06，实验白做了吗？', a: '没有：把效应量与置信区间一起报告。不显著对“没有效应”只是弱证据，置信区间能看出是排除了重要效应、还是只是没测准。' },
+		],
+	},
+	'calculators/anova-calculator': {
+		about: [
+			'One-way analysis of variance: paste each group\'s numbers, get the between/within decomposition, the F statistic and its exact p-value from the F distribution.',
+			'ANOVA answers "are all group means equal" in one test. Doing it with repeated t tests inflates the false-positive rate — three groups need three comparisons (14% chance of at least one spurious "significance" at α = 0.05), ten groups push it past 40%.',
+		],
+		aboutZh: [
+			'单因素方差分析：逐组粘贴数据，得到组间/组内变异分解、F 统计量与来自 F 分布的精确 p 值。',
+			'ANOVA 用一个检验回答“各组均值是否全相等”。反复做 t 检验会放大假阳性——三组要比较三次（α = 0.05 下至少一次假“显著”的概率约 14%），十组超过 40%。',
+		],
+		faq: [
+			{ q: 'What if the groups have very different variances?', a: 'Classical ANOVA assumes roughly equal variances. With clearly unequal spreads, a Welch-type ANOVA (or a non-parametric alternative) is safer; comparing the group standard deviations in the output table is the first check.' },
+			{ q: 'What does a significant F tell me?', a: 'Only that at least one group mean differs from the rest — not which one. Follow up with post-hoc pairwise comparisons that control the multiple-comparison error rate.' },
+		],
+		faqZh: [
+			{ q: '各组方差差很多怎么办？', a: '经典 ANOVA 假设方差大致相等。离散程度明显不一时，Welch 型 ANOVA（或非参数替代）更稳妥；先看输出表里各组标准差是最简单的检查。' },
+			{ q: 'F 显著说明什么？', a: '只说明至少有一组均值与其余不同——不指明是哪一组。后续要做控制多重比较错误率的事后两两比较。' },
+		],
+	},
+	'finance/rent-vs-buy': {
+		about: [
+			'The rent-versus-buy decision as a race between two compounding curves: the homeowner\'s equity (house value minus remaining loan) against the renter\'s investment account (down payment plus the monthly saving invested). The tool amortises the loan month by month, grows the house and the rent at their own rates, and compounds the investment return.',
+			'Both sides are computed to the same horizon with the same math, so the answer is a number, not a debate. The input assumptions — appreciation, investment return, loan rate — matter more than the arithmetic, which is why each is an explicit field.',
+		],
+		aboutZh: [
+			'把“租房还是买房”变成两条复利曲线的赛跑：房主的权益（房屋市值减剩余贷款）对阵租客的投资账户（首付款加上每月省下的差额定投）。工具逐月摊销贷款、让房价与租金按各自速率增长、按投资收益率复利。',
+			'两边在同一期限内用同一套数学计算，所以答案是数字而不是争论。增值率、投资收益率、贷款利率这些假设比算术本身更关键——因此每一项都是显式输入。',
+		],
+		faq: [
+			{ q: 'Why does the buy side start behind?', a: 'Early mortgage payments are mostly interest, and the purchase costs are paid up front — the equity curve is flat before it steepens. That is exactly the short-holding trap the comparison exposes.' },
+			{ q: 'What assumptions does it NOT model?', a: 'Taxes, maintenance, transaction friction and rent control are not itemised — the quick judgement sticks (price-to-rent ratio, the 5% rule) cover those; treat the output as the clean core comparison.' },
+		],
+		faqZh: [
+			{ q: '为什么买房一方开局落后？', a: '房贷前期还款大半是利息、交易成本又是先付的——权益曲线先平后陡。这正是对比暴露出的“持有期太短”陷阱。' },
+			{ q: '哪些假设没有建模？', a: '税费、维护、交易摩擦与租金管制未逐项建模——速判标尺（租售比、5% 法则）覆盖这些；应把输出当作干净的核心对比。' },
+		],
+	},
+	'devtools/curl-to-code': {
+		about: [
+			'Paste a curl command (or a browser "Copy as cURL" export) and get equivalent Python requests and JavaScript fetch code: method, URL, query parameters, headers, request body and Basic Auth are parsed and re-emitted as structured code.',
+			'The parser knows the shell-quoting games "Copy as cURL" plays (escaped quotes, line continuations, ANSI junk) and strips them at the source, so the generated code carries your data — not your terminal\'s quoting artifacts.',
+		],
+		aboutZh: [
+			'粘贴 curl 命令（或浏览器的 “Copy as cURL” 导出），得到等价的 Python requests 与 JavaScript fetch 代码：方法、URL、查询参数、请求头、请求体与 Basic Auth 都被解析后以结构化代码重新输出。',
+			'解析器认识 “Copy as cURL” 玩的 shell 引号把戏（转义引号、续行符、ANSI 杂质）并在源头剥掉，生成的代码里只有你的数据、没有终端的转义残渣。',
+		],
+		faq: [
+			{ q: 'Is my token safe here?', a: 'Yes — parsing is pure JavaScript in your browser; nothing is uploaded. (Still, prefer placeholder tokens when pasting into screenshots or issues.)' },
+			{ q: 'Why does the generated code use a params dict instead of the URL string?', a: 'Structured parameters are the maintainable form: the library re-encodes them correctly, and diffs stay readable when a value changes.' },
+		],
+		faqZh: [
+			{ q: 'token 会泄露吗？', a: '不会——解析是纯浏览器端 JavaScript，不上传任何内容。（当然，往截图或 issue 里贴时仍建议用占位符。）' },
+			{ q: '为什么生成的代码用参数字典而不是 URL 字符串？', a: '结构化参数才可维护：库会正确地重新编码，值变化时 diff 也保持可读。' },
+		],
+	},
+	'text/markdown-table-formatter': {
+		about: [
+			'Turns ragged Markdown tables into aligned ones: every column is padded by display width — CJK characters count as two columns, combining marks as zero — so a table full of Chinese text lines up in the editor.',
+			'Two modes: align & beautify pads every cell to the column width (keeping :--- alignment markers), compact strips the padding down to single spaces. The rendered result is identical either way — formatting changes source readability, not output.',
+		],
+		aboutZh: [
+			'把参差不齐的 Markdown 表格排整齐：每列按显示宽度填充——汉字算两列、组合符号算零宽——满表格的中文在编辑器里也能对得笔直。',
+			'两种模式：等宽对齐把每个单元格填充到列宽（保留 :--- 对齐标记），紧凑模式把填充压回单空格。两种模式的渲染结果完全相同——格式化只改源码可读性，不改输出。',
+		],
+		faq: [
+			{ q: 'Why not just count characters?', a: 'JavaScript\'s .length counts UTF-16 code units: a surrogate-pair emoji counts as 2, a Chinese character as 1, but both render two columns wide. Display width needs the Unicode East Asian Width tables.' },
+			{ q: 'Does it change how the table renders?', a: 'No. Markdown ignores the spaces around cell content and the exact position of pipes — alignment is purely for the human reading the source.' },
+		],
+		faqZh: [
+			{ q: '为什么不直接数字符？', a: 'JavaScript 的 .length 数的是 UTF-16 码元：代理对 emoji 算 2、汉字算 1，但渲染时都占两列。显示宽度要查 Unicode 东亚宽度表。' },
+			{ q: '会改变表格的渲染结果吗？', a: '不会。Markdown 忽略单元格内容周围的空格与竖线的确切位置——对齐纯粹是给读源码的人看的。' },
+		],
+	},
+	'devtools/js-formatter': {
+		about: [
+			'Format and minify JavaScript and TypeScript: paste code, get consistently indented output with a per-construct token count, plus optional identifier renaming and comment/whitespace stripping for the minified view.',
+			'The tokenizer is the same engine family the site\'s calculator uses — literals, template strings and regex-vs-division ambiguity are handled the way a real parser handles them, so formatting does not depend on running your code.',
+		],
+		aboutZh: [
+			'JavaScript 与 TypeScript 的格式化与压缩：粘贴代码，得到缩进一致的输出与按语法结构分类的 token 统计，压缩视图还支持标识符重命名与注释/空白剥离。',
+			'分词器与本站计算器同源——字面量、模板字符串、正则与除法的歧义都按真正的解析器方式处理，格式化完全不执行你的代码。',
+		],
+		faq: [
+			{ q: 'Is it safe to paste production code?', a: 'The formatter is pure string processing in the browser with no network calls — but if policy still says no, run it offline: the page works without a server.' },
+			{ q: 'Formatter or linter — which do I need?', a: 'A formatter rewrites layout only; a linter flags semantics (unused vars, ==, etc.). This tool does the former; pair it with ESLint for the latter.' },
+		],
+		faqZh: [
+			{ q: '贴生产代码安全吗？', a: '格式化是纯浏览器端字符串处理，无任何网络请求——若安全策略仍不允许，可离线使用：本页无需服务器即可工作。' },
+			{ q: '要格式化器还是 linter？', a: '格式化器只重排布局；linter 检查语义（未使用变量、== 等）。本工具做前者，与 ESLint 搭配使用。' },
+		],
+	},
+	'devtools/graphql-formatter': {
+		about: [
+			'Pretty-print GraphQL queries, mutations and schemas: the parser understands the GraphQL syntax (fields, arguments, variables, fragments, directives, type definitions) and re-emits them with consistent indentation.',
+			'Unlike a JSON formatter, GraphQL is not nested braces — its layout conventions (inline arguments, named fragments, block strings) need a grammar-aware printer, which is what this runs.',
+		],
+		aboutZh: [
+			'美化 GraphQL 查询、变更与 schema：解析器理解 GraphQL 语法（字段、参数、变量、片段、指令、类型定义），按一致的缩进重新输出。',
+			'与 JSON 格式化不同，GraphQL 不是嵌套大括号——它的排版惯例（内联参数、命名片段、块字符串）需要感知语法的打印机，本工具运行的就是它。',
+		],
+		faq: [
+			{ q: 'Does it validate the query?', a: 'It parses, so syntax errors are caught and reported at their position; semantic validation (does the field exist on that type) needs the schema, which stays on your server.' },
+			{ q: 'Will reformatting change my query?', a: 'No — only whitespace and line breaks. The printed query is semantically identical to the pasted one, character for character where it matters.' },
+		],
+		faqZh: [
+			{ q: '它校验查询吗？', a: '它做解析，语法错误会被捕获并指出位置；语义校验（某类型上是否存在该字段）需要 schema，那留在你的服务器上。' },
+			{ q: '重新排版会改变查询吗？', a: '不会——只改空白与换行。输出的查询与粘贴的语义完全一致，关键处逐字符相同。' },
+		],
+	},
+	'text/html-entity-escaper': {
+		about: [
+			'Escape or unescape HTML entities: < > & " \' become &lt; &gt; &amp; &quot; &#39; and back, with named and numeric forms both understood in the decode direction.',
+			'Escaping is the difference between displaying user text and executing it: the five characters above are the complete set that matters for HTML text content and attribute values, and numeric references let you round-trip any Unicode code point.',
+		],
+		aboutZh: [
+			'HTML 实体的转义与还原：< > & " \' 与 &lt; &gt; &amp; &quot; &#39; 互转，解码方向同时识别命名实体与数字实体。',
+			'转义是“显示用户文本”与“执行用户文本”的分界线：上述五个字符就是 HTML 文本内容与属性值需要处理的完整集合，数字引用还能让任意 Unicode 码点往返无损。',
+		],
+		faq: [
+			{ q: 'Why five characters and not more?', a: 'In text content only < and & strictly need escaping (plus > for safety); inside double-quoted attributes add ". The quote set covers both contexts — escaping more is harmless but noisy.' },
+			{ q: 'Is this the same as URL encoding?', a: 'No — HTML entities protect markup from being parsed; percent-encoding protects URL syntax. Use each in its own layer (see the cURL-to-code article for the URL side).' },
+		],
+		faqZh: [
+			{ q: '为什么是这五个字符？', a: '文本内容里严格必需转义的只有 < 和 &（> 是保险起见）；双引号属性值里再加 "。这五个覆盖两种上下文——多转无害但添噪。' },
+			{ q: '这和 URL 编码是一回事吗？', a: '不是——HTML 实体保护标记语言不被解析；百分号编码保护 URL 语法。各管各的层（URL 那一侧见 cURL 转代码一文）。' },
 		],
 	},
 };
