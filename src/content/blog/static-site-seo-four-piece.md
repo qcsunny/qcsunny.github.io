@@ -1,80 +1,91 @@
 ---
-title: '静态站的 SEO 四件套：robots.txt、sitemap、meta 标签与 URL slug'
-description: '不用框架、不用插件，纯静态站也能做对四件影响收录的事：robots.txt 的语义与反直觉细节、sitemap 的 lastmod 陷阱、OG/Twitter 卡片的字段选择、以及 slug 的可读性规则。'
+title: '静态站自用的 SEO 四件套工具：生成器怎么写才不是玩具'
+description: '站内 SEO 分类的四个工具（robots.txt、sitemap、meta 标签、slug）是从本站自己的需求里长出来的。拆解 robots 的 DSL 与 lint 双模式、sitemap 的去重与 5 万上限校验、slug 生成器的 NFKD 变音折叠与中文保留，以及"生成"和"校验"为什么必须做成一对。'
 pubDate: 'Sep 12 2026'
 category: web
 topics: [web-platform, static-sites]
-searchTerms: ['robots.txt', 'sitemap', 'meta 标签', 'SEO', 'slug']
+searchTerms: ['robots.txt', 'sitemap', 'meta 标签', 'slug']
 contentLang: 'zh-CN'
 relatedTools: ['seo/robots-txt-generator', 'seo/sitemap-xml-generator', 'seo/meta-tag-generator', 'seo/slug-generator']
 relatedPosts: ['url-parser-native-api-query-cleaning-and-tracking-params']
 ---
 
-搜索引擎优化（SEO）的玄学浓度全行业最高，但静态站的收录基础其实只有四件事：让爬虫知道**什么可以抓、有什么可抓、每页是什么、以及页面叫什么**。四件事分别对应 robots.txt、sitemap.xml、meta 标签和 URL slug。这四样没有玄学，全是规格，做对就行。
+qcsunny.org 自己就是一个 Astro 静态站——sitemap 按构建期页面清单生成、robots.txt 手写、每篇文章的 slug 定了就不改。SEO 分类的四个工具（[robots.txt 生成器](/seo/robots-txt-generator/)、[sitemap 生成器](/seo/sitemap-xml-generator/)、[meta 标签生成器](/seo/meta-tag-generator/)、[slug 生成器](/seo/slug-generator/)）不是照着竞品抄的，是把本站踩过的规格细节固化成表单。这篇文章拆几个"生成器怎么写才不是玩具"的决策。
 
-## robots.txt：先读懂它"不能"做什么
+---
 
-robots.txt 放在域名根目录，告诉遵守协议的爬虫"哪些路径不要抓"。语法只有几条：
+## 1. 生成与校验必须成对
 
-```text
-User-agent: *
-Disallow: /admin/
-Allow: /admin/public/
-Sitemap: https://example.com/sitemap.xml
+四个工具里两个纯文本的有**双模式**：同一个输入框，"Generate" 从简化行格式生成正式产物，"Validate" 反向校验已有文件。为什么校验不是可有可无的附加功能？因为 robots.txt 的错误是**静默失效**的——语法错一半，爬虫忽略整个文件，站长不会有任何报错。
+
+lint 抓的第一类错误就是静默失效的典型：
+
+```ts
+if ((d === 'disallow' || d === 'allow') && !groupHasAgent)
+	problems.push(`✗ "${t.slice(0, 40)}" comes before any User-agent — it applies to nothing. 该行出现在任何 User-agent 之前，不会生效。`);
 ```
 
-反直觉的三件事：
+`Disallow` 写在第一条 `User-agent` 之前，语法上完全合法，语义上**作用于 nobody**——这正是"更长的匹配优先""Allow 与 Disallow 共存"这些 robots 语义之外，最容易漏的实际错误。拼写检查也在同一个 lint 里：`disalow`、`dissallow` 这类高频手滑单独点名（"typo for disallow?"），比一句笼统的 unknown directive 可操作得多。
 
-1. **Disallow 不等于保密**。它只是请求，不拦访问——任何人都能直接打开被 Disallow 的 URL。真正的隐私靠认证，永远不要用 robots.txt 藏敏感路径（反而等于向全世界广播了这些路径的存在）。
-2. **更长的匹配优先**。`Allow: /admin/public/` 比 `Disallow: /admin/` 更具体，所以该子路径允许抓取——不是"先到先得"。
-3. **不要把 API、追踪脚本所在路径全部 Disallow**。有些页面的渲染依赖这些资源，Google 已经明确会因此降低对页面的理解。
+---
 
-`User-agent: *` 之后可以再叠加针对具体爬虫的段落（如 `User-agent: GPTBot`），控制 AI 爬虫是否可以抓正文——这是近两年最常被问到的配置。
+## 2. robots 生成器：DSL 而不是表单
 
-## sitemap.xml：收录的目录，lastmod 别乱填
+输入侧是一个极简行格式——`user-agent: *` / `disallow: /admin` 每行一条，空行分组。转成正式产物时**只做两件事**：指令名规范化（首字母大写）、未知指令拒绝：
 
-sitemap 是站点的 URL 清单，机器可读：
-
-```xml
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://example.com/blog/hello/</loc>
-    <lastmod>2026-09-01</lastmod>
-  </url>
-</urlset>
+```ts
+if (!['user-agent', 'disallow', 'allow', 'sitemap', 'crawl-delay'].includes(d)) {
+	errors.push(`✗ Unknown directive "${d}" — allowed: ...`);
+	break;
+}
 ```
 
-要点：
+拒绝清单是白名单而不是黑名单——robots 的正式指令还有 `noindex`（已废弃）、`host`（Yandex 专有）这类"某些文档里出现过"的条目，白名单保证生成的文件只含**所有主流爬虫都认**的五条。生成器不猜"用户可能是想写 host"，直接报错——**生成器产出的一定是可预期的合法文件**，这条底线比宽容解析更值钱。
 
-- **URL 必须绝对路径且与 `loc` 的协议、域名完全一致**——`https://example.com/a` 与 `https://example.com/a/` 在爬虫眼里是两个地址；
-- **lastmod 只在内容真的变了时更新**。每次构建都把所有 lastmod 刷成当天，爬虫很快学会不信任这个字段，真正更新的页面反而被淹没；
-- **只放希望被索引的规范地址（canonical）**：带追踪参数的 URL、分页的第 N 页、重定向目标都不该出现；
-- 站点地图超过 5 万条 URL 或 50MB 就要拆分并用 sitemap index 引用——静态站一般远达不到。
+---
 
-生成器应该从页面清单直接产出这份 XML，而不是手写。站内的 [sitemap 生成器](/seo/sitemap-xml-generator/)输入 URL 列表与更新日期，输出带校验的 XML。
+## 3. sitemap 生成器：三个规格数字
 
-## meta 标签：标题、描述与社交卡片
+sitemaps.org 的规格里有三个能校验的硬数字，工具全钉了：
 
-页面 `<head>` 里真正影响结果的就几个：
+```ts
+const urls = [...new Set(entries.map((e) => e.url))];
+// …
+`URLs URL 数: ${locs.length}${locs.length > 50000 ? '  ⚠ over the 50,000 limit · 超过 5 万上限!' : ''}`,
+```
 
-- `<title>`：60 字符左右（中文约 30 字以内），每个页面唯一，关键词放前半段——它同时是搜索结果的标题和浏览器标签页的文字；
-- `<meta name="description">`：150–160 字符，不直接决定排名，但决定搜索结果里的点击率——写得像广告文案而不是关键词堆；
-- `<link rel="canonical">`：同页多 URL（带参数、带 www 变体）时指明权威版本，是避免"自我竞争"的关键；
-- OG 与 Twitter 卡片：`og:title`、`og:description`、`og:image`、`twitter:card` 决定链接被分享到社交平台时的预览卡。`og:image` 建议 1200×630，缺失时分享卡没有图，点击率显著掉。
+- **绝对 URL 强制**：`/^https?:\/\//` 不匹配的行直接报错并点名前三个坏行——相对 URL 在 sitemap 里是规格违例，不是风格问题；
+- **去重**：`new Set` 静默合并重复 URL（同一页面出现两次会稀释爬虫预算），但**保留第一次出现的 lastmod**——后面才发现的更新日期不应该覆盖先写的；
+- **50,000 上限**：超限在输出里带 ⚠ 提示拆分 sitemap index——静态站一般达不到，但工具的校验边界必须与规格一致，"反正没人会超"的假设在生成器里就是 bug。
 
-结构化数据（JSON-LD）是加分项：`BlogPosting`、`BreadcrumbList` 这类 schema 让搜索引擎理解"这是一篇文章/一条面包屑"，有机会拿到富摘要。字段多且容易写错类型，用生成器（[meta 标签生成器](/seo/meta-tag-generator/)）从表单产出比手拼字符串稳。
+`escXml` 转义（`& < > " '`）在生成路径上逐 URL 执行——URL 里的 `&`（查询参数分隔符）在 XML 里必须写成 `&amp;`，这是"看起来能跑"和"真的合法"的区别。
 
-## URL slug：页面叫什么
+---
 
-slug 是 URL 的可读尾巴。规则收敛成四条：
+## 4. slug 生成器：NFKD 折叠与中文保留
 
-1. **全小写、连字符分词**：`/blog/markdown-table-alignment/` 而不是 `Markdown_Table_Alignment`——大小写在某些服务器上是不同地址；
-2. **短而有意义**：3–5 个词以内，去掉 a/the/的 等虚词，但保留主题词；
-3. **ASCII 化**：中文标题转拼音或英文关键词（`%E4%B8%AD%E6%96%87` 这种百分号编码的 URL 在哪都难看难抄）；
-4. **定了就不改**：URL 是公开契约，改了就要 301；能不改就不改。
+slug 的实现只有五行，但每一行都是一个决策：
 
-站内的 [slug 生成器](/seo/slug-generator/)负责标题到 slug 的这一步：转小写、去标点、分词连字符、剔除停用词，标题粘贴进去直接得到候选 slug。
+```ts
+const s = text
+	.normalize('NFKD')
+	.replace(/[̀-ͯ]/g, '')
+	.toLowerCase()
+	.replace(/[^a-z0-9㐀-鿿぀-ヿ가-힯]+/gu, sep);
+return s.split(sep).filter(Boolean).join(sep);
+```
 
-## 四件套的共同点
+- **NFKD + 去组合附标**：`é` 分解成 `e` + U+0300 附标，附标剥掉只剩 `e`——`Café` → `cafe`，西文标题不需要转写表；
+- **中文原样保留**：`㐀-鿿`（CJK 统一表意）与假名、谚文区间留在白名单里——`%E4%B8%AD` 百分号编码的 URL 在哪都难看难抄，但**中文 slug 本身是合法且常见的选择**（本站文章 URL 全是英文 slug，但工具不该替用户做这个决策），所以保留而非转拼音——转拼音需要一张几千条的映射表，那是一个依赖，不是一个函数；
+- **`split + filter + join` 收尾**：标点 collapsing（`Better CSS!` 的 `!` 和空格连成一个 `-`）顺便 trim 了首尾——一行干三件事，比三个 replace 链好读。
 
-它们都是**给机器读的文本**，规格明确、可验证、可生成——这正是工具比手写强的地方。站内四个工具（[robots.txt 生成器](/seo/robots-txt-generator/)、[sitemap 生成器](/seo/sitemap-xml-generator/)、[meta 标签生成器](/seo/meta-tag-generator/)、[slug 生成器](/seo/slug-generator/)）把四件事各自的规则固化下来，全部本地运算、无数据上传。SEO 的确还有很多玄学，但把这四件规格内的事做对，是任何策略的地基。
+---
+
+## 5. 工程收获
+
+- **生成与校验成对**：静默失效的格式（robots.txt）里，lint 不是附加功能是另一半本体；
+- **白名单优于黑名单**：只产出可预期的合法输出，把"猜意图"留给报错信息；
+- **规格数字全部钉住**：5 万上限、绝对 URL、XML 转义——生成器的校验边界与规格一致才算实现完整；
+- **能用一个函数解决的不引依赖**：NFKD 折叠是 Unicode 标准化的副产品，拼音转写才是需要数据的——分清楚哪个是哪个。
+
+四个工具在此：[robots.txt](/seo/robots-txt-generator/)、[sitemap](/seo/sitemap-xml-generator/)、[meta 标签](/seo/meta-tag-generator/)、[slug](/seo/slug-generator/)。全部本地运算，URL 清单不出浏览器。
