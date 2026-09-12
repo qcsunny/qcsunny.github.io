@@ -2165,19 +2165,23 @@ const hypothesisTesting: FormConfig = {
 		let pTwo = 0;
 		let pRight = 0;
 		let pLeft = 0;
-		let zCrit95 = 1.95996;
+		// Exact critical value: tCritical is the cross-validated bisection from
+		// the econometrics core (solves 2·tSurvival(df, x) = alpha), not the old
+		// 2.0 + 3/df approximation which was off by −19% at df = 2.
+		let zCrit95: number;
 
 		if (testType === 'z_test') {
 			const cdf = normalCdf(stat);
 			pRight = 1 - cdf;
 			pLeft = cdf;
 			pTwo = 2 * (1 - normalCdf(Math.abs(stat)));
+			zCrit95 = eco.tCritical(0.05, 1e9);
 		} else {
 			const cdf = tCdf(stat, df);
 			pRight = 1 - cdf;
 			pLeft = cdf;
 			pTwo = 2 * (1 - tCdf(Math.abs(stat), df));
-			zCrit95 = df >= 30 ? 1.96 : 2.0 + 3.0 / df;
+			zCrit95 = eco.tCritical(0.05, df);
 		}
 
 		const margin95 = zCrit95 * se;
@@ -2394,11 +2398,11 @@ const confidenceInterval: FormConfig = {
 
 		const df = n - 1;
 		const se = sd / Math.sqrt(n);
-		let crit = zCrit;
-
-		if (mode === 'mean_t') {
-			crit = df >= 30 ? zCrit : zCrit + (confLevel === '95' ? 3.0 / df : 4.0 / df);
-		}
+		// Exact t critical per confidence level via the cross-validated
+		// tCritical bisection (the old z + 3/df shortcut was +25% off at 90%,
+		// −54% at 99%/df=2). tCritical takes two-tailed alpha.
+		const alpha = 1 - Number(confLevel) / 100;
+		const crit = mode === 'mean_t' ? eco.tCritical(alpha, df) : zCrit;
 
 		const me = crit * se;
 		const low = xbar - me;
