@@ -1,12 +1,12 @@
 ---
-title: '零依赖静态站的 E2E 质量门禁：150+ Playwright 用例如何守护“不坏的代码”'
-description: '静态页面真的不需要自动化测试？从科学计算器按键静默失效一周的真实惨案出发，复盘本站如何构建覆盖 150+ 用例的浏览器端真实 E2E 门禁。详述双语互斥排他校验、KaTeX 字体防 CDN 渗透、SVG 几何重叠拦截与 dist 产物级字节预算的测试体系设计。'
+title: '零依赖静态站的 E2E 质量门禁：262 个 Playwright 用例如何守护“不坏的代码”'
+description: '静态页面真的不需要自动化测试？从科学计算器按键静默失效一周的真实惨案出发，复盘本站如何构建覆盖 262 个用例（38 个 spec 文件）的浏览器端真实 E2E 门禁。详述双语互斥排他校验、KaTeX 字体防 CDN 渗透、SVG 几何重叠拦截与 dist 产物级字节预算的测试体系设计。'
 pubDate: 'Sep 08 2026'
 category: engineering
 topics: [developer-tools, performance, static-sites]
 searchTerms: ['Playwright', 'E2E测试', '质量门禁', '静态站点', '持续集成', '性能预算']
 contentLang: 'zh-CN'
-relatedTools: []
+relatedTools: ['devtools/json-formatter', 'text/json-diff']
 relatedPosts: ['static-site-byte-ledger']
 ---
 
@@ -106,6 +106,6 @@ test('pure content pages must ship 0 bytes of first-party JS', async ({ page }) 
 
 ## 4. 总结：测试不是负担，是无畏重构的底气
 
-150+ 个 E2E 测试用例在本地并行执行仅需数十秒，在 GitHub Actions CI 容器中也只需约 2 分钟。
+262 个 E2E 测试用例在本地并行执行仅需数分钟，在 GitHub Actions CI 容器中也只需约 2 分钟。
 
 正是这套严丝合缝的自动化测试门禁，让我们在面对底层算法重构、CSS 全局度量衡重写以及高频发布新博文时，能够拥有**“只要 CI 是绿的，我就敢打包上线”**的从容与底气。

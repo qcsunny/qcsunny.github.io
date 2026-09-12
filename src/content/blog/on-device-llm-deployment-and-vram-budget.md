@@ -6,7 +6,7 @@ category: ai
 topics: [ai, llm, performance]
 searchTerms: ['本地部署LLM', 'GGUF量化', 'AWQ', '显存计算', 'RTX4090', 'Mac统一内存']
 contentLang: 'zh-CN'
-relatedTools: []
+relatedTools: ['converters/data', 'devtools/unix-timestamp']
 relatedPosts: ['five-flash-models-comparison']
 ---
 

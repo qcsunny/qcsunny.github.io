@@ -1,6 +1,6 @@
 ---
-title: '网页工具集：科学计算器、二维码与 58 个免费小工具'
-description: '博客自建的 58 个纯浏览器端工具页：科学计算器、函数绘图、Canvas 2D 三维曲面、复利/房贷计算、二维码生成器（手写编码器）等，全部零第三方依赖。'
+title: '网页工具集：科学计算器、二维码与 135 个免费小工具'
+description: '博客自建的 135 个纯浏览器端工具页：科学计算器、函数绘图、Canvas 2D 三维曲面、复利/房贷计算、二维码生成器（手写编码器）、计量经济学套件等，全部零第三方依赖。'
 pubDate: 'Sep 01 2026'
 category: web
 topics: [frontend, web-platform]
@@ -19,16 +19,24 @@ relatedPosts: ['markdown-parser-and-katex-math']
 
 拆分前的旧地址 `/calculator/` 现已下线。
 
-## 一个注册表，58 个工具
+## 一个注册表，135 个工具
 
-这次拆分顺带建起了整套工具页体系（入口在导航栏的 **Tools**，共 58 个工具、四大分类）：
+这次拆分顺带建起了整套工具页体系（入口在导航栏的 **Tools**，已发展为 135 个工具、12 个分类）：
 
 | 分类 | 内容 |
 | --- | --- |
-| [Calculators](/calculators/)（11） | 科学计算器、函数绘图、三维曲面、百分比、百分比变化、分数、比例、单利、质因数分解、组合与排列、描述统计与线性回归 |
-| [Converters](/converters/)（11） | 长度、重量、温度、面积、体积、速度、时间、数据大小、压强、功率、能量——双向换算、一键交换 |
-| [Finance](/finance/)（13） | 复利（含月定投、逐年明细）、等额本息月供与摊销表、房贷（含税险 HOA）、提前还款、真实年化与分期 IRR、通胀购买力、储蓄目标、车贷、FIRE、个税、年薪换算、ROI、折扣 |
-| [Dev Tools](/devtools/)（23） | 密码/UUID/随机数生成器、二维码、进制转换、Unix 时间戳、Cron 表达式、正则测试、CSS px↔rem、文本 diff、SHA-256 哈希、字数与字符统计、JSON/SQL/XML/CSS/HTML 格式化、JWT 解码、URL 解析、Markdown 预览、Base64、颜色转换 |
+| [Calculators](/calculators/)（32） | 科学计算器、函数绘图、三维曲面、描述统计、置信区间、假设检验、方差分析，及整套计量经济学工具（线性回归/稳健标准误、回归诊断、分位数回归、混合效应、Logit/Probit、计数回归、平稳性检验、ARIMA 预测、VAR 协整、卡尔曼滤波） |
+| [Converters](/converters/)（13） | 长度、重量、温度、面积、体积、速度、时间、数据、压强、功率、能量，及新增的燃油消耗与角度——双向换算、一键交换 |
+| [Finance](/finance/)（24） | 复利（含月定投、逐年明细）、等额本息月供与摊销表、房贷（含税险 HOA）、提前还款、真实年化与分期 IRR、通胀购买力、储蓄目标、车贷、FIRE、个税、年薪换算、ROI、折扣、买房 vs 租房 |
+| [Daily](/daily/)（4） | 日期计算、年龄、BMI、时区换算 |
+| [Dev Tools](/devtools/)（28） | 密码/UUID/随机数生成器、二维码、进制转换、Unix 时间戳、Cron 表达式、正则测试、文本 diff、SHA-256 哈希、字数与字符统计、JSON/SQL/YAML/XML 格式化、JWT 解码、URL 解析、cURL 转代码、Markdown 预览、Base64 |
+| [Text](/text/)（13） | 大小写转换、字符/字数统计、CSV↔JSON、HTML 实体、JSON diff、行整理、Markdown 表格对齐与预览、罗马数字、文本 diff、网址邮箱提取、UA 解析 |
+| [Office](/office/)（3） | PDF 工具箱（合并/拆分/水印等）、Excel 分析、文档 OCR |
+| [Security](/security/)（5） | 浏览器指纹、CIDR 计算、哈希生成、JWT 解码、密码生成 |
+| [Media](/media/)（3） | 图片滤镜实验室、无损校验、视频信息 |
+| [Color](/color/)（5） | 颜色转换、调色板、CSS clamp、px↔rem、WCAG 对比度 |
+| [SEO](/seo/)（4） | robots.txt、sitemap、meta 标签、slug 生成 |
+| [Fun](/fun/)（1） | Mandelbrot 探索器 |
 
 几个值得一提的细节：
 

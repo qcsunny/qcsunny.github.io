@@ -1,6 +1,6 @@
 ---
 title: '单位换算的精度账：中心辐射式因子表、仿射单位为什么必须单独写，以及一个显示得出来的手抄小数'
-description: '本站 11 个换算页共 180 个单位。这篇拆解它们背后的中心辐射式因子表（180 个因子而不是 3154 个转换对）、实测 36674 次往返换算的精度分布（线性类最差 1 ulp，温度类 563 ulp），以及一个结论反转：真正毁掉精度的不是浮点运算，而是手抄的小数——inHg 曾让页面把 1 英寸汞柱显示成 25.4000001975 毫米汞柱。'
+description: '本站 13 个换算页共 192 个单位。这篇拆解它们背后的中心辐射式因子表（192 个因子而不是 18336 个转换对）、实测 36674 次往返换算的精度分布（线性类最差 1 ulp，温度类 563 ulp），以及一个结论反转：真正毁掉精度的不是浮点运算，而是手抄的小数——inHg 曾让页面把 1 英寸汞柱显示成 25.4000001975 毫米汞柱。'
 pubDate: 'Sep 05 2026'
 category: engineering
 topics: [unit-conversion, numerical-computing]
@@ -10,7 +10,7 @@ relatedTools: ['converters/length', 'converters/weight']
 relatedPosts: ['floating-point-ieee754-and-precision']
 ---
 
-本站有 [11 个单位换算页](/converters/weight/)，从[重量](/converters/weight/)、[长度](/converters/length/)、[面积](/converters/area/)、[体积](/converters/volume/)到[温度](/converters/temperature/)、[压力](/converters/pressure/)、[功率](/converters/power/)、[能量](/converters/energy/)、[速度](/converters/speed/)、[时间](/converters/time/)和[数据存储](/converters/data/)，一共 **180 个单位**。它们全部在浏览器里算完，一个字节都不上传。
+本站有 [13 个单位换算页](/converters/weight/)，从[重量](/converters/weight/)、[长度](/converters/length/)、[面积](/converters/area/)、[体积](/converters/volume/)到[温度](/converters/temperature/)、[压力](/converters/pressure/)、[功率](/converters/power/)、[能量](/converters/energy/)、[速度](/converters/speed/)、[时间](/converters/time/)、[数据存储](/converters/data/)，加上后来补充的[燃油消耗](/converters/fuel/)与[角度](/converters/angle/)，一共 **192 个单位**。它们全部在浏览器里算完，一个字节都不上传。
 
 这篇原本想写的是"防浮点误差指南"。动笔前我先把整张表跑了一遍实测——**结论和预期相反**：线性换算的往返误差最差只有 **1 个 ulp**（浮点数的最小刻度），压根不需要"防"。真正把精度弄丢的是另外两个地方，而且都比浮点误差大三个数量级以上：
 
@@ -21,9 +21,9 @@ relatedPosts: ['floating-point-ieee754-and-precision']
 
 ---
 
-## 1. 中心辐射式：180 个因子，不是 3154 个转换对
+## 1. 中心辐射式：192 个因子，不是 18336 个转换对
 
-最容易想到的换算实现是查表：给每一对单位存一个系数。11 个分类里，**有序单位对一共 3154 个**（重量类 26 个单位就有 26 × 25 = 650 对）。这条路不能走，不只是因为要填 3154 个数，而是因为**它们会互相矛盾**——只要有一对填错，`kg → lb` 和 `lb → kg` 就不再互为逆运算，而你没有任何机制发现。
+最容易想到的换算实现是查表：给每一对单位存一个系数。13 个分类里，**有序单位对一共 18336 个**（重量类 26 个单位就有 26 × 25 = 650 对）。这条路不能走，不只是因为要填 18336 个数，而是因为**它们会互相矛盾**——只要有一对填错，`kg → lb` 和 `lb → kg` 就不再互为逆运算，而你没有任何机制发现。
 
 正确做法是中心辐射式（hub-and-spoke）：每个分类选一个基准单位，每个单位只存**自己到基准的一个因子**。整个 `src/tools/units.ts` 的核心就是这个 7 行的辅助函数：
 
@@ -47,7 +47,7 @@ const out = to.fromBase(baseValue); // 一次除法
 
 这带来三件事，每一件都不是小事：
 
-**一、数据量从 $O(n^2)$ 降到 $O(n)$。** 180 个因子替代 3154 个转换对。新增一个单位只要写一个数，它和其余所有单位的换算自动成立。
+**一、数据量从 $O(n^2)$ 降到 $O(n)$。** 192 个因子替代 18336 个转换对。新增一个单位只要写一个数，它和其余所有单位的换算自动成立。
 
 **二、误差上界是常数。** 无论换算哪一对，都恰好是两次浮点舍入，**与单位数量无关**。查表式实现里 `市寸 → 光年` 可能是抄来的多步结果，误差不可控；这里它和 `m → cm` 一样干净。
 
@@ -316,7 +316,7 @@ DRIFT  pressure atm = 760 mmHg   stored=101325   derived=101325.01443540001   re
 
 ## 7. 显示层：12 位有效数字，和数据换算器逼出来的一个例外
 
-因子对了、算术对了，还有最后一道关：怎么把 double 变成字符串。这个函数被计算器、函数绘图、[三维曲面](/calculators/graph3d/)和全部 11 个换算页共用：
+因子对了、算术对了，还有最后一道关：怎么把 double 变成字符串。这个函数被计算器、函数绘图、[三维曲面](/calculators/graph3d/)和全部 13 个换算页共用：
 
 ```ts
 /** Format a number for display: 12 significant digits, no float noise. */

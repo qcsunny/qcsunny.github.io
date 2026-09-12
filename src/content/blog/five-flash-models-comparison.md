@@ -7,7 +7,7 @@ category: ai
 topics: [ai, llm]
 searchTerms: ['Hy4 preview', 'GLM-5.3-Flash', 'Qwen3.8-Flash', 'DeepSeek-V4-Flash', 'MiMo-V2.5', 'Flash model comparison']
 contentLang: 'zh-CN'
-relatedTools: []
+relatedTools: ['text/character-counter']
 relatedPosts: []
 ---
 

@@ -6,7 +6,7 @@ category: productivity
 topics: [date-time, frontend]
 searchTerms: ['时钟', '番茄钟', '主题']
 contentLang: 'zh-CN'
-relatedTools: []
+relatedTools: ['daily/date-calculator', 'devtools/unix-timestamp']
 relatedPosts: ['calendar-page']
 ---
 
