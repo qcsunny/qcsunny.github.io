@@ -1,6 +1,6 @@
 ---
 title: '网页工具集：科学计算器、二维码与 135 个免费小工具'
-description: '博客自建的 135 个纯浏览器端工具页：科学计算器、函数绘图、Canvas 2D 三维曲面、复利/房贷计算、二维码生成器（手写编码器）、计量经济学套件等，全部零第三方依赖。'
+description: '博客自建的 135 个纯浏览器端工具页：科学计算器、函数绘图、复利/房贷、手写二维码编码器与计量经济学套件；轻量工具坚持原生实现，PDF/OCR/Excel 等规范重活使用自托管重库，全部本地运行。'
 pubDate: 'Sep 01 2026'
 category: web
 topics: [frontend, web-platform]
@@ -87,7 +87,7 @@ ans * 2          → 上一轮结果
 
 ## 实现原理
 
-整个工具**零第三方依赖**——没有 math.js，没有 React，只有 TypeScript 和浏览器原生 API。唯一的例外是 Markdown 预览页的数学排版用了 KaTeX，而且是**打包进产物**的本地依赖（版本锁死、字体一并提交进仓库），不走任何 CDN——[为什么这条界线划在这里](/blog/markdown-parser-and-katex-math/)。
+轻量工具坚持原生 TypeScript 与浏览器 API——计算器没有 math.js，页面没有 React，二维码编码管线也没有交给现成包。第三方依赖只用在重复实现成本与规范风险都明显更高的边界：Markdown 数学排版用 KaTeX；Excel 分析用 JSZip；PDF 结构/渲染用自托管的 pdf-lib 与 pdf.js；文档 OCR 用自托管的 Tesseract.js。它们全部**版本锁定并由本站提供**，不走 CDN、数据不出浏览器。KaTeX 的划线见[Markdown 解析器那篇](/blog/markdown-parser-and-katex-math/)，Office 重库的划线见[浏览器 Office 三件套](/blog/browser-office-vendored-libraries/)。
 
 ### 手写表达式引擎
 

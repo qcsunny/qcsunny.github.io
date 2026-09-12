@@ -30,29 +30,77 @@ export function initMandelbrot(host: HTMLElement): void {
 	const FRAG = `
 precision highp float;
 uniform vec2 uRes;      // canvas pixels
-uniform vec2 uCenter;   // complex plane center
+uniform vec2 uCenter;   // fast-path complex plane center
+uniform vec2 uCenterX;  // deep path: (float32 high, residual low)
+uniform vec2 uCenterY;
 uniform float uScale;   // complex-plane units per canvas pixel
 uniform int uMaxIter;
 uniform vec2 uJulia;    // Julia constant (uMode 1) — unused in mode 0
 uniform int uMode;      // 0 = Mandelbrot, 1 = Julia
 uniform float uHue;     // palette shift 0..1
-varying vec2 vP;
+uniform int uDeep;      // double-single path below float32 pixel precision
+
+// Double-single arithmetic: one value is hi+lo, about 44-48 useful bits on
+// float32 hardware. 4097 = 2^12+1 splits a 24-bit float for Dekker product.
+vec2 dsAdd(vec2 a, vec2 b) {
+	float s = a.x + b.x;
+	float v = s - a.x;
+	float t = ((b.x - v) + (a.x - (s - v))) + a.y + b.y;
+	float z = s + t;
+	return vec2(z, t - (z - s));
+}
+vec2 dsSub(vec2 a, vec2 b) { return dsAdd(a, -b); }
+vec2 dsMul(vec2 a, vec2 b) {
+	float p = a.x * b.x;
+	float ca = a.x * 4097.0;
+	float cb = b.x * 4097.0;
+	float ah = ca - (ca - a.x);
+	float bh = cb - (cb - b.x);
+	float al = a.x - ah;
+	float bl = b.x - bh;
+	float e = (((ah * bh - p) + ah * bl) + al * bh) + al * bl;
+	e += a.x * b.y + a.y * b.x;
+	float z = p + e;
+	return vec2(z, e - (z - p));
+}
 void main() {
-	// pixel -> complex
-	vec2 c = uCenter + (gl_FragCoord.xy - uRes * 0.5) * uScale;
-	vec2 z = uMode == 1 ? c : vec2(0.0);
-	vec2 k = uMode == 1 ? uJulia : c;
+	vec2 pixel = (gl_FragCoord.xy - uRes * 0.5) * uScale;
 	float i = 0.0;
 	float escaped = 0.0;
-	for (int n = 0; n < 2000; n++) {
-		if (n >= uMaxIter) break;
-		z = vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + k;
-		if (dot(z, z) > 256.0) { escaped = 1.0; break; }
-		i += 1.0;
+	float mag2 = 0.0;
+	if (uDeep == 0) {
+		vec2 c = uCenter + pixel;
+		vec2 z = uMode == 1 ? c : vec2(0.0);
+		vec2 k = uMode == 1 ? uJulia : c;
+		for (int n = 0; n < 2000; n++) {
+			if (n >= uMaxIter) break;
+			z = vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + k;
+			mag2 = dot(z, z);
+			if (mag2 > 256.0) { escaped = 1.0; break; }
+			i += 1.0;
+		}
+	} else {
+		vec2 cr = dsAdd(uCenterX, vec2(pixel.x, 0.0));
+		vec2 ci = dsAdd(uCenterY, vec2(pixel.y, 0.0));
+		vec2 zr = uMode == 1 ? cr : vec2(0.0);
+		vec2 zi = uMode == 1 ? ci : vec2(0.0);
+		vec2 kr = uMode == 1 ? vec2(uJulia.x, 0.0) : cr;
+		vec2 ki = uMode == 1 ? vec2(uJulia.y, 0.0) : ci;
+		for (int n = 0; n < 2000; n++) {
+			if (n >= uMaxIter) break;
+			vec2 zr2 = dsMul(zr, zr);
+			vec2 zi2 = dsMul(zi, zi);
+			vec2 zrzi = dsMul(zr, zi);
+			zr = dsAdd(dsSub(zr2, zi2), kr);
+			zi = dsAdd(dsAdd(zrzi, zrzi), ki);
+			mag2 = zr.x * zr.x + zi.x * zi.x;
+			if (mag2 > 256.0) { escaped = 1.0; break; }
+			i += 1.0;
+		}
 	}
 	if (escaped < 0.5) { gl_FragColor = vec4(0.03, 0.04, 0.08, 1.0); return; }
 	// smooth iteration count + cyclic palette (cosine palette, iq style)
-	float sn = i - log2(log2(dot(z, z)) / 2.0) + 4.0;
+	float sn = i - log2(log2(mag2) / 2.0) + 4.0;
 	float t = 0.02 * sqrt(sn) + uHue;
 	vec3 col = 0.5 + 0.5 * cos(6.28318 * (t + vec3(0.0, 0.33, 0.67)));
 	gl_FragColor = vec4(col, 1.0);
@@ -81,11 +129,14 @@ void main() {
 	const U = {
 		res: gl.getUniformLocation(prog, 'uRes'),
 		center: gl.getUniformLocation(prog, 'uCenter'),
+		centerX: gl.getUniformLocation(prog, 'uCenterX'),
+		centerY: gl.getUniformLocation(prog, 'uCenterY'),
 		scale: gl.getUniformLocation(prog, 'uScale'),
 		iter: gl.getUniformLocation(prog, 'uMaxIter'),
 		julia: gl.getUniformLocation(prog, 'uJulia'),
 		mode: gl.getUniformLocation(prog, 'uMode'),
 		hue: gl.getUniformLocation(prog, 'uHue'),
+		deep: gl.getUniformLocation(prog, 'uDeep'),
 	};
 
 	// --- state ---
@@ -101,10 +152,20 @@ void main() {
 	let jy = 0.1889;
 	let hue = 0.0;
 
+	const splitFloat = (v: number): [number, number] => {
+		const hi = Math.fround(v);
+		return [hi, Math.fround(v - hi)];
+	};
+
 	function render(): void {
 		gl.viewport(0, 0, canvas.width, canvas.height);
 		gl.uniform2f(U.res, canvas.width, canvas.height);
 		gl.uniform2f(U.center, cx, cy);
+		const [cxHi, cxLo] = splitFloat(cx);
+		const [cyHi, cyLo] = splitFloat(cy);
+		gl.uniform2f(U.centerX, cxHi, cxLo);
+		gl.uniform2f(U.centerY, cyHi, cyLo);
+		gl.uniform1i(U.deep, span < 2e-4 ? 1 : 0);
 		gl.uniform1f(U.scale, span / canvas.width);
 		gl.uniform1i(U.iter, iter);
 		gl.uniform2f(U.julia, jx, jy);
@@ -230,7 +291,8 @@ void main() {
 			const zy = cy - (py - canvas.height / 2) * s;
 			const factor = Math.exp(-e.deltaY * 0.0015);
 			span /= factor;
-			// double precision floor: past ~1e-13 the pixels run out of mantissa
+			// JS center + double-single shader floor: below ~1e-13 the 44-48
+			// effective bits no longer keep adjacent complex coordinates distinct
 			if (span < 1e-13) span = 1e-13;
 			if (span > 6) span = 6;
 			const s2 = span / canvas.width;
