@@ -4,6 +4,7 @@
 import type { FormConfig, ToolEntry } from './registry';
 import { compile, formatNumber } from '../scripts/calculator/engine';
 import { computeStats, parseNumbers } from './stats';
+import * as eco from './econometrics';
 
 const pct = (v: number): string => `${formatNumber(v)}%`;
 
@@ -2514,6 +2515,19 @@ const anovaCalculator: FormConfig = {
 
 // --- entries --------------------------------------------------------------------------
 
+// Shared formatting for the econometrics tools (everything numeric flows
+// through the validated core in ./econometrics; these helpers only format).
+const ecoRow = (label: string, labelZh: string, value: string, valueZh = value) => ({ label, labelZh, value, valueZh });
+const ecoFmt = (v: number): string => (Number.isFinite(v) ? formatNumber(v) : '—');
+const ecoP = (p: number): string => (p < 1e-6 ? ecoFmt(p) : formatNumber(Number(p.toPrecision(4))));
+const ecoGuard = (msg: string, msgZh: string) => ({ rows: [ecoRow('Result', '结果', `— ${msg}`, `— ${msgZh}`)] });
+/** clamp an integer field to [lo, hi]; NaN or out-of-range returns null so
+ *  the caller can emit a bilingual guard row. */
+const ecoInt = (raw: number, lo: number, hi: number): number | null => {
+	const n = Math.round(raw);
+	return Number.isFinite(raw) && n >= lo && n <= hi ? n : null;
+};
+
 export const CALCULATOR_TOOLS: ToolEntry[] = [
 	{
 		slug: 'percentage',
@@ -3139,6 +3153,893 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 				return { rows, table };
 			},
 		},
-	},
-];
+		},
+		{
+			slug: 'linear-regression',
+			category: 'calculators',
+			name: 'Linear Regression (OLS · WLS · GLS)',
+			nameZh: '线性回归（OLS · WLS · GLS）',
+			description: 'Multiple linear regression with classical or robust standard errors (HC1–HC3, Newey–West HAC, cluster-robust) and AR(1) GLS — coefficients, t tests, R² and F.',
+			descriptionZh: '多元线性回归：经典或稳健标准误（HC1–HC3、Newey–West HAC、聚类稳健），支持 AR(1) 广义最小二乘——系数、t 检验、R² 与 F 检验。',
+			kind: 'form',
+			config: {
+				intro: 'One observation per line, columns separated by spaces/commas; the LAST column is the response. WLS takes one weight per row, cluster takes one group id per row.',
+				introZh: '每行一个观测，列用空格或逗号分隔；最后一列为因变量。WLS 每行填一个权重，聚类每行填一个组编号。',
+				fields: [
+					{
+						id: 'data',
+						label: 'Data (x1 … xk, y per line)',
+						labelZh: '数据（每行 x1 … xk, y）',
+						type: 'textarea',
+						def: 'ad_spend, price, sales\n1.2, 19.9, 98\n2.5, 21.0, 105\n3.1, 18.5, 118\n4.8, 22.1, 124\n5.0, 19.2, 138\n6.3, 23.4, 141\n7.1, 20.8, 152\n8.4, 22.7, 163\n9.0, 21.5, 171\n10.2, 24.0, 178\n11.5, 22.3, 194\n12.8, 23.9, 203\n13.5, 21.1, 216\n15.0, 23.6, 228',
+					},
+					{
+						id: 'est',
+						label: 'Estimator',
+						labelZh: '估计方法',
+						type: 'select',
+						def: 'ols',
+						options: [
+							{ value: 'ols', label: 'OLS' },
+							{ value: 'wls', label: 'WLS (row weights)' },
+							{ value: 'gls', label: 'GLS (AR(1) errors)' },
+						],
+					},
+					{
+						id: 'weights',
+						label: 'Weights (one per row, WLS only)',
+						labelZh: '权重（WLS，每行一个）',
+						type: 'textarea',
+						def: '1\n1\n1\n2\n2\n2\n3\n3\n3\n4\n4\n4\n5\n5\n5',
+						showIf: (v) => v.str('est') === 'wls',
+					},
+					{
+						id: 'rho',
+						label: 'ρ (AR(1) coefficient, |ρ| < 0.95)',
+						labelZh: 'ρ（AR(1) 系数，|ρ| < 0.95）',
+						type: 'number',
+						def: '0.5',
+						step: 'any',
+						showIf: (v) => v.str('est') === 'gls',
+					},
+					{
+						id: 'vcov',
+						label: 'Standard errors',
+						labelZh: '标准误',
+						type: 'select',
+						def: 'classical',
+						options: [
+							{ value: 'classical', label: 'Classical' },
+							{ value: 'hc1', label: 'Robust HC1 (White)' },
+							{ value: 'hc2', label: 'Robust HC2' },
+							{ value: 'hc3', label: 'Robust HC3' },
+							{ value: 'hac', label: 'HAC (Newey–West)' },
+							{ value: 'cluster', label: 'Cluster-robust' },
+						],
+					},
+					{
+						id: 'hacLag',
+						label: 'HAC lag truncation',
+						labelZh: 'HAC 滞后阶数',
+						type: 'number',
+						def: '4',
+						step: '1',
+						showIf: (v) => v.str('vcov') === 'hac',
+					},
+					{
+						id: 'clusters',
+						label: 'Cluster ids (one per row)',
+						labelZh: '聚类编号（每行一个）',
+						type: 'textarea',
+						def: '1\n1\n1\n1\n1\n2\n2\n2\n2\n2\n3\n3\n3\n3\n3',
+						showIf: (v) => v.str('vcov') === 'cluster',
+					},
+				],
+				compute: (v) => {
+					const est = v.str('est');
+					const vcov = v.str('vcov');
+					const parsed = eco.parseColumns(v.str('data'), 2);
+					if (parsed.cols.length < 2 || parsed.rows < 3)
+						return ecoGuard('need at least 3 rows with 2+ columns', '至少需要 3 行、每行 2 列以上');
+					const n = parsed.rows;
+					const k = parsed.cols.length; // includes the response column
+					if (n <= k)
+						return ecoGuard(`too few observations (${n}) for ${k} columns`, `观测数（${n}）不足 ${k} 列`);
+					const y = parsed.cols[parsed.cols.length - 1] as number[];
+					const names = ['(intercept)'];
+					for (let j = 1; j < parsed.cols.length - 1; j++) names.push(parsed.names[j] as string);
+					const X = parsed.cols[0]!.map((_, i) => {
+						const row = [1];
+						for (let j = 0; j < parsed.cols.length - 2; j++) row.push(parsed.cols[j]![i] as number);
+						return row;
+					});
+					let vinv: number[][] | null = null;
+					if (est === 'wls') {
+						const w = parseNumbers(v.str('weights')).nums;
+						if (w.length !== n || w.some((s) => s <= 0))
+							return ecoGuard(`WLS needs ${n} positive weights (one per row)`, `加权最小二乘需要 ${n} 个正权重（每行一个）`);
+						vinv = eco.vinvDiag(w);
+					} else if (est === 'gls') {
+						const rho = v.num('rho');
+						if (!Number.isFinite(rho) || Math.abs(rho) >= 0.95)
+							return ecoGuard('ρ must satisfy |ρ| < 0.95', 'ρ 需满足 |ρ| < 0.95');
+						vinv = eco.vinvAr1(rho, n);
+					}
+					const m = eco.fitWGLS(X, y, vinv, names);
+					if (!m) return ecoGuard('singular design (a column is constant or collinear)', '设计矩阵奇异（某列为常数或共线）');
+					let se: number[] = m.se;
+					const rb = eco.robustBase(m);
+					if (vcov === 'hc1' || vcov === 'hc2' || vcov === 'hc3') {
+						const cov = eco.covHC(rb, vcov);
+						se = cov.map((r, i) => Math.sqrt(Math.max(r[i], 0)));
+					} else if (vcov === 'hac') {
+						const lag = ecoInt(v.num('hacLag'), 0, n - 2);
+						if (lag === null) return ecoGuard(`HAC lag must be 0–${n - 2}`, `滞后截断阶数需在 0–${n - 2}`);
+						const cov = eco.covHAC(rb, lag);
+						se = cov.map((r, i) => Math.sqrt(Math.max(r[i], 0)));
+					} else if (vcov === 'cluster') {
+						const ids = parseNumbers(v.str('clusters')).nums;
+						if (ids.length !== n)
+							return ecoGuard(`clustering needs ${n} group ids (one per row)`, `聚类需要与行数相同的 ${n} 个组编号`);
+						const codes = new Map<number, number>();
+						const groups = ids.map((g) => {
+							if (!codes.has(g)) codes.set(g, codes.size);
+							return codes.get(g) as number;
+						});
+						if (codes.size < 2) return ecoGuard('clustering needs at least 2 groups', '聚类至少需要 2 个组');
+						const cov = eco.covCluster(rb, groups);
+						if (!cov) return ecoGuard('clustering needs at least 2 groups', '聚类至少需要 2 个组');
+						se = cov.map((r, i) => Math.sqrt(Math.max(r[i], 0)));
+					}
+					const df = n - k;
+					const tvals = m.beta.map((b, i) => (se[i]! > 0 ? b / (se[i] as number) : b === 0 ? 0 : Infinity));
+					const pvals = tvals.map((t) => (Number.isFinite(t) ? 2 * eco.tSurvival(df, Math.abs(t)) : t > 0 ? 0 : 1));
+					const table = {
+						columns: ['Term', 'Estimate', 'Std. error', 't', 'p'],
+						columnsZh: ['变量', '估计值', '标准误', 't 值', 'p 值'],
+						rows: names.map((nm, i) => [nm, ecoFmt(m.beta[i] as number), ecoFmt(se[i] as number), ecoFmt(tvals[i] as number), ecoP(pvals[i] as number)]),
+					};
+					const rows = [
+						ecoRow('Observations', '观测数', String(n)),
+						ecoRow('R²', 'R²', ecoFmt(m.r2)),
+						ecoRow('Adjusted R²', '调整 R²', ecoFmt(m.adjR2)),
+						ecoRow('F (joint significance)', 'F 检验（联合显著性）', `${ecoFmt(m.f)} (p = ${ecoP(m.fP)})`, `${ecoFmt(m.f)}（p = ${ecoP(m.fP)}）`),
+						ecoRow('Residual std. error', '残差标准误', `${ecoFmt(m.sigma)} (df = ${df})`, `${ecoFmt(m.sigma)}（自由度 ${df}）`),
+					];
+					if (parsed.bad.length) rows.push(ecoRow('Ignored invalid lines', '已忽略的无效行', parsed.bad.slice(0, 5).join('  ')));
+					return { rows, table };
+				},
+			},
+		},
+		{
+			slug: 'ols-diagnostics',
+			category: 'calculators',
+			name: 'OLS Regression Diagnostics',
+			nameZh: 'OLS 回归诊断',
+			description: 'Heteroskedasticity (Breusch–Pagan, White), autocorrelation (Durbin–Watson, Breusch–Godfrey, Ljung–Box), normality (Jarque–Bera) and influence (leverage, Cook\'s distance, DFFITS) on a fitted regression.',
+			descriptionZh: '对回归残差做全面诊断：异方差（Breusch–Pagan、White）、自相关（Durbin–Watson、Breusch–Godfrey、Ljung–Box）、正态性（Jarque–Bera）与强影响点（杠杆值、Cook 距离、DFFITS）。',
+			kind: 'form',
+			config: {
+				intro: 'Rows are time-ordered observations: x columns first, the LAST column is the response. An intercept is added automatically.',
+				introZh: '每行一个按时间排序的观测：前面是 x 列，最后一列为因变量，自动添加截距项。',
+				fields: [
+					{
+						id: 'data',
+						label: 'Data (x1 … xk, y per line)',
+						labelZh: '数据（每行 x1 … xk, y）',
+						type: 'textarea',
+						def: 'month, ad_spend, sales\n1, 1.2, 96\n2, 1.8, 99\n3, 2.6, 108\n4, 3.1, 112\n5, 3.9, 121\n6, 4.4, 124\n7, 5.3, 133\n8, 6.0, 138\n9, 6.8, 145\n10, 7.5, 149\n11, 8.3, 158\n12, 9.1, 164\n13, 9.7, 167\n14, 10.6, 177\n15, 11.2, 180\n16, 12.0, 188\n17, 12.9, 197\n18, 13.6, 202\n19, 14.4, 209\n20, 15.1, 214',
+					},
+					{ id: 'bgLag', label: 'Breusch–Godfrey lags', labelZh: 'Breusch–Godfrey 滞后阶数', type: 'number', def: '4', step: '1' },
+					{ id: 'lbLag', label: 'Ljung–Box lags', labelZh: 'Ljung–Box 滞后阶数', type: 'number', def: '10', step: '1' },
+				],
+				compute: (v) => {
+					const parsed = eco.parseColumns(v.str('data'), 2);
+					if (parsed.cols.length < 2 || parsed.rows < 8)
+						return ecoGuard('need at least 8 rows with 2+ columns', '至少需要 8 行、每行 2 列以上');
+					const n = parsed.rows;
+					const k = parsed.cols.length;
+					if (n <= k) return ecoGuard(`too few observations (${n}) for ${k} columns`, `观测数（${n}）不足 ${k} 列`);
+					const bgLag = ecoInt(v.num('bgLag'), 1, Math.min(10, n - k - 2));
+					if (bgLag === null)
+						return ecoGuard(`Breusch–Godfrey lags must be 1–${Math.min(10, n - k - 2)}`, `BG 检验滞后阶数需在 1–${Math.min(10, n - k - 2)}`);
+					const lbLag = ecoInt(v.num('lbLag'), 1, Math.min(40, n - 2));
+					if (lbLag === null)
+						return ecoGuard(`Ljung–Box lags must be 1–${Math.min(40, n - 2)}`, `LB 检验滞后阶数需在 1–${Math.min(40, n - 2)}`);
+					const y = parsed.cols[parsed.cols.length - 1] as number[];
+					const X = parsed.cols[0]!.map((_, i) => {
+						const row = [1];
+						for (let j = 0; j < parsed.cols.length - 2; j++) row.push(parsed.cols[j]![i] as number);
+						return row;
+					});
+					const m = eco.fitWGLS(X, y, null);
+					if (!m) return ecoGuard('singular design (a column is constant or collinear)', '设计矩阵奇异（某列为常数或共线）');
+					const bp = eco.breuschPagan(m);
+					const wh = eco.white(m);
+					const dw = eco.durbinWatson(m.resid);
+					const bg = eco.breuschGodfrey(m, bgLag);
+					const lb = eco.ljungBox(m.resid, lbLag);
+					const jb = eco.jarqueBera(m.resid);
+					const inf = eco.influence(m);
+					const levCut = (2 * m.k) / n;
+					const levCount = inf.leverage.filter((h) => h > levCut).length;
+					const cookMax = Math.max(...inf.cooks);
+					const dffitsCut = 2 * Math.sqrt(m.k / n);
+					const dffitsCount = inf.dffits.filter((d) => Math.abs(d) > dffitsCut).length;
+					const verdict = (p: number): [string, string] => (p < 0.05 ? ['present', '存在'] : ['not detected', '未检出']);
+					const bpV = bp ? verdict(bp.p) : ['—', '—'];
+					const whV = wh ? verdict(wh.p) : ['— (a regressor never varies)', '—（某个回归量为常数）'];
+					const rows = [
+						ecoRow('Observations / parameters', '观测数 / 参数数', `${n} / ${m.k}`),
+						ecoRow('Durbin–Watson', 'Durbin–Watson 统计量', ecoFmt(dw), ecoFmt(dw)),
+						ecoRow('Breusch–Pagan LM (heteroskedasticity)', 'Breusch–Pagan LM（异方差）', bp ? `${ecoFmt(bp.stat)} (p = ${ecoP(bp.p)}) — ${bpV[0]}` : '—', bp ? `${ecoFmt(bp.stat)}（p = ${ecoP(bp.p)}）——${bpV[1]}` : '—'),
+						ecoRow('White LM (heteroskedasticity)', 'White LM（异方差）', `${ecoFmt(wh ? wh.stat : NaN)} (p = ${ecoP(wh ? wh.p : NaN)}) — ${whV[0]}`, `${ecoFmt(wh ? wh.stat : NaN)}（p = ${ecoP(wh ? wh.p : NaN)}）——${whV[1]}`),
+						ecoRow(`Breusch–Godfrey LM (AR(${bgLag}) errors)`, `Breusch–Godfrey LM（AR(${bgLag}) 误差）`, bg ? `${ecoFmt(bg.stat)} (p = ${ecoP(bg.p)}) — ${verdict(bg.p)[0]}` : '—', bg ? `${ecoFmt(bg.stat)}（p = ${ecoP(bg.p)}）——${verdict(bg.p)[1]}` : '—'),
+						ecoRow(`Ljung–Box Q(${lbLag})`, `Ljung–Box Q(${lbLag})`, `${ecoFmt(lb.stat)} (p = ${ecoP(lb.p)}) — ${verdict(lb.p)[0]}`, `${ecoFmt(lb.stat)}（p = ${ecoP(lb.p)}）——${verdict(lb.p)[1]}`),
+						ecoRow('Jarque–Bera (normality)', 'Jarque–Bera（正态性）', `${ecoFmt(jb.stat)} (p = ${ecoP(jb.p)}) — ${jb.p < 0.05 ? 'rejected' : 'not rejected'}`, `${ecoFmt(jb.stat)}（p = ${ecoP(jb.p)}）——${jb.p < 0.05 ? '拒绝正态' : '未拒绝正态'}`),
+						ecoRow('High-leverage points (h > 2k/n)', '高杠杆点（h > 2k/n）', `${levCount} (cut-off ${ecoFmt(levCut)})`, `${levCount} 个（阈值 ${ecoFmt(levCut)}）`),
+						ecoRow('Max Cook\'s distance', '最大 Cook 距离', ecoFmt(cookMax), ecoFmt(cookMax)),
+						ecoRow(`|DFFITS| > ${ecoFmt(dffitsCut)}`, `|DFFITS| > ${ecoFmt(dffitsCut)} 的观测`, String(dffitsCount), `${dffitsCount} 个`),
+					];
+					if (parsed.bad.length) rows.push(ecoRow('Ignored invalid lines', '已忽略的无效行', parsed.bad.slice(0, 5).join('  ')));
+					return { rows };
+				},
+			},
+		},
+		{
+			slug: 'quantile-regression',
+			category: 'calculators',
+			name: 'Quantile Regression',
+			nameZh: '分位数回归',
+			description: 'Estimate conditional quantiles (median = τ 0.5) by minimising the check loss — robust to outliers and skewness that distort least squares.',
+			descriptionZh: '通过最小化检查损失估计条件分位数（τ = 0.5 即中位数回归）——对扭曲最小二乘的离群值与偏态更稳健。',
+			kind: 'form',
+			config: {
+				intro: 'Same layout as linear regression: x columns first, the LAST column is the response. The intercept is included automatically.',
+				introZh: '与线性回归相同的格式：前面是 x 列，最后一列为因变量，自动包含截距。',
+				fields: [
+					{
+						id: 'data',
+						label: 'Data (x1 … xk, y per line)',
+						labelZh: '数据（每行 x1 … xk, y）',
+						type: 'textarea',
+						def: 'hours, score\n1, 52\n2, 55\n2.5, 61\n3, 58\n3.5, 64\n4, 66\n5, 71\n5.5, 68\n6, 74\n7, 78\n7.5, 75\n8, 82\n9, 86\n9.5, 99\n10, 88\n11, 93\n12, 97\n13, 95\n14, 130\n15, 99',
+					},
+					{
+						id: 'tau',
+						label: 'Quantile τ',
+						labelZh: '分位数 τ',
+						type: 'select',
+						def: '0.5',
+						options: ['0.05', '0.1', '0.25', '0.5', '0.75', '0.9', '0.95'].map((t) => ({ value: t, label: `τ = ${t}` })),
+					},
+				],
+				compute: (v) => {
+					const tau = Number(v.str('tau'));
+					const parsed = eco.parseColumns(v.str('data'), 2);
+					if (parsed.cols.length < 2 || parsed.rows < 5)
+						return ecoGuard('need at least 5 rows with 2+ columns', '至少需要 5 行、每行 2 列以上');
+					const n = parsed.rows;
+					if (n <= parsed.cols.length)
+						return ecoGuard(`too few observations (${n}) for ${parsed.cols.length} columns`, `观测数（${n}）不足 ${parsed.cols.length} 列`);
+					const y = parsed.cols[parsed.cols.length - 1] as number[];
+					const names = ['(intercept)'];
+					for (let j = 1; j < parsed.cols.length - 1; j++) names.push(parsed.names[j] as string);
+					const X = parsed.cols[0]!.map((_, i) => {
+						const row = [1];
+						for (let j = 0; j < parsed.cols.length - 2; j++) row.push(parsed.cols[j]![i] as number);
+						return row;
+					});
+					const fit = eco.rqFit(X, y, tau, names);
+					if (!fit) return ecoGuard('the quantile fit did not converge for this data', '该数据的分位数拟合未收敛');
+					const rows = [
+						ecoRow('Quantile τ', '分位数 τ', v.str('tau')),
+						ecoRow('Pseudo R² (Koenker–Machado)', '伪 R²（Koenker–Machado）', ecoFmt(fit.pseudoR2)),
+						ecoRow('Observations', '观测数', String(n)),
+						ecoRow('Iterations (annealed IRLS)', '迭代次数（退火 IRLS）', String(fit.iter)),
+					];
+					if (parsed.bad.length) rows.push(ecoRow('Ignored invalid lines', '已忽略的无效行', parsed.bad.slice(0, 5).join('  ')));
+					const table = {
+						columns: ['Term', 'Estimate'],
+						columnsZh: ['变量', '估计值'],
+						rows: names.map((nm, i) => [nm, ecoFmt(fit.beta[i] as number)]),
+					};
+					return { rows, table };
+				},
+			},
+		},
+		{
+			slug: 'mixed-effects-model',
+			category: 'calculators',
+			name: 'Mixed Effects Model (Random Intercept)',
+			nameZh: '混合效应模型（随机截距）',
+			description: 'Linear mixed model by maximum likelihood: fixed effects with random intercepts (and an optional random slope) across groups, plus ICC and variance components.',
+			descriptionZh: '极大似然线性混合模型：固定效应 + 跨组随机截距（可选随机斜率），给出 ICC 与方差分解。',
+			kind: 'form',
+			config: {
+				intro: 'The FIRST column is the group id, the LAST column is the response; columns in between are fixed-effect regressors. An intercept is added automatically.',
+				introZh: '第一列为组编号，最后一列为因变量，中间各列为固定效应自变量，自动添加截距。',
+				fields: [
+					{
+						id: 'data',
+						label: 'Data (group, x1 … xk, y per line)',
+						labelZh: '数据（每行 组, x1 … xk, y）',
+						type: 'textarea',
+						def: 'school, hours, score\n1, 2, 55\n1, 4, 62\n1, 6, 68\n1, 8, 74\n2, 2, 63\n2, 4, 70\n2, 6, 78\n2, 8, 84\n3, 2, 48\n3, 4, 55\n3, 6, 61\n3, 8, 66\n4, 2, 70\n4, 4, 77\n4, 6, 84\n4, 8, 92\n5, 2, 52\n5, 4, 59\n5, 6, 66\n5, 8, 73',
+					},
+					{
+						id: 'slope',
+						label: 'Random slope',
+						labelZh: '随机斜率',
+						type: 'select',
+						def: 'none',
+						options: [
+							{ value: 'none', label: 'None (random intercept only)' },
+							{ value: 'x1', label: 'On the first regressor' },
+						],
+					},
+				],
+				compute: (v) => {
+					const parsed = eco.parseColumns(v.str('data'), 3);
+					if (parsed.cols.length < 3 || parsed.rows < 8)
+						return ecoGuard('need at least 8 rows with 3+ columns (group, x, y)', '至少需要 8 行、3 列以上（组、x、y）');
+					const n = parsed.rows;
+					const nX = parsed.cols.length - 2;
+					if (n <= parsed.cols.length)
+						return ecoGuard(`too few observations (${n}) for this design`, `观测数（${n}）不足`);
+					const groups = parsed.cols[0] as number[];
+					const y = parsed.cols[parsed.cols.length - 1] as number[];
+					const names = ['(intercept)'];
+					for (let j = 2; j < parsed.cols.length - 1; j++) names.push(parsed.names[j] as string);
+					const X = parsed.cols[0]!.map((_, i) => {
+						const row = [1];
+						for (let j = 1; j < parsed.cols.length - 2; j++) row.push(parsed.cols[j]![i] as number);
+						return row;
+					});
+					const slopeCol = v.str('slope') === 'x1' && nX >= 1 ? 1 : null;
+					const fit = eco.lmmFit(X, y, groups, slopeCol, names);
+					if (!fit) return ecoGuard('the mixed model did not converge for this data', '该数据的混合模型未收敛');
+					const table = {
+						columns: ['Fixed effect', 'Estimate', 'Std. error', 't', 'p'],
+						columnsZh: ['固定效应', '估计值', '标准误', 't 值', 'p 值'],
+						rows: names.map((nm, i) => [nm, ecoFmt(fit.beta[i] as number), ecoFmt(fit.se[i] as number), ecoFmt(fit.tstat[i] as number), ecoP(fit.pval[i] as number)]),
+					};
+					const rows = [
+						ecoRow('Groups', '组数', String(fit.groupCount)),
+						ecoRow('Observations', '观测数', String(n)),
+						ecoRow('Random intercept sd σ_u0', '随机截距标准差 σ_u0', ecoFmt(fit.sigmaU0)),
+						ecoRow('Random slope sd σ_u1', '随机斜率标准差 σ_u1', slopeCol === null ? '—' : ecoFmt(fit.sigmaU1), slopeCol === null ? '—' : ecoFmt(fit.sigmaU1)),
+						ecoRow('Residual sd σ_e', '残差标准差 σ_e', ecoFmt(fit.sigmaE)),
+						ecoRow('ICC (share of variance between groups)', 'ICC（组间方差占比）', ecoFmt(fit.icc)),
+						ecoRow('Log-likelihood', '对数似然', ecoFmt(fit.logLik)),
+						ecoRow('AIC / BIC', 'AIC / BIC', `${ecoFmt(fit.aic)} / ${ecoFmt(fit.bic)}`),
+					];
+					if (parsed.bad.length) rows.push(ecoRow('Ignored invalid lines', '已忽略的无效行', parsed.bad.slice(0, 5).join('  ')));
+					return { rows, table };
+				},
+			},
+		},
+		{
+			slug: 'logistic-regression',
+			category: 'calculators',
+			name: 'Logistic Regression (Logit · Probit)',
+			nameZh: '逻辑回归（Logit · Probit）',
+			description: 'Binary outcome regression by iteratively reweighted least squares: coefficients, z tests, likelihood-ratio test, AIC/BIC and average marginal effects.',
+			descriptionZh: '二分类结果的 IRLS 回归：系数、z 检验、似然比检验、AIC/BIC 与平均边际效应。',
+			kind: 'form',
+			config: {
+				intro: 'The LAST column is the binary response (0/1); earlier columns are regressors. An intercept is added automatically.',
+				introZh: '最后一列为二分类因变量（0/1），前面各列为自变量，自动添加截距。',
+				fields: [
+					{
+						id: 'data',
+						label: 'Data (x1 … xk, y ∈ {0, 1} per line)',
+						labelZh: '数据（每行 x1 … xk, y ∈ {0, 1}）',
+						type: 'textarea',
+						def: 'hours, attended, passed\n2, 1, 0\n3, 0, 0\n4, 1, 0\n5, 0, 1\n6, 1, 0\n6, 0, 1\n7, 1, 1\n8, 0, 1\n8, 1, 1\n9, 0, 1\n9, 1, 0\n10, 0, 1\n10, 1, 1\n11, 0, 1\n11, 1, 1\n12, 1, 1\n12, 0, 1\n13, 1, 1\n13, 0, 1\n14, 1, 1',
+					},
+					{
+						id: 'family',
+						label: 'Model',
+						labelZh: '模型',
+						type: 'select',
+						def: 'logit',
+						options: [
+							{ value: 'logit', label: 'Logit' },
+							{ value: 'probit', label: 'Probit' },
+						],
+					},
+				],
+				compute: (v) => {
+					const fam = v.str('family') === 'probit' ? 'probit' : 'logit';
+					const parsed = eco.parseColumns(v.str('data'), 2);
+					if (parsed.cols.length < 2 || parsed.rows < 8)
+						return ecoGuard('need at least 8 rows with 2+ columns', '至少需要 8 行、每行 2 列以上');
+					const n = parsed.rows;
+					if (n <= parsed.cols.length)
+						return ecoGuard(`too few observations (${n}) for ${parsed.cols.length} columns`, `观测数（${n}）不足 ${parsed.cols.length} 列`);
+					const y = parsed.cols[parsed.cols.length - 1] as number[];
+					if (y.some((v2) => v2 !== 0 && v2 !== 1))
+						return ecoGuard('the last column must be 0 or 1 for every row', '最后一列每行必须为 0 或 1');
+					if (y.every((v2) => v2 === 0) || y.every((v2) => v2 === 1))
+						return ecoGuard('the response needs both 0s and 1s', '因变量需要同时含有 0 和 1');
+					const names = ['(intercept)'];
+					for (let j = 1; j < parsed.cols.length - 1; j++) names.push(parsed.names[j] as string);
+					const X = parsed.cols[0]!.map((_, i) => {
+						const row = [1];
+						for (let j = 0; j < parsed.cols.length - 2; j++) row.push(parsed.cols[j]![i] as number);
+						return row;
+					});
+					const fit = eco.irls(X, y, { family: fam }, names);
+					if (!fit || !fit.converged)
+						return ecoGuard('the fit did not converge (possible perfect separation)', '拟合未收敛（可能存在完全分离）');
+					const me = eco.marginalEffects(X, fit.beta, fam);
+					const table = {
+						columns: ['Term', 'Estimate', 'Std. error', 'z', 'p'],
+						columnsZh: ['变量', '估计值', '标准误', 'z 值', 'p 值'],
+						rows: names.map((nm, i) => [nm, ecoFmt(fit.beta[i] as number), ecoFmt(fit.se[i] as number), ecoFmt(fit.zstat[i] as number), ecoP(fit.pval[i] as number)]),
+					};
+					const ameTable = {
+						columns: ['Term', 'Avg. marginal effect', 'Marginal effect at mean'],
+						columnsZh: ['变量', '平均边际效应', '均值处边际效应'],
+						rows: names.map((nm, i) => [nm, ecoFmt(me ? (me.ame[i] as number) : NaN), ecoFmt(me ? (me.mem[i] as number) : NaN)]),
+					};
+					const rows = [
+						ecoRow('Observations (1s / 0s)', '观测数（1 / 0）', `${n} (${y.filter((v2) => v2 === 1).length} / ${y.filter((v2) => v2 === 0).length})`),
+						ecoRow('Log-likelihood', '对数似然', ecoFmt(fit.logLik)),
+						ecoRow('LR test vs intercept-only', '对仅截距模型的似然比检验', `χ²(${fit.lrDf}) = ${ecoFmt(fit.lrStat)} (p = ${ecoP(fit.lrP)})`, `χ²(${fit.lrDf}) = ${ecoFmt(fit.lrStat)}（p = ${ecoP(fit.lrP)}）`),
+						ecoRow('AIC / BIC', 'AIC / BIC', `${ecoFmt(fit.aic)} / ${ecoFmt(fit.bic)}`),
+					];
+					if (parsed.bad.length) rows.push(ecoRow('Ignored invalid lines', '已忽略的无效行', parsed.bad.slice(0, 5).join('  ')));
+					return { rows, table, note: 'Marginal effects are on the probability scale; the table alternates coefficient and effect rows are separate.', noteZh: '边际效应以概率为单位；系数与效应分表显示。' };
+				},
+			},
+		},
+		{
+			slug: 'count-regression',
+			category: 'calculators',
+			name: 'Count Regression (Poisson · NB · ZIP)',
+			nameZh: '计数回归（泊松 · 负二项 · 零膨胀）',
+			description: 'Poisson, negative binomial (ML dispersion) and zero-inflated models for count outcomes, with overdispersion diagnostics and AIC comparison.',
+			descriptionZh: '针对计数型因变量的泊松、负二项（极大似然估计离散参数）与零膨胀模型，含过散度诊断与 AIC 比较。',
+			kind: 'form',
+			config: {
+				intro: 'The LAST column is a non-negative integer count; earlier columns are regressors. ZIP adds a constant structural-zero probability.',
+				introZh: '最后一列为非负整数计数，前面各列为自变量。ZIP 额外估计一个常数结构零概率。',
+				fields: [
+					{
+						id: 'data',
+						label: 'Data (x1 … xk, y counts per line)',
+						labelZh: '数据（每行 x1 … xk, y 计数）',
+						type: 'textarea',
+						def: 'visitors, complaints, tickets\n12, 1, 0\n18, 0, 1\n25, 2, 3\n30, 1, 2\n35, 3, 4\n40, 2, 3\n44, 1, 5\n50, 4, 6\n55, 3, 7\n60, 5, 8\n65, 4, 9\n70, 6, 11\n75, 5, 12\n80, 7, 14\n85, 6, 15\n90, 8, 17\n95, 7, 18\n100, 9, 21\n105, 8, 22\n110, 10, 25',
+					},
+					{
+						id: 'family',
+						label: 'Model',
+						labelZh: '模型',
+						type: 'select',
+						def: 'poisson',
+						options: [
+							{ value: 'poisson', label: 'Poisson' },
+							{ value: 'nbinom', label: 'Negative binomial (NB2)' },
+							{ value: 'zip', label: 'Zero-inflated Poisson' },
+							{ value: 'zinb', label: 'Zero-inflated NB' },
+						],
+					},
+				],
+				compute: (v) => {
+					const fam = v.str('family');
+					const parsed = eco.parseColumns(v.str('data'), 2);
+					if (parsed.cols.length < 2 || parsed.rows < 8)
+						return ecoGuard('need at least 8 rows with 2+ columns', '至少需要 8 行、每行 2 列以上');
+					const n = parsed.rows;
+					if (n <= parsed.cols.length)
+						return ecoGuard(`too few observations (${n}) for ${parsed.cols.length} columns`, `观测数（${n}）不足 ${parsed.cols.length} 列`);
+					const y = parsed.cols[parsed.cols.length - 1] as number[];
+					if (y.some((v2) => v2 < 0 || !Number.isInteger(v2)))
+						return ecoGuard('the last column must be non-negative integers', '最后一列必须是非负整数');
+					const names = ['(intercept)'];
+					for (let j = 1; j < parsed.cols.length - 1; j++) names.push(parsed.names[j] as string);
+					const X = parsed.cols[0]!.map((_, i) => {
+						const row = [1];
+						for (let j = 0; j < parsed.cols.length - 2; j++) row.push(parsed.cols[j]![i] as number);
+						return row;
+					});
+					const rows: { label: string; labelZh: string; value: string; valueZh?: string }[] = [];
+					let table: { columns: string[]; columnsZh: string[]; rows: string[][] };
+					if (fam === 'zip' || fam === 'zinb') {
+						const count = fam === 'zip' ? 'poisson' : 'nbinom';
+						if (y.every((v2) => v2 > 0))
+							return ecoGuard('zero-inflated models need some zero counts', '零膨胀模型要求因变量含有 0');
+						const fit = eco.zipFit(X, y, count);
+						if (!fit) return ecoGuard('the zero-inflated fit did not converge', '零膨胀模型拟合未收敛');
+						table = {
+							columns: ['Term', 'Estimate', 'Std. error', 'z', 'p'],
+							columnsZh: ['变量', '估计值', '标准误', 'z 值', 'p 值'],
+							rows: names.map((nm, i) => [nm, ecoFmt(fit.count.beta[i] as number), ecoFmt(fit.count.se[i] as number), ecoFmt(fit.count.zstat[i] as number), ecoP(fit.count.pval[i] as number)]),
+						};
+						rows.push(ecoRow('Structural-zero probability π', '结构零概率 π', ecoFmt(fit.pi)));
+						rows.push(ecoRow('Count model', '计数部分模型', count === 'poisson' ? 'Poisson (log link)' : 'Negative binomial (log link)', count === 'poisson' ? '泊松（对数连接）' : '负二项（对数连接）'));
+						if (count === 'nbinom') rows.push(ecoRow('Dispersion α (variance = μ + αμ²)', '离散参数 α（方差 = μ + αμ²）', ecoFmt(fit.count.alpha)));
+						rows.push(ecoRow('Log-likelihood', '对数似然', ecoFmt(fit.logLik)));
+						rows.push(ecoRow('AIC / BIC', 'AIC / BIC', `${ecoFmt(fit.aic)} / ${ecoFmt(fit.bic)}`));
+					} else {
+						const fit = fam === 'nbinom' ? eco.nbFit(X, y, names) : eco.irls(X, y, { family: 'poisson' }, names);
+						if (!fit || !fit.converged)
+							return ecoGuard('the fit did not converge', '拟合未收敛');
+						table = {
+							columns: ['Term', 'Estimate', 'Std. error', 'z', 'p'],
+							columnsZh: ['变量', '估计值', '标准误', 'z 值', 'p 值'],
+							rows: names.map((nm, i) => [nm, ecoFmt(fit.beta[i] as number), ecoFmt(fit.se[i] as number), ecoFmt(fit.zstat[i] as number), ecoP(fit.pval[i] as number)]),
+						};
+						// overdispersion check: Pearson χ² / df under a Poisson view
+						if (fam === 'poisson') {
+							let chi2 = 0;
+							for (let i = 0; i < n; i++) chi2 += ((y[i]! - fit.fitted[i]!) ** 2) / Math.max(fit.fitted[i] as number, 1e-12);
+							const ratio = chi2 / (n - fit.k);
+							rows.push(ecoRow('Pearson χ² / df (overdispersion)', 'Pearson χ² / 自由度（过散度）', `${ecoFmt(ratio)}${ratio > 1.5 ? ' — overdispersed, consider NB' : ''}`, `${ecoFmt(ratio)}${ratio > 1.5 ? '——过散，建议负二项' : ''}`));
+						} else {
+							rows.push(ecoRow('Dispersion α (variance = μ + αμ²)', '离散参数 α（方差 = μ + αμ²）', ecoFmt(fit.alpha)));
+						}
+						rows.push(ecoRow('Log-likelihood', '对数似然', ecoFmt(fit.logLik)));
+						rows.push(ecoRow('LR test vs intercept-only', '对仅截距模型的似然比检验', `χ²(${fit.lrDf}) = ${ecoFmt(fit.lrStat)} (p = ${ecoP(fit.lrP)})`, `χ²(${fit.lrDf}) = ${ecoFmt(fit.lrStat)}（p = ${ecoP(fit.lrP)}）`));
+						rows.push(ecoRow('AIC / BIC', 'AIC / BIC', `${ecoFmt(fit.aic)} / ${ecoFmt(fit.bic)}`));
+					}
+					rows.unshift(ecoRow('Observations', '观测数', String(n)));
+					if (parsed.bad.length) rows.push(ecoRow('Ignored invalid lines', '已忽略的无效行', parsed.bad.slice(0, 5).join('  ')));
+					return { rows, table };
+				},
+			},
+		},
+		{
+			slug: 'time-series-stationarity',
+			category: 'calculators',
+			name: 'Stationarity Tests (ADF · KPSS)',
+			nameZh: '平稳性检验（ADF · KPSS）',
+			description: 'Augmented Dickey–Fuller (unit-root null) and KPSS (stationarity null) tests with MacKinnon and Kwiatkowski critical values — they confirm each other from opposite directions.',
+			descriptionZh: '增广 Dickey–Fuller 检验（单位根原假设）与 KPSS 检验（平稳原假设），附 MacKinnon 与 Kwiatkowski 临界值——两个方向互相印证。',
+			kind: 'form',
+			config: {
+				intro: 'One observation per line, in time order. ADF lags can be chosen by AIC automatically; KPSS uses Schwert\'s rule unless overridden.',
+				introZh: '每行一个观测，按时间顺序排列。ADF 滞后阶数可按 AIC 自动选择；KPSS 默认用 Schwert 准则，也可手动指定。',
+				fields: [
+					{
+						id: 'data',
+						label: 'Series (one value per line)',
+						labelZh: '序列（每行一个数值）',
+						type: 'textarea',
+						def: '100.2\n101.1\n100.8\n102.3\n103.0\n102.5\n104.1\n105.3\n104.8\n106.2\n107.0\n106.5\n108.1\n109.0\n108.4\n110.2\n111.1\n110.6\n112.3\n113.0\n112.5\n114.1\n115.0\n114.6\n116.2\n117.1\n116.5\n118.0\n119.2\n118.7\n120.1\n121.0\n120.6\n122.3\n123.0\n122.5\n124.1\n125.2\n124.8\n126.0',
+					},
+					{
+						id: 'adfTrend',
+						label: 'ADF deterministic terms',
+						labelZh: 'ADF 确定性项',
+						type: 'select',
+						def: 'drift',
+						options: [
+							{ value: 'none', label: 'None' },
+							{ value: 'drift', label: 'Constant (drift)' },
+							{ value: 'trend', label: 'Constant + trend' },
+						],
+					},
+					{
+						id: 'adfLagMode',
+						label: 'ADF lag order',
+						labelZh: 'ADF 滞后阶数',
+						type: 'select',
+						def: 'auto',
+						options: [
+							{ value: 'auto', label: 'Automatic (AIC)' },
+							{ value: 'manual', label: 'Manual' },
+						],
+					},
+					{ id: 'adfLag', label: 'ADF lags (manual)', labelZh: 'ADF 滞后（手动）', type: 'number', def: '1', step: '1', showIf: (v) => v.str('adfLagMode') === 'manual' },
+					{
+						id: 'kpssTrend',
+						label: 'KPSS specification',
+						labelZh: 'KPSS 设定',
+						type: 'select',
+						def: 'level',
+						options: [
+							{ value: 'level', label: 'Level stationary' },
+							{ value: 'trend', label: 'Trend stationary' },
+						],
+					},
+					{
+						id: 'kpssLagMode',
+						label: 'KPSS lag truncation',
+						labelZh: 'KPSS 滞后截断',
+						type: 'select',
+						def: 'auto',
+						options: [
+							{ value: 'auto', label: "Schwert's rule" },
+							{ value: 'manual', label: 'Manual' },
+						],
+					},
+					{ id: 'kpssLag', label: 'KPSS lags (manual)', labelZh: 'KPSS 滞后（手动）', type: 'number', def: '3', step: '1', showIf: (v) => v.str('kpssLagMode') === 'manual' },
+				],
+				compute: (v) => {
+					const series = parseNumbers(v.str('data')).nums;
+					if (series.length < 12) return ecoGuard('need at least 12 observations', '至少需要 12 个观测');
+					const n = series.length;
+					const trendMap: Record<string, 'none' | 'drift' | 'trend'> = { none: 'none', drift: 'drift', trend: 'trend' };
+					const adfTrend = trendMap[v.str('adfTrend')] ?? 'drift';
+					let adfRes;
+					const maxAuto = Math.min(eco.adfLagMax(n), n - 8);
+					if (v.str('adfLagMode') === 'manual') {
+						const lag = ecoInt(v.num('adfLag'), 0, maxAuto);
+						if (lag === null) return ecoGuard(`ADF lags must be 0–${maxAuto}`, `ADF 滞后阶数需在 0–${maxAuto}`);
+						adfRes = eco.adf(series, lag, adfTrend);
+					} else {
+						adfRes = eco.adfAuto(series, adfTrend);
+					}
+					const kpssTrend = v.str('kpssTrend') === 'trend' ? 'trend' : 'level';
+					let kpssRes;
+					if (v.str('kpssLagMode') === 'manual') {
+						const lag = ecoInt(v.num('kpssLag'), 0, n - 2);
+						if (lag === null) return ecoGuard(`KPSS lags must be 0–${n - 2}`, `KPSS 滞后阶数需在 0–${n - 2}`);
+						kpssRes = eco.kpss(series, kpssTrend, lag);
+					} else {
+						kpssRes = eco.kpss(series, kpssTrend);
+					}
+					if (!adfRes || !kpssRes) return ecoGuard('the series is too short for these settings', '该序列对当前设定太短');
+					const rows: { label: string; labelZh: string; value: string; valueZh?: string }[] = [
+						ecoRow('Observations', '观测数', String(n)),
+					];
+					const adfVerdict = adfRes.stat < adfRes.cv[1] ? 'reject unit root' : 'unit root not rejected';
+					const adfVerdictZh = adfRes.stat < adfRes.cv[1] ? '拒绝单位根' : '无法拒绝单位根';
+					rows.push(ecoRow(
+						`ADF t statistic (${adfTrend === 'none' ? 'no constant' : adfTrend === 'drift' ? 'constant' : 'constant + trend'}, ${adfRes.lags} lag${adfRes.lags === 1 ? '' : 's'})`,
+						`ADF t 统计量（${adfTrend === 'none' ? '无常数项' : adfTrend === 'drift' ? '含常数' : '常数 + 趋势'}，${adfRes.lags} 阶滞后）`,
+						`${ecoFmt(adfRes.stat)} — ${adfVerdict}`,
+						`${ecoFmt(adfRes.stat)}——${adfVerdictZh}`,
+					));
+					rows.push(ecoRow('ADF critical values (1% / 5% / 10%)', 'ADF 临界值（1% / 5% / 10%）', adfRes.cv.map((c) => ecoFmt(c)).join(' / ')));
+					const kpssVerdict = kpssRes.stat > kpssRes.cv[1] ? 'reject stationarity' : 'stationarity not rejected';
+					const kpssVerdictZh = kpssRes.stat > kpssRes.cv[1] ? '拒绝平稳' : '无法拒绝平稳';
+					rows.push(ecoRow(
+						`KPSS η statistic (${kpssTrend === 'level' ? 'level' : 'trend'}, ${kpssRes.lags} lags)`,
+						`KPSS η 统计量（${kpssTrend === 'level' ? '水平平稳' : '趋势平稳'}，${kpssRes.lags} 阶）`,
+						`${ecoFmt(kpssRes.stat)} — ${kpssVerdict}`,
+						`${ecoFmt(kpssRes.stat)}——${kpssVerdictZh}`,
+					));
+					rows.push(ecoRow('KPSS critical values (10% / 5% / 1%)', 'KPSS 临界值（10% / 5% / 1%）', kpssRes.cv.map((c) => ecoFmt(c)).join(' / ')));
+					return {
+						rows,
+						note: 'ADF critical values: MacKinnon (2010), asymptotic. KPSS critical values: Kwiatkowski et al. (1992), Table 1.',
+						noteZh: 'ADF 临界值取自 MacKinnon（2010）渐近表；KPSS 临界值取自 Kwiatkowski 等（1992）表 1。',
+					};
+				},
+			},
+		},
+		{
+			slug: 'arima-forecast',
+			category: 'calculators',
+			name: 'ARIMA Forecast (SARIMAX)',
+			nameZh: 'ARIMA 预测（SARIMAX）',
+			description: 'Fit ARIMA/SARIMAX by conditional-sum-of-squares maximum likelihood (parameters constrained to be stable and invertible) and forecast with 95% intervals.',
+			descriptionZh: '以条件平方和极大似然拟合 ARIMA/SARIMAX（参数约束为稳定可逆），并给出带 95% 置信区间的预测。',
+			kind: 'form',
+			config: {
+				intro: 'One value per line in time order. Seasonal terms (P, D, Q at period m) apply when set above zero; m = 12 for monthly, 4 for quarterly data.',
+				introZh: '每行一个数值，按时间顺序。季节项（周期 m 上的 P、D、Q）设为非零时生效；月度数据 m = 12，季度数据 m = 4。',
+				fields: [
+					{
+						id: 'data',
+						label: 'Series (one value per line)',
+						labelZh: '序列（每行一个数值）',
+						type: 'textarea',
+						def: '42\n43\n45\n44\n46\n48\n47\n49\n52\n51\n54\n53\n56\n58\n57\n60\n62\n61\n64\n63\n66\n68\n67\n70\n73\n72\n75\n74\n77\n79\n78\n81\n80\n83\n85\n84\n87\n86\n89\n91\n90\n93\n92\n95\n97\n96\n99\n98\n101\n103\n102\n105\n104\n107\n109\n108\n111\n110\n113\n115',
+					},
+					{ id: 'p', label: 'p (AR order)', labelZh: 'p（AR 阶数）', type: 'number', def: '1', step: '1' },
+					{ id: 'd', label: 'd (differences)', labelZh: 'd（差分阶数）', type: 'number', def: '1', step: '1' },
+					{ id: 'q', label: 'q (MA order)', labelZh: 'q（MA 阶数）', type: 'number', def: '1', step: '1' },
+					{ id: 'P', label: 'P (seasonal AR)', labelZh: 'P（季节 AR）', type: 'number', def: '0', step: '1' },
+					{ id: 'D', label: 'D (seasonal diff)', labelZh: 'D（季节差分）', type: 'number', def: '0', step: '1' },
+					{ id: 'Q', label: 'Q (seasonal MA)', labelZh: 'Q（季节 MA）', type: 'number', def: '0', step: '1' },
+					{ id: 'm', label: 'm (seasonal period)', labelZh: 'm（季节周期）', type: 'number', def: '12', step: '1', showIf: (v) => Number(v.num('P')) > 0 || Number(v.num('D')) > 0 || Number(v.num('Q')) > 0 },
+					{ id: 'h', label: 'Forecast horizon (1–24)', labelZh: '预测步数（1–24）', type: 'number', def: '8', step: '1' },
+				],
+				compute: (v) => {
+					const series = parseNumbers(v.str('data')).nums;
+					if (series.length < 16) return ecoGuard('need at least 16 observations', '至少需要 16 个观测');
+					const p = ecoInt(v.num('p'), 0, 5);
+					const d = ecoInt(v.num('d'), 0, 2);
+					const q = ecoInt(v.num('q'), 0, 5);
+					if (p === null || d === null || q === null)
+						return ecoGuard('p and q must be 0–5, d must be 0–2', 'p、q 需在 0–5，d 需在 0–2');
+					const P = ecoInt(v.num('P'), 0, 2);
+					const D = ecoInt(v.num('D'), 0, 1);
+					const Q = ecoInt(v.num('Q'), 0, 2);
+					if (P === null || D === null || Q === null)
+						return ecoGuard('P and Q must be 0–2, D must be 0–1', 'P、Q 需在 0–2，D 需在 0–1');
+					const h = ecoInt(v.num('h'), 1, 24);
+					if (h === null) return ecoGuard('forecast horizon must be 1–24', '预测步数需在 1–24');
+					const seasonal = P + D + Q > 0;
+					const m = seasonal ? ecoInt(v.num('m'), 2, 52) : 1;
+					if (m === null) return ecoGuard('seasonal period m must be 2–52', '季节周期 m 需在 2–52');
+					const spec = { p, d, q, P, D, Q, m };
+					if (series.length - (eco.diffPoly(d, D, m).length - 1) < 8)
+						return ecoGuard('the series is too short after differencing', '差分后序列太短');
+					const fit = eco.arimaEstimate(series, spec);
+					if (!fit) return ecoGuard('the model could not be fitted for this data', '该数据无法拟合此模型');
+					const fc = eco.arimaForecast(fit, series, h);
+					if (!fc) return ecoGuard('forecasting failed for this model', '该模型预测失败');
+					const table = {
+						columns: ['Step', 'Forecast', '95% lower', '95% upper'],
+						columnsZh: ['步数', '预测值', '95% 下界', '95% 上界'],
+						rows: fc.point.map((pt, i) => [String(i + 1), ecoFmt(pt), ecoFmt(fc.lo[i] as number), ecoFmt(fc.hi[i] as number)]),
+					};
+					const coefRows: string[][] = [];
+					fit.phi.forEach((c, i) => coefRows.push([`AR(${i + 1})`, ecoFmt(c)]));
+					fit.theta.forEach((c, i) => coefRows.push([`MA(${i + 1})`, ecoFmt(c)]));
+					fit.Phi.forEach((c, i) => coefRows.push([`SAR(${i + 1})×${m}`, ecoFmt(c)]));
+					fit.Theta.forEach((c, i) => coefRows.push([`SMA(${i + 1})×${m}`, ecoFmt(c)]));
+					coefRows.push(['σ²', ecoFmt(fit.sigma2)]);
+					const coefTable = {
+						columns: ['Parameter', 'Estimate'],
+						columnsZh: ['参数', '估计值'],
+						rows: coefRows,
+					};
+					const rows = [
+						ecoRow(`Model ARIMA(${p},${d},${q})${seasonal ? `(${P},${D},${Q})[${m}]` : ''}`, `模型 ARIMA(${p},${d},${q})${seasonal ? `(${P},${D},${Q})[${m}]` : ''}`, `${fit.nused} differenced observations`, `差分后观测数 ${fit.nused}`),
+						ecoRow('Log-likelihood (CSS)', '对数似然（CSS）', ecoFmt(fit.logLik)),
+						ecoRow('AIC / AICc / BIC', 'AIC / AICc / BIC', `${ecoFmt(fit.aic)} / ${ecoFmt(fit.aicc)} / ${ecoFmt(fit.bic)}`),
+					];
+					return { rows, table: coefTable, note: d + D > 0 ? 'Intervals for differenced models carry the differenced-scale variance without accumulating level uncertainty — treat them as approximate.' : undefined, noteZh: d + D > 0 ? '含差分模型的区间沿用差分尺度方差、未累积水平不确定性，应视为近似值。' : undefined };
+				},
+			},
+		},
+		{
+			slug: 'var-vecm',
+			category: 'calculators',
+			name: 'VAR & Cointegration (Johansen)',
+			nameZh: 'VAR 与协整（Johansen）',
+			description: 'Vector autoregression with stability check, Granger causality F tests and Cholesky impulse responses, plus the Johansen reduced-rank trace statistics for cointegration.',
+			descriptionZh: '向量自回归：稳定性检验、Granger 因果 F 检验、Cholesky 脉冲响应，以及 Johansen 降秩迹统计量协整检验。',
+			kind: 'form',
+			config: {
+				intro: 'Each COLUMN is a series (2–4 columns), one period per line, in time order. The Johansen part compares the trace statistics against published Osterwald-Lumenau/MacKinnon tables — they are reported, not hardcoded.',
+				introZh: '每一列为一个序列（2–4 列），每行一个时期，按时间顺序。Johansen 部分输出迹统计量，需对照已发表的 Osterwald-Lumenau/MacKinnon 临界值表——本工具不硬编码该表。',
+				fields: [
+					{
+						id: 'data',
+						label: 'Data (series per column)',
+						labelZh: '数据（每列一个序列）',
+						type: 'textarea',
+						def: 'rate, price, volume\n5.1, 100, 42\n5.0, 101, 45\n4.9, 103, 51\n4.8, 102, 48\n4.7, 105, 55\n4.6, 107, 60\n4.6, 106, 58\n4.5, 109, 64\n4.4, 111, 70\n4.3, 110, 66\n4.3, 113, 73\n4.2, 115, 79\n4.1, 114, 74\n4.0, 117, 82\n4.0, 119, 88\n3.9, 118, 83\n3.8, 121, 90\n3.8, 123, 96\n3.7, 122, 91\n3.6, 125, 98\n3.6, 127, 104\n3.5, 126, 99\n3.4, 129, 106\n3.4, 131, 112',
+					},
+					{
+						id: 'p',
+						label: 'Lag order p',
+						labelZh: '滞后阶数 p',
+						type: 'select',
+						def: '2',
+						options: [1, 2, 3].map((l) => ({ value: String(l), label: String(l) })),
+					},
+					{ id: 'h', label: 'Forecast horizon (1–12)', labelZh: '预测步数（1–12）', type: 'number', def: '6', step: '1' },
+				],
+				compute: (v) => {
+					const parsed = eco.parseColumns(v.str('data'), 2);
+					if (parsed.cols.length < 2 || parsed.cols.length > 4)
+						return ecoGuard('need 2–4 columns (one series each)', '需要 2–4 列（每列一个序列）');
+					if (parsed.rows < 16) return ecoGuard('need at least 16 observations', '至少需要 16 个观测');
+					const p = ecoInt(Number(v.str('p')), 1, 3);
+					if (p === null) return ecoGuard('lag order must be 1–3', '滞后阶数需在 1–3');
+					const h = ecoInt(v.num('h'), 1, 12);
+					if (h === null) return ecoGuard('forecast horizon must be 1–12', '预测步数需在 1–12');
+					const K = parsed.cols.length;
+					const y = parsed.cols[0]!.map((_, i) => parsed.cols.map((c) => c[i] as number));
+					const names = parsed.names.slice(0, K).map((nm, i) => nm === `x${i + 1}` ? `series ${i + 1}` : nm);
+					const fit = eco.varFit(y, p, names);
+					if (!fit) return ecoGuard('the VAR could not be fitted (too few observations)', '观测数不足，无法拟合 VAR');
+					const granger = eco.grangerTests(y, p, names);
+					const fc = eco.varForecast(fit, y, h);
+					const joh = eco.johansen(y, p);
+					const rows: { label: string; labelZh: string; value: string; valueZh?: string }[] = [
+						ecoRow('Variables / observations', '变量数 / 观测数', `${K} / ${fit.T}`),
+						ecoRow('Stability (max companion eigenvalue)', '稳定性（伴随矩阵最大特征值模）', `${ecoFmt(fit.maxModulus)} — ${fit.stable ? 'stable' : 'NOT stable'}`, `${ecoFmt(fit.maxModulus)}——${fit.stable ? '稳定' : '不稳定'}`),
+						ecoRow('Log-likelihood', '对数似然', ecoFmt(fit.logLik)),
+						ecoRow('AIC / BIC (Lütkepohl)', 'AIC / BIC（Lütkepohl 口径）', `${ecoFmt(fit.aic)} / ${ecoFmt(fit.bic)}`),
+					];
+					const fcTable = {
+						columns: ['Step', ...names],
+						columnsZh: ['步数', ...names],
+						rows: fc.map((row, i) => [String(i + 1), ...row.map((c) => ecoFmt(c))]),
+					};
+					if (parsed.bad.length) rows.push(ecoRow('Ignored invalid lines', '已忽略的无效行', parsed.bad.slice(0, 5).join('  ')));
+					if (granger) {
+						rows.push(ecoRow('Granger causality (F tests)', 'Granger 因果检验（F 检验）', 'non-significant p means no evidence of causation', 'p 值不显著表示没有因果证据'));
+						for (const g of granger) {
+							if (g.cause === g.target) continue;
+							rows.push(ecoRow(
+								`Does ${g.cause} Granger-cause ${g.target}?`,
+								`${g.cause} 是否 Granger 引致 ${g.target}？`,
+								`F(${g.df1}, ${g.df2}) = ${ecoFmt(g.f)} (p = ${ecoP(g.p)})`,
+								`F(${g.df1}, ${g.df2}) = ${ecoFmt(g.f)}（p = ${ecoP(g.p)}）`,
+							));
+						}
+					}
+					if (joh) {
+						rows.push(ecoRow('Johansen eigenvalues (descending)', 'Johansen 特征值（降序）', joh.lambda.map((lam) => ecoFmt(lam)).join(', ')));
+						for (let r = 0; r < joh.lambda.length; r++) {
+							rows.push(ecoRow(
+								`Johansen trace stat, rank = ${r}`,
+								`Johansen 迹统计量，秩 = ${r}`,
+								`${ecoFmt(joh.trace[r] as number)} (max-eig ${ecoFmt(joh.maxEig[r] as number)})`,
+								`${ecoFmt(joh.trace[r] as number)}（最大特征值统计量 ${ecoFmt(joh.maxEig[r] as number)}）`,
+							));
+						}
+					}
+					return {
+						rows,
+						table: fcTable,
+						note: joh ? 'Johansen trace/max-eigenvalue statistics must be compared against the published Osterwald-Lumenau/MacKinnon table for this K and specification; the eigenvalue column supports an informal rank call.' : undefined,
+						noteZh: joh ? 'Johansen 迹/最大特征值统计量需对照已发表的 Osterwald-Lumenau/MacKinnon 临界值表；特征值列可辅助非正式判断秩。' : undefined,
+					};
+				},
+			},
+		},
+		{
+			slug: 'state-space-kalman',
+			category: 'calculators',
+			name: 'State Space & Kalman Filter',
+			nameZh: '状态空间与卡尔曼滤波',
+			description: 'Local level / local drift / stationary AR(1) unobserved-component models: the Kalman filter and RTS smoother estimate the latent state and forecast with exact likelihood-based variances.',
+			descriptionZh: '局部水平 / 带漂移 / 平稳 AR(1) 不可观测分量模型：卡尔曼滤波与 RTS 平滑器估计潜状态，并以精确似然给出预测及方差。',
+			kind: 'form',
+			config: {
+				intro: 'One value per line in time order. "Local level" models a random walk state; "with drift" adds a constant growth rate; "AR(1)" a stationary persistence.',
+				introZh: '每行一个数值，按时间顺序。“局部水平”为随机游走状态；“带漂移”加入恒定增长率；“AR(1)”为平稳持续性。',
+				fields: [
+					{
+						id: 'data',
+						label: 'Series (one value per line)',
+						labelZh: '序列（每行一个数值）',
+						type: 'textarea',
+						def: '102\n104\n103\n106\n108\n107\n110\n112\n111\n114\n116\n118\n117\n120\n122\n121\n124\n126\n128\n127\n130\n132\n131\n134\n136\n135\n138\n140\n142\n141\n144\n146\n145\n148\n150\n149\n152\n154\n153\n156',
+					},
+					{
+						id: 'spec',
+						label: 'State equation',
+						labelZh: '状态方程',
+						type: 'select',
+						def: 'level',
+						options: [
+							{ value: 'level', label: 'Local level (random walk)' },
+							{ value: 'drift', label: 'Local level with drift' },
+							{ value: 'ar', label: 'Stationary AR(1)' },
+						],
+					},
+					{ id: 'h', label: 'Forecast horizon (1–24)', labelZh: '预测步数（1–24）', type: 'number', def: '6', step: '1' },
+				],
+				compute: (v) => {
+					const series = parseNumbers(v.str('data')).nums;
+					if (series.length < 10) return ecoGuard('need at least 10 observations', '至少需要 10 个观测');
+					const h = ecoInt(v.num('h'), 1, 24);
+					if (h === null) return ecoGuard('forecast horizon must be 1–24', '预测步数需在 1–24');
+					const specMap: Record<string, 'level' | 'drift' | 'ar'> = { level: 'level', drift: 'drift', ar: 'ar' };
+					const spec = specMap[v.str('spec')] ?? 'level';
+					const fit = eco.kalmanFit(series, spec, h);
+					if (!fit) return ecoGuard('the filter did not converge for this data', '该数据下滤波器未收敛');
+					const rows: { label: string; labelZh: string; value: string; valueZh?: string }[] = [
+						ecoRow('Observations', '观测数', String(fit.T)),
+						ecoRow('Observation noise sd σ_e', '观测噪声标准差 σ_e', ecoFmt(fit.sigE)),
+						ecoRow('State noise sd σ_a', '状态噪声标准差 σ_a', ecoFmt(fit.sigA)),
+					];
+					if (spec === 'drift') rows.push(ecoRow('Drift c', '漂移系数 c', ecoFmt(fit.c)));
+					if (spec === 'ar') rows.push(ecoRow('State persistence φ', '状态持续系数 φ', ecoFmt(fit.phi)));
+					rows.push(ecoRow('Log-likelihood', '对数似然', ecoFmt(fit.logLik)));
+					rows.push(ecoRow('AIC / BIC', 'AIC / BIC', `${ecoFmt(fit.aic)} / ${ecoFmt(fit.bic)}`));
+					const table = {
+						columns: ['Step', 'Forecast', 'Std. error'],
+						columnsZh: ['步数', '预测值', '标准误'],
+						rows: fit.forecast.map((f, i) => [String(i + 1), ecoFmt(f), ecoFmt(fit.forecastSe[i] as number)]),
+					};
+					return { rows, table };
+				},
+			},
+		},
+	];
 
