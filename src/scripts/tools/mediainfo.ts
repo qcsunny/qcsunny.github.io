@@ -223,31 +223,63 @@ function parseMp4(buf: ArrayBuffer): { lines: MediaLine[]; durationSec: number }
 
 // --- WAV / RIFF -----------------------------------------------------------------------------
 
+// RIFF format codes worth naming: a WAV is only PCM when fmt says so.
+const WAVE_FORMATS: Record<number, string> = {
+	1: 'PCM',
+	3: 'IEEE float',
+	6: 'A-law',
+	7: 'µ-law',
+	11: 'IMA ADPCM',
+	17: 'G.722.1',
+	22: 'AC-3',
+	255: 'G.719',
+	4584: 'WMA',
+};
+
 function parseWav(buf: ArrayBuffer): { lines: MediaLine[]; durationSec: number } | null {
 	const dv = new DataView(buf);
 	const tag = (o: number): string => String.fromCharCode(dv.getUint8(o), dv.getUint8(o + 1), dv.getUint8(o + 2), dv.getUint8(o + 3));
 	if (buf.byteLength < 44 || tag(0) !== 'RIFF' || tag(8) !== 'WAVE') return null;
-	const channels = dv.getUint16(22, true);
-	const sampleRate = dv.getUint32(24, true);
-	const bits = dv.getUint16(34, true);
+	// fmt is only the *first* chunk by convention, not by spec: real files
+	// carry LIST / JUNK / fact before it, and WAVE_FORMAT_EXTENSIBLE uses a
+	// 40-byte fmt whose bit depth lives in a subformat GUID. Walk the chunks.
+	let fmtOff = -1;
+	let fmtSize = 0;
 	let dataBytes = 0;
 	let o = 12;
 	while (o + 8 <= buf.byteLength) {
 		const id = tag(o);
 		const size = dv.getUint32(o + 4, true);
-		if (id === 'data') {
-			dataBytes = size;
+		if (id === 'fmt ') {
+			fmtOff = o + 8;
+			fmtSize = size;
+		} else if (id === 'data') {
+			// Writers often pad the data chunk size out to the file end.
+			dataBytes = Math.min(size, buf.byteLength - (o + 8));
 			break;
 		}
 		o += 8 + size + (size % 2);
 	}
-	const byteRate = (sampleRate * channels * bits) / 8 || 1;
+	if (fmtOff < 0 || fmtSize < 16 || dataBytes <= 0) return null;
+	let format = dv.getUint16(fmtOff, true);
+	const channels = dv.getUint16(fmtOff + 2, true);
+	const sampleRate = dv.getUint32(fmtOff + 4, true);
+	const byteRateField = dv.getUint32(fmtOff + 8, true);
+	const bits = dv.getUint16(fmtOff + 14, true);
+	// fmt+12 is the block align, but WAVE_FORMAT_EXTENSIBLE puts a 16-byte
+	// SubFormat GUID at fmt+18 instead; the real codec is that GUID's first two
+	// bytes (0x0001 PCM, 0x0003 IEEE float).
+	if (format === 0xfffe && fmtSize >= 40) format = dv.getUint16(fmtOff + 18, true);
+	const codec = WAVE_FORMATS[format] ?? (format === 0 ? 'unknown format' : `format $<built-in function format>`);
+	// fmt's own byteRate is the honest denominator for every codec; the
+	// sample-rate formula only holds for block-aligned PCM and IEEE float.
+	const byteRate = byteRateField || ((sampleRate * channels * bits) / 8 || 1);
 	const durationSec = dataBytes / byteRate;
 	return {
 		lines: [
-			{ label: 'Container', labelZh: '容器', value: 'WAV (RIFF / PCM)' },
+			{ label: 'Container', labelZh: '容器', value: 'WAV (RIFF)' },
 			{ label: 'Duration', labelZh: '时长', value: fmtDuration(durationSec) },
-			{ label: 'Audio', labelZh: '音频轨', value: `PCM · ${channels} ch · ${sampleRate} Hz · ${bits}-bit` },
+			{ label: 'Audio', labelZh: '音频轨', value: `${codec} · ${channels} ch · ${sampleRate} Hz · ${bits}-bit` },
 			{ label: 'Bit rate', labelZh: '码率', value: `${Math.round((byteRate * 8) / 1000)} kbps` },
 		],
 		durationSec,
@@ -307,10 +339,15 @@ function parseMp3(buf: ArrayBuffer): { lines: MediaLine[]; durationSec: number }
 	const sampleRate = (MP3_RATES[verBits] ?? [])[srIdx] ?? 0;
 	if (!bitrate || !sampleRate) return null;
 	const channels = modeBits === 3 ? 1 : 2;
-	const durationSec = (len * 8) / (bitrate * 1000); // CBR estimate
+	// The ID3v2 tag is not audio; a 200 KB tag on a 13 MB track is a 1.5% lie.
+	// The nominal bitrate is a CBR assumption — a Xing/VBRI frame in the first
+	// audio frame means the track is VBR and this estimate is not trustworthy.
+	const first4 = dv.getUint32(hdr + 4);
+	const vbr = first4 === 0x58696e67 || first4 === 0x56425249; // "Xing" / "VBRI"
+	const durationSec = ((Math.max(0, len - off) * 8)) / (bitrate * 1000);
 	const lines: MediaLine[] = [
-		{ label: 'Container', labelZh: '容器', value: `MP3 (MPEG ${ver} Layer ${layer}, CBR)` },
-		{ label: 'Duration', labelZh: '时长', value: `${fmtDuration(durationSec)} (estimated)` },
+		{ label: 'Container', labelZh: '容器', value: `MP3 (MPEG ${ver} Layer ${layer}, ${vbr ? 'VBR' : 'CBR'})` },
+		{ label: 'Duration', labelZh: '时长', value: `${fmtDuration(durationSec)} (${vbr ? 'nominal-bitrate estimate, VBR — unreliable' : 'CBR estimate'})` },
 		{ label: 'Audio', labelZh: '音频轨', value: `MP3 · ${channels} ch · ${sampleRate} Hz · ${bitrate} kbps` },
 	];
 	return { lines, durationSec };

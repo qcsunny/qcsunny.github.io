@@ -114,16 +114,23 @@ export async function losslessCheck(data: ArrayBuffer, name: string): Promise<{ 
 		return { output: '', error: 'The file appears to be silent — no spectrum to analyze.', errorZh: '文件似乎是无声的——没有频谱可分析。' };
 	}
 	const cut = median(cutoffs);
-	const nyquist = sampleRate / 2;
+	const ctxNyquist = sampleRate / 2;
+	// decodeAudioData resamples to the AudioContext rate, so sampleRate above is
+	// the *decode* rate, not the file's own rate. A 44.1 kHz master tops out at
+	// 22050 Hz, which sits below the 24 kHz Nyquist of a 48 kHz context — judge
+	// against the smaller ceiling or every genuine CD rip reads as a transcode.
+	const refCeiling = Math.min(ctxNyquist, 22050);
 
-	// Verdict bands. ~20.5–22 kHz: consistent with lossless; 15.5–20.5 kHz:
-	// classic lossy low-pass (LAME 320 cuts ~20.5, V0 ~19.5, 128 ~16); below
-	// that: heavy lossy or a very dull master.
+	// Verdict bands against an absolute ceiling, not against the context rate.
+	// 0.97 × 22050 = 21389 Hz clears LAME 320's ~20.5 kHz lossy floor while
+	// still accepting real rips whose energy runs to 21–22 kHz. 15.5–21.4 kHz:
+	// classic lossy low-pass (V0 ~19.5, 128 ~16); below that: heavy lossy or
+	// a dull master.
 	let verdictEn: string;
 	let verdictZh: string;
-	if (cut >= nyquist * 0.93) {
-		verdictEn = 'Consistent with true lossless — energy reaches the Nyquist limit.';
-		verdictZh = '与真无损一致——能量一直延伸到奈奎斯特频率。';
+	if (cut >= refCeiling * 0.97) {
+		verdictEn = `Consistent with true lossless — energy reaches the ${refCeiling / 1000} kHz ceiling.`;
+		verdictZh = `与真无损一致——能量一直延伸到 ${refCeiling / 1000} kHz 天花板。`;
 	} else if (cut >= 15500) {
 		verdictEn = `Frequency ceiling at ${Math.round(cut)} Hz — the signature of a lossy low-pass (MP3/AAC transcode).`;
 		verdictZh = `频率天花板在 ${Math.round(cut)} Hz——典型的有损低通特征（MP3/AAC 转码）。`;
@@ -134,7 +141,7 @@ export async function losslessCheck(data: ArrayBuffer, name: string): Promise<{ 
 
 	const lines: [string, string][] = [
 		['File 文件', name],
-		['Sample rate 采样率', `${sampleRate} Hz (Nyquist ${nyquist} Hz)`],
+		['Decode rate 解码采样率', `${sampleRate} Hz (Nyquist ${Math.round(ctxNyquist)} Hz, ref ceiling ${refCeiling / 1000} kHz)`],
 		['Channels 声道', String(audio.numberOfChannels)],
 		['Duration 时长', `${audio.duration.toFixed(1)} s`],
 		['Cutoff (median) 截止频率(中位)', `${Math.round(cut)} Hz`],
