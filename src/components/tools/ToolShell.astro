@@ -464,7 +464,8 @@ const year = new Date().getFullYear();
 				white-space: nowrap;
 			}
 			.t-field input,
-			.t-field select {
+			.t-field select,
+			.t-field textarea {
 				font: inherit;
 				font-size: 0.95rem;
 				padding: 0.45em 0.6em;
@@ -475,12 +476,23 @@ const year = new Date().getFullYear();
 				min-width: 0;
 				max-width: 100%;
 			}
+			.t-field:has(textarea) {
+				grid-row: auto;
+				display: flex;
+				flex-direction: column;
+			}
+			.t-field textarea {
+				resize: vertical;
+				min-height: 4.5em;
+				font-family: var(--font-mono), var(--font-cjk);
+			}
 			/* Long option text is the select's own problem to clip, not the layout's. */
 			.t-field select {
 				text-overflow: ellipsis;
 			}
 			.t-field input:focus-visible,
 			.t-field select:focus-visible,
+			.t-field textarea:focus-visible,
 			.t-check:focus-visible {
 				outline: 2px solid var(--accent);
 				outline-offset: -1px;

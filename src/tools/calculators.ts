@@ -735,6 +735,7 @@ const matrixCalculator: FormConfig = {
 			def: '1  2  3\n0  1  4\n5  6  0',
 			placeholder: '1  2  3\n0  1  4\n5  6  0',
 			required: true,
+			wide: true,
 		},
 		{
 			id: 'matB',
@@ -744,6 +745,7 @@ const matrixCalculator: FormConfig = {
 			def: '2  0  1\n1  3  2\n0  1  1',
 			placeholder: '2  0  1\n1  3  2\n0  1  1',
 			showIf: (v) => v.str('op') !== 'props',
+			wide: true,
 		},
 	],
 	compute: (v) => {
