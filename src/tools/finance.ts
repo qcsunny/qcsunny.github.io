@@ -644,30 +644,44 @@ const irrCalculator: FormConfig = {
 
 		const nominalAnnualRate = ((totalFee / P) / (n / 12)) * 100;
 
-		// Newton-Raphson solver for the monthly IRR r, the rate at which n payments
-		// are worth exactly the principal today:
+		// Hybrid Bisection-Newton solver for the monthly IRR r:
 		//   f(r)  = pmt · (1 − (1+r)^−n) / r − P
 		//   f′(r) = pmt · (n·r·(1+r)^(−n−1) − (1 − (1+r)^−n)) / r²
-		// Both sides used to be summed term by term, which made a single Newton step
-		// O(n) — and n is a number someone types, with compute() re-running on every
-		// keystroke. One digit too many turned 60 steps into tens of billions of `**`
-		// calls and hung the tab (a synchronous loop: no timeout can interrupt it).
-		// The closed forms are the same annuity, in constant time.
+		// Combines Newton-Raphson quadratic speed with bisection fallback guarantees.
 		let r = totalFee <= 0 ? 0 : (2 * totalFee) / (n * P);
 		if (r <= 0) r = 0.001;
 
-		for (let iter = 0; iter < 60; iter++) {
-			// Both expressions divide by r; at 0 they take their limits A(0) = n and
-			// A′(0) = −n(n+1)/2, which a Newton step can land on exactly.
+		let low = -0.99;
+		let high = 10.0;
+
+		for (let iter = 0; iter < 100; iter++) {
 			const u = (1 + r) ** -n;
 			const f = r === 0 ? pmt * n - P : (pmt * (1 - u)) / r - P;
+			if (!Number.isFinite(f)) break;
+
+			// Update root bracket based on monotonic decrease of f(r)
+			if (f > 0) {
+				if (r > low) low = r;
+			} else {
+				if (r < high) high = r;
+			}
+
+			if (Math.abs(f) < 1e-9) break;
+
 			const df = r === 0 ? (-pmt * n * (n + 1)) / 2 : (pmt * (n * r * (1 + r) ** (-n - 1) - (1 - u))) / (r * r);
-			if (!Number.isFinite(f) || !Number.isFinite(df)) break;
-			if (Math.abs(f) < 1e-8 || Math.abs(df) < 1e-12) break;
-			const step = f / df;
-			if (!Number.isFinite(step)) break;
-			r -= step;
-			if (r < -0.99) r = -0.99;
+			const step = Number.isFinite(df) && Math.abs(df) > 1e-14 ? f / df : NaN;
+			let nextR = r - step;
+
+			// If Newton step moves outside bracket or fails to converge, fall back to bisection
+			if (!Number.isFinite(nextR) || nextR <= low || nextR >= high) {
+				nextR = (low + high) / 2;
+			}
+
+			if (Math.abs(nextR - r) < 1e-12) {
+				r = nextR;
+				break;
+			}
+			r = nextR;
 		}
 
 		const trueApr = r * 12 * 100;

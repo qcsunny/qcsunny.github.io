@@ -3349,19 +3349,46 @@ export const TEXT_TOOLS: ToolEntry[] = [
 			compute: (v) => {
 				const a = v.str('before').split('\n');
 				const b = v.str('after').split('\n');
-				// LCS length over lines via DP (capped to avoid pathological inputs).
-				const cap = 500;
+				const cap = 1000;
 				const aa = a.slice(0, cap);
 				const bb = b.slice(0, cap);
-				const dp: Uint32Array[] = [new Uint32Array(bb.length + 1)];
-				for (let i = 1; i <= aa.length; i++) {
-					dp.push(new Uint32Array(bb.length + 1));
-					for (let j = 1; j <= bb.length; j++) {
-						dp[i][j] =
-							aa[i - 1] === bb[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
-					}
+
+				// Strip matching prefix
+				let start = 0;
+				const minLen = Math.min(aa.length, bb.length);
+				while (start < minLen && aa[start] === bb[start]) {
+					start++;
 				}
-				const lcs = dp[aa.length][bb.length];
+
+				// Strip matching suffix
+				let endA = aa.length - 1;
+				let endB = bb.length - 1;
+				while (endA >= start && endB >= start && aa[endA] === bb[endB]) {
+					endA--;
+					endB--;
+				}
+
+				const trimmedA = aa.slice(start, endA + 1);
+				const trimmedB = bb.slice(start, endB + 1);
+				const lenA = trimmedA.length;
+				const lenB = trimmedB.length;
+
+				// Space-optimized 2-row LCS DP table
+				let prev = new Uint32Array(lenB + 1);
+				let curr = new Uint32Array(lenB + 1);
+
+				for (let i = 1; i <= lenA; i++) {
+					for (let j = 1; j <= lenB; j++) {
+						curr[j] = trimmedA[i - 1] === trimmedB[j - 1] ? prev[j - 1] + 1 : Math.max(prev[j], curr[j - 1]);
+					}
+					const tmp = prev;
+					prev = curr;
+					curr = tmp;
+					curr.fill(0);
+				}
+
+				const trimmedLcs = prev[lenB];
+				const lcs = start + (aa.length - 1 - endA) + trimmedLcs;
 				const total = Math.max(aa.length, bb.length) || 1;
 				return {
 					rows: [

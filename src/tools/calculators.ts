@@ -52,10 +52,18 @@ function glQuadrature(f: (x: number) => number, a: number, b: number, panels: nu
 function gaussSolve(A: number[][], b: number[]): number[] | null {
 	const n = b.length;
 	const M = A.map((row, i) => [...row, b[i] as number]);
+	let maxNorm = 0;
+	for (let r = 0; r < n; r++) {
+		for (let c = 0; c < n; c++) {
+			maxNorm = Math.max(maxNorm, Math.abs(A[r]![c]!));
+		}
+	}
+	const eps = Math.max(1e-12, maxNorm * 1e-13);
+
 	for (let col = 0; col < n; col++) {
 		let piv = col;
 		for (let r = col + 1; r < n; r++) if (Math.abs(M[r]![col]!) > Math.abs(M[piv]![col]!)) piv = r;
-		if (Math.abs(M[piv]![col]!) < 1e-12) return null;
+		if (Math.abs(M[piv]![col]!) < eps) return null;
 		[M[col], M[piv]] = [M[piv]!, M[col]!];
 		for (let r = col + 1; r < n; r++) {
 			const f = M[r]![col]! / M[col]![col]!;
@@ -135,7 +143,7 @@ function pollardRho(n: bigint): bigint {
 	if (n % 3n === 0n) return 3n;
 	// Brent's cycle detection + batch GCD. Powers of 2 steps with batch GCD
 	// save ~25% steps vs Floyd and drop GCD calls by >95%. Retries with c+1 if
-	// the batch collapses onto n.
+	// the batch collapses onto n or step limit is reached.
 	for (let c = 1n; c <= 100n; c++) {
 		const f = (z: bigint): bigint => (z * z + c) % n;
 		let y = 2n;
@@ -144,6 +152,7 @@ function pollardRho(n: bigint): bigint {
 		let r = 1;
 
 		while (d === 1n) {
+			if (r > 65536) break; // Retry with next seed c if cycle search exceeds bound
 			const x = y;
 			let k = 0;
 			while (k < r && d === 1n) {
@@ -2673,10 +2682,13 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 					return p;
 				};
 				const facN = fac(n);
-				const facNR = fac(n - r);
-				const facR = fac(r);
-				const perm = facN / facNR;
-				const comb = perm / facR;
+				const k = Math.min(r, n - r);
+				let perm = 1n;
+				for (let i = BigInt(n - r + 1); i <= BigInt(n); i++) perm *= i;
+				let comb = 1n;
+				for (let i = 1n; i <= BigInt(k); i++) {
+					comb = (comb * (BigInt(n) - BigInt(k) + i)) / i;
+				}
 				return {
 					rows: [
 						{ label: 'n! (factorial)', labelZh: '阶乘 n!', value: facN.toString(), valueZh: facN.toString() },
