@@ -108,7 +108,8 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 
 	function fieldEl(field: FormField): HTMLElement {
 		const wrap = document.createElement('div');
-		wrap.className = field.wide ? 't-field t-wide' : 't-field';
+		const isWide = field.wide !== undefined ? field.wide : field.type === 'textarea';
+		wrap.className = isWide ? 't-field t-wide' : 't-field';
 		fieldWraps.set(field.id, wrap);
 
 		if (field.type === 'checkbox') {
