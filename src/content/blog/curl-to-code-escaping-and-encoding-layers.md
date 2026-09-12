@@ -3,10 +3,10 @@ title: '从 cURL 命令到可运行代码：转义与编码的四层陷阱'
 description: '为什么一条能在终端跑通的 curl 命令粘进 Python/JS 就 401：shell 引号、URL 百分号编码、JSON 双重转义、头字段大小写——四层陷阱逐层拆解，以及如何用工具一键生成等价代码。'
 pubDate: 'Sep 12 2026'
 category: engineering
-topics: [developer-tools, http]
+topics: [developer-tools, web-platform]
 searchTerms: ['curl', '转义', 'URL 编码', 'JSON', 'API 调试']
 contentLang: 'zh-CN'
-relatedTools: ['devtools/curl-to-code', 'devtools/url-parser', 'text/json-formatter']
+relatedTools: ['devtools/curl-to-code', 'devtools/url-parser', 'devtools/json-formatter']
 relatedPosts: ['url-unicode-utf8-base64url-boundaries', 'url-parser-native-api-query-cleaning-and-tracking-params']
 ---
 
@@ -46,4 +46,4 @@ curl 默认 `GET`，`-d` 会隐式切成 `POST`；很多 SDK 不会替你做这�
 
 ## 一键生成等价代码
 
-这些层级手工翻译机械又易错，正是 [cURL 转代码工具](/devtools/curl-to-code/)的用武之地：粘贴 curl 命令（支持 `curl` 与 `Copy as cURL` 两种格式），解析出方法、URL、头、查询参数与请求体，输出 Python `requests` 与 JavaScript `fetch` 两版等价代码——引号剥离、转义归位、数据结构化都由工具完成。配合 [URL 解析工具](/devtools/url-parser/)核对第二层、[JSON 格式化工具](/text/json-formatter/)核对第三层，四层陷阱各有各的探针。全部本地运算，命令里的 token 不会离开浏览器。
+这些层级手工翻译机械又易错，正是 [cURL 转代码工具](/devtools/curl-to-code/)的用武之地：粘贴 curl 命令（支持 `curl` 与 `Copy as cURL` 两种格式），解析出方法、URL、头、查询参数与请求体，输出 Python `requests` 与 JavaScript `fetch` 两版等价代码——引号剥离、转义归位、数据结构化都由工具完成。配合 [URL 解析工具](/devtools/url-parser/)核对第二层、[JSON 格式化工具](/devtools/json-formatter/)核对第三层，四层陷阱各有各的探针。全部本地运算，命令里的 token 不会离开浏览器。

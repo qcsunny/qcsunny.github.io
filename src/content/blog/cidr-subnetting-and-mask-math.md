@@ -3,7 +3,7 @@ title: 'CIDR 与子网划分：从 IP 地址 exhaustion 到 /31 链路网络'
 description: '从 IPv4 的 32 位讲起：掩码、CIDR 斜杠记法、网络地址与广播地址怎么来的，为什么 /30 只有两个可用主机而 /31 是特例，以及 NAT 与私有地址段如何续命 IPv4。'
 pubDate: 'Sep 12 2026'
 category: security
-topics: [networking, security]
+topics: [security, algorithms]
 searchTerms: ['CIDR', '子网划分', 'IP 地址', '掩码']
 contentLang: 'zh-CN'
 relatedTools: ['security/cidr-calculator']

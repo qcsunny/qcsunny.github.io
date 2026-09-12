@@ -3,7 +3,7 @@ title: 'Markdown 表格对不齐？问题多半出在 CJK 宽度'
 description: '等宽字体里汉字占两列、全角标点、emoji 的宽度都不按直觉走——Markdown 表格源码对齐的显示宽度算法、String.prototype 的陷阱，以及为什么表格美化值得做成工具。'
 pubDate: 'Sep 12 2026'
 category: web
-topics: [developer-tools, unicode]
+topics: [developer-tools, frontend]
 searchTerms: ['Markdown 表格', '对齐', '中文宽度', 'Unicode', '全角']
 contentLang: 'zh-CN'
 relatedTools: ['text/markdown-table-formatter']

@@ -3,7 +3,7 @@ title: '静态站的 SEO 四件套：robots.txt、sitemap、meta 标签与 URL s
 description: '不用框架、不用插件，纯静态站也能做对四件影响收录的事：robots.txt 的语义与反直觉细节、sitemap 的 lastmod 陷阱、OG/Twitter 卡片的字段选择、以及 slug 的可读性规则。'
 pubDate: 'Sep 12 2026'
 category: web
-topics: [seo, web-platform]
+topics: [web-platform, static-sites]
 searchTerms: ['robots.txt', 'sitemap', 'meta 标签', 'SEO', 'slug']
 contentLang: 'zh-CN'
 relatedTools: ['seo/robots-txt-generator', 'seo/sitemap-xml-generator', 'seo/meta-tag-generator', 'seo/slug-generator']

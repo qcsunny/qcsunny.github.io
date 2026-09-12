@@ -3,7 +3,7 @@ title: '买房还是租房：把人生大决定压成一张现金流对比表'
 description: '首付的机会成本、等额本息里利息与本金的真实比例、租售比与 5% 法则——买房与租房之争的实质是两条复利曲线的赛跑，本文把它拆成可计算的账。'
 pubDate: 'Sep 12 2026'
 category: finance
-topics: [finance, personal-finance]
+topics: [finance, loans]
 searchTerms: ['买房还是租房', '租售比', '房贷利息', '机会成本', '首付']
 contentLang: 'zh-CN'
 relatedTools: ['finance/rent-vs-buy', 'finance/mortgage', 'finance/compound-interest']
