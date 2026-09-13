@@ -10,12 +10,11 @@ relatedTools: ['text/character-counter']
 relatedPosts: ['five-flash-models-comparison']
 ---
 
-在当下的顶尖大模型技术迭代中，“Flash” 已经成为轻量、高速、低成本推理的代名词。无论是在腾讯[Hy4 preview](/blog/five-flash-models-comparison/)模型卡中明确披露的“10B 总计 / 0.7B 激活的 MTP 模块”，还是在小米 MiMo-V2.5 与 DeepSeek 的技术文档中，**MTP（Multi-Token Prediction，多 Token 预测）** 与 **推测解码（Speculative Decoding）** 频繁作为核心性能亮点被推向前台。
+在关注顶尖 AI 模型的推理加速时，你可能注意到了一个现象：“Flash” 级别模型不仅在裁剪激活参数，还在架构层全面引入了 **MTP（Multi-Token Prediction，多 Token 预测）** 与 **推测解码（Speculative Decoding）**。比如腾讯 [Hy4 preview](/blog/five-flash-models-comparison/) 在模型卡里专门披露了那块“10B 总计 / 0.7B 激活”的 MTP 辅助层。
 
-为什么一个仅有 0.7B 激活参数的辅助模块，能够让大模型的生成速度提升 30% 乃至 50% 以上？
-为什么这种加速被数学严格证明为**“绝对无损（Lossless）”**？
+一个仅仅几百兆激活参数的小模块，到底是怎么帮主模型省出 30% 到 50% 的推理时间的？而且为什么数学上能证明这种加速是**完全无损（Lossless）**的？
 
-本文将带你穿透大模型自回归生成的硬件执行瓶颈，从算力带宽失衡推导到前沿的推测执行流水线。
+这篇文章我们就深入大模型自回归推理的硬件底层，把显存带宽瓶颈和推测解码的算法巧思一次性拆透。
 
 ---
 

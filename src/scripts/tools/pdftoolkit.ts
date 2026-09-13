@@ -82,7 +82,11 @@ interface PdfLib {
 // file has no types; the narrow interfaces above are the whole contract.
 let pdfLibCache: Promise<PdfLib> | null = null;
 const loadPdfLib = (): Promise<PdfLib> => {
-	pdfLibCache ??= new Promise<PdfLib>((resolve, reject) => {
+	if (pdfLibCache) return pdfLibCache;
+	// A transient load failure (network blip, blocked request) must not poison
+	// the cache for the rest of the session — clear it on rejection so the next
+	// call retries instead of surfacing a stale "could not load" forever.
+	pdfLibCache = new Promise<PdfLib>((resolve, reject) => {
 		if (typeof window !== 'undefined' && (window as unknown as { PDFLib?: PdfLib }).PDFLib) {
 			resolve((window as unknown as { PDFLib: PdfLib }).PDFLib);
 			return;
@@ -96,6 +100,9 @@ const loadPdfLib = (): Promise<PdfLib> => {
 		};
 		el.onerror = () => reject(new Error('could not load pdf-lib'));
 		document.head.append(el);
+	}).catch((err) => {
+		pdfLibCache = null;
+		throw err;
 	});
 	return pdfLibCache;
 };
@@ -152,7 +159,9 @@ export function parsePageRange(expr: string, pageCount: number): number[] {
 		if (!m) continue;
 		const from = Math.max(1, Number(m[1]));
 		const to = m[2] === undefined ? (m[1] && t.includes('-') ? pageCount : from) : Math.min(pageCount, Number(m[2]));
-		for (let i = from; i <= Math.max(from, to); i++) if (i <= pageCount) picked.add(i - 1);
+		// Iterate min→max so an inverted expression like "5-3" yields 3,4,5
+		// rather than just page 5.
+		for (let i = Math.min(from, to); i <= Math.max(from, to); i++) if (i <= pageCount) picked.add(i - 1);
 	}
 	return [...picked].sort((a, b) => a - b);
 }
@@ -211,8 +220,12 @@ export async function watermarkPdf(bytes: Uint8Array, opts: WatermarkOptions): P
 	const pdf = await loadPdfLib();
 	const doc = await pdf.PDFDocument.load(bytes);
 	const font = await doc.embedFont('Helvetica-Bold');
-	const { text, size, opacity, angle, color, tile } = opts;
+	const { text, opacity, angle, color, tile } = opts;
 	if (!text.trim()) throw new Error('empty watermark text');
+	// Clamp the font size to a positive minimum. A negative or zero size makes
+	// the tile step negative, producing a non-terminating loop that freezes
+	// the tab; the UI number field has no `min`, so this is the real guard.
+	const size = Math.max(4, opts.size);
 	for (const page of doc.getPages()) {
 		const { width, height } = page.getSize();
 		const textWidth = font.widthOfTextAtSize(text, size);

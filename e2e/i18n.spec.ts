@@ -56,23 +56,27 @@ function branches(fields: { id: string; type?: string; def?: unknown; options?: 
 	return out;
 }
 
-test('every computed result row exists in both languages', () => {
+test('every computed result row exists in both languages', async () => {
 	const leaks: string[] = [];
 	for (const tool of REGISTRY) {
 		const cfg = (tool as { config?: unknown }).config as {
 			fields?: Parameters<typeof branches>[0];
-			compute?: (v: unknown) => Record<string, unknown>;
+			compute?: (v: unknown) => Record<string, unknown> | Promise<Record<string, unknown>>;
 		};
 		if (!cfg?.fields || !cfg.compute) continue;
 		const seen = new Set<string>();
 		for (const vals of branches(cfg.fields)) {
 			let out: Record<string, unknown>;
 			try {
-				out = cfg.compute({
+				out = (await cfg.compute({
 					num: (i: string) => Number(vals[i] ?? 0),
+					bigint: (i: string) => {
+						const raw = String(vals[i] ?? '').trim();
+						return /^\d+$/.test(raw) ? BigInt(raw) : null;
+					},
 					str: (i: string) => String(vals[i] ?? ''),
 					bool: (i: string) => vals[i] === true,
-				});
+				})) as Record<string, unknown>;
 			} catch {
 				continue; // a branch the defaults cannot satisfy; the form guards it
 			}

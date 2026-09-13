@@ -69,11 +69,23 @@ test('html entity batch unescapes per line, unknown entity fails alone', async (
 	await expect(out).toHaveValue(['&amp; &lt; hi → & < hi', '&bogus; Tom → ✗'].join('\n'));
 });
 
-test('cny uppercase batch converts one amount per line', async ({ page }) => {
-	const out = await fillAndRun(page, 'finance', 'cny-uppercase', '123.45\n0.07', /Convert each line \(invoice batch\)/);
+test('cny uppercase batch converts per line, ambiguous commas marked', async ({ page }) => {
+	const out = await fillAndRun(
+		page,
+		'finance',
+		'cny-uppercase',
+		'123.45\n0.07\n1,234\n1234,56',
+		/Convert each line \(invoice batch\)/,
+	);
 	const v = await out.inputValue();
 	expect(v).toContain('123.45 → 壹佰贰拾叁元肆角伍分');
 	expect(v).toContain('0.07 → 柒分');
+	// Three digits after the comma is grouping, so 1,234 still converts.
+	expect(v).toContain('1,234 → 壹仟贰佰叁拾肆元整');
+	// Two digits after the comma with no decimal point is the European
+	// decimal comma — reading it as grouping would return 100x the
+	// amount, so the line is marked instead of guessed.
+	expect(v).toContain('1234,56 → ✗');
 });
 
 test('unix timestamp accepts a date and converts to epoch (reverse direction)', async ({ page }) => {

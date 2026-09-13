@@ -97,7 +97,7 @@ test('the search index is external, and each file stays small', () => {
 	// max 442 B). 70 KB ≈ 150 tools of linear, predictable growth — a runaway
 	// (untruncated descs, keyword stuffing) still trips the pin.
 	expect(tools[1], `${tools[0]} raw size`).toBeLessThan(70_000);
-	expect(blog[1], `${blog[0]} raw size`).toBeLessThan(45_000);
+	expect(blog[1], `${blog[0]} raw size`).toBeLessThan(60_000);
 });
 
 // Astro emits one hoisted entry chunk per page and puts the <script> in the

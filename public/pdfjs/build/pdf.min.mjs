@@ -1,3 +1,31 @@
+// Polyfill for Map.prototype.getOrInsertComputed (TC39 proposal used by modern PDF.js)
+if (typeof Map !== 'undefined') {
+  if (!Map.prototype.getOrInsertComputed) {
+    Object.defineProperty(Map.prototype, 'getOrInsertComputed', {
+      value: function(key, callback) {
+        if (this.has(key)) return this.get(key);
+        const val = callback(key);
+        this.set(key, val);
+        return val;
+      },
+      configurable: true,
+      writable: true,
+      enumerable: false
+    });
+  }
+  if (!Map.prototype.getOrInsert) {
+    Object.defineProperty(Map.prototype, 'getOrInsert', {
+      value: function(key, defaultValue) {
+        if (this.has(key)) return this.get(key);
+        this.set(key, defaultValue);
+        return defaultValue;
+      },
+      configurable: true,
+      writable: true,
+      enumerable: false
+    });
+  }
+}
 /**
  * @licstart The following is the entire license notice for the
  * JavaScript code in this page

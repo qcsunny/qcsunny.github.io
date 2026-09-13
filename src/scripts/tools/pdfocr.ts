@@ -62,6 +62,8 @@ const loadPdfjs = async (): Promise<PdfJsModule> => {
 	return (await import(/* @vite-ignore */ url)) as unknown as PdfJsModule;
 };
 
+export type OcrLang = 'eng' | 'chi_sim' | 'ara';
+
 export interface OcrPage {
 	source: string; // "page 3" / file name
 	text: string;
@@ -72,7 +74,7 @@ export type ProgressFn = (done: number, total: number, note: string) => void;
 
 /** Render every PDF page to canvas at 2x (the sweet spot for Tesseract:
  *  ~150-200 DPI equivalent) and run the worker over each. */
-export async function ocrPdf(bytes: Uint8Array, lang: 'eng' | 'chi_sim', onProgress: ProgressFn): Promise<OcrPage[]> {
+export async function ocrPdf(bytes: Uint8Array, lang: OcrLang, onProgress: ProgressFn): Promise<OcrPage[]> {
 	const pdfjs = await loadPdfjs();
 	pdfjs.GlobalWorkerOptions.workerSrc = '/pdfjs/worker/pdf.worker.min.mjs';
 	const doc = await pdfjs.getDocument({ data: bytes.slice(), cMapUrl: '/pdfjs/cmaps/', cMapPacked: true, standardFontDataUrl: '/pdfjs/standard_fonts/' }).promise;
@@ -99,7 +101,7 @@ export async function ocrPdf(bytes: Uint8Array, lang: 'eng' | 'chi_sim', onProgr
 }
 
 /** Decode one image (jpg/png/webp) and OCR it. */
-export async function ocrImage(file: File, lang: 'eng' | 'chi_sim', onProgress: ProgressFn): Promise<OcrPage> {
+export async function ocrImage(file: File, lang: OcrLang, onProgress: ProgressFn): Promise<OcrPage> {
 	const bitmap = await createImageBitmap(file);
 	// Tesseract prefers ~300 DPI text height; cap the upscale so a 4000px
 	// phone photo does not become a 16k canvas.
@@ -122,19 +124,19 @@ export async function ocrImage(file: File, lang: 'eng' | 'chi_sim', onProgress: 
 	}
 }
 
-const makeWorker = (lang: 'eng' | 'chi_sim', _onProgress: ProgressFn, _total: number): Promise<TessWorker> =>
+const makeWorker = (lang: OcrLang, _onProgress: ProgressFn, _total: number): Promise<TessWorker> =>
 	loadTesseract().then((m) =>
 		m.createWorker(lang, 1, {
 			workerPath: '/tesseract/worker.min.js',
-			corePath: '/tesseract/core',
-			langPath: '/tesseract/lang',
+			corePath: '/tesseract/core/',
+			langPath: '/tesseract/lang/',
 		}),
 	);
 
 // UI --------------------------------------------------------------------------------------------
 
 export function initPdfOcr(host: HTMLElement): void {
-	let lang: 'eng' | 'chi_sim' = 'eng';
+	let lang: OcrLang = 'eng';
 	const busy = { on: false };
 
 	const drop = document.createElement('div');
@@ -148,6 +150,7 @@ export function initPdfOcr(host: HTMLElement): void {
 	for (const [v, en, zh] of [
 		['eng', 'English', '英语'],
 		['chi_sim', 'Chinese (Simplified)', '简体中文'],
+		['ara', 'Arabic', '阿拉伯语'],
 	] as const) {
 		const o = document.createElement('option');
 		o.value = v;
@@ -157,7 +160,7 @@ export function initPdfOcr(host: HTMLElement): void {
 		langSel.append(o);
 	}
 	langSel.addEventListener('change', () => {
-		lang = langSel.value as 'eng' | 'chi_sim';
+		lang = langSel.value as OcrLang;
 	});
 	const langLabel = document.createElement('label');
 	langLabel.className = 't-csslayout-field';
@@ -184,9 +187,43 @@ export function initPdfOcr(host: HTMLElement): void {
 	const copyBtn = document.createElement('button');
 	copyBtn.type = 'button';
 	copyBtn.className = 't-btn';
-	copyBtn.append(bilingual('📋 Copy text', '📋 复制文本'));
-	copyBtn.addEventListener('click', () => {
-		void navigator.clipboard.writeText(output.textContent ?? '');
+
+	let flashTimer: ReturnType<typeof setTimeout> | undefined;
+	const resetCopyBtn = (): void => {
+		copyBtn.replaceChildren(bilingual('📋 Copy text', '📋 复制文本'));
+		copyBtn.style.color = '';
+	};
+	resetCopyBtn();
+
+	const flashFeedback = (msgEn: string, msgZh: string, color = ''): void => {
+		if (flashTimer) clearTimeout(flashTimer);
+		copyBtn.replaceChildren(bilingual(msgEn, msgZh));
+		copyBtn.style.color = color;
+		flashTimer = setTimeout(() => {
+			resetCopyBtn();
+		}, 1500);
+	};
+
+	copyBtn.addEventListener('click', async () => {
+		const text = output.textContent?.trim() ?? '';
+		if (!text) {
+			flashFeedback('⚠ No text to copy', '⚠ 暂无文本可复制');
+			return;
+		}
+		try {
+			await navigator.clipboard.writeText(text);
+			flashFeedback('✓ Copied!', '✓ 已复制!', '#10b981');
+		} catch {
+			const ta = document.createElement('textarea');
+			ta.value = text;
+			ta.style.position = 'fixed';
+			ta.style.opacity = '0';
+			document.body.appendChild(ta);
+			ta.select();
+			(document as any).execCommand('copy');
+			document.body.removeChild(ta);
+			flashFeedback('✓ Copied!', '✓ 已复制!', '#10b981');
+		}
 	});
 
 	const run = async (files: File[]): Promise<void> => {

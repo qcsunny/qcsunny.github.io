@@ -193,6 +193,9 @@ void main() {
 		cy = 0;
 		span = 3.2;
 		iter = 300;
+		iterInput.value = '300';
+		hue = 0;
+		hueInput.value = '0';
 		render();
 	};
 	controls.append(mkBtn('Reset view', '重置视图', reset));
@@ -244,6 +247,9 @@ void main() {
 	hueInput.type = 'range';
 	hueInput.min = '0';
 	hueInput.max = '100';
+	// pin the displayed handle to the shader's hue=0 — an unvalued range
+	// shows its midpoint (50), desyncing the slider from the render
+	hueInput.value = '0';
 	hueInput.addEventListener('input', () => {
 		hue = Number(hueInput.value) / 100;
 		render();

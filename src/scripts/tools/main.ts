@@ -37,11 +37,14 @@ void (async () => {
 				initConverter(host, entry.config);
 				break;
 			case 'text':
-				await import('./text').then((m) => m.initText(host, entry.config));
+				await import('./text').then((m) => m.initText(host, entry.config, slug));
 				break;
 			case 'generator':
 				await import('./generators').then((m) => m.initGenerator(host, entry.config));
 				break;
+			default:
+				// a fifth kind would otherwise render a silently blank tool area
+				throw new Error(`tools: unknown entry kind ${entry.kind}`);
 		}
 		return;
 	}
@@ -104,5 +107,8 @@ void (async () => {
 		case 'markdown':
 			await import('./markdown').then((m) => m.initMarkdown(host));
 			break;
+		default:
+			// an unwired kind used to fall through and leave a dead page behind
+			throw new Error(`tools: unknown kind ${kind}`);
 	}
 })();

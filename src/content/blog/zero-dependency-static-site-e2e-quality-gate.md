@@ -104,7 +104,7 @@ test('pure content pages must ship 0 bytes of first-party JS', async ({ page }) 
 
 ---
 
-## 4. 总结：测试不是负担，是无畏重构的底气
+## 4. 测试不是负担，而是敢于频繁重构的底气
 
 262 个 E2E 测试用例在本地并行执行仅需数分钟，在 GitHub Actions CI 容器中也只需约 2 分钟。
 

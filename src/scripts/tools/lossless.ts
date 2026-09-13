@@ -48,20 +48,27 @@ const N = 8192; // FFT window: ~5.4 Hz bins at 44.1 kHz — plenty for a cutoff 
 function windowCutoffs(samples: Float32Array, sampleRate: number, windows: number): number[] {
 	// pick the loudest windows: RMS over a coarse stride, keep top `windows`
 	const stride = Math.max(N, Math.floor(samples.length / 64));
-	const candidates: { rms: number; start: number }[] = [];
+	const candidates: { rms: number; start: number; len: number }[] = [];
 	for (let s = 0; s + N <= samples.length; s += stride) {
 		let sum = 0;
 		for (let i = s; i < s + N; i += 16) sum += (samples[i] as number) ** 2;
-		candidates.push({ rms: sum, start: s });
+		candidates.push({ rms: sum, start: s, len: N });
+	}
+	// A file shorter than one FFT window still has a spectrum — zero-pad the
+	// whole thing into a single window instead of misreporting it as silent.
+	if (!candidates.length && samples.length > 0) {
+		let sum = 0;
+		for (let i = 0; i < samples.length; i += 16) sum += (samples[i] as number) ** 2;
+		candidates.push({ rms: sum, start: 0, len: samples.length });
 	}
 	candidates.sort((a, b) => b.rms - a.rms);
 	const picked = candidates.slice(0, windows);
 	const cutoffs: number[] = [];
-	for (const { start } of picked) {
+	for (const { start, len } of picked) {
 		const re = new Float64Array(N);
 		const im = new Float64Array(N);
-		// Hann window
-		for (let i = 0; i < N; i++) re[i] = (samples[start + i] as number) * (0.5 - 0.5 * Math.cos((2 * Math.PI * i) / N));
+		// Hann window over the real samples, then zero-pad to N
+		for (let i = 0; i < len; i++) re[i] = (samples[start + i] as number) * (0.5 - 0.5 * Math.cos((2 * Math.PI * i) / len));
 		fft(re, im);
 		const bins = N / 2;
 		const mags = new Float64Array(bins);

@@ -67,6 +67,52 @@ const ogImageURL = new URL(typeof image === 'string' ? image : image.src, Astro.
 		const lang = localStorage.getItem('site:lang') || (navigator.language.startsWith('zh') ? 'zh' : 'en');
 		document.documentElement.dataset.lang = lang;
 		document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+
+		try {
+			const def = (proto, prop, fn) => {
+				try {
+					if (proto && !proto[prop]) {
+						Object.defineProperty(proto, prop, {
+							value: fn,
+							writable: true,
+							configurable: true,
+							enumerable: false
+						});
+					}
+				} catch (err) {}
+			};
+
+			const toHexBytes = function (pad = 2) {
+				const b = this instanceof ArrayBuffer ? new Uint8Array(this) : this;
+				let s = '';
+				for (let i = 0; i < b.length; i++) s += b[i].toString(16).padStart(pad, '0');
+				return s;
+			};
+			const toHexNum = function (pad = 0) {
+				return this.toString(16).padStart(pad, '0');
+			};
+
+			if (typeof Uint8Array !== 'undefined') {
+				def(Uint8Array.prototype, 'toHex', toHexBytes);
+				def(Uint8Array.prototype, 'tohex', toHexBytes);
+			}
+			if (typeof ArrayBuffer !== 'undefined') {
+				def(ArrayBuffer.prototype, 'toHex', toHexBytes);
+				def(ArrayBuffer.prototype, 'tohex', toHexBytes);
+			}
+			if (typeof Array !== 'undefined') {
+				def(Array.prototype, 'toHex', toHexBytes);
+				def(Array.prototype, 'tohex', toHexBytes);
+			}
+			if (typeof Number !== 'undefined') {
+				def(Number.prototype, 'toHex', toHexNum);
+				def(Number.prototype, 'tohex', toHexNum);
+			}
+			if (typeof BigInt !== 'undefined') {
+				def(BigInt.prototype, 'toHex', toHexNum);
+				def(BigInt.prototype, 'tohex', toHexNum);
+			}
+		} catch (e) {}
 	})();
 </script>
 {SEARCH_CONSOLE_VERIFICATION && (

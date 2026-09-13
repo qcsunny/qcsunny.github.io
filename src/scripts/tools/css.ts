@@ -117,11 +117,20 @@ function formatCss(css: string, indentSize = 2): string {
 }
 
 function minifyCss(css: string): string {
+	// String literals (content: "...", font-family: '...') keep their inner
+	// whitespace exactly — collapsing it would change the rendered text, and a
+	// /* inside a string must not be mistaken for a comment. Stash strings
+	// first, then collapse, then restore verbatim.
+	const strings: string[] = [];
+	const stash = (s: string): string => `\u0000${strings.push(s) - 1}\u0000`;
+	const restore = (_m: string, i: string): string => strings[Number(i)];
 	return css
-		.replace(/\/\*[\s\S]*?\*\//g, '') // remove comments
+		.replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g, stash)
+		.replace(/\/\*[\s\S]*?\*\//g, '') // remove comments (strings already stashed)
 		.replace(/\s+/g, ' ') // collapse whitespaces
 		.replace(/\s*([\{\}:;,])\s*/g, '$1') // remove spaces around punctuation
 		.replace(/;}/g, '}') // remove trailing semicolon
+		.replace(/\u0000(\d+)\u0000/g, restore)
 		.trim();
 }
 

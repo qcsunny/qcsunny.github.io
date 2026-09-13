@@ -2,7 +2,7 @@
 // tables (compound interest year by year, loan amortization, mortgage prepayment, etc.).
 
 import type { FormConfig, FormResult, FormResultRow, FormTable, TextConfig, ToolEntry } from './registry';
-import { rmbUppercase, runBatch } from './textTools';
+import { rmbUppercase, rmbUppercaseProblem, runBatch } from './textTools';
 import { formatNumber } from '../scripts/calculator/engine';
 
 const money = (v: number): string => formatNumber(Math.round(v * 100) / 100);
@@ -69,10 +69,16 @@ function amortize(
 	const totalYears = Math.ceil(months / 12);
 
 	if (i <= 0) {
-		const yearlyPrinc = principal / totalYears;
+		// Spread principal evenly across the actual months, then bucket by the
+		// same per-year month count as the interest-bearing branch below — a
+		// non-multiple term (e.g. 18 months) otherwise distorts the final year.
+		const monthlyPrinc = principal / months;
 		for (let y = 1; y <= totalYears; y++) {
-			const endBalance = Math.max(0, principal - yearlyPrinc * y);
-			out.push([String(y), money(yearlyPrinc), money(0), money(endBalance)]);
+			const mCount = y === totalYears && months % 12 !== 0 ? months % 12 : 12;
+			const principalY = monthlyPrinc * mCount;
+			const endBalance = Math.max(0, prevBalance - principalY);
+			out.push([String(y), money(principalY), money(0), money(endBalance)]);
+			prevBalance = endBalance;
 		}
 		return { rows: out, totalInterest: 0 };
 	}
@@ -166,6 +172,7 @@ const compoundInterest: FormConfig = {
 		const n = Number(v.str('n')) || 1;
 		const m = v.num('m');
 		if (!(t > 0)) return { rows: [{ label: 'Final amount', labelZh: '最终金额', value: '— (years must be > 0)', valueZh: '— (年数需大于 0)' }] };
+		if (!(r > -1)) return { rows: [{ label: 'Final amount', labelZh: '最终金额', value: '— (rate must be > −100%)', valueZh: '— (利率需大于 −100%)' }] };
 		// effective monthly rate so contributions match the compounding frequency
 		const monthlyRate = (1 + r / n) ** (n / 12) - 1;
 		const months = Math.round(t * 12);
@@ -644,30 +651,44 @@ const irrCalculator: FormConfig = {
 
 		const nominalAnnualRate = ((totalFee / P) / (n / 12)) * 100;
 
-		// Newton-Raphson solver for the monthly IRR r, the rate at which n payments
-		// are worth exactly the principal today:
+		// Hybrid Bisection-Newton solver for the monthly IRR r:
 		//   f(r)  = pmt · (1 − (1+r)^−n) / r − P
 		//   f′(r) = pmt · (n·r·(1+r)^(−n−1) − (1 − (1+r)^−n)) / r²
-		// Both sides used to be summed term by term, which made a single Newton step
-		// O(n) — and n is a number someone types, with compute() re-running on every
-		// keystroke. One digit too many turned 60 steps into tens of billions of `**`
-		// calls and hung the tab (a synchronous loop: no timeout can interrupt it).
-		// The closed forms are the same annuity, in constant time.
+		// Combines Newton-Raphson quadratic speed with bisection fallback guarantees.
 		let r = totalFee <= 0 ? 0 : (2 * totalFee) / (n * P);
 		if (r <= 0) r = 0.001;
 
-		for (let iter = 0; iter < 60; iter++) {
-			// Both expressions divide by r; at 0 they take their limits A(0) = n and
-			// A′(0) = −n(n+1)/2, which a Newton step can land on exactly.
+		let low = -0.99;
+		let high = 10.0;
+
+		for (let iter = 0; iter < 100; iter++) {
 			const u = (1 + r) ** -n;
 			const f = r === 0 ? pmt * n - P : (pmt * (1 - u)) / r - P;
+			if (!Number.isFinite(f)) break;
+
+			// Update root bracket based on monotonic decrease of f(r)
+			if (f > 0) {
+				if (r > low) low = r;
+			} else {
+				if (r < high) high = r;
+			}
+
+			if (Math.abs(f) < 1e-9) break;
+
 			const df = r === 0 ? (-pmt * n * (n + 1)) / 2 : (pmt * (n * r * (1 + r) ** (-n - 1) - (1 - u))) / (r * r);
-			if (!Number.isFinite(f) || !Number.isFinite(df)) break;
-			if (Math.abs(f) < 1e-8 || Math.abs(df) < 1e-12) break;
-			const step = f / df;
-			if (!Number.isFinite(step)) break;
-			r -= step;
-			if (r < -0.99) r = -0.99;
+			const step = Number.isFinite(df) && Math.abs(df) > 1e-14 ? f / df : NaN;
+			let nextR = r - step;
+
+			// If Newton step moves outside bracket or fails to converge, fall back to bisection
+			if (!Number.isFinite(nextR) || nextR <= low || nextR >= high) {
+				nextR = (low + high) / 2;
+			}
+
+			if (Math.abs(nextR - r) < 1e-12) {
+				r = nextR;
+				break;
+			}
+			r = nextR;
 		}
 
 		const trueApr = r * 12 * 100;
@@ -762,7 +783,7 @@ const fireCalculator: FormConfig = {
 			yearsToFire = 0;
 		}
 
-		const retAge = yearsToFire >= 0 ? age + yearsToFire : '> 80';
+		const retAge = yearsToFire >= 0 ? age + yearsToFire : '> ' + (age + 50);
 		const yearsText =
 			yearsToFire === 0
 				? 'Already reached!'
@@ -2617,6 +2638,12 @@ const tax: FormConfig = {
 				) {
 					high *= 2;
 				}
+				// If an astronomical gross still can't clear the target net, the
+				// schedule swallows ≥100% of income (flatRate≥100%) — bailing here
+				// keeps the binary search from converging on ~1e29 garbage.
+				if (computeTaxCore({ annualGross: high, regime, annualInsurance, annualSpecialDeduction, effectiveBonus, bonusMode, flatRate }).totalNetTakeHome < targetAnnualNet) {
+					return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (target net is unreachable: tax rate ≥ 100%)', valueZh: '— (目标税后不可达：综合税率 ≥ 100%)' }] };
+				}
 				for (let iter = 0; iter < 50; iter++) {
 					const mid = (low + high) / 2;
 					const cur = computeTaxCore({
@@ -2956,6 +2983,12 @@ const rentVsBuy: FormConfig = {
 		if (!Number.isFinite(price) || price <= 0 || horizon <= 0 || loanYears <= 0) {
 			return { rows: [{ label: 'Error', labelZh: '错误', value: '— (invalid price or parameters)', valueZh: '— (请输入有效房屋总价与对比参数)' }] };
 		}
+		// The month-by-month rent-investment loop runs horizon*12 iterations;
+		// the field's max is only a soft hint, so an absurd horizon (typed
+		// directly) would freeze the page. Reject rather than silently clamp.
+		if (horizon > MAX_TERM_YEARS || loanYears > MAX_TERM_YEARS) {
+			return { rows: [{ label: 'Error', labelZh: '错误', value: `— (horizon/term must be ${MAX_TERM_YEARS} years or less)`, valueZh: `— (年限/期限不得超过 ${MAX_TERM_YEARS} 年)` }] };
+		}
 
 		const downPayment = price * downPct;
 		const loanAmount = price - downPayment;
@@ -3134,13 +3167,20 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 					run: (t) => {
 						if (!t.trim()) return { output: '', error: 'Enter an amount first.', errorZh: '请先输入金额。' };
 						const r = rmbUppercase(t);
-						return r
-							? { output: r }
-							: {
-									output: '',
-									error: 'Enter a valid amount: digits only, at most 2 decimals, below 10^16.',
-									errorZh: '请输入有效金额：纯数字、最多两位小数、小于 10^16。',
-								};
+						if (r) return { output: r };
+						// Two refusals need two messages. "Not a number" is a typo;
+						// "ambiguous comma" is a real amount read two ways, and the
+						// generic message would hide the one that costs a factor of 100.
+						const ambiguous = rmbUppercaseProblem(t) === 'comma';
+						return {
+							output: '',
+							error: ambiguous
+								? 'Ambiguous comma: with no decimal point a trailing ",NN" is a European decimal comma, not thousands grouping — "1234,56" would convert as 123456, a hundred times 1234.56. Nothing was guessed; use a dot for decimals.'
+								: 'Enter a valid amount: digits only, at most 2 decimals, below 10^16.',
+							errorZh: ambiguous
+								? '逗号歧义：没有小数点时，结尾的 ",NN" 是欧陆小数逗号，不是千位分隔——「1234,56」会被转成 123456，是 1234.56 的 100 倍。工具没有替您猜，小数请用 .。'
+								: '请输入有效金额：纯数字、最多两位小数、小于 10^16。',
+						};
 					},
 				},
 				{

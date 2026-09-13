@@ -69,10 +69,18 @@ function formatXml(xml: string, indentSize = 2): string {
 }
 
 function minifyXml(xml: string): string {
+	// CDATA sections can carry code or text whose whitespace is significant
+	// (SVG/XSLT scripts, embedded payloads). Stash them before collapsing so
+	// newlines and indentation inside <![CDATA[...]]> survive verbatim.
+	const blocks: string[] = [];
+	const stash = (m: string): string => `\u0000${blocks.push(m) - 1}\u0000`;
+	const restore = (_m: string, i: string): string => blocks[Number(i)];
 	return xml
+		.replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, stash)
 		.replace(/<!--[\s\S]*?-->/g, '') // remove comments
 		.replace(/\s+/g, ' ') // collapse whitespaces
 		.replace(/>\s+</g, '><') // remove spaces between tags
+		.replace(/\u0000(\d+)\u0000/g, restore)
 		.trim();
 }
 

@@ -12,10 +12,15 @@ export interface MediaLine {
 
 function fmtDuration(sec: number): string {
 	if (!Number.isFinite(sec) || sec <= 0) return '—';
-	const h = Math.floor(sec / 3600);
-	const m = Math.floor((sec % 3600) / 60);
-	const s = Math.floor(sec % 60);
-	const ms = Math.round((sec % 1) * 1000);
+	// Round to whole ms up front so a .9995s tail carries into the seconds
+	// instead of printing an impossible ".1000" fractional field.
+	let totalMs = Math.round(sec * 1000);
+	const ms = totalMs % 1000;
+	totalMs = Math.floor(totalMs / 1000);
+	const s = totalMs % 60;
+	totalMs = Math.floor(totalMs / 60);
+	const m = totalMs % 60;
+	const h = Math.floor(totalMs / 60);
 	const two = (n: number): string => String(n).padStart(2, '0');
 	return h > 0 ? `${h}:${two(m)}:${two(s)}` : `${m}:${two(s)}.${String(ms).padStart(3, '0')}`;
 }
@@ -240,9 +245,10 @@ function parseWav(buf: ArrayBuffer): { lines: MediaLine[]; durationSec: number }
 	const dv = new DataView(buf);
 	const tag = (o: number): string => String.fromCharCode(dv.getUint8(o), dv.getUint8(o + 1), dv.getUint8(o + 2), dv.getUint8(o + 3));
 	if (buf.byteLength < 44 || tag(0) !== 'RIFF' || tag(8) !== 'WAVE') return null;
-	// fmt is only the *first* chunk by convention, not by spec: real files
-	// carry LIST / JUNK / fact before it, and WAVE_FORMAT_EXTENSIBLE uses a
-	// 40-byte fmt whose bit depth lives in a subformat GUID. Walk the chunks.
+	// The fmt and data chunks may appear in any order, and chunks such as bext,
+	// LIST, JUNK, id3 or fact can sit before fmt — fixed offsets 22/24/34 only
+	// work when fmt is first. Walk the chunk table; WAVE_FORMAT_EXTENSIBLE hides
+	// the real codec in a 16-byte SubFormat GUID inside its 40-byte fmt.
 	let fmtOff = -1;
 	let fmtSize = 0;
 	let dataBytes = 0;
@@ -254,13 +260,15 @@ function parseWav(buf: ArrayBuffer): { lines: MediaLine[]; durationSec: number }
 			fmtOff = o + 8;
 			fmtSize = size;
 		} else if (id === 'data') {
-			// Writers often pad the data chunk size out to the file end.
-			dataBytes = Math.min(size, buf.byteLength - (o + 8));
-			break;
+		// Writers often pad the data chunk size out past the file end; keep
+		// walking — fmt may still be sitting after the data chunk.
+		dataBytes = Math.min(size, buf.byteLength - (o + 8));
 		}
+		if (size === 0) break; // zero-size chunk (or streaming 'data'): stop walking
 		o += 8 + size + (size % 2);
+		if (o > buf.byteLength) break; // claimed size overran the file: stop
 	}
-	if (fmtOff < 0 || fmtSize < 16 || dataBytes <= 0) return null;
+	if (fmtOff < 0 || fmtSize < 16 || fmtOff + 16 > buf.byteLength || dataBytes <= 0) return null;
 	let format = dv.getUint16(fmtOff, true);
 	const channels = dv.getUint16(fmtOff + 2, true);
 	const sampleRate = dv.getUint32(fmtOff + 4, true);
@@ -269,8 +277,10 @@ function parseWav(buf: ArrayBuffer): { lines: MediaLine[]; durationSec: number }
 	// fmt+12 is the block align, but WAVE_FORMAT_EXTENSIBLE puts a 16-byte
 	// SubFormat GUID at fmt+18 instead; the real codec is that GUID's first two
 	// bytes (0x0001 PCM, 0x0003 IEEE float).
-	if (format === 0xfffe && fmtSize >= 40) format = dv.getUint16(fmtOff + 18, true);
-	const codec = WAVE_FORMATS[format] ?? (format === 0 ? 'unknown format' : `format $<built-in function format>`);
+	if (format === 0xfffe && fmtSize >= 40 && fmtOff + 20 <= buf.byteLength) format = dv.getUint16(fmtOff + 18, true);
+	// (the fallback below used to read `format $<built-in function format>` — a
+	// heredoc interpolation accident in the original commit; it now names the code)
+	const codec = WAVE_FORMATS[format] ?? (format === 0 ? 'unknown format' : `format ${format}`);
 	// fmt's own byteRate is the honest denominator for every codec; the
 	// sample-rate formula only holds for block-aligned PCM and IEEE float.
 	const byteRate = byteRateField || ((sampleRate * channels * bits) / 8 || 1);
@@ -477,8 +487,12 @@ function parseEbml(buf: ArrayBuffer): { lines: MediaLine[]; durationSec: number 
 						if (track) track.ch = payload(2);
 						break; // Channels
 					case 0xb5:
-						if (track) track.sr = Math.round(payload(4) / 1000);
-						break; // SamplingFrequency (float, commonly ×1000)
+						if (track)
+							// SamplingFrequency is an EBML float (Hz), not an integer scaled by
+							// 1000 — read the IEEE bytes like the Duration element does.
+							track.sr =
+								size === 4 ? Math.round(dv.getFloat32(contentStart)) : size === 8 ? Math.round(dv.getFloat64(contentStart)) : Math.round(payload(4) / 1000);
+						break; // SamplingFrequency
 				}
 			}
 			if (size === 0) break; // unknown size: this level ends here
@@ -531,7 +545,15 @@ export async function mediaInfo(
 	size: number,
 ): Promise<{ output: string; error?: string; errorZh?: string }> {
 	const head: MediaLine[] = [{ label: 'File', labelZh: '文件', value: `${name} (${humanSize(size)})` }];
-	const parsed = parseMp4(data) ?? parseWav(data) ?? parseFlac(data) ?? parseMp3(data) ?? parseEbml(data);
+	let parsed: { lines: MediaLine[]; durationSec: number } | null = null;
+	// A header that almost matches a container can still walk past the end of a
+	// truncated file and throw a DataView RangeError — treat that as "not this
+	// format" and fall through to the browser-metadata fallback, not a crash.
+	try {
+		parsed = parseMp4(data) ?? parseWav(data) ?? parseFlac(data) ?? parseMp3(data) ?? parseEbml(data);
+	} catch {
+		parsed = null;
+	}
 	if (parsed) {
 		const lines = [...head, ...parsed.lines];
 		if (parsed.durationSec > 0)

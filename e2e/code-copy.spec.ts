@@ -52,3 +52,13 @@ test('clicking copies the block verbatim, confirms, then reverts', async ({ page
 	await expect(btn.locator('.code-copy-label')).toBeVisible();
 	await expect(btn.locator('.code-copy-done')).toBeHidden();
 });
+
+test('fenced code blocks with language display language badge', async ({ page }) => {
+	await page.goto(POST);
+
+	const langs = await page.locator('.prose .code-block .code-lang').allTextContents();
+	expect(langs.length).toBeGreaterThan(0);
+	// In POST (markdown-parser-and-katex-math), there are ts / markdown / html blocks
+	expect(langs).toContain('TypeScript');
+});
+

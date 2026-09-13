@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "astro dev",
     "icons": "node scripts/make-icons.mjs",
-    "build": "node scripts/make-icons.mjs && astro build",
+    "diagrams": "node scripts/render-diagrams.mjs",
+    "build": "node scripts/make-icons.mjs && node scripts/render-diagrams.mjs && astro build",
     "preview": "astro preview",
     "check": "astro check",
     "check:generated": "node scripts/make-icons.mjs --check && python3 scripts/build-katex-css.py --check",
@@ -36,6 +37,7 @@
     "@astrojs/check": "^0.9.10",
     "@playwright/test": "^1.62.1",
     "jsqr": "^1.4.0",
+    "mermaid": "^12.0.0",
     "qrcode-generator": "^2.0.4",
     "typescript": "^6.0.3"
   }

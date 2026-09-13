@@ -160,9 +160,19 @@ export function initConverter(host: HTMLElement, config: ConverterConfig): void 
 			onUnitChange(select.value);
 		});
 
+		// Programmatic unit change: callers that set select.value directly
+		// (suggestion buttons, swap) must go through this so lastSelectedUnit —
+		// the memo populate() restores on the next filter keystroke — stays
+		// in sync. Otherwise typing in the search box silently reverts the
+		// just-chosen unit to the stale memo.
+		const setUnit = (name: string): void => {
+			select.value = name;
+			lastSelectedUnit = name;
+		};
+
 		populate('');
 		onLang((zh) => labelOptions(select, zh));
-		return { picker, select, searchInput, clearBtn, populate };
+		return { picker, select, searchInput, clearBtn, populate, setUnit };
 	}
 
 	// Source defaults to the category's internationally common unit when one is
@@ -299,7 +309,7 @@ export function initConverter(host: HTMLElement, config: ConverterConfig): void 
 				toPicker.searchInput.value = '';
 				toPicker.populate('');
 			}
-			toPicker.select.value = name;
+			toPicker.setUnit(name);
 			convert('from');
 		});
 
@@ -313,7 +323,7 @@ export function initConverter(host: HTMLElement, config: ConverterConfig): void 
 				fromPicker.searchInput.value = '';
 				fromPicker.populate('');
 			}
-			fromPicker.select.value = name;
+			fromPicker.setUnit(name);
 			convert('from');
 		});
 
@@ -424,8 +434,8 @@ export function initConverter(host: HTMLElement, config: ConverterConfig): void 
 			toPicker.populate('');
 		}
 
-		fromPicker.select.value = toUnit;
-		toPicker.select.value = fromUnit;
+		fromPicker.setUnit(toUnit);
+		toPicker.setUnit(fromUnit);
 
 		if (toInput.value) fromInput.value = toInput.value;
 		convert('from');

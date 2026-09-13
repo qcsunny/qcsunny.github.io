@@ -1,5 +1,10 @@
 // @ts-check
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
 import { satteri } from '@astrojs/markdown-satteri';
+
+const MERMAID_CACHE_DIR = path.resolve('.cache/mermaid');
 
 /** @typedef {import('astro/markdown').AstroMarkdownOptions} AstroMarkdownOptions */
 /** @typedef {import('astro/markdown').MarkdownRenderOptions} MarkdownRenderOptions */
@@ -68,12 +73,38 @@ export function createGfmMarkdownProcessor(options = {}) {
  * @param {string} markdown
  */
 function normalizeMarkdown(markdown) {
+	// ── Step 1: Replace mermaid blocks with pre-rendered SVG from cache
+	// This runs BEFORE code-block protection so the resulting SVG is never
+	// escaped or treated as a code block. Sätteri sees it as a block-level
+	// HTML element and passes it through unchanged.
+	const withSvg = markdown.replace(
+		/^```mermaid\r?\n([\s\S]*?)^```[ \t]*$/gm,
+		(match, body) => {
+			const trimmed = body.trim();
+			if (!trimmed) return match;
+			try {
+				const hash = crypto.createHash('sha256').update(trimmed).digest('hex').slice(0, 16);
+				const svgPath = path.join(MERMAID_CACHE_DIR, `${hash}.svg`);
+				if (fs.existsSync(svgPath)) {
+					const svg = fs.readFileSync(svgPath, 'utf8');
+					return `\n<figure class="mermaid-diagram" role="img" aria-label="mermaid diagram">\n${svg}\n</figure>\n`;
+				}
+				// If not yet pre-rendered in cache, keep original code block
+				return match;
+			} catch (err) {
+				console.warn('[mermaid] error reading pre-rendered SVG:', /** @type {Error} */ (err).message);
+				return match;
+			}
+		},
+	);
+
+	// ── Step 2: Protect remaining code blocks from the prose transforms below
 	/** @type {string[]} */
 	const code = [];
 	let marker = '\u0000ASTRO_CODE_';
-	while (markdown.includes(marker)) marker = `_${marker}`;
+	while (withSvg.includes(marker)) marker = `_${marker}`;
 
-	const protectedText = markdown.replace(/```[\s\S]*?```|`[^`\n]+`/g, (value) => {
+	const protectedText = withSvg.replace(/```[\s\S]*?```|`[^`\n]+`/g, (value) => {
 		const token = `${marker}${code.length}\u0000`;
 		code.push(value);
 		return token;

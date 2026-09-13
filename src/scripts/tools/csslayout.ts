@@ -200,7 +200,9 @@ export function initGridGen(host: HTMLElement): void {
 			refresh();
 		}),
 		mkBtn('📋 Copy CSS', '📋 复制 CSS', () => {
-			void navigator.clipboard.writeText(emit());
+			// no feedback UI on this button by design; just don't leave an
+			// unhandled rejection behind when the clipboard is denied
+			void navigator.clipboard.writeText(emit()).catch(() => {});
 		}),
 	);
 
@@ -373,7 +375,7 @@ export function initFlexGen(host: HTMLElement): void {
 			refresh();
 		}),
 		mkBtn('📋 Copy CSS', '📋 复制 CSS', () => {
-			void navigator.clipboard.writeText(pre.textContent ?? '');
+			void navigator.clipboard.writeText(pre.textContent ?? '').catch(() => {});
 		}),
 	);
 	// remember which select maps to which property for the reset

@@ -41,6 +41,7 @@ interface Props {
 const { title, titleZh, description, entry, category, redirectTo } = Astro.props;
 const kind = entry?.kind;
 const crumbName = entry ? entry.name : title;
+const isFullWidth = entry?.slug === 'markdown-preview';
 // The hub at /tools/ renders itself as the breadcrumb's leading link — "工具库 ›
 // 工具库" — because the prefix anchor always points at /tools/. When the current
 // page IS that hub, drop the self-linking prefix and keep only the current crumb.
@@ -367,6 +368,14 @@ const year = new Date().getFullYear();
 				margin: 0 auto;
 				padding: 1.75em 0 3.5em;
 			}
+			.t-topbar.t-topbar-full .t-topbar-inner {
+				width: calc(100% - 2em);
+				max-width: none;
+			}
+			.t-main.t-main-full {
+				width: calc(100% - 2em);
+				max-width: none;
+			}
 			/* global.css colors every h1 near-black — override explicitly */
 			.t-title {
 				color: var(--fg);
@@ -374,6 +383,10 @@ const year = new Date().getFullYear();
 				font-weight: 700;
 				margin-bottom: 0.4em;
 			}
+			/* markdown-preview (full-width layout) hides the page title to give
+			   the editor maximum vertical space */
+			.t-main-full .t-title { display: none; }
+			.t-main-full { padding-top: 0.5rem; }
 			.t-title-zh {
 				font-size: 0.8em;
 				font-weight: 500;
@@ -438,17 +451,20 @@ const year = new Date().getFullYear();
 			.t-presets {
 				display: flex;
 				flex-wrap: wrap;
-				gap: 0.4em;
-				margin-top: 0.4em;
+				align-items: center;
+				gap: 0.45em;
+				margin-top: 0.45em;
+				width: 100%;
 			}
 			.t-preset-btn {
 				background: var(--chip-bg, rgba(128, 128, 128, 0.08));
 				color: var(--fg);
 				border: 1px solid var(--gridline);
 				border-radius: 6px;
-				padding: 0.22em 0.55em;
+				padding: 0.25em 0.6em;
 				font-size: 0.78rem;
-				font-family: ui-monospace, Consolas, monospace;
+				font-family: inherit;
+				white-space: nowrap;
 				cursor: pointer;
 				transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 			}
@@ -464,7 +480,8 @@ const year = new Date().getFullYear();
 				white-space: nowrap;
 			}
 			.t-field input,
-			.t-field select {
+			.t-field select,
+			.t-field textarea {
 				font: inherit;
 				font-size: 0.95rem;
 				padding: 0.45em 0.6em;
@@ -475,12 +492,23 @@ const year = new Date().getFullYear();
 				min-width: 0;
 				max-width: 100%;
 			}
+			.t-field:has(textarea) {
+				grid-row: auto;
+				display: flex;
+				flex-direction: column;
+			}
+			.t-field textarea {
+				resize: vertical;
+				min-height: 4.5em;
+				font-family: var(--font-mono), var(--font-cjk);
+			}
 			/* Long option text is the select's own problem to clip, not the layout's. */
 			.t-field select {
 				text-overflow: ellipsis;
 			}
 			.t-field input:focus-visible,
 			.t-field select:focus-visible,
+			.t-field textarea:focus-visible,
 			.t-check:focus-visible {
 				outline: 2px solid var(--accent);
 				outline-offset: -1px;
@@ -559,15 +587,28 @@ const year = new Date().getFullYear();
 				gap: 0.6em;
 				margin-bottom: 1em;
 			}
+			.t-clearrow {
+				display: flex;
+				justify-content: flex-end;
+				margin-top: 0.5em;
+				margin-bottom: 1em;
+			}
 			/* Clear / reset: a destructive-adjacent action, visually quieter than
 			   the transforms it sits next to. */
 			.t-btn.t-clear {
-				font-size: 0.85rem;
-				padding: 0.4em 0.9em;
-				opacity: 0.72;
+				font-size: 0.8rem;
+				padding: 0.3em 0.75em;
+				border: 1px solid var(--gridline);
+				border-radius: 6px;
+				background: var(--bg);
+				color: var(--dim);
+				cursor: pointer;
+				transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
 			}
 			.t-btn.t-clear:hover {
-				opacity: 1;
+				border-color: var(--accent);
+				color: var(--accent);
+				background: color-mix(in srgb, var(--accent) 6%, var(--bg));
 			}
 			/* --- file source row (text drop-in & binary hashing) --- */
 			.t-filerow {
@@ -1070,6 +1111,84 @@ const year = new Date().getFullYear();
 			.t-row.t-emph .t-row-value {
 				color: var(--accent);
 				font-size: 1.25rem;
+			}
+			.t-row.t-row-long {
+				flex-direction: column;
+				align-items: stretch;
+				gap: 0.45em;
+			}
+			.t-row-head {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 0.5em;
+			}
+			.t-row-copy-btn {
+				font: inherit;
+				font-size: 0.78rem;
+				padding: 0.25em 0.6em;
+				border: 1px solid var(--gridline);
+				border-radius: 6px;
+				background: var(--bg);
+				color: var(--dim);
+				cursor: pointer;
+				transition: color 0.15s, border-color 0.15s;
+			}
+			.t-row-copy-btn:hover {
+				border-color: var(--accent);
+				color: var(--accent);
+			}
+			.t-row.t-row-long .t-row-value {
+				text-align: left;
+				max-height: 240px;
+				overflow-y: auto;
+				font-family: var(--font-mono);
+				font-size: 0.88rem;
+				line-height: 1.45;
+				background: color-mix(in srgb, var(--fg) 3%, var(--card));
+				border: 1px solid var(--gridline);
+				border-radius: 8px;
+				padding: 0.65em 0.85em;
+				user-select: text;
+			}
+			/* --- Progress bar for async computations --- */
+			.t-progress-wrap {
+				border: 1px solid var(--gridline);
+				border-radius: 10px;
+				padding: 1em 1.2em;
+				background: color-mix(in srgb, var(--fg) 2%, var(--card));
+				display: flex;
+				flex-direction: column;
+				gap: 0.6em;
+			}
+			.t-progress-info {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				font-size: 0.88rem;
+				font-weight: 500;
+				color: var(--fg);
+			}
+			.t-progress-text {
+				color: var(--dim);
+			}
+			.t-progress-pct {
+				font-weight: 600;
+				color: var(--accent);
+				font-variant-numeric: tabular-nums;
+			}
+			.t-progress-bar {
+				width: 100%;
+				height: 8px;
+				background: color-mix(in srgb, var(--fg) 10%, var(--bg));
+				border-radius: 4px;
+				overflow: hidden;
+			}
+			.t-progress-fill {
+				height: 100%;
+				background: var(--accent);
+				border-radius: 4px;
+				transition: width 0.15s ease-out;
 			}
 			.t-row.t-row-warn {
 				background: rgba(245, 158, 11, 0.08);
@@ -1904,7 +2023,7 @@ const year = new Date().getFullYear();
 }
 .t-md-textarea {
 	width: 100%;
-	height: 560px;
+	height: max(560px, calc(100vh - 280px));
 	box-sizing: border-box;
 	font-family: var(--font-mono);
 	font-size: 0.92rem;
@@ -1924,7 +2043,7 @@ const year = new Date().getFullYear();
 }
 .t-md-preview-body {
 	width: 100%;
-	height: 560px;
+	height: max(560px, calc(100vh - 280px));
 	box-sizing: border-box;
 	overflow-y: auto;
 	padding: 1.2em 1.5em;
@@ -2078,20 +2197,61 @@ const year = new Date().getFullYear();
 .t-md-table-wrap tr:nth-child(even) {
 	background: color-mix(in srgb, var(--gridline) 20%, transparent);
 }
-.t-md-task-list {
+.t-preview-label {
+	margin-top: 1.5em;
+	display: inline-block;
+}
+.t-preview-box {
+	background: var(--bg);
+	border: 1px solid var(--gridline);
+	border-radius: 8px;
+	padding: 1em 1.25em;
+	margin-top: 0.5em;
+	margin-bottom: 1.5em;
+	min-height: 80px;
+	overflow-x: auto;
+}
+.t-table-empty {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 80px;
+	color: var(--dim);
+	font-size: 0.88rem;
+	font-style: italic;
+	text-align: center;
+}
+.t-md-preview-body ul,
+.t-md-preview-body ol {
+	padding-left: 1.6em;
+	margin: 0.6em 0;
+}
+.t-md-preview-body li {
+	margin: 0.35em 0;
+	line-height: 1.75;
+}
+.t-md-preview-body ul ul,
+.t-md-preview-body ul ol,
+.t-md-preview-body ol ul,
+.t-md-preview-body ol ol {
+	margin: 0.25em 0;
+	padding-left: 1.4em;
+}
+.t-md-preview-body ul.t-md-task-list {
 	list-style: none;
-	padding-left: 0.4em;
+	padding-left: 0.2em;
 }
 .t-md-task-item {
 	display: flex;
 	align-items: center;
-	gap: 0.5em;
-	margin: 0.4em 0;
+	gap: 0.55em;
+	margin: 0.35em 0;
 }
 .t-md-checkbox {
-	width: 1.1em;
-	height: 1.1em;
+	width: 1.05em;
+	height: 1.05em;
 	cursor: default;
+	margin: 0;
 }
 .t-md-alert {
 	border-left: 4px solid;
@@ -2466,7 +2626,7 @@ const year = new Date().getFullYear();
 				</main>
 			) : (
 				<>
-					<header class="t-topbar">
+					<header class:list={['t-topbar', { 't-topbar-full': isFullWidth }]}>
 						<div class="t-topbar-inner">
 							<a class="t-site" href="/">
 								<SiteLogo size={20} />
@@ -2509,7 +2669,7 @@ const year = new Date().getFullYear();
 							</div>
 						</div>
 					</header>
-					<main class="t-main">
+					<main class:list={['t-main', { 't-main-full': isFullWidth }]}>
 						<h1 class="t-title">
 							<span class="i18n-en">{entry ? entry.name : crumbName}</span>
 							<span class="i18n-zh">{entry?.nameZh || titleZh || crumbName}</span>

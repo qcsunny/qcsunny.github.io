@@ -94,6 +94,25 @@ const textConfig = entry.kind === 'text' ? (entry.config as TextConfig) : undefi
 										data-aria-zh="输出"
 									/>
 									<p class="t-error" />
+									{textConfig.renderPreview && (
+										<>
+											<span class="t-label t-preview-label">
+												<span class="i18n-en">{textConfig.previewLabel ?? 'Table Preview'}</span>
+												<span class="i18n-zh">{textConfig.previewLabelZh ?? '表格实时排版预览'}</span>
+											</span>
+											<div
+												class="t-preview-box t-table-preview-wrap"
+												data-role="preview"
+												set:html={textConfig.renderPreview(
+													(() => {
+														const r = textConfig.transforms[0].run(textConfig.def ?? '');
+														return (r && typeof r === 'object' && 'output' in r) ? (r as { output: string }).output : (textConfig.def ?? '');
+													})(),
+													textConfig.def ?? ''
+												)}
+											/>
+										</>
+									)}
 								</>
 							)}
 						</>

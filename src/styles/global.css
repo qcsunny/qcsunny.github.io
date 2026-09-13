@@ -345,10 +345,34 @@ html[data-theme='dark'] .astro-code span {
 .code-block pre {
 	margin: 0;
 }
-.code-copy {
+.code-header {
 	position: absolute;
 	top: 0.5em;
-	right: 0.5em;
+	right: 0.6em;
+	display: flex;
+	align-items: center;
+	gap: 0.45em;
+	pointer-events: none;
+	z-index: 2;
+}
+.code-header > * {
+	pointer-events: auto;
+}
+.code-lang {
+	font-family: var(--font-mono);
+	font-size: 0.7rem;
+	font-weight: 600;
+	color: var(--dim);
+	letter-spacing: 0.04em;
+	padding: 0.18em 0.48em;
+	border-radius: 5px;
+	background: color-mix(in srgb, var(--gridline) 40%, var(--bg));
+	border: 1px solid var(--gridline);
+	line-height: 1.2;
+	user-select: none;
+	opacity: 0.8;
+}
+.code-copy {
 	display: inline-flex;
 	align-items: center;
 	padding: 0.3em 0.65em;
@@ -362,6 +386,11 @@ html[data-theme='dark'] .astro-code span {
 	cursor: pointer;
 	opacity: 0.7;
 	transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.code-block > .code-copy {
+	position: absolute;
+	top: 0.5em;
+	right: 0.5em;
 }
 .code-copy:hover,
 .code-copy:focus-visible {
@@ -482,6 +511,25 @@ hr {
 	border: none;
 	border-top: 1px solid var(--gridline);
 	margin: 2.5em 0;
+}
+
+/* ── Mermaid diagram (build-time mermaid → SVG) ── */
+.mermaid-diagram,
+.seq-diagram {
+	display: block;
+	margin: 2em auto;
+	/* Allow horizontal scroll on very narrow screens without breaking prose width */
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+	text-align: center;
+	/* Remove default figure margin/padding */
+	padding: 0;
+}
+.mermaid-diagram svg,
+.seq-diagram svg {
+	/* Respect the computed viewBox width but shrink on narrow viewports */
+	max-width: 100%;
+	height: auto;
 }
 
 ::selection {

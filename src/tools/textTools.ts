@@ -876,17 +876,31 @@ export function toSentence(s: string): string {
 // convention: 零 collapsed to single, trailing 零 dropped, all-zero integer
 // part reads 零元, no fractional part reads 整, 角 present + no 分 reads e.g.
 // 伍角, and 零 bridges 元 to 分 (10.05 → 壹拾元零伍分).
-// Supports 0 ≤ amount < 10^16 with up to two decimal places.
+// Supports 0 ≤ amount < 10^16 with up to two decimal places. The comma is
+// the one character with two readings — see rmbParse, which refuses it
+// when ambiguous instead of picking thousands grouping.
 
 const RMB_DIGITS = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖'];
 const RMB_SECTIONS = ['', '拾', '佰', '仟'];
 const RMB_GROUP_UNITS = ['', '万', '亿', '万亿'];
 
-/** Convert a numeric amount into the formal Chinese uppercase amount, or null
- *  when the input is not a valid non-negative amount with ≤2 decimals. */
-export function rmbUppercase(input: string): string | null {
-	const t = input.replace(/[¥￥,，\s]/g, '');
-	if (!/^\d{1,16}(\.\d{1,2})?$/.test(t)) return null;
+/** Why rmbUppercase refused an input. 'comma' is not malformed input — it is
+ *  ambiguous: with no decimal point a trailing ",NN" is a European decimal
+ *  comma, and reading it as thousands grouping returns 100x the amount.
+ *  Converting either way would be a guess, so neither happens. */
+export type RmbProblem = 'format' | 'comma';
+
+/** Parse an amount, or refuse with a reason. The currency marks and spaces are
+ *  decoration and get dropped; the comma is the one character with two
+ *  readings, so it is judged rather than dropped along with the rest. */
+function rmbParse(input: string): { value: string } | { problem: RmbProblem } {
+	const s = input.replace(/[¥￥\s]/g, '');
+	const t = s.replace(/[,，]/g, '');
+	if (!/^\d{1,16}(\.\d{1,2})?$/.test(t)) return { problem: 'format' };
+	// "1234,56" would come out 123456 — a hundred times the European 1234.56.
+	// "1,234" and "1,234.56" stay unambiguous and pass: only a comma on the
+	// final one or two digits with no dot anywhere reads two ways.
+	if (!s.includes('.') && /[,，]\d{1,2}$/.test(s)) return { problem: 'comma' };
 	const [intRaw, dec = ''] = t.split('.');
 	const int = intRaw.replace(/^0+(?=\d)/, '');
 	const hasJiao = dec[0] !== undefined && dec[0] !== '0';
@@ -935,7 +949,7 @@ export function rmbUppercase(input: string): string | null {
 		intStr = parts.join('') + '元';
 	}
 
-	if (!hasJiao && !hasFen) return (intStr || '零元') + '整';
+	if (!hasJiao && !hasFen) return { value: (intStr || '零元') + '整' };
 	let decStr = '';
 	if (hasJiao) decStr += RMB_DIGITS[+dec[0]] + '角';
 	if (hasFen) {
@@ -944,7 +958,23 @@ export function rmbUppercase(input: string): string | null {
 		if (!hasJiao && int !== '0') decStr += '零';
 		decStr += RMB_DIGITS[+dec[1]] + '分';
 	}
-	return intStr + decStr;
+	return { value: intStr + decStr };
+}
+
+/** Convert a numeric amount into the formal Chinese uppercase amount, or null
+ *  when it is not a valid non-negative amount with ≤2 decimals, or is
+ *  ambiguous — where null is the point: the caller must not pick one reading
+ *  over the other. Batch mode marks the line ✗ instead of guessing. */
+export function rmbUppercase(input: string): string | null {
+	const r = rmbParse(input);
+	return 'value' in r ? r.value : null;
+}
+
+/** The refusal reason behind rmbUppercase's null, or null when it converted.
+ *  Separate because batch mode keeps the plain string-or-null contract. */
+export function rmbUppercaseProblem(input: string): RmbProblem | null {
+	const r = rmbParse(input);
+	return 'value' in r ? null : r.problem;
 }
 
 // --- roman numerals -------------------------------------------------------------------
@@ -2628,11 +2658,86 @@ export const SECURITY_TEXT_TOOLS: ToolEntry[] = [
 							deviceMemory?: number;
 							connection?: { effectiveType?: string; downlink?: number; rtt?: number };
 							userAgentData?: { platform?: string };
+							getBattery?: () => Promise<{ level: number; charging: boolean }>;
 						};
 						const L = (label: string, value: string): string => `${label.padEnd(30)} ${value}`;
 						const lines: string[] = [];
-						// --- browser / engine (reuse the UA parser) ---
+
+						// --- Helper: Measure Screen Refresh Rate (Hz) ---
+						const getHz = (): Promise<string> =>
+							new Promise((resolve) => {
+								let frames = 0;
+								let start = 0;
+								const check = (time: number) => {
+									if (!start) start = time;
+									frames++;
+									if (time - start >= 200) {
+										const fps = Math.round((frames * 1000) / (time - start));
+										const hz = fps > 200 ? 240 : fps > 130 ? 144 : fps > 105 ? 120 : fps > 80 ? 90 : fps > 50 ? 60 : fps;
+										resolve(`~${hz} Hz (${fps} FPS measured)`);
+									} else {
+										requestAnimationFrame(check);
+									}
+								};
+								if (typeof requestAnimationFrame !== 'undefined') {
+									requestAnimationFrame(check);
+									setTimeout(() => resolve('—'), 400);
+								} else {
+									resolve('—');
+								}
+							});
+
+						// --- Helper: WebRTC ICE Candidate IP Probe ---
+						const getRtcIps = (): Promise<string[]> =>
+							new Promise((resolve) => {
+								const ips: string[] = [];
+								if (typeof RTCPeerConnection === 'undefined') return resolve(ips);
+								try {
+									const rtc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+									rtc.createDataChannel('');
+									rtc.createOffer().then((o) => rtc.setLocalDescription(o)).catch(() => {});
+									rtc.onicecandidate = (e) => {
+										if (!e.candidate) {
+											rtc.close();
+											resolve(ips);
+											return;
+										}
+										const match = /([0-9]{1,3}(\.[0-9]{1,3}){3})/.exec(e.candidate.candidate);
+										if (match && !ips.includes(match[1])) {
+											ips.push(match[1]);
+										}
+									};
+									setTimeout(() => {
+										try { rtc.close(); } catch {}
+										resolve(ips);
+									}, 500);
+								} catch {
+									resolve(ips);
+								}
+							});
+
+						// --- Helper: High Entropy OS & Hardware Values ---
+						const getSysDetails = async (): Promise<{ arch?: string; bitness?: string; model?: string; platformVer?: string }> => {
+							try {
+								const uad = (nav as any).userAgentData;
+								if (uad?.getHighEntropyValues) {
+									const res = await uad.getHighEntropyValues(['architecture', 'bitness', 'model', 'platformVersion']);
+									return {
+										arch: res.architecture,
+										bitness: res.bitness,
+										model: res.model,
+										platformVer: res.platformVersion,
+									};
+								}
+							} catch {}
+							return {};
+						};
+
+						// --- 1. Browser & System ---
 						const ua = parseUa(nav.userAgent);
+						const sysDetails = await getSysDetails();
+
+						lines.push('--- System & OS 操作系统与系统环境 ---');
 						if (ua) {
 							lines.push(L('Browser 浏览器', `${ua.browser} / ${ua.browserZh}${ua.version ? ` · v${ua.version}` : ''}`));
 							lines.push(L('Engine 引擎', `${ua.engine} / ${ua.engineZh}`));
@@ -2640,18 +2745,25 @@ export const SECURITY_TEXT_TOOLS: ToolEntry[] = [
 							lines.push(L('Device 设备', `${ua.device} / ${ua.deviceZh}`));
 						}
 						lines.push(L('Platform 平台', nav.userAgentData?.platform ?? nav.platform ?? '—'));
+						if (sysDetails.arch) {
+							lines.push(L('CPU Architecture 架构位数', `${sysDetails.arch}${sysDetails.bitness ? ` (${sysDetails.bitness}-bit)` : ''}`));
+						}
+						if (sysDetails.platformVer) {
+							lines.push(L('OS Version 系统版本', `${sysDetails.platformVer}`));
+						}
+						if (sysDetails.model) {
+							lines.push(L('Device Model 设备型号', `${sysDetails.model}`));
+						}
 						lines.push(L('Languages 语言', nav.languages?.join(', ') ?? nav.language));
 						lines.push(L('Time zone 时区', Intl.DateTimeFormat().resolvedOptions().timeZone ?? '—'));
-						// --- hardware ---
+						lines.push(L('Online Status 连网状态', nav.onLine ? 'Online 在线 ✓' : 'Offline 离线 ✗'));
+						lines.push(L('Cookies Enabled 允许 Cookie', nav.cookieEnabled ? 'Enabled 允许 ✓' : 'Disabled 拒绝 ✗'));
+						lines.push(L('PDF Viewer 支持 PDF 预览', 'pdfViewerEnabled' in nav ? ((nav as any).pdfViewerEnabled ? 'Supported 支持 ✓' : 'Disabled 禁用 ✗') : '—'));
+
+						// --- 2. Hardware & GPU ---
+						lines.push('', '--- Hardware 硬件层 ---');
 						lines.push(L('CPU cores 逻辑核心', String(nav.hardwareConcurrency ?? '—')));
 						lines.push(L('Device memory 设备内存', nav.deviceMemory ? `~${nav.deviceMemory} GB (browser caps at 8)` : '— (not exposed)'));
-						lines.push(L('Touch points 触控点', String(nav.maxTouchPoints ?? 0)));
-						// --- screen ---
-						const s = screen;
-						lines.push(L('Screen 屏幕', `${s.width}×${s.height} @ ${s.colorDepth}-bit`));
-						lines.push(L('Available 可用区域', `${s.availWidth}×${s.availHeight}`));
-						lines.push(L('Pixel ratio 像素比', String(window.devicePixelRatio)));
-						// --- GPU via WebGL ---
 						try {
 							const canvas = document.createElement('canvas');
 							const gl = (canvas.getContext('webgl2') ?? canvas.getContext('webgl')) as WebGLRenderingContext | null;
@@ -2663,19 +2775,63 @@ export const SECURITY_TEXT_TOOLS: ToolEntry[] = [
 						} catch {
 							lines.push(L('GPU 显卡', '— (WebGL blocked)'));
 						}
-						// --- network ---
+						lines.push(L('WebGPU 支持', 'gpu' in nav ? 'Supported ✓' : 'Not supported ✗'));
+						lines.push(L('Refresh rate 刷新率', await getHz()));
+						lines.push(L('Touch points 触控点', String(nav.maxTouchPoints ?? 0)));
+
+						// --- 3. Display & Color ---
+						lines.push('', '--- Display & Color 显示与色彩 ---');
+						const s = screen;
+						lines.push(L('Screen 屏幕', `${s.width}×${s.height} @ ${s.colorDepth}-bit`));
+						lines.push(L('Available 可用区域', `${s.availWidth}×${s.availHeight}`));
+						lines.push(L('Pixel ratio 像素比', String(window.devicePixelRatio)));
+						const p3 = matchMedia('(color-gamut: p3)').matches;
+						const rec2020 = matchMedia('(color-gamut: rec2020)').matches;
+						lines.push(L('Color gamut 色域', rec2020 ? 'Rec.2020 (Ultra Wide)' : p3 ? 'Display P3 (Wide Gamut)' : 'sRGB'));
+						const hdr = matchMedia('(dynamic-range: high)').matches;
+						lines.push(L('Dynamic range 动态范围', hdr ? 'HDR Supported ✓' : 'SDR'));
+
+						// --- 4. Network & Privacy ---
+						lines.push('', '--- Network & Privacy 网络与隐私 ---');
 						const conn = nav.connection;
 						if (conn) lines.push(L('Network 网络', `${conn.effectiveType ?? '—'}${conn.downlink ? ` · ~${conn.downlink} Mbps` : ''}${conn.rtt ? ` · ${conn.rtt} ms RTT` : ''}`));
 						else lines.push(L('Network 网络', '— (not exposed)'));
-						// --- storage ---
+
+						const rtcIps = await getRtcIps();
+						lines.push(L('WebRTC IPs 探测 IP', rtcIps.length ? rtcIps.join(', ') : '— (No leak / WebRTC blocked)'));
+
 						try {
 							const est = await navigator.storage.estimate();
 							if (est.quota) lines.push(L('Storage quota 存储配额', `${(est.quota / 1024 ** 3).toFixed(1)} GB (used ${((est.usage ?? 0) / 1024 ** 2).toFixed(0)} MB)`));
-						} catch { /* API absent — skip silently */ }
-						// --- preferences ---
+						} catch { /* API absent */ }
+
+						// --- 5. Media & Battery ---
+						lines.push('', '--- Media & Battery 多媒体与电源 ---');
+						try {
+							if (nav.mediaDevices?.enumerateDevices) {
+								const devs = await nav.mediaDevices.enumerateDevices();
+								const cams = devs.filter((d) => d.kind === 'videoinput').length;
+								const mics = devs.filter((d) => d.kind === 'audioinput').length;
+								const spks = devs.filter((d) => d.kind === 'audiooutput').length;
+								lines.push(L('Media devices 媒体外设', `${cams} Camera(s), ${mics} Mic(s), ${spks} Speaker(s)`));
+							}
+						} catch { /* MediaDevices restricted */ }
+
+						try {
+							if (nav.getBattery) {
+								const batt = await nav.getBattery();
+								lines.push(L('Battery 电池状态', `${Math.round(batt.level * 100)}% · ${batt.charging ? 'Plugged in (AC)' : 'On battery (DC)'}`));
+							}
+						} catch { /* Battery API restricted */ }
+
+						// --- 6. Preferences & APIs ---
+						lines.push('', '--- Preferences & APIs 偏好与内核支持 ---');
 						lines.push(L('Color scheme 配色偏好', matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
 						lines.push(L('Reduced motion 减少动效', matchMedia('(prefers-reduced-motion: reduce)').matches ? 'yes' : 'no'));
-						// --- codec support: the honest answer for "can my browser play HEVC?" ---
+						lines.push(L('SharedArrayBuffer', typeof SharedArrayBuffer !== 'undefined' ? 'Supported ✓ (Cross-Origin Isolated)' : 'Disabled / Not isolated'));
+						lines.push(L('WebAssembly', typeof WebAssembly !== 'undefined' ? 'Supported ✓' : 'Not supported ✗'));
+
+						// --- 7. Codecs ---
 						const v = document.createElement('video');
 						const a = document.createElement('audio');
 						const can = (el: HTMLMediaElement, type: string): string => {
@@ -2697,6 +2853,7 @@ export const SECURITY_TEXT_TOOLS: ToolEntry[] = [
 							const el = name === 'MP3' || name === 'AAC' || name === 'Opus' || name === 'FLAC' ? a : v;
 							lines.push(L(name, can(el, type)));
 						}
+
 						lines.push('', '🔒 Everything above was read locally 报告完全本地生成，未向任何服务器发送。');
 						return { output: lines.join('\n') };
 					},
@@ -3154,6 +3311,12 @@ export const TEXT_TOOLS: ToolEntry[] = [
 							d.a || '—',
 							d.b || '—',
 						]),
+						rowsZh: diffs.map((d) => [
+							d.path,
+							d.kind === 'added' ? '+ 新增' : d.kind === 'removed' ? '− 删除' : '~ 变更',
+							d.a || '—',
+							d.b || '—',
+						]),
 					},
 					note: capNote
 						? 'Showing the first 200 differences — the documents diverge massively.'
@@ -3314,9 +3477,9 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: '自动对齐错乱的 Markdown 表格，支持中文全角与英文字符宽度自适应计算，一键格式化完美矩形网格。',
 		kind: 'text',
 		config: {
-			def: '| Name | Role |\n| --- | --- |\n| Alice | admin |\n| Bob | dev |\n',
-			placeholder: '| Product | Category | Price | Status |\n|:---|:---:|---:|:---|\n| iPhone 16 Pro | Electronics | $999 | In Stock |\n| Mechanical Keyboard | Peripherals | $129 | Pre-order |',
-			placeholderZh: '粘贴 Markdown 表格，如：\n| 商品 | 分类 | 价格 |\n|:---|:---:|---:|\n| iPhone 16 Pro | 电子产品 | 7999元 |',
+			def: '| ID | 模块名称 / Module | 架构分类 | 核心技术栈与特性 | 响应时延 | 运行状态 | 并发能力 |\n|:---:|:---|:---:|:---|---:|:---:|---:|\n| 101 | **API Gateway** | 微服务 | OAuth2.0、`JWT` 鉴权、*多活容灾* | 12ms | 🟢 Ready | 50,000 QPS |\n| 102 | **Vector DB** | 向量库 | Milvus、HNSW 索引、混合检索 | 35ms | 🟢 Ready | 12,000 QPS |\n| 103 | **Task Scheduler** | 批处理 | 分布式分片、~~旧单机调度~~、CRON | 1,250ms | 🟡 Degraded | 1,500 Jobs/m |\n| 104 | **Document OCR** | 计算密集 | 纯 WebAssembly 离线识别、表格提取 | 480ms | 🟢 Ready | 800 Pages/m |\n| 105 | **Event Bus** | 消息中间件 | Kafka 集群、`ack=all`、Exactly-Once | 5ms | 🟢 Ready | 120,000 QPS |\n| 106 | **Cache Proxy** | 缓存层 | Redis 集群、`get | set` 批量操作、分片预热 | 2ms | 🟢 Ready | 200,000 QPS |\n',
+			placeholder: '| ID | Module | Category | Capabilities | Latency | Status |\n|:---:|:---|:---:|:---|---:|:---:|\n| 1 | API Gateway | Microservice | OAuth2, JWT | 12ms | Ready |',
+			placeholderZh: '粘贴 Markdown 表格，如：\n| 编号 | 模块名称 | 分类 | 核心技术栈 | 响应时延 | 状态 |\n|:---:|:---|:---:|:---|---:|:---:|\n| 1 | API 网关 | 微服务 | OAuth2、JWT 鉴权 | 12ms | 正常 |',
 			mono: true,
 			live: true,
 			stats: (text: string) => {
@@ -3339,6 +3502,9 @@ export const TEXT_TOOLS: ToolEntry[] = [
 					run: (text: string) => ({ output: formatMarkdownTable(text, 'compact') }),
 				},
 			],
+			renderPreview: (output: string, input: string) => renderMarkdownTableToHtml(output || input),
+			previewLabel: 'Table Preview',
+			previewLabelZh: '表格实时渲染预览',
 		},
 	},
 	{
@@ -3369,19 +3535,46 @@ export const TEXT_TOOLS: ToolEntry[] = [
 			compute: (v) => {
 				const a = v.str('before').split('\n');
 				const b = v.str('after').split('\n');
-				// LCS length over lines via DP (capped to avoid pathological inputs).
-				const cap = 500;
+				const cap = 1000;
 				const aa = a.slice(0, cap);
 				const bb = b.slice(0, cap);
-				const dp: Uint32Array[] = [new Uint32Array(bb.length + 1)];
-				for (let i = 1; i <= aa.length; i++) {
-					dp.push(new Uint32Array(bb.length + 1));
-					for (let j = 1; j <= bb.length; j++) {
-						dp[i][j] =
-							aa[i - 1] === bb[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
-					}
+
+				// Strip matching prefix
+				let start = 0;
+				const minLen = Math.min(aa.length, bb.length);
+				while (start < minLen && aa[start] === bb[start]) {
+					start++;
 				}
-				const lcs = dp[aa.length][bb.length];
+
+				// Strip matching suffix
+				let endA = aa.length - 1;
+				let endB = bb.length - 1;
+				while (endA >= start && endB >= start && aa[endA] === bb[endB]) {
+					endA--;
+					endB--;
+				}
+
+				const trimmedA = aa.slice(start, endA + 1);
+				const trimmedB = bb.slice(start, endB + 1);
+				const lenA = trimmedA.length;
+				const lenB = trimmedB.length;
+
+				// Space-optimized 2-row LCS DP table
+				let prev = new Uint32Array(lenB + 1);
+				let curr = new Uint32Array(lenB + 1);
+
+				for (let i = 1; i <= lenA; i++) {
+					for (let j = 1; j <= lenB; j++) {
+						curr[j] = trimmedA[i - 1] === trimmedB[j - 1] ? prev[j - 1] + 1 : Math.max(prev[j], curr[j - 1]);
+					}
+					const tmp = prev;
+					prev = curr;
+					curr = tmp;
+					curr.fill(0);
+				}
+
+				const trimmedLcs = prev[lenB];
+				const lcs = start + (aa.length - 1 - endA) + trimmedLcs;
 				const total = Math.max(aa.length, bb.length) || 1;
 				return {
 					rows: [
@@ -3646,7 +3839,20 @@ export const COLOR_TEXT_TOOLS: ToolEntry[] = [
 				const l1 = lum(fg);
 				const l2 = lum(bg);
 				const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
-				const r = Math.round(ratio * 100) / 100;
+				// The verdicts below compare the UNROUNDED ratio, so the number
+				// printed beside them must not round across a threshold the row
+				// is judging against — otherwise the screen reads "4.5:1 < 4.5:1".
+				// Two decimals is the normal answer; when they would land on a
+				// threshold this pair sits on the wrong side of, keep going.
+				const thresholds = [4.5, 3, 7];
+				let r = ratio;
+				for (let dp = 2; dp <= 6; dp++) {
+					const n = Math.round(ratio * 10 ** dp) / 10 ** dp;
+					if (!thresholds.some((need) => (ratio >= need) !== (n >= need))) {
+						r = n;
+						break;
+					}
+				}
 				const verdict = (need: number, en: string, zh: string) =>
 					ratio >= need
 						? { label: en, labelZh: zh, value: `✓ pass (${r}:1 ≥ ${need}:1)`, valueZh: `✓ 通过（${r}:1 ≥ ${need}:1）` }
@@ -3657,14 +3863,21 @@ export const COLOR_TEXT_TOOLS: ToolEntry[] = [
 				const toHex = (c: [number, number, number]): string => '#' + c.map((x) => x.toString(16).padStart(2, '0')).join('');
 				const fgHex = toHex(fg);
 				const bgHex = toHex(bg);
+				// role="img" makes the SVG a leaf: the sample lines inside are
+				// invisible to a screen reader, so the <title> carries the whole
+				// point — the pair, the ratio, and what each line demonstrates.
+				// It is paired the same way as the <text> elements, because
+				// display:none prunes a <title> from the a11y tree too.
 				const svg =
 					`<svg viewBox="0 0 560 190" xmlns="http://www.w3.org/2000/svg" role="img">` +
+					`<title class="i18n-en">Contrast preview of ${fgHex} on ${bgHex}, ratio ${r}:1. The top line is 24px bold, the 3:1 large-text case; the bottom line is 16px, the 4.5:1 case.</title>` +
+					`<title class="i18n-zh">对比度预览：${fgHex} 在 ${bgHex} 上，比值 ${r}:1。上行为 24px 粗体（3:1 大字号情形），下行为 16px（4.5:1 正文情形）。</title>` +
 					`<rect x="0" y="0" width="560" height="190" rx="12" fill="${bgHex}"/>` +
-					`<text x="280" y="78" text-anchor="middle" font-size="30" font-weight="700" fill="${fgHex}" class="i18n-en">Large 24px bold text</text>` +
-					`<text x="280" y="78" text-anchor="middle" font-size="30" font-weight="700" fill="${fgHex}" class="i18n-zh">大字号文本 24px 粗体</text>` +
-					`<text x="280" y="128" text-anchor="middle" font-size="16" fill="${fgHex}" class="i18n-en">Normal 16px text — the 4.5:1 case</text>` +
-					`<text x="280" y="128" text-anchor="middle" font-size="16" fill="${fgHex}" class="i18n-zh">正文 16px——4.5:1 的情形</text>` +
-					`<text x="280" y="165" text-anchor="middle" font-size="13" font-family="var(--font-mono, monospace)" fill="${fgHex}">${fgHex} on ${bgHex} · ${r}:1</text>` +
+					`<text x="280" y="72" text-anchor="middle" font-size="24" font-weight="700" fill="${fgHex}" class="i18n-en">Large 24px bold text</text>` +
+					`<text x="280" y="72" text-anchor="middle" font-size="24" font-weight="700" fill="${fgHex}" class="i18n-zh">大字号文本 24px 粗体</text>` +
+					`<text x="280" y="122" text-anchor="middle" font-size="16" fill="${fgHex}" class="i18n-en">Normal 16px text — the 4.5:1 case</text>` +
+					`<text x="280" y="122" text-anchor="middle" font-size="16" fill="${fgHex}" class="i18n-zh">正文 16px——4.5:1 的情形</text>` +
+					`<text x="280" y="160" text-anchor="middle" font-size="13" font-family="var(--font-mono, monospace)" fill="${fgHex}">${fgHex} on ${bgHex} · ${r}:1</text>` +
 					`</svg>`;
 				return {
 					rows: [
@@ -4689,6 +4902,24 @@ function getVisualWidth(str: string): number {
 	return len;
 }
 
+function splitMarkdownTableRow(line: string, unescapePipe = false): string[] {
+	let s = line.trim();
+	const codes: string[] = [];
+	s = s.replace(/`[^`]+`/g, (m) => {
+		codes.push(m);
+		return `\u0000CODE_${codes.length - 1}\u0000`;
+	});
+	s = s.replace(/\\\|/g, '\u0000ESCAPED_PIPE\u0000');
+	if (s.startsWith('|')) s = s.slice(1);
+	if (s.endsWith('|')) s = s.slice(0, -1);
+	return s.split('|').map((cell) => {
+		let c = cell.trim();
+		c = c.replace(/\u0000ESCAPED_PIPE\u0000/g, unescapePipe ? '|' : '\\|');
+		c = c.replace(/\u0000CODE_(\d+)\u0000/g, (_, idx) => codes[Number(idx)] || '');
+		return c;
+	});
+}
+
 function formatMarkdownTable(text: string, mode: 'align' | 'compact'): string {
 	const lines = text.split(/\r?\n/);
 	const tableLines: { index: number; line: string }[] = [];
@@ -4703,12 +4934,7 @@ function formatMarkdownTable(text: string, mode: 'align' | 'compact'): string {
 		return text.trim();
 	}
 
-	const parsedRows = tableLines.map((tl) => {
-		let raw = tl.line;
-		if (raw.startsWith('|')) raw = raw.slice(1);
-		if (raw.endsWith('|')) raw = raw.slice(0, -1);
-		return raw.split('|').map((cell) => cell.trim());
-	});
+	const parsedRows = tableLines.map((tl) => splitMarkdownTableRow(tl.line, false));
 
 	const colCount = Math.max(...parsedRows.map((r) => r.length));
 
@@ -4791,5 +5017,73 @@ function formatMarkdownTable(text: string, mode: 'align' | 'compact'): string {
 		outLines[tl.index] = formattedRows[i] || '';
 	});
 	return outLines.join('\n').trim();
+}
+
+export function renderMarkdownTableToHtml(text: string): string {
+	const raw = text.trim();
+	if (!raw) {
+		return '<div class="t-table-empty"><span class="i18n-en">Enter or paste a Markdown table above to see the live rendered table.</span><span class="i18n-zh">在上方输入或粘贴 Markdown 表格即可查看实时排版效果。</span></div>';
+	}
+
+	const lines = raw.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.startsWith('|') || l.endsWith('|') || l.includes('|'));
+	if (lines.length < 2) {
+		return '<div class="t-table-empty"><span class="i18n-en">No valid Markdown table rows detected (table must contain at least a header and separator row).</span><span class="i18n-zh">未检测到有效的 Markdown 表格（表格需至少包含表头与分隔行）。</span></div>';
+	}
+
+	const headerCells = splitMarkdownTableRow(lines[0] || '', true);
+	const sepCells = splitMarkdownTableRow(lines[1] || '', true);
+
+	const colCount = Math.max(headerCells.length, sepCells.length);
+	const aligns: ('left' | 'center' | 'right')[] = [];
+	for (let c = 0; c < colCount; c++) {
+		const cell = sepCells[c] || '';
+		const starts = cell.startsWith(':');
+		const ends = cell.endsWith(':');
+		if (starts && ends) aligns.push('center');
+		else if (ends) aligns.push('right');
+		else aligns.push('left');
+	}
+
+	const escapeHtml = (str: string): string => {
+		return str
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;')
+			.replace(/'/g, '&#39;');
+	};
+
+	const formatCell = (cellText: string): string => {
+		let s = escapeHtml(cellText);
+		s = s.replace(/`([^`]+)`/g, '<code class="t-inline-code">$1</code>');
+		s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+		s = s.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
+		s = s.replace(/~~([^~]+)~~/g, '<del>$1</del>');
+		s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+		return s;
+	};
+
+	let thead = '<thead><tr>';
+	for (let c = 0; c < colCount; c++) {
+		const text = headerCells[c] || '';
+		const align = aligns[c] || 'left';
+		thead += `<th style="text-align: ${align};">${formatCell(text)}</th>`;
+	}
+	thead += '</tr></thead>';
+
+	let tbody = '<tbody>';
+	for (let i = 2; i < lines.length; i++) {
+		const rowCells = splitMarkdownTableRow(lines[i] || '', true);
+		tbody += '<tr>';
+		for (let c = 0; c < colCount; c++) {
+			const text = rowCells[c] || '';
+			const align = aligns[c] || 'left';
+			tbody += `<td style="text-align: ${align};">${formatCell(text)}</td>`;
+		}
+		tbody += '</tr>';
+	}
+	tbody += '</tbody>';
+
+	return `<div class="t-md-table-wrap"><table class="t-rendered-table">${thead}${tbody}</table></div>`;
 }
 

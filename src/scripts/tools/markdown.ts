@@ -21,7 +21,6 @@ import { isZh, onLang } from './i18n';
 import { formatBytes } from './workbench';
 // A string, not a stylesheet: the `?url` suffix keeps KaTeX's CSS out of this
 // chunk so a document with no formula never fetches it. See renderMathIn().
-import katexCssHref from '../../styles/katex.css?url';
 
 export const SAMPLE_MARKDOWN_ZH = `# Markdown 实时渲染与编辑工具 (QCSunny Lab)
 
@@ -223,6 +222,24 @@ function slugify(text: string): string {
 		.replace(/^-+|-+$/g, '') || 'heading';
 }
 
+function splitTableRow(line: string): string[] {
+	let s = line.trim();
+	const codes: string[] = [];
+	s = s.replace(/`[^`]+`/g, (m) => {
+		codes.push(m);
+		return `\u0000CODE_${codes.length - 1}\u0000`;
+	});
+	s = s.replace(/\\\|/g, '\u0000ESCAPED_PIPE\u0000');
+	if (s.startsWith('|')) s = s.slice(1);
+	if (s.endsWith('|')) s = s.slice(0, -1);
+	return s.split('|').map((cell) => {
+		let c = cell.trim();
+		c = c.replace(/\u0000ESCAPED_PIPE\u0000/g, '|');
+		c = c.replace(/\u0000CODE_(\d+)\u0000/g, (_, idx) => codes[Number(idx)] || '');
+		return c;
+	});
+}
+
 // Core Markdown Parser (Zero-dependency GFM implementation)
 export function parseMarkdownToHtml(markdown: string, lang: 'zh' | 'en' = 'zh'): string {
 	const codeBlocks: string[] = [];
@@ -382,11 +399,7 @@ export function parseMarkdownToHtml(markdown: string, lang: 'zh' | 'en' = 'zh'):
 				inTable = true;
 				// Pop previous line as table header
 				output.pop();
-				const headerCells = prevLine.split('|').map((s) => s.trim()).filter((s, idx, arr) => {
-					if (idx === 0 && prevLine.startsWith('|') && s === '') return false;
-					if (idx === arr.length - 1 && prevLine.endsWith('|') && s === '') return false;
-					return true;
-				});
+				const headerCells = splitTableRow(prevLine);
 
 				tableAligns = trimmed.split('|').map((s) => s.trim()).filter((s, idx, arr) => {
 					if (idx === 0 && trimmed.startsWith('|') && s === '') return false;
@@ -415,11 +428,7 @@ export function parseMarkdownToHtml(markdown: string, lang: 'zh' | 'en' = 'zh'):
 		// Table body rows
 		if (inTable) {
 			if (trimmed.includes('|')) {
-				const cells = trimmed.split('|').map((s) => s.trim()).filter((s, idx, arr) => {
-					if (idx === 0 && trimmed.startsWith('|') && s === '') return false;
-					if (idx === arr.length - 1 && trimmed.endsWith('|') && s === '') return false;
-					return true;
-				});
+				const cells = splitTableRow(trimmed);
 				let rowHtml = '<tr>';
 				cells.forEach((cell, idx) => {
 					const align = tableAligns[idx] || 'left';
@@ -538,13 +547,9 @@ let katexLoad: Promise<typeof import('katex')> | null = null;
 
 function loadKatex() {
 	if (!katexLoad) {
-		if (!document.querySelector('link[data-katex]')) {
-			const link = document.createElement('link');
-			link.rel = 'stylesheet';
-			link.href = katexCssHref;
-			link.dataset.katex = '';
-			document.head.append(link);
-		}
+		// The page injects <link data-katex> at build time (BlogPost.astro for
+		// posts, text/[slug].astro for the markdown-preview tool); no runtime
+		// stylesheet loading needed here.
 		katexLoad = import('katex');
 	}
 	return katexLoad;
@@ -962,10 +967,13 @@ export function initMarkdown(host: HTMLElement): void {
 		const btn = document.createElement('button');
 		btn.type = 'button';
 		btn.className = 't-md-tool-btn';
+		// Prevent mousedown from stealing focus or resetting selection in editor
+		btn.addEventListener('mousedown', (e) => e.preventDefault());
 		btn.addEventListener('click', () => {
 			const prefix = currentLang === 'en' ? act.prefixEn : act.prefixZh;
 			const defaultText = currentLang === 'en' ? act.defaultTextEn : act.defaultTextZh;
-			insertSyntax(prefix, act.suffix, defaultText);
+			const isHeading = act.id === 'h1' || act.id === 'h2' || act.id === 'h3';
+			insertSyntax(prefix, act.suffix, defaultText, isHeading);
 		});
 		insertGroup.appendChild(btn);
 		actionBtnElements.push({ action: act, btn });
@@ -1003,6 +1011,11 @@ export function initMarkdown(host: HTMLElement): void {
 	sampleBtn.className = 't-md-tool-btn';
 	sampleBtn.addEventListener('click', () => {
 		editor.value = currentLang === 'en' ? SAMPLE_MARKDOWN_EN : SAMPLE_MARKDOWN_ZH;
+		editor.setSelectionRange(0, 0);
+		editor.scrollTop = 0;
+		try {
+			localStorage.removeItem(DRAFT_KEY);
+		} catch {}
 		render();
 	});
 
@@ -1011,24 +1024,38 @@ export function initMarkdown(host: HTMLElement): void {
 	copyHtmlBtn.className = 't-md-tool-btn t-md-btn-primary';
 	copyHtmlBtn.addEventListener('click', () => {
 		const html = parseMarkdownToHtml(editor.value, currentLang);
-		navigator.clipboard.writeText(html).then(() => {
-			copyHtmlBtn.textContent = currentLang === 'en' ? '✓ Copied HTML!' : '✓ 已复制 HTML!';
-			setTimeout(() => {
-				copyHtmlBtn.textContent = currentLang === 'en' ? '📋 Copy HTML' : '📋 复制 HTML';
-			}, 1800);
-		});
+		navigator.clipboard
+			.writeText(html)
+			.then(() => {
+				copyHtmlBtn.textContent = currentLang === 'en' ? '✓ Copied HTML!' : '✓ 已复制 HTML!';
+			})
+			.catch(() => {
+				copyHtmlBtn.textContent = currentLang === 'en' ? '⚠ Copy failed' : '⚠ 复制失败';
+			})
+			.finally(() => {
+				setTimeout(() => {
+					copyHtmlBtn.textContent = currentLang === 'en' ? '📋 Copy HTML' : '📋 复制 HTML';
+				}, 1800);
+			});
 	});
 
 	const copyMdBtn = document.createElement('button');
 	copyMdBtn.type = 'button';
 	copyMdBtn.className = 't-md-tool-btn';
 	copyMdBtn.addEventListener('click', () => {
-		navigator.clipboard.writeText(editor.value).then(() => {
-			copyMdBtn.textContent = currentLang === 'en' ? '✓ Copied MD!' : '✓ 已复制 MD!';
-			setTimeout(() => {
-				copyMdBtn.textContent = currentLang === 'en' ? '📋 Copy MD' : '📋 复制 MD';
-			}, 1800);
-		});
+		navigator.clipboard
+			.writeText(editor.value)
+			.then(() => {
+				copyMdBtn.textContent = currentLang === 'en' ? '✓ Copied MD!' : '✓ 已复制 MD!';
+			})
+			.catch(() => {
+				copyMdBtn.textContent = currentLang === 'en' ? '⚠ Copy failed' : '⚠ 复制失败';
+			})
+			.finally(() => {
+				setTimeout(() => {
+					copyMdBtn.textContent = currentLang === 'en' ? '📋 Copy MD' : '📋 复制 MD';
+				}, 1800);
+			});
 	});
 
 	const exportHtmlBtn = document.createElement('button');
@@ -1053,8 +1080,13 @@ export function initMarkdown(host: HTMLElement): void {
 <style>
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 860px; margin: 40px auto; padding: 0 20px; line-height: 1.8; color: #1e293b; background: #ffffff; }
 h1, h2, h3, h4 { color: #0f172a; margin-top: 1.6em; margin-bottom: 0.6em; }
-code { background: #f1f5f9; padding: 0.2em 0.4em; border-radius: 4px; font-family: monospace; }
-pre { background: #0f172a; color: #f8fafc; padding: 1.2em; border-radius: 8px; overflow-x: auto; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+:not(pre) > code, .t-inline-code { background: #f1f5f9; color: #0f172a; padding: 0.2em 0.4em; border-radius: 4px; font-size: 0.9em; }
+.t-md-code-box { background: #0f172a; border-radius: 8px; margin: 1.4em 0; overflow: hidden; border: 1px solid #334155; }
+.t-md-code-bar { display: flex; justify-content: space-between; align-items: center; padding: 0.45em 1em; background: #1e293b; font-size: 0.8rem; font-family: monospace; color: #94a3b8; border-bottom: 1px solid #334155; }
+.t-md-code-copy-btn { display: none; }
+pre { background: #0f172a; color: #f8fafc; padding: 1.1em 1.3em; margin: 0; overflow-x: auto; font-size: 0.9em; line-height: 1.6; }
+pre code { background: transparent !important; color: #f8fafc !important; padding: 0 !important; border-radius: 0 !important; font-size: inherit; }
 blockquote { border-left: 4px solid #3b82f6; background: #f8fafc; padding: 0.8em 1.2em; margin: 1.2em 0; }
 table { width: 100%; border-collapse: collapse; margin: 1.4em 0; }
 th, td { border: 1px solid #cbd5e1; padding: 0.6em 0.8em; }
@@ -1094,6 +1126,9 @@ ${body.innerHTML}
 	clearBtn.className = 't-md-tool-btn';
 	clearBtn.addEventListener('click', () => {
 		editor.value = '';
+		try {
+			localStorage.setItem(DRAFT_KEY, '');
+		} catch {}
 		render();
 		editor.focus();
 	});
@@ -1112,13 +1147,43 @@ ${body.innerHTML}
 	const editorHead = document.createElement('div');
 	editorHead.className = 't-md-panel-head';
 
+	const DRAFT_KEY = 'tool-draft:markdown-preview';
+
+	let savedDraft: string | null = null;
+	try {
+		savedDraft = localStorage.getItem(DRAFT_KEY);
+	} catch {}
+
+	const defaultSample = currentLang === 'en' ? SAMPLE_MARKDOWN_EN : SAMPLE_MARKDOWN_ZH;
+
 	const editor = document.createElement('textarea');
 	editor.className = 't-md-textarea';
 	editor.dataset.role = 'input';
 	editor.spellcheck = false;
-	editor.value = currentLang === 'en' ? SAMPLE_MARKDOWN_EN : SAMPLE_MARKDOWN_ZH;
+	editor.value = savedDraft !== null && savedDraft !== undefined ? savedDraft : defaultSample;
+	editor.setSelectionRange(0, 0);
+	editor.scrollTop = 0;
 
 	editorPanel.append(editorHead, editor);
+
+	let saveTimer: ReturnType<typeof setTimeout> | null = null;
+	function saveDraftNow() {
+		try {
+			const val = editor.value;
+			if (val === SAMPLE_MARKDOWN_ZH || val === SAMPLE_MARKDOWN_EN) {
+				localStorage.removeItem(DRAFT_KEY);
+			} else {
+				localStorage.setItem(DRAFT_KEY, val);
+			}
+		} catch {}
+	}
+
+	function scheduleSaveDraft() {
+		if (saveTimer) clearTimeout(saveTimer);
+		saveTimer = setTimeout(saveDraftNow, 200);
+	}
+
+	window.addEventListener('beforeunload', saveDraftNow);
 
 	// Right: Preview Panel
 	const previewPanel = document.createElement('div');
@@ -1148,17 +1213,84 @@ ${body.innerHTML}
 	wrap.append(toolbar, workArea, statusBar);
 	host.append(wrap);
 
-	// Helpers
-	function insertSyntax(prefix: string, suffix: string, defaultText: string) {
-		const start = editor.selectionStart;
-		const end = editor.selectionEnd;
-		const val = editor.value;
-		const selected = val.substring(start, end) || defaultText;
-		const replacement = prefix + selected + suffix;
+	// Synchronized scroll state flags
+	let isEditorScrolling = false;
+	let isPreviewScrolling = false;
 
-		editor.value = val.substring(0, start) + replacement + val.substring(end);
-		editor.focus();
-		editor.setSelectionRange(start + prefix.length, start + prefix.length + selected.length);
+	// Helpers
+	function insertSyntax(prefix: string, suffix: string, defaultText: string, isHeading = false) {
+		const savedScroll = editor.scrollTop;
+		const val = editor.value;
+		let start = editor.selectionStart;
+		let end = editor.selectionEnd;
+
+		if (typeof start !== 'number' || typeof end !== 'number') {
+			start = 0;
+			end = 0;
+		}
+
+		if (isHeading) {
+			const lineStart = val.lastIndexOf('\n', start - 1) + 1;
+			let lineEnd = val.indexOf('\n', end);
+			if (lineEnd === -1) lineEnd = val.length;
+
+			const lineText = val.substring(lineStart, lineEnd);
+			const headingMatch = lineText.match(/^(#{1,6})\s*(.*)$/);
+
+			let replacement: string;
+			let selStart: number;
+			let selEnd: number;
+
+			const currentLevel = headingMatch ? headingMatch[1] : '';
+			const targetLevel = prefix.trim(); // e.g. '##'
+
+			if (currentLevel === targetLevel) {
+				// Toggle off: remove the heading prefix
+				const content = headingMatch ? headingMatch[2] : '';
+				replacement = content;
+				selStart = lineStart;
+				selEnd = lineStart + content.length;
+			} else if (currentLevel !== '') {
+				// Switch heading level (e.g. # -> ##)
+				const content = headingMatch ? headingMatch[2] : '';
+				replacement = prefix + content;
+				selStart = lineStart;
+				selEnd = lineStart + replacement.length;
+			} else {
+				// Line has no heading prefix
+				if (lineText.trim() === '') {
+					replacement = prefix + defaultText;
+					selStart = lineStart + prefix.length;
+					selEnd = selStart + defaultText.length;
+				} else {
+					replacement = prefix + lineText;
+					selStart = lineStart;
+					selEnd = lineStart + replacement.length;
+				}
+			}
+
+			editor.setRangeText(replacement, lineStart, lineEnd, 'preserve');
+
+			editor.focus({ preventScroll: true });
+			editor.setSelectionRange(selStart, selEnd);
+			editor.scrollTop = savedScroll;
+			render();
+			return;
+		}
+
+		// Non-heading inline or block syntax
+		const selected = val.substring(start, end);
+		const textToWrap = selected || defaultText;
+		const replacement = prefix + textToWrap + suffix;
+
+		editor.setRangeText(replacement, start, end, 'preserve');
+
+		const selStart = start + prefix.length;
+		const selEnd = selStart + textToWrap.length;
+
+		editor.focus({ preventScroll: true });
+		editor.setSelectionRange(selStart, selEnd);
+		editor.scrollTop = savedScroll;
 		render();
 	}
 
@@ -1235,9 +1367,20 @@ ${body.innerHTML}
 					: `<p class="t-md-error">文档超过 ${MAX_INPUT_CHARS / 1024} KB —— 实时预览无法处理这么大的文件，请拆分后再试。</p>`;
 			return;
 		}
+		const savedEditorScroll = editor.scrollTop;
+		isPreviewScrolling = true;
 		const html = parseMarkdownToHtml(raw, currentLang);
 		preview.innerHTML = html;
 		const dt = (performance.now() - t0).toFixed(1);
+
+		// Synchronize preview scroll proportionally without triggering listener feedback
+		const editorMax = editor.scrollHeight - editor.clientHeight;
+		if (editorMax > 0) {
+			const pct = savedEditorScroll / editorMax;
+			preview.scrollTop = pct * (preview.scrollHeight - preview.clientHeight);
+		}
+		setTimeout(() => { isPreviewScrolling = false; }, 50);
+		editor.scrollTop = savedEditorScroll;
 
 		// Formulas typeset after the paint: the first call fetches KaTeX, the rest
 		// are synchronous. Deliberately not awaited — the preview must not wait on
@@ -1248,17 +1391,27 @@ ${body.innerHTML}
 		// Re-bind code copy buttons inside preview
 		const copyLabel = currentLang === 'en' ? 'Copy' : '复制';
 		const copiedLabel = currentLang === 'en' ? '✓ Copied' : '✓ 已复制';
+		const failedLabel = currentLang === 'en' ? '⚠ Copy failed' : '⚠ 复制失败';
 		preview.querySelectorAll<HTMLButtonElement>('.t-md-code-copy-btn').forEach((btn) => {
 			btn.addEventListener('click', () => {
 				const codeEl = btn.closest('.t-md-code-box')?.querySelector('code');
 				if (codeEl) {
-					navigator.clipboard.writeText(codeEl.textContent || '').then(() => {
-						btn.textContent = copiedLabel;
-						setTimeout(() => { btn.textContent = copyLabel; }, 1500);
-					});
+					navigator.clipboard
+						.writeText(codeEl.textContent || '')
+						.then(() => {
+							btn.textContent = copiedLabel;
+						})
+						.catch(() => {
+							btn.textContent = failedLabel;
+						})
+						.finally(() => {
+							setTimeout(() => { btn.textContent = copyLabel; }, 1500);
+						});
 				}
 			});
 		});
+
+		scheduleSaveDraft();
 
 		// Update Stats
 		const stats = calculateStats(raw);
@@ -1271,7 +1424,7 @@ ${body.innerHTML}
 				<span>File Size: <strong>${formatBytes(stats.byteSize)}</strong></span>
 				<span>Est. Reading: <strong>~${stats.readingMinutes} min</strong></span>
 			`;
-			engineInfo.innerHTML = `✓ Rendered in: <strong>${dt}ms</strong> · Local Engine · 100% Client Privacy`;
+			engineInfo.innerHTML = `✓ Rendered in: <strong>${dt}ms</strong> · Local Engine · Auto-saved locally`;
 		} else {
 			statsEl.innerHTML = `
 				<span>总字符数: <strong>${stats.totalChars.toLocaleString()}</strong></span>
@@ -1281,7 +1434,7 @@ ${body.innerHTML}
 				<span>文件大小: <strong>${formatBytes(stats.byteSize)}</strong></span>
 				<span>预估阅读: <strong>~${stats.readingMinutes} 分钟</strong></span>
 			`;
-			engineInfo.innerHTML = `✓ 渲染耗时: <strong>${dt}ms</strong> · 本地引擎 · 100% 浏览器隐私保护`;
+			engineInfo.innerHTML = `✓ 渲染耗时: <strong>${dt}ms</strong> · 本地引擎 · 自动保存本地草稿`;
 		}
 	}
 
@@ -1291,8 +1444,7 @@ ${body.innerHTML}
 			e.preventDefault();
 			const start = editor.selectionStart;
 			const end = editor.selectionEnd;
-			editor.value = editor.value.substring(0, start) + '  ' + editor.value.substring(end);
-			editor.selectionStart = editor.selectionEnd = start + 2;
+			editor.setRangeText('  ', start, end, 'end');
 			render();
 		} else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
 			e.preventDefault();
@@ -1304,9 +1456,6 @@ ${body.innerHTML}
 	});
 
 	// Proportional Synchronized Scroll
-	let isEditorScrolling = false;
-	let isPreviewScrolling = false;
-
 	editor.addEventListener('scroll', () => {
 		if (isPreviewScrolling) return;
 		isEditorScrolling = true;
@@ -1339,6 +1488,11 @@ ${body.innerHTML}
 			const prevSample = (prevLang === 'en' ? SAMPLE_MARKDOWN_EN : SAMPLE_MARKDOWN_ZH).trim();
 			if (curVal === '' || curVal === prevSample) {
 				editor.value = nextLang === 'en' ? SAMPLE_MARKDOWN_EN : SAMPLE_MARKDOWN_ZH;
+				editor.setSelectionRange(0, 0);
+				editor.scrollTop = 0;
+				try {
+					localStorage.removeItem(DRAFT_KEY);
+				} catch {}
 			}
 		}
 

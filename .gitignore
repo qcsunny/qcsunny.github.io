@@ -2,6 +2,7 @@
 dist/
 # generated types
 .astro/
+.cache/
 
 # local-only agent and planning docs
 AGENTS.md

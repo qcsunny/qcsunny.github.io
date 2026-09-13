@@ -1,6 +1,7 @@
 ---
 import DynamicToolPage from '../../components/tools/DynamicToolPage.astro';
 import { REGISTRY, type ToolEntry } from '../../tools/registry';
+import { katexCssHref } from '../../lib/katex-css';
 
 export function getStaticPaths() {
 	return REGISTRY
@@ -12,6 +13,7 @@ const { entry } = Astro.props as { entry: ToolEntry };
 ---
 
 <DynamicToolPage entry={entry} category="text" />
+{entry.kind === 'markdown' && <link rel="stylesheet" href={katexCssHref} data-katex />}
 
 <script>
 	import '../../scripts/tools/main';

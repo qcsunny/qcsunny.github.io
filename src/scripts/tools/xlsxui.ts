@@ -67,31 +67,31 @@ export function initXlsxAnalyzer(host: HTMLElement): void {
 		const head = document.createElement('div');
 		head.className = 't-xlsx-head';
 		head.append(
-			bilingual('File 文件', '文件'),
+			bilingual('File', '文件'),
 			Object.assign(document.createElement('strong'), { textContent: r.fileName }),
 			bilingual(`· ${fmtBytes(r.fileSize)}`, `· ${fmtBytes(r.fileSize)}`),
 		);
 		report.append(head);
 
 		// bloat verdict lines
-		const rows: [string, string][] = [
-			['Sheets 工作表', `${r.sheets.length} (${r.sheets.map((s) => s.name).slice(0, 6).join(', ')}${r.sheets.length > 6 ? '…' : ''})`],
-			['Cell styles 样式数', `${r.totalCellXfs} total / ${r.usedCellXfs} in use${r.totalCellXfs - r.usedCellXfs > 50 ? '  ⚠ bloat' : ''}`],
-			['Defined names 命名区域', `${r.definedNames.length}${r.definedNames.some((n) => n.hidden) ? ` (${r.definedNames.filter((n) => n.hidden).length} hidden ⚠)` : ''}`],
-			['External links 外部链接', String(r.externalLinks)],
-			['Media 媒体文件', r.mediaCount ? `${r.mediaCount} · ${fmtBytes(r.mediaBytes)}` : '0'],
-			['Pivot caches 透视缓存', String(r.pivotCaches)],
+		const rows: [string, string, string, string][] = [
+			['Sheets', '工作表', `${r.sheets.length} (${r.sheets.map((s) => s.name).slice(0, 6).join(', ')}${r.sheets.length > 6 ? '…' : ''})`, `${r.sheets.length} (${r.sheets.map((s) => s.name).slice(0, 6).join(', ')}${r.sheets.length > 6 ? '…' : ''})`],
+			['Cell styles', '样式数', `${r.totalCellXfs} total / ${r.usedCellXfs} in use${r.totalCellXfs - r.usedCellXfs > 50 ? '  ⚠ bloat' : ''}`, `${r.totalCellXfs} 总计 / ${r.usedCellXfs} 在用${r.totalCellXfs - r.usedCellXfs > 50 ? '  ⚠ 冗余' : ''}`],
+			['Defined names', '命名区域', `${r.definedNames.length}${r.definedNames.some((n) => n.hidden) ? ` (${r.definedNames.filter((n) => n.hidden).length} hidden ⚠)` : ''}`, `${r.definedNames.length}${r.definedNames.some((n) => n.hidden) ? ` (${r.definedNames.filter((n) => n.hidden).length} 隐藏 ⚠)` : ''}`],
+			['External links', '外部链接', String(r.externalLinks), String(r.externalLinks)],
+			['Media', '媒体文件', r.mediaCount ? `${r.mediaCount} · ${fmtBytes(r.mediaBytes)}` : '0', r.mediaCount ? `${r.mediaCount} · ${fmtBytes(r.mediaBytes)}` : '0'],
+			['Pivot caches', '透视缓存', String(r.pivotCaches), String(r.pivotCaches)],
 		];
 		const grid = document.createElement('div');
 		grid.className = 't-xlsx-grid';
-		for (const [label, value] of rows) {
+		for (const [label, labelZh, value, valueZh] of rows) {
 			const cell = document.createElement('div');
 			cell.className = 't-xlsx-stat';
 			const l = document.createElement('span');
 			l.className = 't-xlsx-statlabel';
-			l.append(bilingual(label, label));
+			l.append(bilingual(label, labelZh));
 			const v = document.createElement('strong');
-			v.textContent = value;
+			v.append(bilingual(value, valueZh));
 			cell.append(l, v);
 			grid.append(cell);
 		}
@@ -102,7 +102,13 @@ export function initXlsxAnalyzer(host: HTMLElement): void {
 			const table = document.createElement('table');
 			table.className = 't-table';
 			const thead = document.createElement('thead');
-			thead.innerHTML = '<tr><th>Part 部件</th><th>Size 大小</th></tr>';
+			const thRow = document.createElement('tr');
+			const th1 = document.createElement('th');
+			th1.append(bilingual('Part', '部件'));
+			const th2 = document.createElement('th');
+			th2.append(bilingual('Size', '大小'));
+			thRow.append(th1, th2);
+			thead.append(thRow);
 			const tbody = document.createElement('tbody');
 			for (const p of r.parts.slice(0, 12)) {
 				const tr = document.createElement('tr');
@@ -172,27 +178,31 @@ export function initXlsxAnalyzer(host: HTMLElement): void {
 			}
 			void (async () => {
 				resultLine.textContent = '';
-				const { blob, removedStyles, removedNames } = await cleanWorkbook(currentBytes as ArrayBuffer, opts);
-				const url = URL.createObjectURL(blob);
-				const a = document.createElement('a');
-				a.href = url;
-				a.download = (currentReport as XlsxReport).fileName.replace(/\.(xlsx|xlsm)$/i, '') + '-cleaned.xlsx';
-				a.click();
-				setTimeout(() => URL.revokeObjectURL(url), 5000);
-				// before/after with a percentage badge: green when it shrank,
-				// dim when re-zip overhead made it grow (tiny files)
-				const delta = 1 - blob.size / (currentReport as XlsxReport).fileSize;
-				const pct = `${delta >= 0 ? '−' : '+'}${Math.abs(delta * 100).toFixed(1)}%`;
-				resultLine.append(
-					bilingual(
-						`Cleaned: ${removedStyles} styles, ${removedNames} names removed — ${fmtBytes(blob.size)} (was ${fmtBytes(currentReport.fileSize)})`,
-						`清理完成：移除 ${removedStyles} 个样式、${removedNames} 个命名区域——${fmtBytes(blob.size)}（原 ${fmtBytes(currentReport.fileSize)}）`,
-					),
-					Object.assign(document.createElement('strong'), {
-						textContent: ` ${pct}`,
-						className: delta > 0.005 ? 't-xlsx-shrunk' : 't-xlsx-grew',
-					}),
-				);
+				try {
+					const { blob, removedStyles, removedNames } = await cleanWorkbook(currentBytes as ArrayBuffer, opts);
+					const url = URL.createObjectURL(blob);
+					const a = document.createElement('a');
+					a.href = url;
+					a.download = (currentReport as XlsxReport).fileName.replace(/\.(xlsx|xlsm)$/i, '') + '-cleaned.xlsx';
+					a.click();
+					setTimeout(() => URL.revokeObjectURL(url), 5000);
+					// before/after with a percentage badge: green when it shrank,
+					// dim when re-zip overhead made it grow (tiny files)
+					const delta = 1 - blob.size / (currentReport as XlsxReport).fileSize;
+					const pct = `${delta >= 0 ? '−' : '+'}${Math.abs(delta * 100).toFixed(1)}%`;
+					resultLine.append(
+						bilingual(
+							`Cleaned: ${removedStyles} styles, ${removedNames} names removed — ${fmtBytes(blob.size)} (was ${fmtBytes(currentReport.fileSize)})`,
+							`清理完成：移除 ${removedStyles} 个样式、${removedNames} 个命名区域——${fmtBytes(blob.size)}（原 ${fmtBytes(currentReport.fileSize)}）`,
+						),
+						Object.assign(document.createElement('strong'), {
+							textContent: ` ${pct}`,
+							className: delta > 0.005 ? 't-xlsx-shrunk' : 't-xlsx-grew',
+						}),
+					);
+				} catch {
+					resultLine.append(bilingual('Cleaning failed — the workbook may be corrupt or password-protected.', '清理失败——工作簿可能已损坏或已加密。'));
+				}
 			})();
 		});
 		cleanBox.append(btn);

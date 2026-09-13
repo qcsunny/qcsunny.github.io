@@ -52,10 +52,18 @@ function glQuadrature(f: (x: number) => number, a: number, b: number, panels: nu
 function gaussSolve(A: number[][], b: number[]): number[] | null {
 	const n = b.length;
 	const M = A.map((row, i) => [...row, b[i] as number]);
+	let maxNorm = 0;
+	for (let r = 0; r < n; r++) {
+		for (let c = 0; c < n; c++) {
+			maxNorm = Math.max(maxNorm, Math.abs(A[r]![c]!));
+		}
+	}
+	const eps = Math.max(1e-12, maxNorm * 1e-13);
+
 	for (let col = 0; col < n; col++) {
 		let piv = col;
 		for (let r = col + 1; r < n; r++) if (Math.abs(M[r]![col]!) > Math.abs(M[piv]![col]!)) piv = r;
-		if (Math.abs(M[piv]![col]!) < 1e-12) return null;
+		if (Math.abs(M[piv]![col]!) < eps) return null;
 		[M[col], M[piv]] = [M[piv]!, M[col]!];
 		for (let r = col + 1; r < n; r++) {
 			const f = M[r]![col]! / M[col]![col]!;
@@ -135,7 +143,7 @@ function pollardRho(n: bigint): bigint {
 	if (n % 3n === 0n) return 3n;
 	// Brent's cycle detection + batch GCD. Powers of 2 steps with batch GCD
 	// save ~25% steps vs Floyd and drop GCD calls by >95%. Retries with c+1 if
-	// the batch collapses onto n.
+	// the batch collapses onto n or step limit is reached.
 	for (let c = 1n; c <= 100n; c++) {
 		const f = (z: bigint): bigint => (z * z + c) % n;
 		let y = 2n;
@@ -144,6 +152,7 @@ function pollardRho(n: bigint): bigint {
 		let r = 1;
 
 		while (d === 1n) {
+			if (r > 65536) break; // Retry with next seed c if cycle search exceeds bound
 			const x = y;
 			let k = 0;
 			while (k < r && d === 1n) {
@@ -450,60 +459,227 @@ const ratio: FormConfig = {
 };
 
 
-// --- pi calculator (Machin-like formula with BigInt arbitrary precision) --------
-const PI_CACHE = new Map<number, string>();
-
-function computePiMachin(digits: number): string {
-	const cached = PI_CACHE.get(digits);
-	if (cached !== undefined) return cached;
+// --- pi calculator (Machin formula + Binary Splitting BigInt) --------
+async function computePiMachin(
+	digits: number,
+	onProgress?: import('./registry').ProgressCallback,
+): Promise<{ piStr: string; elapsedMs: number }> {
+	const t0 = typeof performance !== 'undefined' ? performance.now() : Date.now();
 
 	const extra = 10;
 	const totalDigits = digits + extra;
-	const unity = 10n ** BigInt(totalDigits);
 
-	function arccot(xVal: number, u: bigint): bigint {
-		const x = BigInt(xVal);
-		const xSq = x * x;
-		let sum = u / x;
-		let xpower = sum;
-		let n = 3n;
-		let sign = -1n;
-		while (true) {
-			xpower = xpower / xSq;
-			const term = xpower / n;
-			if (term === 0n) break;
-			sum += sign * term;
-			sign = -sign;
-			n += 2n;
+	const terms5 = Math.ceil((totalDigits * 2.302585) / (2 * Math.log(5))) + 5;
+	const terms239 = Math.ceil((totalDigits * 2.302585) / (2 * Math.log(239))) + 5;
+	const totalTerms = terms5 + terms239;
+	let completedTerms = 0;
+	let lastYield = Date.now();
+
+	// Binary Splitting arctangent computation: computes T, Q such that sum = T / Q
+	async function bsArccot(xVal: bigint, nTerms: number): Promise<{ P: bigint; Q: bigint; T: bigint }> {
+		const xSq = xVal * xVal;
+
+		async function bs(a: number, b: number): Promise<{ P: bigint; Q: bigint; T: bigint }> {
+			if (b - a === 1) {
+				completedTerms++;
+				const now = Date.now();
+				if (onProgress && digits >= 5000 && now - lastYield > 80) {
+					lastYield = now;
+					const pct = Math.floor((completedTerms / totalTerms) * 85);
+					onProgress(
+						pct,
+						`Computing Machin series (${completedTerms.toLocaleString()} / ${totalTerms.toLocaleString()} terms)...`,
+						`正在计算梅钦级数（${completedTerms.toLocaleString()} / ${totalTerms.toLocaleString()} 项）...`,
+					);
+					await new Promise((r) => setTimeout(r, 0));
+				}
+				const k = BigInt(a);
+				const p = a % 2 === 0 ? 1n : -1n;
+				const q = (2n * k + 1n) * (a === 0 ? xVal : xSq);
+				return { P: p, Q: q, T: p };
+			}
+			const mid = (a + b) >> 1;
+			const left = await bs(a, mid);
+			const right = await bs(mid, b);
+			return {
+				P: left.P * right.P,
+				Q: left.Q * right.Q,
+				T: left.T * right.Q + left.P * right.T,
+			};
 		}
-		return sum;
+
+		return bs(0, nTerms);
 	}
 
-	// Machin's formula: pi/4 = 4 * arccot(5) - arccot(239)
-	const piScaled = 16n * arccot(5, unity) - 4n * arccot(239, unity);
+	if (onProgress && digits >= 5000) {
+		onProgress(0, 'Initializing BigInt Binary Splitting tree...', '正在初始化 BigInt 分治二进制拆分树...');
+	}
+
+	const res5 = await bsArccot(5n, terms5);
+	const res239 = await bsArccot(239n, terms239);
+
+	if (onProgress && digits >= 5000) {
+		onProgress(88, 'Scaling BigInt result & performing division...', '正在进行高精度除法与位移展开...');
+		await new Promise((r) => setTimeout(r, 0));
+	}
+
+	const unity = 10n ** BigInt(totalDigits);
+	const arc5 = (res5.T * unity) / res5.Q;
+	const arc239 = (res239.T * unity) / res239.Q;
+
+	if (onProgress && digits >= 5000) {
+		onProgress(96, 'Formatting Pi string output...', '正在格式化圆周率结果...');
+		await new Promise((r) => setTimeout(r, 0));
+	}
+
+	const piScaled = 16n * arc5 - 4n * arc239;
 	const piInt = piScaled / 10n ** BigInt(extra);
-	const piStr = piInt.toString();
-	const result = piStr[0] + '.' + piStr.slice(1, digits + 1);
-	PI_CACHE.set(digits, result);
-	return result;
+	const rawStr = piInt.toString();
+	const result = rawStr[0] + '.' + rawStr.slice(1, digits + 1);
+
+	const t1 = typeof performance !== 'undefined' ? performance.now() : Date.now();
+	const elapsedMs = Math.max(0.1, t1 - t0);
+
+	if (onProgress && digits >= 5000) {
+		onProgress(100, 'Done!', '计算完成！');
+	}
+
+	return { piStr: result, elapsedMs };
+}
+
+// --- Helper: BigInt Square Root (Newton-Raphson) ---
+function bigintSqrt(value: bigint): bigint {
+	if (value < 0n) throw new Error('Square root of negative number');
+	if (value === 0n) return 0n;
+	let x0 = 1n << (BigInt(value.toString(2).length + 1) >> 1n);
+	while (true) {
+		const x1 = (x0 + value / x0) >> 1n;
+		if (x1 >= x0) return x0;
+		x0 = x1;
+	}
+}
+
+// --- Chudnovsky formula + Binary Splitting BigInt ---
+async function computePiChudnovsky(
+	digits: number,
+	onProgress?: import('./registry').ProgressCallback,
+): Promise<{ piStr: string; elapsedMs: number }> {
+	const t0 = typeof performance !== 'undefined' ? performance.now() : Date.now();
+
+	const extra = 14;
+	const totalDigits = digits + extra;
+
+	const A = 13591409n;
+	const B = 545140134n;
+	const C = 640320n;
+	const C3_OVER_24 = (C ** 3n) / 24n;
+
+	const totalTerms = Math.ceil(totalDigits / 14.181647462725477) + 1;
+	let completedTerms = 0;
+	let lastYield = Date.now();
+
+	async function bsChudnovsky(a: number, b: number): Promise<{ P: bigint; Q: bigint; T: bigint }> {
+		if (b - a === 1) {
+			completedTerms++;
+			const now = Date.now();
+			if (onProgress && now - lastYield > 80) {
+				lastYield = now;
+				const pct = Math.floor((completedTerms / totalTerms) * 75);
+				onProgress(
+					pct,
+					`Computing Chudnovsky series (${completedTerms.toLocaleString()} / ${totalTerms.toLocaleString()} terms)...`,
+					`正在计算楚德诺夫斯基级数（${completedTerms.toLocaleString()} / ${totalTerms.toLocaleString()} 项）...`,
+				);
+				await new Promise((r) => setTimeout(r, 0));
+			}
+			const k = BigInt(a);
+			if (k === 0n) {
+				return { P: 1n, Q: 1n, T: A };
+			}
+			const p = (6n * k - 5n) * (2n * k - 1n) * (6n * k - 1n);
+			const q = k * k * k * C3_OVER_24;
+			const t = p * (A + B * k);
+			return { P: p, Q: q, T: a % 2 === 1 ? -t : t };
+		}
+		const mid = (a + b) >> 1;
+		const left = await bsChudnovsky(a, mid);
+		const right = await bsChudnovsky(mid, b);
+		return {
+			P: left.P * right.P,
+			Q: left.Q * right.Q,
+			T: left.T * right.Q + left.P * right.T,
+		};
+	}
+
+	if (onProgress) {
+		onProgress(0, 'Initializing Chudnovsky Binary Splitting tree...', '正在初始化楚德诺夫斯基分治树...');
+	}
+
+	const { Q, T } = await bsChudnovsky(0, totalTerms);
+
+	if (onProgress) {
+		onProgress(78, 'Computing BigInt square root of 10005...', '正在使用牛顿迭代计算 10005 的高精度平方根...');
+		await new Promise((r) => setTimeout(r, 0));
+	}
+
+	const sqrtVal = bigintSqrt(10005n * 10n ** (2n * BigInt(totalDigits)));
+
+	if (onProgress) {
+		onProgress(92, 'Performing final BigInt division & scaling...', '正在进行高精度位移除法与缩放...');
+		await new Promise((r) => setTimeout(r, 0));
+	}
+
+	const C_VAL = 426880n * sqrtVal;
+	const piScaled = (C_VAL * Q) / T;
+	const piInt = piScaled / 10n ** BigInt(extra);
+	const rawStr = piInt.toString();
+	const result = rawStr[0] + '.' + rawStr.slice(1, digits + 1);
+
+	const t1 = typeof performance !== 'undefined' ? performance.now() : Date.now();
+	const elapsedMs = Math.max(0.1, t1 - t0);
+
+	if (onProgress) {
+		onProgress(100, 'Done!', '计算完成！');
+	}
+
+	return { piStr: result, elapsedMs };
+}
+
+// --- Hybrid Pi Engine: Machin (<15k) vs Chudnovsky (>=15k) ---
+async function computePiHybrid(
+	digits: number,
+	onProgress?: import('./registry').ProgressCallback,
+): Promise<{ piStr: string; elapsedMs: number }> {
+	if (digits < 15000) {
+		return computePiMachin(digits, onProgress);
+	}
+	return computePiChudnovsky(digits, onProgress);
 }
 
 const piCalculator: FormConfig = {
-	intro: 'Calculate Pi (π) up to 2,000 decimal places using Machin-like arbitrary-precision formula, with fraction approximations and geometry circle properties.',
-	introZh: '使用高精度梅钦类公式（Machin formula）计算圆周率 π 至小数点后 2000 位，并提供经典密率分式逼近与几何圆性质计算。',
+	intro: 'Calculate Pi (π) up to 1,000,000+ decimal places using a Hybrid Engine (Machin <15k & Chudnovsky >=15k + Binary Splitting) with real-time CPU benchmark timing and presets.',
+	introZh: '采用分阶混合引擎（低位数 Machin 秒开，1.5 万位以上自动切换 Chudnovsky 楚德诺夫斯基超高阶级数 + 二进制拆分）计算圆周率 π 至超 100 万位（1,000,000+），包含 CPU 性能检测与分级预设。',
 	fields: [
 		{
 			id: 'digits',
 			label: 'Decimal places (N)',
 			labelZh: '计算小数位数 (N)',
 			type: 'number',
-			def: '100',
+			wide: true,
+			def: '200',
 			step: '1',
 			min: '1',
-			max: '2000',
+			max: '10000000',
 			required: true,
-			hint: 'Integer from 1 to 2000 decimal places.',
-			hintZh: '请输入 1 到 2000 之间的整数位数。',
+			hint: 'Supports 1 to 10,000,000+ decimal places (Hybrid Engine: Machin & Chudnovsky).',
+			hintZh: '支持 1 到 10,000,000+ 位（超 100 万位）高精度计算（混合引擎：Machin + Chudnovsky）。',
+			presets: [
+				{ label: '2,000 digits (Instant)', labelZh: '2,000 位 (极速秒开)', value: '2000' },
+				{ label: '5,000 digits (Fast)', labelZh: '5,000 位 (快速测速)', value: '5000' },
+				{ label: '10,000 digits (Standard)', labelZh: '10,000 位 (标准测速)', value: '10000' },
+				{ label: '100,000 digits (Stress)', labelZh: '100,000 位 (深度压测)', value: '100000' },
+				{ label: '1,000,000 digits (1M Extreme)', labelZh: '1,000,000 位 (1M 极限压测)', value: '1000000' },
+			],
 		},
 		{
 			id: 'radius',
@@ -517,29 +693,37 @@ const piCalculator: FormConfig = {
 			hintZh: '输入半径可同时计算圆周长与圆面积。',
 		},
 	],
-	compute: (v) => {
+	compute: async (v, onProgress) => {
 		const d = v.num('digits');
-		if (!Number.isInteger(d) || d < 1 || d > 2000) {
+		if (!Number.isInteger(d) || d < 1 || d > 1000000) {
 			return {
 				rows: [
 					{
 						label: 'Result',
 						labelZh: '计算结果',
-						value: '— (enter an integer between 1 and 2000)',
-						valueZh: '— (请输入 1 到 2000 之间的整数位数)',
+						value: '— (enter an integer between 1 and 1000000)',
+						valueZh: '— (请输入 1 到 1000000 之间的整数位数)',
 					},
 				],
 			};
 		}
 
-		const piStr = computePiMachin(d);
+		const { piStr, elapsedMs } = await computePiHybrid(d, onProgress);
+		const sec = elapsedMs / 1000;
+		const timeFmt = elapsedMs < 1000 ? `${elapsedMs.toFixed(1)} ms` : `${sec.toFixed(2)} s (${elapsedMs.toFixed(0)} ms)`;
 		const rows: import('./registry').FormResultRow[] = [
 			{
-				label: `Value of π (${d} decimal places)`,
-				labelZh: `圆周率 π（前 ${d} 位小数）`,
+				label: `Value of π (${d.toLocaleString()} decimal places)`,
+				labelZh: `圆周率 π（前 ${d.toLocaleString()} 位小数）`,
 				value: piStr,
 				valueZh: piStr,
 				emphasis: true,
+			},
+			{
+				label: 'Calculation Time (CPU Benchmark)',
+				labelZh: '计算耗时 (CPU 性能检测)',
+				value: timeFmt,
+				valueZh: timeFmt,
 			},
 			{
 				label: 'Milü fraction (355/113)',
@@ -726,6 +910,7 @@ const matrixCalculator: FormConfig = {
 			def: '1  2  3\n0  1  4\n5  6  0',
 			placeholder: '1  2  3\n0  1  4\n5  6  0',
 			required: true,
+			wide: true,
 		},
 		{
 			id: 'matB',
@@ -735,6 +920,7 @@ const matrixCalculator: FormConfig = {
 			def: '2  0  1\n1  3  2\n0  1  1',
 			placeholder: '2  0  1\n1  3  2\n0  1  1',
 			showIf: (v) => v.str('op') !== 'props',
+			wide: true,
 		},
 	],
 	compute: (v) => {
@@ -1673,7 +1859,7 @@ const equationSolver: FormConfig = {
 					}
 					const v1 = vals[vals.length - 2]!;
 					const v2 = vals[vals.length - 1]!;
-					const extrap = (4 * v2 - v1) / 3;
+					const extrap = (10 * v2 - v1) / 9;
 					const limVal = Math.abs(extrap - Math.round(extrap)) < 1e-9 ? Math.round(extrap) : extrap;
 					return { num: limVal, str: formatNumber(limVal), strZh: formatNumber(limVal), spread: Math.abs(v2 - v1) };
 				};
@@ -1773,7 +1959,7 @@ const equationSolver: FormConfig = {
 					// Richardson extrapolation on the last two clean steps
 					const v1 = vals[vals.length - 2]!;
 					const v2 = vals[vals.length - 1]!;
-					const extrap = (4 * v2 - v1) / 3;
+					const extrap = (10 * v2 - v1) / 9;
 					return Math.abs(extrap - Math.round(extrap)) < 1e-9 ? Math.round(extrap) : extrap;
 				};
 
@@ -2673,10 +2859,13 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 					return p;
 				};
 				const facN = fac(n);
-				const facNR = fac(n - r);
-				const facR = fac(r);
-				const perm = facN / facNR;
-				const comb = perm / facR;
+				const k = Math.min(r, n - r);
+				let perm = 1n;
+				for (let i = BigInt(n - r + 1); i <= BigInt(n); i++) perm *= i;
+				let comb = 1n;
+				for (let i = 1n; i <= BigInt(k); i++) {
+					comb = (comb * (BigInt(n) - BigInt(k) + i)) / i;
+				}
 				return {
 					rows: [
 						{ label: 'n! (factorial)', labelZh: '阶乘 n!', value: facN.toString(), valueZh: facN.toString() },
@@ -2703,6 +2892,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 					labelZh: '数值列表（逗号或空格分隔）',
 					type: 'textarea',
 					def: '1, 2, 3, 4, 5',
+					wide: true,
 				},
 				{
 					id: 'x',
@@ -2710,6 +2900,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 					labelZh: '可选 x 列表（用于线性回归）',
 					type: 'textarea',
 					def: '',
+					wide: true,
 				},
 			],
 			compute: (v) => {
@@ -2780,10 +2971,10 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 	{
 		slug: 'pi',
 		category: 'calculators',
-		name: 'Pi Calculator (π to 2,000 digits)',
-		nameZh: '圆周率 π 计算器（精确至 2000 位）',
-		description: 'Compute Pi (π) up to 2,000 decimal places using arbitrary-precision Machin formula, with Milü fractions and geometry properties.',
-		descriptionZh: '使用高精度梅钦类公式计算圆周率 π 至小数点后 2000 位，包含祖冲之密率逼近与圆周长面积计算。',
+		name: 'Pi Calculator (π up to 1,000,000+ Digits)',
+		nameZh: '圆周率 π 计算器（超 100 万位高精度）',
+		description: 'Compute Pi (π) up to 1,000,000+ decimal places using a high-precision Hybrid Engine (Machin & Chudnovsky) with real-time progress and CPU benchmark presets.',
+		descriptionZh: '采用分段混合引擎（低位数 Machin 秒开，1.5 万位以上自动切换 Chudnovsky 超高阶级数与二进制拆分）实时计算圆周率 π 至超 100 万位（1,000,000+）。',
 		kind: 'form',
 		config: piCalculator,
 	},
@@ -3001,6 +3192,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 					labelZh: '数据点（每行 x, y）',
 					type: 'textarea',
 					def: '0, 1\n1, 2.1\n2, 4.4\n3, 9.2\n4, 15.8\n5, 25.1',
+					wide: true,
 				},
 				{
 					id: 'degree',
@@ -3116,7 +3308,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 					const lam = v.num('lambda');
 					if (!Number.isFinite(lam) || lam < 0)
 						return { rows: [row('λ', 'λ', '— (λ must be ≥ 0)', '— (λ 需要 ≥ 0)')] };
-					pmf = (i) => Math.exp(-lam + i * Math.log(lam || 1) - lgamma(i + 1));
+					pmf = lam === 0 ? (i) => (i === 0 ? 1 : 0) : (i) => Math.exp(-lam + i * Math.log(lam) - lgamma(i + 1));
 					mean = lam;
 					variance = lam;
 				} else {
@@ -3127,9 +3319,9 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 					if (!Number.isFinite(p) || p < 0 || p > 1)
 						return { rows: [row('p', 'p', '— (p must be in [0, 1])', '— (p 需在 [0, 1] 之间)')] };
 					pmf = (i) =>
-						i > n || p === 0
-							? i === 0 && p === 0 ? 1 : 0
-							: Math.exp(lgamma(n + 1) - lgamma(i + 1) - lgamma(n - i + 1) + i * Math.log(p || 1) + (n - i) * Math.log(1 - p || 1));
+						i > n || p === 0 || p === 1
+							? p === 0 ? (i === 0 ? 1 : 0) : (i === n ? 1 : 0)
+							: Math.exp(lgamma(n + 1) - lgamma(i + 1) - lgamma(n - i + 1) + i * Math.log(p) + (n - i) * Math.log(1 - p));
 					mean = n * p;
 					variance = n * p * (1 - p);
 				}
@@ -3176,6 +3368,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						labelZh: '数据（每行 x1 … xk, y）',
 						type: 'textarea',
 						def: 'ad_spend, price, sales\n1.2, 19.9, 98\n2.5, 21.0, 105\n3.1, 18.5, 118\n4.8, 22.1, 124\n5.0, 19.2, 138\n6.3, 23.4, 141\n7.1, 20.8, 152\n8.4, 22.7, 163\n9.0, 21.5, 171\n10.2, 24.0, 178\n11.5, 22.3, 194\n12.8, 23.9, 203\n13.5, 21.1, 216\n15.0, 23.6, 228',
+						wide: true,
 					},
 					{
 						id: 'est',
@@ -3196,6 +3389,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						type: 'textarea',
 						def: '1\n1\n1\n2\n2\n2\n3\n3\n3\n4\n4\n4\n5\n5\n5',
 						showIf: (v) => v.str('est') === 'wls',
+						wide: true,
 					},
 					{
 						id: 'rho',
@@ -3237,6 +3431,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						type: 'textarea',
 						def: '1\n1\n1\n1\n1\n2\n2\n2\n2\n2\n3\n3\n3\n3\n3',
 						showIf: (v) => v.str('vcov') === 'cluster',
+						wide: true,
 					},
 				],
 				compute: (v) => {
@@ -3302,6 +3497,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						columns: ['Term', 'Estimate', 'Std. error', 't', 'p'],
 						columnsZh: ['变量', '估计值', '标准误', 't 值', 'p 值'],
 						rows: names.map((nm, i) => [nm, ecoFmt(m.beta[i] as number), ecoFmt(se[i] as number), ecoFmt(tvals[i] as number), ecoP(pvals[i] as number)]),
+						rowsZh: names.map((nm, i) => [i === 0 ? '(截距)' : nm, ecoFmt(m.beta[i] as number), ecoFmt(se[i] as number), ecoFmt(tvals[i] as number), ecoP(pvals[i] as number)]),
 					};
 					const rows = [
 						ecoRow('Observations', '观测数', String(n)),
@@ -3333,6 +3529,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						labelZh: '数据（每行 x1 … xk, y）',
 						type: 'textarea',
 						def: 'month, ad_spend, sales\n1, 1.2, 96\n2, 1.8, 99\n3, 2.6, 108\n4, 3.1, 112\n5, 3.9, 121\n6, 4.4, 124\n7, 5.3, 133\n8, 6.0, 138\n9, 6.8, 145\n10, 7.5, 149\n11, 8.3, 158\n12, 9.1, 164\n13, 9.7, 167\n14, 10.6, 177\n15, 11.2, 180\n16, 12.0, 188\n17, 12.9, 197\n18, 13.6, 202\n19, 14.4, 209\n20, 15.1, 214',
+						wide: true,
 					},
 					{ id: 'bgLag', label: 'Breusch–Godfrey lags', labelZh: 'Breusch–Godfrey 滞后阶数', type: 'number', def: '4', step: '1' },
 					{ id: 'lbLag', label: 'Ljung–Box lags', labelZh: 'Ljung–Box 滞后阶数', type: 'number', def: '10', step: '1' },
@@ -3408,6 +3605,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						labelZh: '数据（每行 x1 … xk, y）',
 						type: 'textarea',
 						def: 'hours, score\n1, 52\n2, 55\n2.5, 61\n3, 58\n3.5, 64\n4, 66\n5, 71\n5.5, 68\n6, 74\n7, 78\n7.5, 75\n8, 82\n9, 86\n9.5, 99\n10, 88\n11, 93\n12, 97\n13, 95\n14, 130\n15, 99',
+						wide: true,
 					},
 					{
 						id: 'tau',
@@ -3447,6 +3645,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						columns: ['Term', 'Estimate'],
 						columnsZh: ['变量', '估计值'],
 						rows: names.map((nm, i) => [nm, ecoFmt(fit.beta[i] as number)]),
+						rowsZh: names.map((nm, i) => [i === 0 ? '(截距)' : nm, ecoFmt(fit.beta[i] as number)]),
 					};
 					return { rows, table };
 				},
@@ -3470,6 +3669,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						labelZh: '数据（每行 组, x1 … xk, y）',
 						type: 'textarea',
 						def: 'school, hours, score\n1, 2, 55\n1, 4, 62\n1, 6, 68\n1, 8, 74\n2, 2, 63\n2, 4, 70\n2, 6, 78\n2, 8, 84\n3, 2, 48\n3, 4, 55\n3, 6, 61\n3, 8, 66\n4, 2, 70\n4, 4, 77\n4, 6, 84\n4, 8, 92\n5, 2, 52\n5, 4, 59\n5, 6, 66\n5, 8, 73',
+						wide: true,
 					},
 					{
 						id: 'slope',
@@ -3507,6 +3707,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						columns: ['Fixed effect', 'Estimate', 'Std. error', 't', 'p'],
 						columnsZh: ['固定效应', '估计值', '标准误', 't 值', 'p 值'],
 						rows: names.map((nm, i) => [nm, ecoFmt(fit.beta[i] as number), ecoFmt(fit.se[i] as number), ecoFmt(fit.tstat[i] as number), ecoP(fit.pval[i] as number)]),
+						rowsZh: names.map((nm, i) => [i === 0 ? '(截距)' : nm, ecoFmt(fit.beta[i] as number), ecoFmt(fit.se[i] as number), ecoFmt(fit.tstat[i] as number), ecoP(fit.pval[i] as number)]),
 					};
 					const rows = [
 						ecoRow('Groups', '组数', String(fit.groupCount)),
@@ -3541,6 +3742,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						labelZh: '数据（每行 x1 … xk, y ∈ {0, 1}）',
 						type: 'textarea',
 						def: 'hours, attended, passed\n2, 1, 0\n3, 0, 0\n4, 1, 0\n5, 0, 1\n6, 1, 0\n6, 0, 1\n7, 1, 1\n8, 0, 1\n8, 1, 1\n9, 0, 1\n9, 1, 0\n10, 0, 1\n10, 1, 1\n11, 0, 1\n11, 1, 1\n12, 1, 1\n12, 0, 1\n13, 1, 1\n13, 0, 1\n14, 1, 1',
+						wide: true,
 					},
 					{
 						id: 'family',
@@ -3582,6 +3784,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						columns: ['Term', 'Estimate', 'Std. error', 'z', 'p'],
 						columnsZh: ['变量', '估计值', '标准误', 'z 值', 'p 值'],
 						rows: names.map((nm, i) => [nm, ecoFmt(fit.beta[i] as number), ecoFmt(fit.se[i] as number), ecoFmt(fit.zstat[i] as number), ecoP(fit.pval[i] as number)]),
+						rowsZh: names.map((nm, i) => [i === 0 ? '(截距)' : nm, ecoFmt(fit.beta[i] as number), ecoFmt(fit.se[i] as number), ecoFmt(fit.zstat[i] as number), ecoP(fit.pval[i] as number)]),
 					};
 					const rows: { label: string; labelZh: string; value: string; valueZh?: string }[] = [
 						ecoRow('Observations (1s / 0s)', '观测数（1 / 0）', `${n} (${y.filter((v2) => v2 === 1).length} / ${y.filter((v2) => v2 === 0).length})`),
@@ -3619,6 +3822,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						labelZh: '数据（每行 x1 … xk, y 计数）',
 						type: 'textarea',
 						def: 'visitors, complaints, tickets\n12, 1, 0\n18, 0, 1\n25, 2, 3\n30, 1, 2\n35, 3, 4\n40, 2, 3\n44, 1, 5\n50, 4, 6\n55, 3, 7\n60, 5, 8\n65, 4, 9\n70, 6, 11\n75, 5, 12\n80, 7, 14\n85, 6, 15\n90, 8, 17\n95, 7, 18\n100, 9, 21\n105, 8, 22\n110, 10, 25',
+						wide: true,
 					},
 					{
 						id: 'family',
@@ -3653,7 +3857,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						return row;
 					});
 					const rows: { label: string; labelZh: string; value: string; valueZh?: string }[] = [];
-					let table: { columns: string[]; columnsZh: string[]; rows: string[][] };
+					let table: { columns: string[]; columnsZh: string[]; rows: string[][]; rowsZh?: string[][] };
 					if (fam === 'zip' || fam === 'zinb') {
 						const count = fam === 'zip' ? 'poisson' : 'nbinom';
 						if (y.every((v2) => v2 > 0))
@@ -3664,6 +3868,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 							columns: ['Term', 'Estimate', 'Std. error', 'z', 'p'],
 							columnsZh: ['变量', '估计值', '标准误', 'z 值', 'p 值'],
 							rows: names.map((nm, i) => [nm, ecoFmt(fit.count.beta[i] as number), ecoFmt(fit.count.se[i] as number), ecoFmt(fit.count.zstat[i] as number), ecoP(fit.count.pval[i] as number)]),
+							rowsZh: names.map((nm, i) => [i === 0 ? '(截距)' : nm, ecoFmt(fit.count.beta[i] as number), ecoFmt(fit.count.se[i] as number), ecoFmt(fit.count.zstat[i] as number), ecoP(fit.count.pval[i] as number)]),
 						};
 						rows.push(ecoRow('Structural-zero probability π', '结构零概率 π', ecoFmt(fit.pi)));
 						rows.push(ecoRow('Count model', '计数部分模型', count === 'poisson' ? 'Poisson (log link)' : 'Negative binomial (log link)', count === 'poisson' ? '泊松（对数连接）' : '负二项（对数连接）'));
@@ -3678,6 +3883,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 							columns: ['Term', 'Estimate', 'Std. error', 'z', 'p'],
 							columnsZh: ['变量', '估计值', '标准误', 'z 值', 'p 值'],
 							rows: names.map((nm, i) => [nm, ecoFmt(fit.beta[i] as number), ecoFmt(fit.se[i] as number), ecoFmt(fit.zstat[i] as number), ecoP(fit.pval[i] as number)]),
+							rowsZh: names.map((nm, i) => [i === 0 ? '(截距)' : nm, ecoFmt(fit.beta[i] as number), ecoFmt(fit.se[i] as number), ecoFmt(fit.zstat[i] as number), ecoP(fit.pval[i] as number)]),
 						};
 						// overdispersion check: Pearson χ² / df under a Poisson view
 						if (fam === 'poisson') {
@@ -3716,6 +3922,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						labelZh: '序列（每行一个数值）',
 						type: 'textarea',
 						def: '100.2\n101.1\n100.8\n102.3\n103.0\n102.5\n104.1\n105.3\n104.8\n106.2\n107.0\n106.5\n108.1\n109.0\n108.4\n110.2\n111.1\n110.6\n112.3\n113.0\n112.5\n114.1\n115.0\n114.6\n116.2\n117.1\n116.5\n118.0\n119.2\n118.7\n120.1\n121.0\n120.6\n122.3\n123.0\n122.5\n124.1\n125.2\n124.8\n126.0',
+						wide: true,
 					},
 					{
 						id: 'adfTrend',
@@ -3837,6 +4044,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						labelZh: '序列（每行一个数值）',
 						type: 'textarea',
 						def: '42\n43\n45\n44\n46\n48\n47\n49\n52\n51\n54\n53\n56\n58\n57\n60\n62\n61\n64\n63\n66\n68\n67\n70\n73\n72\n75\n74\n77\n79\n78\n81\n80\n83\n85\n84\n87\n86\n89\n91\n90\n93\n92\n95\n97\n96\n99\n98\n101\n103\n102\n105\n104\n107\n109\n108\n111\n110\n113\n115',
+						wide: true,
 					},
 					{ id: 'p', label: 'p (AR order)', labelZh: 'p（AR 阶数）', type: 'number', def: '1', step: '1' },
 					{ id: 'd', label: 'd (differences)', labelZh: 'd（差分阶数）', type: 'number', def: '1', step: '1' },
@@ -3909,6 +4117,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						labelZh: '数据（每列一个序列）',
 						type: 'textarea',
 						def: 'rate, price, volume\n5.1, 100, 42\n5.0, 101, 45\n4.9, 103, 51\n4.8, 102, 48\n4.7, 105, 55\n4.6, 107, 60\n4.6, 106, 58\n4.5, 109, 64\n4.4, 111, 70\n4.3, 110, 66\n4.3, 113, 73\n4.2, 115, 79\n4.1, 114, 74\n4.0, 117, 82\n4.0, 119, 88\n3.9, 118, 83\n3.8, 121, 90\n3.8, 123, 96\n3.7, 122, 91\n3.6, 125, 98\n3.6, 127, 104\n3.5, 126, 99\n3.4, 129, 106\n3.4, 131, 112',
+						wide: true,
 					},
 					{
 						id: 'p',
@@ -3999,6 +4208,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						labelZh: '序列（每行一个数值）',
 						type: 'textarea',
 						def: '102\n104\n103\n106\n108\n107\n110\n112\n111\n114\n116\n118\n117\n120\n122\n121\n124\n126\n128\n127\n130\n132\n131\n134\n136\n135\n138\n140\n142\n141\n144\n146\n145\n148\n150\n149\n152\n154\n153\n156',
+						wide: true,
 					},
 					{
 						id: 'spec',

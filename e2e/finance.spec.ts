@@ -26,7 +26,7 @@ test('loan-payment shows required-field prompt when emptied', async ({ page }) =
 	await page.goto('/finance/loan-payment/');
 
 	// generic: first required numeric field
-	const anyField = page.locator('.t-form input[type="number"]').first();
+	const anyField = page.locator('.t-form input[inputmode]').first();
 	await anyField.fill('');
 	await anyField.press('Enter');
 
@@ -65,4 +65,33 @@ test('the IRR solver answers a huge period count in constant time', async ({ pag
 
 	await page.fill('#t-f-periods', '1000000000');
 	await expect(page.locator('.t-results .t-emph .t-row-value')).toHaveText(/^-?[\d.]+%$/, { useInnerText: true });
+});
+
+// rmbUppercase used to strip the comma unconditionally, so a European
+// decimal comma (1234,56 = 1234.56) came out as 123456 — a hundred
+// times the amount, with a perfectly formatted Chinese result and no
+// complaint. The parser now refuses that shape and the message says
+// which two readings it found.
+test('cny uppercase refuses an ambiguous decimal comma instead of guessing', async ({ page }) => {
+	await page.goto('/finance/cny-uppercase/');
+	const input = page.locator('textarea[data-role="input"]');
+	const error = page.locator('.t-error');
+	const output = page.locator('textarea[data-role="output"]');
+
+	await input.fill('1234,56');
+	await expect(error).toContainText(/Ambiguous comma|逗号歧义/);
+	await expect(error).toContainText('123456');
+	await expect(output).toHaveValue('');
+
+	// Grouping is still grouping: three digits after the comma, or a dot
+	// anywhere in the string.
+	for (const ok of ['1,234', '1,234.56']) {
+		await input.fill(ok);
+		await expect(error).toHaveText('');
+	}
+	await expect(output).toHaveValue('壹仟贰佰叁拾肆元伍角陆分');
+
+	// A plain typo keeps the format message.
+	await input.fill('abc');
+	await expect(error).toContainText(/Enter a valid amount|请输入有效金额/);
 });

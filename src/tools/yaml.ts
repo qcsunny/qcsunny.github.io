@@ -8,6 +8,9 @@
 //   # comments, and a leading document separator '---'.
 // It deliberately does NOT support: anchors & aliases, multi-line literal
 // | and folded > blocks, tags (!!str), multiple documents, or complex keys.
+// A block scalar indicator in a block position is rejected outright rather
+// than read as the string "|" — that silent fallback is what made
+// "text: |" at the end of a document parse as a literal pipe character.
 // Every unsupported construct produces a precise error rather than a guess.
 
 export interface YamlError {
@@ -25,6 +28,20 @@ interface Line {
 /** Is x a YamlError? Lets parse results narrow without casts. */
 export function isYamlError(x: unknown): x is YamlError {
 	return typeof x === 'object' && x !== null && 'error' in x;
+}
+
+// "|", ">", "2|", "|-", "|2-" etc. start a block scalar — but only in a
+// BLOCK value position. Inside a flow collection ([|], {a: |}) the same
+// token is an ordinary plain scalar, so this check belongs at the block
+// entry points, not inside parseScalar.
+const BLOCK_SCALAR_RE = /^[|>][-+0-9]*$/;
+
+function assertNotBlockScalar(line: Line, tok: string): void {
+	if (BLOCK_SCALAR_RE.test(tok.trim())) {
+		throw new Error(
+			`line ${line.lineNo}: block scalars ("|" literal and ">" folded) are not supported`,
+		);
+	}
 }
 
 // --- tokenizer ------------------------------------------------------------------------
@@ -211,6 +228,7 @@ function parseBlock(lines: Line[], pos: number, minIndent: number): [unknown, nu
 	const kv = splitKey(line.content);
 	if (kv) return parseBlockMap(lines, pos, line.indent);
 	// A single scalar at document level.
+	assertNotBlockScalar(line, line.content);
 	return [parseScalar(line.content), pos + 1];
 }
 
@@ -252,6 +270,7 @@ function parseBlockSeq(lines: Line[], pos: number, indent: number): [unknown[], 
 			continue;
 		}
 		// Plain scalar / flow item.
+		if (itemBody.trim()) assertNotBlockScalar(line, itemBody);
 		items.push(parseScalar(itemBody));
 		i++;
 	}
@@ -296,6 +315,7 @@ function parseBlockMap(lines: Line[], pos: number, indent: number): [Record<stri
 			i = j;
 			continue;
 		}
+		assertNotBlockScalar(line, kv.rest);
 		setKey(map, kv.key, parseScalar(kv.rest));
 		i++;
 	}
@@ -317,33 +337,46 @@ export function parseYaml(text: string): unknown {
 
 const KEY_RE = /^[A-Za-z0-9_][A-Za-z0-9_-]*$/;
 
-function quoteIfNeeded(s: string): string {
+// YAML 1.1 reads these as booleans; the 1.2 core schema reads them as
+// strings. Every other token we quote is quoted because it cannot be
+// written any other way; these can be, so the answer depends on the
+// direction the data is travelling — see the `strict` argument.
+const WEAK_BOOL_RE = /^(yes|no|on|off)$/i;
+
+function quoteIfNeeded(s: string, strict = false): string {
 	if (s === '') return "''";
 	if (/[:#\-?\[\]{},&*!|>'"%@`\n\t]/.test(s) || /^\s|\s$/.test(s) || s !== s.trim()) return JSON.stringify(s);
-	if (/^(true|false|null|~|yes|no|on|off)$/i.test(s) || /^[-+]?[.\d]/.test(s)) return JSON.stringify(s);
+	if (/^(true|false|null|~)$/i.test(s) || /^[-+]?[.\d]/.test(s) || (strict && WEAK_BOOL_RE.test(s)))
+		return JSON.stringify(s);
 	return s;
 }
 
-function emitScalar(v: unknown): string {
+function emitScalar(v: unknown, strict = false): string {
 	if (v === null) return 'null';
 	if (typeof v === 'boolean') return String(v);
 	if (typeof v === 'number') return String(v);
-	return quoteIfNeeded(String(v));
+	return quoteIfNeeded(String(v), strict);
 }
 
 function isPlainKey(k: string): boolean {
 	return KEY_RE.test(k) && !/^(true|false|null|~|yes|no|on|off)$/i.test(k);
 }
 
-/** Emit a JS value as block-style YAML at the given indentation level. */
-function emit(value: unknown, indent: number): string {
+/**
+ * Emit a JS value as block-style YAML at the given indentation level.
+ * `strict` quotes yes/no/on/off; it is off for formatYaml (a formatter must
+ * not rewrite what the user's own YAML 1.1 readers see as a boolean) and on
+ * for jsonToYaml (JSON's "yes" is unambiguously a string, and only the
+ * quoted form keeps that meaning under a 1.1 schema).
+ */
+function emit(value: unknown, indent: number, strict = false): string {
 	const pad = '  '.repeat(indent);
 	const lines: string[] = [];
 	if (Array.isArray(value)) {
 		if (value.length === 0) return '[]';
 		for (const item of value) {
 			if (item && typeof item === 'object' && !Array.isArray(item)) {
-				const sub = emit(item, 0);
+				const sub = emit(item, 0, strict);
 				const subLines = sub.split('\n');
 				lines.push(`${pad}- ${subLines[0]}`);
 				for (const l of subLines.slice(1)) lines.push(`${pad}  ${l}`);
@@ -354,11 +387,11 @@ function emit(value: unknown, indent: number): string {
 					lines.push(`${pad}- []`);
 					continue;
 				}
-				const sub = emit(item, indent + 1).split('\n');
+				const sub = emit(item, indent + 1, strict).split('\n');
 				lines.push(`${pad}-`);
 				for (const l of sub) lines.push(l);
 			} else {
-				lines.push(`${pad}- ${emitScalar(item)}`);
+				lines.push(`${pad}- ${emitScalar(item, strict)}`);
 			}
 		}
 		return lines.join('\n');
@@ -369,24 +402,24 @@ function emit(value: unknown, indent: number): string {
 		for (const [k, v] of entries) {
 			const key = isPlainKey(k) ? k : JSON.stringify(k);
 			if (v && typeof v === 'object' && (Array.isArray(v) ? v.length > 0 : Object.keys(v as object).length > 0)) {
-				const sub = emit(v, indent + 1);
+				const sub = emit(v, indent + 1, strict);
 				lines.push(`${pad}${key}:`);
 				for (const l of sub.split('\n')) if (l.trim()) lines.push(`${l}`);
 			} else if (v && typeof v === 'object') {
 				lines.push(`${pad}${key}: ${Array.isArray(v) ? '[]' : '{}'}`);
 			} else {
-				lines.push(`${pad}${key}: ${emitScalar(v)}`);
+				lines.push(`${pad}${key}: ${emitScalar(v, strict)}`);
 			}
 		}
 		return lines.join('\n');
 	}
-	return `${pad}${emitScalar(value)}`;
+	return `${pad}${emitScalar(value, strict)}`;
 }
 
 /** Convert JSON text to YAML text (throws on invalid JSON). */
 export function jsonToYaml(jsonText: string): string {
 	const data = JSON.parse(jsonText);
-	return emit(data, 0) + '\n';
+	return emit(data, 0, true) + '\n';
 }
 
 /** Format = parse then emit with canonical 2-space indentation. */

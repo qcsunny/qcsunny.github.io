@@ -2,6 +2,8 @@
 // and see the result re-convolved live on the GPU. The image never leaves the
 // page — it is read into a texture and filtered in a fragment shader.
 
+import { bilingual } from './i18n';
+
 export function initImgFilter(host: HTMLElement): void {
 	const wrap = document.createElement('div');
 	wrap.className = 't-fractal';
@@ -10,7 +12,7 @@ export function initImgFilter(host: HTMLElement): void {
 	canvas.className = 't-fractal-canvas';
 	const glCtx = canvas.getContext('webgl', { preserveDrawingBuffer: true });
 	if (!glCtx) {
-		host.append('WebGL is not available in this browser.');
+		host.append(bilingual('WebGL is not available in this browser.', '此浏览器不支持 WebGL。'));
 		return;
 	}
 	const gl = glCtx; // narrowed alias — closures below keep the non-null type
@@ -115,26 +117,26 @@ void main() {
 		cells.forEach((c, i) => (c.value = String(kernel[i])));
 		render();
 	};
-	const mkBtn = (label: string, onClick: () => void): HTMLButtonElement => {
+	const mkBtn = (en: string, zh: string, onClick: () => void): HTMLButtonElement => {
 		const b = document.createElement('button');
 		b.type = 'button';
 		b.className = 't-btn';
-		b.textContent = label;
+		b.append(bilingual(en, zh));
 		b.addEventListener('click', onClick);
 		return b;
 	};
 	const presets = document.createElement('div');
 	presets.className = 't-filter-presets';
 	presets.append(
-		mkBtn('Identity', () => applyPreset([0, 0, 0, 0, 1, 0, 0, 0, 0], 1, 0)),
-		mkBtn('Blur', () => applyPreset([1, 1, 1, 1, 1, 1, 1, 1, 1], 9, 0)),
-		mkBtn('Sharpen', () => applyPreset([0, -1, 0, -1, 5, -1, 0, -1, 0], 1, 0)),
-		mkBtn('Edge (Sobel)', () => applyPreset([-1, 0, 1, -2, 0, 2, -1, 0, 1], 1, 0.5)),
-		mkBtn('Emboss', () => applyPreset([-2, -1, 0, -1, 1, 1, 0, 1, 2], 1, 0)),
+		mkBtn('Identity', '恒等', () => applyPreset([0, 0, 0, 0, 1, 0, 0, 0, 0], 1, 0)),
+		mkBtn('Blur', '模糊', () => applyPreset([1, 1, 1, 1, 1, 1, 1, 1, 1], 9, 0)),
+		mkBtn('Sharpen', '锐化', () => applyPreset([0, -1, 0, -1, 5, -1, 0, -1, 0], 1, 0)),
+		mkBtn('Edge (Sobel)', '边缘 (Sobel)', () => applyPreset([-1, 0, 1, -2, 0, 2, -1, 0, 1], 1, 0.5)),
+		mkBtn('Emboss', '浮雕', () => applyPreset([-2, -1, 0, -1, 1, 1, 0, 1, 2], 1, 0)),
 	);
 	controls.append(presets);
 
-	const saveBtn = mkBtn('💾 PNG', () => {
+	const saveBtn = mkBtn('💾 PNG', '💾 PNG', () => {
 		render();
 		const a = document.createElement('a');
 		a.href = canvas.toDataURL('image/png');
@@ -152,7 +154,7 @@ void main() {
 	controls.append(privacy);
 
 	// --- image source: file picker + drag & drop + generated sample ---
-	const pick = mkBtn('📄 Choose image', () => fileInput.click());
+	const pick = mkBtn('📄 Choose image', '📄 选择图片', () => fileInput.click());
 	controls.append(pick);
 	const fileInput = document.createElement('input');
 	fileInput.type = 'file';
@@ -167,13 +169,20 @@ void main() {
 	async function loadImage(file: File): Promise<void> {
 		const url = URL.createObjectURL(file);
 		const img = new Image();
-		await new Promise<void>((resolve, reject) => {
-			img.onload = () => resolve();
-			img.onerror = () => reject(new Error('decode failed'));
-			img.src = url;
-		});
-		URL.revokeObjectURL(url);
-		setImage(img);
+		try {
+			await new Promise<void>((resolve, reject) => {
+				img.onload = () => resolve();
+				img.onerror = () => reject(new Error('decode failed'));
+				img.src = url;
+			});
+			setImage(img);
+		} catch {
+			// undecodable image: keep the current canvas rather than surfacing
+			// an unhandled rejection to the `void loadImage(f)` call sites
+		} finally {
+			// revoke on every path — a decode failure used to leak the URL
+			URL.revokeObjectURL(url);
+		}
 	}
 
 	function setImage(img: HTMLImageElement): void {

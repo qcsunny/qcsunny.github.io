@@ -20,7 +20,7 @@ URL 参数里出现 `%F0%9F%98%80`，Base64 里出现 `8J+YgA==`，JWT 里又出
 
 它们都不是加密，也都不提供保密性。真正容易出错的地方，是一层的输出被当成另一层的输入：把 UTF-16 code unit 当成字符，把 URL 参数预先编码两次，把 Base64 当作“安全字符串”，或者把 JWT Payload 的 Base64URL 当作签名后的密文。
 
-本文把边界按数据流拆开，并把浏览器 API 的具体语义放在最后，而不是用一个模糊的“encode/decode”概括一切。相关实现也可以直接用本站的 [URL 解析与编码工具](/devtools/url-parser/)、[Base64 编解码器](/devtools/base64/) 和 [JWT 解码器](/security/jwt-decoder/) 做本地实验。
+这篇文章我们把边界按数据流拆开，并把浏览器 API 的具体语义捋清楚，而不是用一个模糊的“encode/decode”概括一切。相关实现也可以直接用本站的 [URL 解析与编码工具](/devtools/url-parser/)、[Base64 编解码器](/devtools/base64/) 和 [JWT 解码器](/security/jwt-decoder/) 做本地实验。
 
 ---
 

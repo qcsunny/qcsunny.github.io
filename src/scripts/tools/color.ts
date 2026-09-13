@@ -243,29 +243,9 @@ export function initColor(host: HTMLElement): void {
 
 	css.append(cssHex, cssRgb, cssHsl, cssOklch);
 
-	// --- OKLCH Gamut Card -----------------------------------------------------------
+	// --- Chromaticity & Gamut Card --------------------------------------------------
 	const gamutCard = document.createElement('div');
 	gamutCard.className = 't-gamut-card';
-
-	const gamutHeader = document.createElement('div');
-	gamutHeader.className = 't-gamut-header';
-	const gamutTitle = document.createElement('span');
-	gamutTitle.append(bilingual('OKLab / OKLCH Gamut Slice', 'OKLab / OKLCH 色域剖面'));
-	const gamutInfo = document.createElement('span');
-	gamutInfo.className = 't-gamut-info';
-	gamutHeader.append(gamutTitle, gamutInfo);
-
-	const gamutViewport = document.createElement('div');
-	gamutViewport.className = 't-gamut-viewport';
-	const gamutGl = document.createElement('canvas');
-	gamutGl.className = 't-gamut-gl';
-	gamutGl.setAttribute('aria-hidden', 'true');
-	const gamut2d = document.createElement('canvas');
-	gamut2d.className = 't-gamut-2d';
-	gamut2d.setAttribute('aria-label', 'OKLab chromaticity gamut slice');
-	gamutViewport.append(gamutGl, gamut2d);
-
-	gamutCard.append(gamutHeader, gamutViewport);
 
 	// --- WCAG contrast checker --------------------------------------------------------
 	// Two hex fields (foreground / background) over the base color's own contrast
@@ -323,25 +303,30 @@ export function initColor(host: HTMLElement): void {
 
 	const contrastRows = document.createElement('div');
 	contrastRows.className = 't-css';
-	for (const key of ['aaNormal', 'aaLarge', 'aaaNormal', 'aaaLarge'] as const) {
+	// Same five thresholds as the standalone /color/wcag-contrast/ checker:
+	// the UI-components row (3:1) is where focus rings and borders live, and
+	// dropping it here made the two checkers answer different questions.
+	const thresholds: [string, string][] = [
+		['AA normal text (4.5:1)', 'AA 正文 (4.5:1)'],
+		['AA large text (3:1)', 'AA 大字 (3:1)'],
+		['AAA normal text (7:1)', 'AAA 正文 (7:1)'],
+		['AAA large text (4.5:1)', 'AAA 大字 (4.5:1)'],
+		['UI components & focus (3:1)', '界面组件与焦点框 (3:1)'],
+	];
+	for (const [en, zh] of thresholds) {
 		const row = document.createElement('div');
 		row.className = 't-row';
 		const l = document.createElement('span');
 		l.className = 't-row-label';
 		const v = document.createElement('span');
 		v.className = 't-row-value';
-		l.append(
-			bilingual(
-				key === 'aaNormal' ? 'AA normal text (4.5:1)' : key === 'aaLarge' ? 'AA large text (3:1)' : key === 'aaaNormal' ? 'AAA normal text (7:1)' : 'AAA large text (4.5:1)',
-				key === 'aaNormal' ? 'AA 正文 (4.5:1)' : key === 'aaLarge' ? 'AA 大字 (3:1)' : key === 'aaaNormal' ? 'AAA 正文 (7:1)' : 'AAA 大字 (4.5:1)',
-			),
-		);
+		l.append(bilingual(en, zh));
 		row.append(l, v);
 		contrastRows.append(row);
 	}
 	contrastCard.append(contrastRows);
 
-	// What the ✓/✗ column means — without this the four verdicts read as
+	// What the ✓/✗ column means — without this the verdicts read as
 	// opaque labels. One bilingual line under the rows.
 	const contrastNote = document.createElement('p');
 	contrastNote.className = 't-note';
@@ -353,11 +338,17 @@ export function initColor(host: HTMLElement): void {
 	);
 	contrastCard.append(contrastNote);
 
-	/** WCAG relative luminance (WCAG 2.x, sRGB). */
+	/** WCAG relative luminance (WCAG 2.x, sRGB). The knee is 0.04045, the same
+	 *  value /color/wcag-contrast/ and color-gamut.ts use, so all three color tools
+	 *  linearize identically. Both 0.04045 and 0.03928 circulate as the sRGB knee;
+	 *  0.04045 is the better pick because there the two branches agree to 7.4e-7
+	 *  relative, while at 0.03928 they jump by 2.5e-4. On 8-bit colors the choice is
+	 *  invisible either way: the disputed window (0.03928, 0.04045] holds no multiple
+	 *  of 1/255, so both knees classify every integer channel value the same. */
 	function relLum({ r, g, b }: Rgb): number {
 		const ch = (v: number) => {
 			const s = v / 255;
-			return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+			return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
 		};
 		return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b);
 	}
@@ -376,15 +367,29 @@ export function initColor(host: HTMLElement): void {
 		const l1 = relLum(fg);
 		const l2 = relLum(bg);
 		const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+		// The verdict rows below compare the UNROUNDED ratio, so the preview
+		// must not round across one of their thresholds: at two decimals
+		// #006ffb prints 4.50:1 beside a 4.5:1 ✗ — the self-contradiction
+		// the standalone checker had. Same adaptive-precision rule as that tool.
+		const cutoffs = [4.5, 3, 7];
+		let shown = ratio;
+		for (let dp = 2; dp <= 6; dp++) {
+			const n = Math.round(ratio * 10 ** dp) / 10 ** dp;
+			if (!cutoffs.some((need) => (ratio >= need) !== (n >= need))) {
+				shown = n;
+				break;
+			}
+		}
 		previewSample.style.color = rgbToHex(fg);
 		previewSample.style.background = rgbToHex(bg);
-		previewRatio.textContent = `${ratio.toFixed(2)}:1`;
+		previewRatio.textContent = `${shown}:1`;
 		const judgements: [number, HTMLElement][] = [];
 		const values = contrastRows.querySelectorAll('.t-row-value');
 		judgements.push([4.5, values[0] as HTMLElement]);
 		judgements.push([3, values[1] as HTMLElement]);
 		judgements.push([7, values[2] as HTMLElement]);
 		judgements.push([4.5, values[3] as HTMLElement]);
+		judgements.push([3, values[4] as HTMLElement]);
 		const pass = (ok: boolean): Node[] => [
 			document.createTextNode(ok ? '✓ ' : '✗ '),
 			bilingual(ok ? 'Pass' : 'Fail', ok ? '通过' : '未通过'),

@@ -8,6 +8,16 @@ import { bilingual, langAttr, langProp } from './i18n';
 // into this bundle (the module itself is imported dynamically on click).
 import type { PngExportData } from './pngExport';
 
+export function formatWithCommas(valStr: string): string {
+	const trimmed = valStr.trim();
+	if (!trimmed) return valStr;
+	const raw = trimmed.replace(/,/g, '');
+	if (isNaN(Number(raw))) return valStr;
+	const parts = raw.split('.');
+	parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+	return parts.join('.');
+}
+
 export function initForm(host: HTMLElement, config: FormConfig): void {
 	const getters = new Map<string, () => string | boolean>();
 	const controls: Array<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement> = [];
@@ -42,7 +52,8 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			if (ctrl instanceof HTMLInputElement && ctrl.type === 'checkbox') {
 				ctrl.checked = f.def === 'true';
 			} else {
-				ctrl.value = f.def ?? '';
+				const numericish = f.type === 'number' || f.type === 'bigint';
+				ctrl.value = numericish ? formatWithCommas(f.def ?? '') : (f.def ?? '');
 			}
 		}
 		if (slug) {
@@ -93,9 +104,9 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 	host.append(exportBar);
 
 	const values: FormValues = {
-		num: (id) => Number(String(getters.get(id)?.() ?? '')),
+		num: (id) => Number(String(getters.get(id)?.() ?? '').replace(/,/g, '')),
 		bigint: (id) => {
-			const raw = String(getters.get(id)?.() ?? '').trim();
+			const raw = String(getters.get(id)?.() ?? '').replace(/,/g, '').trim();
 			return /^\d+$/.test(raw) ? BigInt(raw) : null;
 		},
 		str: (id) => String(getters.get(id)?.() ?? '').trim(),
@@ -108,7 +119,8 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 
 	function fieldEl(field: FormField): HTMLElement {
 		const wrap = document.createElement('div');
-		wrap.className = field.wide ? 't-field t-wide' : 't-field';
+		const isWide = field.wide !== undefined ? field.wide : field.type === 'textarea';
+		wrap.className = isWide ? 't-field t-wide' : 't-field';
 		fieldWraps.set(field.id, wrap);
 
 		if (field.type === 'checkbox') {
@@ -175,22 +187,17 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			getters.set(field.id, () => ta.value);
 			control = ta;
 		} else {
-			// 'number' gets a real numeric input; 'date' a native calendar picker
-			// (value is the ISO "YYYY-MM-DD" string, parsed by compute()); 'bigint'
-			// is a text input with a numeric keypad (pattern + inputmode) because
-			// values above 2^53 would be rounded if they passed through a JS Number.
 			const numericish = field.type === 'number' || field.type === 'bigint';
 			const input = document.createElement('input');
-			input.type = field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text';
-			if (field.type === 'bigint') {
-				input.inputMode = 'numeric';
-				input.pattern = '[0-9]*';
+			input.type = field.type === 'date' ? 'date' : 'text';
+			if (numericish) {
+				input.inputMode = field.step === '1' ? 'numeric' : 'decimal';
 				input.autocomplete = 'off';
 			}
 			if (field.step) input.step = field.step;
 			if (field.min) input.min = field.min;
 			if (field.max) input.max = field.max;
-			input.value = field.def ?? '';
+			input.value = numericish ? formatWithCommas(field.def ?? '') : (field.def ?? '');
 			const phEn = field.placeholder ?? (numericish ? 'Required (number)' : 'Required');
 			const phZh = field.placeholderZh ?? (field.placeholder ? undefined : numericish ? '必填数值' : '必填');
 			langProp(input, 'placeholder', phEn, phZh);
@@ -219,7 +226,12 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 		below.append(tip);
 		reqTips.set(field.id, tip);
 
-		control.addEventListener('blur', update);
+		control.addEventListener('blur', () => {
+			if ((field.type === 'number' || field.type === 'bigint') && control.value) {
+				control.value = formatWithCommas(control.value);
+			}
+			update();
+		});
 
 		if (field.hint) {
 			const hint = document.createElement('span');
@@ -237,7 +249,8 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 				btn.className = 't-preset-btn';
 				btn.append(bilingual(p.label, p.labelZh));
 				btn.addEventListener('click', () => {
-					control.value = p.value;
+					const numericish = field.type === 'number' || field.type === 'bigint';
+					control.value = numericish ? formatWithCommas(p.value) : p.value;
 					control.dispatchEvent(new Event('input', { bubbles: true }));
 				});
 				chips.append(btn);
@@ -249,15 +262,53 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 	}
 
 	function resultRow(row: FormResultRow): HTMLElement {
+		const isLong = row.value.length > 150 || (row.valueZh ? row.valueZh.length > 150 : false);
 		const el = document.createElement('div');
-		el.className = row.emphasis ? 't-row t-emph' : 't-row';
+		el.className = row.emphasis ? (isLong ? 't-row t-emph t-row-long' : 't-row t-emph') : isLong ? 't-row t-row-long' : 't-row';
+
+		const header = document.createElement('div');
+		header.className = 't-row-head';
 		const l = document.createElement('span');
 		l.className = 't-row-label';
 		l.append(bilingual(row.label, row.labelZh));
+		header.append(l);
+
+		if (isLong) {
+			const copyBtn = document.createElement('button');
+			copyBtn.type = 'button';
+			copyBtn.className = 't-row-copy-btn';
+			copyBtn.append(bilingual('📋 Copy', '📋 复制结果'));
+			copyBtn.addEventListener('click', () => {
+				const textToCopy = document.documentElement.dataset.lang === 'zh' ? row.valueZh || row.value : row.value;
+				void navigator.clipboard
+					.writeText(textToCopy)
+					.then(() => {
+						copyBtn.textContent = document.documentElement.dataset.lang === 'zh' ? '✓ 已复制' : '✓ Copied';
+					})
+					.catch(() => {
+						// clipboard denied (permission / non-secure context): say so
+						// instead of an unhandled rejection and a silent no-op
+						copyBtn.textContent = document.documentElement.dataset.lang === 'zh' ? '⚠ 复制失败' : '⚠ Copy failed';
+					})
+					.finally(() => {
+						setTimeout(() => {
+							copyBtn.innerHTML = '';
+							copyBtn.append(bilingual('📋 Copy', '📋 复制结果'));
+						}, 1500);
+					});
+			});
+			header.append(copyBtn);
+		}
+
 		const v = document.createElement('span');
 		v.className = 't-row-value';
 		v.append(bilingual(row.value, row.valueZh));
-		el.append(l, v);
+
+		if (isLong) {
+			el.append(header, v);
+		} else {
+			el.append(l, v);
+		}
 		return el;
 	}
 
@@ -329,7 +380,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			inputs,
 			results: lastOut.rows.map((r) => ({
 				label: zh ? r.labelZh || r.label : r.label,
-				value: r.value,
+				value: zh ? r.valueZh || r.value : r.value,
 				emphasis: r.emphasis,
 			})),
 			table: t
@@ -343,7 +394,10 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 		};
 	}
 
+	let currentComputeId = 0;
+
 	function update(): void {
+		const computeId = ++currentComputeId;
 		results.innerHTML = '';
 		host.querySelectorAll('.t-tablewrap, .t-note, .t-chartwrap').forEach((el) => el.remove());
 
@@ -392,7 +446,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			if (star) star.style.display = isReq ? '' : 'none';
 
 			if (isReq) {
-				const raw = String(getters.get(f.id)?.() ?? '').trim();
+				const raw = String(getters.get(f.id)?.() ?? '').replace(/,/g, '').trim();
 				const isBad =
 					raw === '' ||
 					(f.type === 'number' && !Number.isFinite(Number(raw))) ||
@@ -400,7 +454,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 				if (isBad) {
 					missingFields.push(f);
 					ctrl?.classList.add('t-invalid');
-					if (tip) tip.style.display = 'block';
+					if (tip) tip.style.display = '';
 				} else {
 					ctrl?.classList.remove('t-invalid');
 					if (tip) tip.style.display = 'none';
@@ -430,8 +484,95 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 		}
 
 		// 4. Compute and render results
+		let progressBarWrap: HTMLElement | null = null;
+		let progressFillEl: HTMLElement | null = null;
+		let progressTextEl: HTMLElement | null = null;
+
+		const onProgress = (pct: number, msg?: string, msgZh?: string) => {
+			if (computeId !== currentComputeId) return;
+			const clampedPct = Math.min(100, Math.max(0, Math.round(pct)));
+			if (!progressBarWrap) {
+				results.innerHTML = '';
+				const wrap = document.createElement('div');
+				wrap.className = 't-progress-wrap';
+
+				const info = document.createElement('div');
+				info.className = 't-progress-info';
+
+				progressTextEl = document.createElement('span');
+				progressTextEl.className = 't-progress-text';
+
+				const pctEl = document.createElement('span');
+				pctEl.className = 't-progress-pct';
+				pctEl.textContent = `${clampedPct}%`;
+
+				info.append(progressTextEl, pctEl);
+
+				const bar = document.createElement('div');
+				bar.className = 't-progress-bar';
+
+				progressFillEl = document.createElement('div');
+				progressFillEl.className = 't-progress-fill';
+				progressFillEl.style.width = `${clampedPct}%`;
+				bar.append(progressFillEl);
+
+				wrap.append(info, bar);
+				results.append(wrap);
+				progressBarWrap = wrap;
+			}
+
+			if (progressFillEl) progressFillEl.style.width = `${clampedPct}%`;
+			const pctSpan = progressBarWrap?.querySelector('.t-progress-pct');
+			if (pctSpan) pctSpan.textContent = `${clampedPct}%`;
+
+			if (progressTextEl) {
+				progressTextEl.innerHTML = '';
+				progressTextEl.append(
+					bilingual(
+						msg ?? 'Calculating...',
+						msgZh ?? '正在计算中...',
+					),
+				);
+			}
+		};
+
 		try {
-			const out = config.compute(values);
+			const resOrPromise = config.compute(values, onProgress);
+			if (resOrPromise instanceof Promise) {
+				resOrPromise
+					.then((out) => {
+						if (computeId !== currentComputeId) return;
+						renderResults(out);
+					})
+					.catch((err) => {
+						if (computeId !== currentComputeId) return;
+						renderError(err);
+					});
+			} else {
+				renderResults(resOrPromise);
+			}
+		} catch (err) {
+			renderError(err);
+		}
+
+		// On compute failure, clear the stale results and surface the error
+		// instead of leaving the previous (now-wrong) numbers on screen —
+		// and null lastOut so a later PNG export can't ship the old data.
+		function renderError(err: unknown): void {
+			results.innerHTML = '';
+			host.querySelectorAll('.t-tablewrap, .t-note, .t-chartwrap').forEach((el) => el.remove());
+			lastOut = null;
+			const e = err as { message?: string; messageZh?: string };
+			const en = e?.message || String(err);
+			const zh = e?.messageZh || en;
+			results.append(bilingual(`⚠ ${en}`, `⚠ ${zh}`));
+			console.error(err);
+		}
+
+		function renderResults(out: FormResult): void {
+			results.innerHTML = '';
+			host.querySelectorAll('.t-tablewrap, .t-note, .t-chartwrap').forEach((el) => el.remove());
+
 			lastOut = out;
 			for (const row of out.rows) results.append(resultRow(row));
 			if (out.chartSvg) {
@@ -454,23 +595,16 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			// Save draft to localStorage (Feature 2)
 			if (slug) {
 				try {
-					const data: Record<string, string | boolean> = {};
+					const draft: Record<string, string> = {};
 					for (const f of config.fields) {
-						const val = getters.get(f.id)?.();
-						if (val !== undefined) data[f.id] = val;
+						const raw = getters.get(f.id)?.();
+						if (raw !== undefined) draft[f.id] = String(raw);
 					}
-					localStorage.setItem(`tool-draft:${slug}`, JSON.stringify(data));
+					localStorage.setItem(`tool-draft:${slug}`, JSON.stringify(draft));
 				} catch {
-					// localStorage may be disabled; silently ignore
+					// localStorage may be disabled or quota exceeded
 				}
 			}
-		} catch (err) {
-			lastOut = null;
-			exportBar.style.display = 'none';
-			const note = document.createElement('p');
-			note.className = 't-note';
-			note.textContent = err instanceof Error ? err.message : 'Invalid input.';
-			host.append(note);
 		}
 	}
 

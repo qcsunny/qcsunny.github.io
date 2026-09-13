@@ -10,11 +10,11 @@ relatedTools: ['devtools/uuid-generator']
 relatedPosts: ['static-site-byte-ledger']
 ---
 
-在分布式系统和微服务架构中，生成全局唯一 ID 是每一位后端工程师绕不开的话题。
+以前在做业务建表时，为了图省事不依赖中心化自增发号器，大家习惯随手在主键上填一个 `UUID v4`（即 `crypto.randomUUID()`）。在几十万条数据的小表里，系统跑得飞快，没有任何异样。
 
-多年来，开发者习惯使用 **UUID v4**（完全随机）作为数据库表的主键（Primary Key）——它简单、客户端生成、不依赖中心化自增发号器。然而，随着数据量突破数百万、数千万级别，使用 UUID v4 作为聚簇索引（Clustered Index）主键的系统往往会遭遇**灾难性的写入性能雪崩（B-Tree 页分裂与大量随机 I/O）**。
+但当数据规模冲过几百万甚至上千万时，噩梦就来了：压测中数据库 CPU 突然飙到 100%，写入 QPS 从几千直接掉到两三百，磁盘 I/O 读写疯狂打满。查了 InnoDB Buffer Pool 命中率和 `page_splits` 统计指标才幡然醒悟——**完全随机的 UUID v4 正在不断把 B+ 树叶子节点撕开，引发灾难性的页分裂和随机磁盘 Read/Write**。
 
-2024 年 5 月，IETF 正式发布了 **RFC 9562**（替代了旧版 RFC 4122），正式引入了 **UUID v7**。本文将拆解 UUID 的演进历程，分析为什么现代数据库主键应当全面转向 UUID v7，并介绍如何在日常开发中使用我们的[纯本地 UUID 生成器](/devtools/uuid-generator/)。
+2024 年 5 月，IETF 发布的 **RFC 9562** 正式推出了 **UUID v7**。这篇文章从底层 B+ 树物理存储机制讲起，聊聊为什么现代数据库主键应该全面拥抱 UUID v7，以及我们在[纯本地 UUID 生成器](/devtools/uuid-generator/)里做出的设计权衡。
 
 ---
 

@@ -37,18 +37,42 @@ function parseYmd(s: string): Ymd | null {
 // The world clock set: zones people actually schedule across. IANA keys are
 // the runtime truth; labels are for reading.
 const ZONES: { tz: string; label: string; labelZh: string }[] = [
-	{ tz: 'Asia/Shanghai', label: 'Beijing / Shanghai', labelZh: '北京 / 上海' },
-	{ tz: 'Asia/Tokyo', label: 'Tokyo', labelZh: '东京' },
-	{ tz: 'Asia/Singapore', label: 'Singapore', labelZh: '新加坡' },
-	{ tz: 'Asia/Dubai', label: 'Dubai', labelZh: '迪拜' },
-	{ tz: 'Asia/Kolkata', label: 'Mumbai / Delhi', labelZh: '孟买 / 德里' },
+	{ tz: 'Pacific/Honolulu', label: 'Honolulu (Hawaii)', labelZh: '檀香山（夏威夷）' },
+	{ tz: 'America/Anchorage', label: 'Anchorage (Alaska)', labelZh: '安克雷奇（阿拉斯加）' },
+	{ tz: 'America/Los_Angeles', label: 'Los Angeles / San Francisco', labelZh: '洛杉矶 / 旧金山' },
+	{ tz: 'America/Denver', label: 'Denver (Mountain)', labelZh: '丹佛（山地时间）' },
+	{ tz: 'America/Chicago', label: 'Chicago / Dallas', labelZh: '芝加哥 / 达拉斯' },
+	{ tz: 'America/Mexico_City', label: 'Mexico City', labelZh: '墨西哥城' },
+	{ tz: 'America/New_York', label: 'New York / Toronto', labelZh: '纽约 / 多伦多' },
+	{ tz: 'America/Bogota', label: 'Bogota / Lima', labelZh: '波哥大 / 利马' },
+	{ tz: 'America/Sao_Paulo', label: 'Sao Paulo / Rio de Janeiro', labelZh: '圣保罗 / 里约热内卢' },
+	{ tz: 'America/Buenos_Aires', label: 'Buenos Aires', labelZh: '布宜诺斯艾利斯' },
+	{ tz: 'UTC', label: 'UTC / GMT (Universal Time)', labelZh: 'UTC / GMT（协调世界时）' },
+	{ tz: 'Europe/London', label: 'London / Dublin', labelZh: '伦敦 / 都柏林' },
+	{ tz: 'Europe/Berlin', label: 'Berlin / Paris / Rome / Madrid', labelZh: '柏林 / 巴黎 / 罗马 / 马德里' },
+	{ tz: 'Africa/Lagos', label: 'Lagos', labelZh: '拉各斯' },
+	{ tz: 'Africa/Cairo', label: 'Cairo', labelZh: '开罗' },
+	{ tz: 'Africa/Johannesburg', label: 'Johannesburg', labelZh: '约翰内斯堡' },
+	{ tz: 'Europe/Athens', label: 'Athens / Helsinki / Kyiv', labelZh: '雅典 / 赫尔辛基 / 基辅' },
 	{ tz: 'Europe/Moscow', label: 'Moscow', labelZh: '莫斯科' },
-	{ tz: 'Europe/Berlin', label: 'Berlin / Paris', labelZh: '柏林 / 巴黎' },
-	{ tz: 'Europe/London', label: 'London', labelZh: '伦敦' },
-	{ tz: 'America/New_York', label: 'New York', labelZh: '纽约' },
-	{ tz: 'America/Chicago', label: 'Chicago', labelZh: '芝加哥' },
-	{ tz: 'America/Los_Angeles', label: 'Los Angeles', labelZh: '洛杉矶' },
-	{ tz: 'Australia/Sydney', label: 'Sydney', labelZh: '悉尼' },
+	{ tz: 'Europe/Istanbul', label: 'Istanbul', labelZh: '伊斯坦布尔' },
+	{ tz: 'Asia/Riyadh', label: 'Riyadh', labelZh: '利雅得' },
+	{ tz: 'Africa/Nairobi', label: 'Nairobi', labelZh: '内罗毕' },
+	{ tz: 'Asia/Tehran', label: 'Tehran', labelZh: '德黑兰' },
+	{ tz: 'Asia/Dubai', label: 'Dubai', labelZh: '迪拜' },
+	{ tz: 'Asia/Karachi', label: 'Karachi / Islamabad', labelZh: '卡拉奇 / 伊斯兰堡' },
+	{ tz: 'Asia/Tashkent', label: 'Tashkent / Almaty', labelZh: '塔什干 / 阿拉木图' },
+	{ tz: 'Asia/Kolkata', label: 'Mumbai / Delhi', labelZh: '孟买 / 德里' },
+	{ tz: 'Asia/Dhaka', label: 'Dhaka', labelZh: '达卡' },
+	{ tz: 'Asia/Bangkok', label: 'Bangkok / Jakarta / Hanoi', labelZh: '曼谷 / 雅加达 / 河内' },
+	{ tz: 'Asia/Shanghai', label: 'Beijing / Shanghai', labelZh: '北京 / 上海' },
+	{ tz: 'Asia/Hong_Kong', label: 'Hong Kong / Taipei', labelZh: '香港 / 台北' },
+	{ tz: 'Asia/Singapore', label: 'Singapore', labelZh: '新加坡' },
+	{ tz: 'Australia/Perth', label: 'Perth', labelZh: '珀斯' },
+	{ tz: 'Asia/Tokyo', label: 'Tokyo', labelZh: '东京' },
+	{ tz: 'Asia/Seoul', label: 'Seoul', labelZh: '首尔' },
+	{ tz: 'Australia/Sydney', label: 'Sydney / Melbourne', labelZh: '悉尼 / 墨尔本' },
+	{ tz: 'Pacific/Auckland', label: 'Auckland / Wellington', labelZh: '奥克兰 / 惠灵顿' },
 ];
 
 const pad2 = (n: number): string => String(n).padStart(2, '0');
@@ -347,8 +371,10 @@ const dateConfig: FormConfig = {
 		const incl = v.bool('inclEnd');
 		const totalDays = span + (incl ? 1 : 0);
 		const { years, months, days } = calendarBreakdown(from, to);
-		const weeks = Math.floor(span / 7);
-		const remDays = span - weeks * 7;
+		// weeks/remDays must agree with totalDays, otherwise ticking inclEnd
+		// bumps 'Total days' but leaves 'Total weeks' on the unadjusted span.
+		const weeks = Math.floor(totalDays / 7);
+		const remDays = totalDays - weeks * 7;
 		return {
 			rows: [
 				{
@@ -362,8 +388,8 @@ const dateConfig: FormConfig = {
 				{ label: 'Total weeks', labelZh: '总周数', value: `${formatNumber(weeks)} weeks, ${remDays} days`, valueZh: `${formatNumber(weeks)} 周零 ${remDays} 天` },
 				{ label: 'Business days (Mon–Fri)', labelZh: '工作日天数（周一至周五）', value: formatNumber(businessDays(from, totalDays)) },
 			],
-			note: 'The breakdown counts full calendar periods and excludes the end date itself; tick the checkbox to include it in the day counts. Business days count Monday–Friday and ignore public holidays.',
-			noteZh: '年/月/日按完整日历周期计且不含结束日当天；勾选后总天数与工作日将包含结束日。工作日仅统计周一至周五，不含法定节假日。',
+			note: 'The breakdown counts full calendar periods and excludes the end date itself; tick the checkbox to include it in the day, week and business-day counts. Business days count Monday–Friday and ignore public holidays.',
+			noteZh: '年/月/日按完整日历周期计且不含结束日当天；勾选后总天数、总周数与工作日将包含结束日。工作日仅统计周一至周五，不含法定节假日。',
 		};
 	},
 };
@@ -550,8 +576,8 @@ export const DAILY_TOOLS: ToolEntry[] = [
 		category: 'daily',
 		name: 'Time Zone Converter & World Clock',
 		nameZh: '时区转换与世界时钟',
-		description: 'Convert a moment between any two time zones (DST handled by the browser\u2019s own tz database) and see it across 12 world cities at once.',
-		descriptionZh: '在任意两个时区间转换某一时刻（夏令时由浏览器时区数据库处理），并一次看到全球 12 个主要城市的时间。',
+		description: 'Convert a moment between any two time zones (DST handled by the browser\u2019s own tz database) and see it across 36 world cities at once.',
+		descriptionZh: '在任意两个时区间转换某一时刻（夏令时由浏览器时区数据库处理），并一次看到全球 36 个主要城市的时间。',
 		kind: 'form',
 		config: {
 			// The IANA keys are the truth; the labels only make them readable.
@@ -566,7 +592,7 @@ export const DAILY_TOOLS: ToolEntry[] = [
 					labelZh: '源时区',
 					type: 'select',
 					def: 'Asia/Shanghai',
-					options: ZONES.map((z) => ({ value: z.tz, label: z.label })),
+					options: ZONES.map((z) => ({ value: z.tz, label: z.label, labelZh: z.labelZh })),
 				},
 				{
 					id: 'to',
@@ -574,7 +600,7 @@ export const DAILY_TOOLS: ToolEntry[] = [
 					labelZh: '目标时区',
 					type: 'select',
 					def: 'America/New_York',
-					options: ZONES.map((z) => ({ value: z.tz, label: z.label })),
+					options: ZONES.map((z) => ({ value: z.tz, label: z.label, labelZh: z.labelZh })),
 				},
 			],
 			compute: (v) => {
@@ -584,9 +610,22 @@ export const DAILY_TOOLS: ToolEntry[] = [
 				const dateStr = v.str('date');
 				const timeStr = v.str('time');
 				const tm = /^(\d{1,2}):(\d{2})$/.exec(timeStr.trim());
-				if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr) || !tm)
+				const dm = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
+				if (!dm || !tm)
 					return { rows: [row('Input', '输入', '— (need a date and HH:MM time)', '—（需要日期与 HH:MM 时间）')] };
-				const wallAsUtc = Date.parse(`${dateStr}T${pad2(Number(tm[1]))}:${tm[2]}:00Z`);
+				// Reject out-of-range or rollover dates: 2026-09-31 and 2026-02-30 pass
+				// the format check but Date.parse silently rolls them into the next
+				// month, so verify the constructed date round-trips to the same day.
+				const YY = Number(dm[1]);
+				const MM = Number(dm[2]);
+				const DD = Number(dm[3]);
+				const hh = Number(tm[1]);
+				const mm = Number(tm[2]);
+				const probe = new Date(Date.UTC(YY, MM - 1, DD));
+				const rollover = probe.getUTCFullYear() !== YY || probe.getUTCMonth() !== MM - 1 || probe.getUTCDate() !== DD;
+				if (hh > 23 || mm > 59 || rollover)
+					return { rows: [row('Input', '输入', '— (the date/time is not valid)', '—（日期/时间无效）')] };
+				const wallAsUtc = Date.parse(`${dateStr}T${pad2(hh)}:${tm[2]}:00Z`);
 				if (!Number.isFinite(wallAsUtc))
 					return { rows: [row('Input', '输入', '— (the date/time is not valid)', '—（日期/时间无效）')] };
 				// wall time in `from` -> UTC: subtract the zone offset, iterating once
@@ -636,10 +675,11 @@ export const DAILY_TOOLS: ToolEntry[] = [
 				};
 				const target = fmt(to, utc);
 				const diffH = (offsetOf(to, utc) - offsetOf(from, utc)) / 3600000;
+				const toZone = ZONES.find((z) => z.tz === to);
 				const rows = [
 					{
-						label: `Time in ${to}`,
-						labelZh: `${to} 的时间`,
+						label: `Time in ${toZone ? toZone.label : to}`,
+						labelZh: `${toZone ? toZone.labelZh : to} 的时间`,
 						value: `${target.time} ${target.date}`,
 						valueZh: `${target.time} ${target.date}`,
 						emphasis: true,

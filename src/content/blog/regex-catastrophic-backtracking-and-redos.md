@@ -10,13 +10,11 @@ relatedTools: ['devtools/regex-tester']
 relatedPosts: ['sql-tokenizer-and-code-formatter', 'password-entropy-and-secure-random']
 ---
 
-在 Web 开发中，正则表达式（Regular Expression）是数据校验、文本清洗与代码分词的利器。然而，许多工程师常常将正则表达式视作纯粹的“字符串匹配函数”，忽略了其底层是一个基于状态转移的**形式语言识别自动机**。
+做前端或 Node.js 开发时，大家基本每天都要写正则。但很多人初学时常把正则当成简单的“字符串查找助手”，直到某天线上 Node.js 服务突然 CPU 100%、或者前端页面敲入一个长字符串直接全页冻结弹窗，才头一次听说 **ReDoS（正则表达式拒绝服务）**。
 
-当不合理的正则模式（如嵌套量词、重叠分支）遭遇精心构造的恶意输入（Evil Input）或普通用户的长文本边界输入时，传统的 NFA（Non-deterministic Finite Automaton，非确定有限状态自动机）引擎会陷入指数级甚至阶乘级的**灾难性回溯（Catastrophic Backtracking）**。这种现象被称为 **ReDoS（Regular Expression Denial of Service，正则表达式拒绝服务）**。
+当写出带有嵌套量词或重叠分支的正则，又碰巧遇上精心构造的边界输入时，底层的 NFA（非确定有限状态自动机）引擎会在后台开启指数级甚至阶乘级的**灾难性回溯（Catastrophic Backtracking）**。在单线程的 JavaScript 环境里，这意味着整个 Event Loop 被瞬间锁死。
 
-在服务端（如 Node.js），一个未加防范的正则可能直接卡死单线程事件循环，导致 QPS 瞬间跌零；而在浏览器端，如果直接在主线程执行用户的自定义正则，一次灾难性回溯就会让整个标签页彻底冻结，触发“网页无响应”弹窗。
-
-本文将从编译原理的状态机视角，拆解 ReDoS 的底层数学机制，并分享我们在构建本站[正则表达式测试器](/devtools/regex-tester/)时，如何利用 **Web Worker 隔离沙箱 + 看门狗定时器（Watchdog Timer）** 彻底解决主线程卡死问题。
+这篇文章我们从编译原理的状态机聊起，拆解 ReDoS 的几何级数成因，并分享本站[正则表达式测试器](/devtools/regex-tester/)是用怎样的 **Web Worker 沙箱 + 看门狗定时器** 防卡死架构，把恶性回溯牢牢封印在后台线程里的。
 
 ---
 
