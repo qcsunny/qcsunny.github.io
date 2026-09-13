@@ -26,7 +26,7 @@ test('loan-payment shows required-field prompt when emptied', async ({ page }) =
 	await page.goto('/finance/loan-payment/');
 
 	// generic: first required numeric field
-	const anyField = page.locator('.t-form input[type="number"]').first();
+	const anyField = page.locator('.t-form input[inputmode]').first();
 	await anyField.fill('');
 	await anyField.press('Enter');
 

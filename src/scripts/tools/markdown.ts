@@ -21,7 +21,7 @@ import { isZh, onLang } from './i18n';
 import { formatBytes } from './workbench';
 // A string, not a stylesheet: the `?url` suffix keeps KaTeX's CSS out of this
 // chunk so a document with no formula never fetches it. See renderMathIn().
-import katexCssHref from '../../styles/katex.css?url';
+import { katexCssHref } from '../../lib/katex-css';
 
 export const SAMPLE_MARKDOWN_ZH = `# Markdown 实时渲染与编辑工具 (QCSunny Lab)
 

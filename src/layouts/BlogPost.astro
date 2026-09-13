@@ -11,7 +11,7 @@ import TableOfContents from '../components/blog/TableOfContents.astro';
 import SupportBox from '../components/SupportBox.astro';
 import { ADSENSE_CLIENT, AD_SLOTS, SITE_TITLE } from '../consts';
 import { REAL_TOOLS, TOOL_COUNT } from '../tools/registry';
-import katexHref from '../styles/katex.css?url';
+import { katexCssHref as katexHref } from '../lib/katex-css';
 
 // The tools card used to say "40+"; a hardcoded count ages into a lie as tools
 // ship, so every page that quotes a total takes it from TOOL_COUNT — the single

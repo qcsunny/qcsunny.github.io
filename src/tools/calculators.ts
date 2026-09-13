@@ -1859,7 +1859,7 @@ const equationSolver: FormConfig = {
 					}
 					const v1 = vals[vals.length - 2]!;
 					const v2 = vals[vals.length - 1]!;
-					const extrap = (4 * v2 - v1) / 3;
+					const extrap = (10 * v2 - v1) / 9;
 					const limVal = Math.abs(extrap - Math.round(extrap)) < 1e-9 ? Math.round(extrap) : extrap;
 					return { num: limVal, str: formatNumber(limVal), strZh: formatNumber(limVal), spread: Math.abs(v2 - v1) };
 				};
@@ -1959,7 +1959,7 @@ const equationSolver: FormConfig = {
 					// Richardson extrapolation on the last two clean steps
 					const v1 = vals[vals.length - 2]!;
 					const v2 = vals[vals.length - 1]!;
-					const extrap = (4 * v2 - v1) / 3;
+					const extrap = (10 * v2 - v1) / 9;
 					return Math.abs(extrap - Math.round(extrap)) < 1e-9 ? Math.round(extrap) : extrap;
 				};
 
