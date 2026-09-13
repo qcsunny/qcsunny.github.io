@@ -176,6 +176,66 @@ test('sql minify does not glue tokens across a dropped comment', async ({ page }
 	await expect(output).toHaveValue(/SELECT 1/);
 });
 
+// A minifier that collapses whitespace inside <pre>/<textarea> would change
+// rendered text, and collapsing newlines inside <script> lets a // comment eat
+// the next statement or breaks automatic semicolon insertion. These blocks
+// must pass through verbatim while the markup around them is still minified.
+test('html minify leaves <pre>, <textarea> and <script> content untouched', async ({ page }) => {
+	await page.goto('/devtools/html-formatter/');
+
+	await page.locator('[data-role="input"]').fill(
+		'<div>\n  <!-- gone -->\n  <pre>line1\n   line2</pre>\n  <textarea>  spaced  </textarea>\n  <script>\n    // c\n    var x = 1;\n  </script>\n</div>'
+	);
+	await page.getByRole('button', { name: /^(Minify|单行压缩)$/ }).click();
+
+	const output = page.locator('[data-role="output"]');
+	// <pre> keeps its newline and the three leading spaces on line 2
+	await expect(output).toHaveValue(/<pre>line1\n   line2<\/pre>/);
+	// <textarea> keeps its interior spacing
+	await expect(output).toHaveValue(/<textarea>  spaced  <\/textarea>/);
+	// the // comment did not swallow `var x` (the newline before it survived)
+	await expect(output).toHaveValue(/\/\/ c\n\s*var x = 1/);
+	// the comment outside the blocks is still stripped
+	await expect(output).not.toHaveValue(/gone/);
+});
+
+// CDATA sections carry code or payloads whose newlines are significant
+// (SVG/XSLT scripts); collapsing them is a silent corruption. The minifier
+// must stash CDATA, collapse the surrounding tags, then restore verbatim.
+test('xml minify preserves CDATA whitespace', async ({ page }) => {
+	await page.goto('/devtools/xml-formatter/');
+
+	await page.locator('[data-role="input"]').fill(
+		'<root>\n  <!-- c -->\n  <data><![CDATA[\n    line1\n    line2\n  ]]></data>\n</root>'
+	);
+	await page.getByRole('button', { name: /^(Minify|单行压缩)$/ }).click();
+
+	const output = page.locator('[data-role="output"]');
+	// CDATA keeps its newlines
+	await expect(output).toHaveValue(/<!\[CDATA\[\n    line1\n    line2/);
+	// the comment outside CDATA is still stripped
+	await expect(output).not.toHaveValue(/<!-- c -->/);
+});
+
+// String literals (content: "...", font-family: '...') keep their inner
+// whitespace exactly; collapsing it changes rendered text, and a /* inside a
+// string must not be mistaken for a comment. The minifier stashes strings
+// first, collapses, then restores.
+test('css minify preserves string-literal whitespace', async ({ page }) => {
+	await page.goto('/devtools/css-formatter/');
+
+	await page.locator('[data-role="input"]').fill('.a { content: "hello   world"; } /* c */ .b { color: red }');
+	await page.getByRole('button', { name: /^(Minify|单行压缩)$/ }).click();
+
+	const output = page.locator('[data-role="output"]');
+	// the three spaces inside the string survive
+	await expect(output).toHaveValue(/"hello   world"/);
+	// the comment is still stripped
+	await expect(output).not.toHaveValue(/\/\* c \*\//);
+	// the other rule is still minified
+	await expect(output).toHaveValue(/\.b\{color:red\}/);
+});
+
 test('hash generator computes all 8 algorithms live, HMAC with a secret', async ({ page }) => {
 	await page.goto('/security/hash-generator/');
 

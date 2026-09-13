@@ -869,11 +869,11 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 	},
 	'daily/timezone-converter': {
 		about: [
-			'Convert any moment between two zones and read it across 12 world cities in one table — meeting planning, on-call handoffs, flight sanity checks. DST transitions are handled by the browser\u2019s own IANA tz database, so the same converter is correct in every country and every hemisphere.',
+			'Convert any moment between two zones and read it across 36 world cities in one table — meeting planning, on-call handoffs, flight sanity checks. DST transitions are handled by the browser\u2019s own IANA tz database, so the same converter is correct in every country and every hemisphere.',
 			'The world-clock table doubles as the "is that hour civilized there" check: the weekday travels with the date across the midnight line.',
 		],
 		aboutZh: [
-			'在任意两个时区间转换一个时刻，并在一张表里读出全球 12 个城市的时间——排会议、交接班、核对航班都合适。夏令时切换由浏览器内置的 IANA 时区数据库处理，任何国家、任何半球都正确。',
+			'在任意两个时区间转换一个时刻，并在一张表里读出全球 36 个城市的时间——排会议、交接班、核对航班都合适。夏令时切换由浏览器内置的 IANA 时区数据库处理，任何国家、任何半球都正确。',
 			'世界时钟表格还能顺手回答"那个点当地方不方便"：星期几会跟着日期一起跨过午夜线。',
 		],
 		faq: [
