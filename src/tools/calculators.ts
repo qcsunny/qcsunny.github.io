@@ -459,6 +459,94 @@ const ratio: FormConfig = {
 };
 
 
+// --- pi calculator (Machin formula + Binary Splitting BigInt) --------
+async function computePiMachin(
+	digits: number,
+	onProgress?: import('./registry').ProgressCallback,
+): Promise<{ piStr: string; elapsedMs: number }> {
+	const t0 = typeof performance !== 'undefined' ? performance.now() : Date.now();
+
+	const extra = 10;
+	const totalDigits = digits + extra;
+
+	const terms5 = Math.ceil((totalDigits * 2.302585) / (2 * Math.log(5))) + 5;
+	const terms239 = Math.ceil((totalDigits * 2.302585) / (2 * Math.log(239))) + 5;
+	const totalTerms = terms5 + terms239;
+	let completedTerms = 0;
+	let lastYield = Date.now();
+
+	// Binary Splitting arctangent computation: computes T, Q such that sum = T / Q
+	async function bsArccot(xVal: bigint, nTerms: number): Promise<{ P: bigint; Q: bigint; T: bigint }> {
+		const xSq = xVal * xVal;
+
+		async function bs(a: number, b: number): Promise<{ P: bigint; Q: bigint; T: bigint }> {
+			if (b - a === 1) {
+				completedTerms++;
+				const now = Date.now();
+				if (onProgress && digits >= 5000 && now - lastYield > 80) {
+					lastYield = now;
+					const pct = Math.floor((completedTerms / totalTerms) * 85);
+					onProgress(
+						pct,
+						`Computing Machin series (${completedTerms.toLocaleString()} / ${totalTerms.toLocaleString()} terms)...`,
+						`正在计算梅钦级数（${completedTerms.toLocaleString()} / ${totalTerms.toLocaleString()} 项）...`,
+					);
+					await new Promise((r) => setTimeout(r, 0));
+				}
+				const k = BigInt(a);
+				const p = a % 2 === 0 ? 1n : -1n;
+				const q = (2n * k + 1n) * (a === 0 ? xVal : xSq);
+				return { P: p, Q: q, T: p };
+			}
+			const mid = (a + b) >> 1;
+			const left = await bs(a, mid);
+			const right = await bs(mid, b);
+			return {
+				P: left.P * right.P,
+				Q: left.Q * right.Q,
+				T: left.T * right.Q + left.P * right.T,
+			};
+		}
+
+		return bs(0, nTerms);
+	}
+
+	if (onProgress && digits >= 5000) {
+		onProgress(0, 'Initializing BigInt Binary Splitting tree...', '正在初始化 BigInt 分治二进制拆分树...');
+	}
+
+	const res5 = await bsArccot(5n, terms5);
+	const res239 = await bsArccot(239n, terms239);
+
+	if (onProgress && digits >= 5000) {
+		onProgress(88, 'Scaling BigInt result & performing division...', '正在进行高精度除法与位移展开...');
+		await new Promise((r) => setTimeout(r, 0));
+	}
+
+	const unity = 10n ** BigInt(totalDigits);
+	const arc5 = (res5.T * unity) / res5.Q;
+	const arc239 = (res239.T * unity) / res239.Q;
+
+	if (onProgress && digits >= 5000) {
+		onProgress(96, 'Formatting Pi string output...', '正在格式化圆周率结果...');
+		await new Promise((r) => setTimeout(r, 0));
+	}
+
+	const piScaled = 16n * arc5 - 4n * arc239;
+	const piInt = piScaled / 10n ** BigInt(extra);
+	const rawStr = piInt.toString();
+	const result = rawStr[0] + '.' + rawStr.slice(1, digits + 1);
+
+	const t1 = typeof performance !== 'undefined' ? performance.now() : Date.now();
+	const elapsedMs = Math.max(0.1, t1 - t0);
+
+	if (onProgress && digits >= 5000) {
+		onProgress(100, 'Done!', '计算完成！');
+	}
+
+	return { piStr: result, elapsedMs };
+}
+
 // --- Helper: BigInt Square Root (Newton-Raphson) ---
 function bigintSqrt(value: bigint): bigint {
 	if (value < 0n) throw new Error('Square root of negative number');
