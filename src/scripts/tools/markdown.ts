@@ -534,13 +534,9 @@ let katexLoad: Promise<typeof import('katex')> | null = null;
 
 function loadKatex() {
 	if (!katexLoad) {
-		if (!document.querySelector('link[data-katex]')) {
-			const link = document.createElement('link');
-			link.rel = 'stylesheet';
-			link.href = katexCssHref;
-			link.dataset.katex = '';
-			document.head.append(link);
-		}
+		// The page injects <link data-katex> at build time (BlogPost.astro for
+		// posts, text/[slug].astro for the markdown-preview tool); no runtime
+		// stylesheet loading needed here.
 		katexLoad = import('katex');
 	}
 	return katexLoad;

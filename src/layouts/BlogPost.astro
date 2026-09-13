@@ -148,7 +148,7 @@ const jsonLd = {
 			   ?url import hands back the hashed, immutably-cached emitted file;
 			   hasMath keeps the posts without formulas from loading it. */
 		}
-		{hasMath && <link rel="stylesheet" href={katexHref} />}
+		{hasMath && <link rel="stylesheet" href={katexHref} data-katex />}
 		<style>
 			main {
 				/* 1140px total container, centred — the GitHub-code-page shape:
