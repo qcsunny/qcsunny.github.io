@@ -74,20 +74,7 @@ End of post.`;
 		const mermaidCode = fs.readFileSync(mermaidDist, 'utf8');
 
 		const { chromium } = await import('@playwright/test');
-		const cacheBase = path.join(process.env.HOME || '', '.cache/ms-playwright');
-		let executablePath: string | undefined;
-		if (fs.existsSync(cacheBase)) {
-			const entries = fs.readdirSync(cacheBase);
-			for (const entry of entries) {
-				const cand1 = path.join(cacheBase, entry, 'chrome-linux64/chrome');
-				if (fs.existsSync(cand1)) { executablePath = cand1; break; }
-				const cand2 = path.join(cacheBase, entry, 'chrome-headless-shell-linux64/chrome-headless-shell');
-				if (fs.existsSync(cand2)) { executablePath = cand2; break; }
-			}
-		}
-
 		const browser = await chromium.launch({
-			...(executablePath ? { executablePath } : {}),
 			args: ['--no-sandbox', '--disable-setuid-sandbox', '--headless=new'],
 		});
 		const page = await browser.newPage();

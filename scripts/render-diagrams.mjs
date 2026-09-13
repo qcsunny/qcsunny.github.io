@@ -56,23 +56,9 @@ export async function renderAllDiagrams() {
 	}
 	const mermaidCode = fs.readFileSync(mermaidDist, 'utf8');
 
-	/** @type {string | undefined} */
-	let executablePath = undefined;
-	const cacheBase = path.join(process.env.HOME || '', '.cache/ms-playwright');
-	if (fs.existsSync(cacheBase)) {
-		const entries = fs.readdirSync(cacheBase);
-		for (const entry of entries) {
-			const cand1 = path.join(cacheBase, entry, 'chrome-linux64/chrome');
-			if (fs.existsSync(cand1)) { executablePath = cand1; break; }
-			const cand2 = path.join(cacheBase, entry, 'chrome-headless-shell-linux64/chrome-headless-shell');
-			if (fs.existsSync(cand2)) { executablePath = cand2; break; }
-		}
-	}
-
 	let browser;
 	try {
 		browser = await chromium.launch({
-			...(executablePath ? { executablePath } : {}),
 			args: ['--no-sandbox', '--disable-setuid-sandbox', '--headless=new'],
 		});
 	} catch (err) {
