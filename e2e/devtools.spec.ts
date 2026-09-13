@@ -337,3 +337,86 @@ test('cron parser drops the local column when the time zone is UTC', async ({ pa
 	await page.locator('#t-f-tz').selectOption('UTC');
 	await expect(page.locator('.t-table thead th')).toHaveCount(2);
 });
+
+// The yaml and toml parsers are hand-written, so the regressions that matter
+// are the silent ones: a `|` block scalar quietly surviving as a string (its
+// whole point being to NOT be a string), or `k = 1__000` quietly parsing to a
+// number. Both used to happen. These two tests pin the error path first, then
+// the cases where the parser is supposed to accept.
+test('yaml formatter rejects block scalars instead of turning them into strings', async ({ page }) => {
+	await page.goto('/devtools/yaml-formatter/');
+	const input = page.locator('[data-role="input"]');
+	const output = page.locator('[data-role="output"]');
+	const fmt = () => page.getByRole('button', { name: /Format \/ Validate|格式化 \/ 校验/ }).click();
+
+	// A literal block scalar is the one YAML feature the parser cannot emit, so
+	// it must say so. Before the fix it came back as a formatted document with a
+	// "null"-ish body — indistinguishable from success.
+	await input.fill('text: |');
+	await fmt();
+	await expect(output).toHaveValue('');
+	await expect(page.locator('.t-error')).toContainText(/block scalars/);
+
+	// The rejection is positional, not a blanket ban on the character: inside a
+	// flow collection `|` is an ordinary plain scalar, and the parser has to
+	// keep it there rather than over-correcting.
+	await input.fill('a: [|]');
+	await fmt();
+	await expect(page.locator('.t-error')).toHaveText(''); // the banner cleared
+	await expect(output).not.toHaveValue('');
+	await page.getByRole('button', { name: /YAML → JSON/ }).click();
+	await expect(output).toHaveValue(/"a":\s*\[\s*"\|"/);
+});
+
+test('toml formatter enforces the integer grammar, then the numeric bounds', async ({ page }) => {
+	await page.goto('/devtools/toml-formatter/');
+	const input = page.locator('[data-role="input"]');
+	const output = page.locator('[data-role="output"]');
+	const fmt = () => page.getByRole('button', { name: /Format \/ Validate|格式化 \/ 校验/ }).click();
+	const err = () => page.locator('.t-error');
+
+	// Underscores are grouping syntax and may only sit BETWEEN two digits; each
+	// of these used to parse to a plausible-looking number.
+	for (const [raw, re] of [
+		['k = 1__000', /underscores may only separate two digits/],
+		['k = 100_', /underscores may only separate two digits/],
+		['k = 0x1A_', /underscores may only separate two digits/],
+		['k = 1e1_0', /underscores are not allowed in an exponent/],
+		['k = 007', /decimal integers may not start with a zero/],
+	] as [string, RegExp][]) {
+		await input.fill(raw);
+		await fmt();
+		await expect(output).toHaveValue('');
+		await expect(err()).toContainText(re);
+	}
+
+	// Two different walls, in the order a user hits them. 2^53 is a JS number
+	// limit; the 64-bit range is TOML's own. -2^63 is legal TOML, so the parser
+	// must not reject it as out of range — it fails the narrower JS check first.
+	await input.fill('k = 9007199254740992');
+	await fmt();
+	await expect(err()).toContainText(/exceeds 2\^53/);
+	await input.fill('k = -9223372036854775808');
+	await fmt();
+	await expect(err()).toContainText(/exceeds 2\^53/);
+	await input.fill('k = 9223372036854775808');
+	await fmt();
+	await expect(err()).toContainText(/signed 64-bit range/);
+
+	// The bases themselves: 0x1A is 26, not 10, and not an error. The old code
+	// fed every literal to BigInt as decimal, so 0x1A threw and 0b101 came back
+	// as 101.
+	await input.fill('a = 0x1A\nb = 0b101\nc = 0o77\nd = 0xFF_FF');
+	await page.getByRole('button', { name: /TOML → JSON/ }).click();
+	const json = await output.inputValue();
+	expect(JSON.parse(json)).toEqual({ a: 26, b: 5, c: 63, d: 65535 });
+
+	// Above 2^53 the JSON emitter keeps the VALUE and gives up the TYPE: it
+	// emits a float literal (TOML requires a dot or exponent), which this
+	// parser reads back unchanged. Throwing here instead would discard data the
+	// user asked us to keep.
+	await input.fill('{"a": 9007199254740992, "d": 42}');
+	await page.getByRole('button', { name: /JSON → TOML/ }).click();
+	await expect(output).toHaveValue(/a = 9007199254740992\.0/);
+	await expect(output).toHaveValue(/d = 42/);
+});

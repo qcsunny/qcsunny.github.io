@@ -3653,7 +3653,20 @@ export const COLOR_TEXT_TOOLS: ToolEntry[] = [
 				const l1 = lum(fg);
 				const l2 = lum(bg);
 				const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
-				const r = Math.round(ratio * 100) / 100;
+				// The verdicts below compare the UNROUNDED ratio, so the number
+				// printed beside them must not round across a threshold the row
+				// is judging against — otherwise the screen reads "4.5:1 < 4.5:1".
+				// Two decimals is the normal answer; when they would land on a
+				// threshold this pair sits on the wrong side of, keep going.
+				const thresholds = [4.5, 3, 7];
+				let r = ratio;
+				for (let dp = 2; dp <= 6; dp++) {
+					const n = Math.round(ratio * 10 ** dp) / 10 ** dp;
+					if (!thresholds.some((need) => (ratio >= need) !== (n >= need))) {
+						r = n;
+						break;
+					}
+				}
 				const verdict = (need: number, en: string, zh: string) =>
 					ratio >= need
 						? { label: en, labelZh: zh, value: `✓ pass (${r}:1 ≥ ${need}:1)`, valueZh: `✓ 通过（${r}:1 ≥ ${need}:1）` }
@@ -3664,14 +3677,21 @@ export const COLOR_TEXT_TOOLS: ToolEntry[] = [
 				const toHex = (c: [number, number, number]): string => '#' + c.map((x) => x.toString(16).padStart(2, '0')).join('');
 				const fgHex = toHex(fg);
 				const bgHex = toHex(bg);
+				// role="img" makes the SVG a leaf: the sample lines inside are
+				// invisible to a screen reader, so the <title> carries the whole
+				// point — the pair, the ratio, and what each line demonstrates.
+				// It is paired the same way as the <text> elements, because
+				// display:none prunes a <title> from the a11y tree too.
 				const svg =
 					`<svg viewBox="0 0 560 190" xmlns="http://www.w3.org/2000/svg" role="img">` +
+					`<title class="i18n-en">Contrast preview of ${fgHex} on ${bgHex}, ratio ${r}:1. The top line is 24px bold, the 3:1 large-text case; the bottom line is 16px, the 4.5:1 case.</title>` +
+					`<title class="i18n-zh">对比度预览：${fgHex} 在 ${bgHex} 上，比值 ${r}:1。上行为 24px 粗体（3:1 大字号情形），下行为 16px（4.5:1 正文情形）。</title>` +
 					`<rect x="0" y="0" width="560" height="190" rx="12" fill="${bgHex}"/>` +
-					`<text x="280" y="78" text-anchor="middle" font-size="30" font-weight="700" fill="${fgHex}" class="i18n-en">Large 24px bold text</text>` +
-					`<text x="280" y="78" text-anchor="middle" font-size="30" font-weight="700" fill="${fgHex}" class="i18n-zh">大字号文本 24px 粗体</text>` +
-					`<text x="280" y="128" text-anchor="middle" font-size="16" fill="${fgHex}" class="i18n-en">Normal 16px text — the 4.5:1 case</text>` +
-					`<text x="280" y="128" text-anchor="middle" font-size="16" fill="${fgHex}" class="i18n-zh">正文 16px——4.5:1 的情形</text>` +
-					`<text x="280" y="165" text-anchor="middle" font-size="13" font-family="var(--font-mono, monospace)" fill="${fgHex}">${fgHex} on ${bgHex} · ${r}:1</text>` +
+					`<text x="280" y="72" text-anchor="middle" font-size="24" font-weight="700" fill="${fgHex}" class="i18n-en">Large 24px bold text</text>` +
+					`<text x="280" y="72" text-anchor="middle" font-size="24" font-weight="700" fill="${fgHex}" class="i18n-zh">大字号文本 24px 粗体</text>` +
+					`<text x="280" y="122" text-anchor="middle" font-size="16" fill="${fgHex}" class="i18n-en">Normal 16px text — the 4.5:1 case</text>` +
+					`<text x="280" y="122" text-anchor="middle" font-size="16" fill="${fgHex}" class="i18n-zh">正文 16px——4.5:1 的情形</text>` +
+					`<text x="280" y="160" text-anchor="middle" font-size="13" font-family="var(--font-mono, monospace)" fill="${fgHex}">${fgHex} on ${bgHex} · ${r}:1</text>` +
 					`</svg>`;
 				return {
 					rows: [

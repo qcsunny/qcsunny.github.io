@@ -8,6 +8,17 @@
 //   and inline tables { k = v }.
 // It deliberately does NOT support DTDs or anything XML-adjacent — TOML has none.
 // Every malformed construct produces a precise error rather than a guess.
+//
+// Two integer traps worth knowing about, both of which used to slip through:
+//   * TOML 1.0 permits underscores only strictly between two digits, so
+//     `1__000` and `100_` are INVALID; this parser used to read them as 1000
+//     and 100, silently accepting a file no other TOML tool would read.
+//   * TOML integers are 64-bit, JS numbers are exact to 2^53. A value in
+//     between is legal TOML that this tool cannot hold, so it is refused
+//     instead of being rounded into a plausible-looking wrong number.
+//   * The emitter emits only integers inside 2^53 as integers, so its output
+//     is always readable again by the parser above; a larger integer-valued
+//     number keeps its value and comes out as a float literal instead.
 
 export interface TomlError {
 	error: string;
@@ -187,6 +198,81 @@ const DATETIME_RE =
 	/^\d{4}-\d{2}-\d{2}([Tt ]\d{2}:\d{2}:\d{2}(\.\d+)?([Zz]|[+-]\d{2}:\d{2})?)?$/;
 const LOCAL_TIME_RE = /^\d{2}:\d{2}:\d{2}(\.\d+)?$/;
 
+// --- integer literals ------------------------------------------------------------------
+/** Underscores sit strictly between two digits: `1_000` ok, `1__000` / `100_` no.
+ *  The same regex also doubles as a "only legal characters" check. */
+const DIGIT_RUN: Record<number, RegExp> = {
+	16: /^[0-9a-fA-F]+(?:_[0-9a-fA-F]+)*$/,
+	8: /^[0-7]+(?:_[0-7]+)*$/,
+	2: /^[01]+(?:_[01]+)*$/,
+	10: /^[0-9]+(?:_[0-9]+)*$/,
+};
+const DIGIT_CLASS: Record<number, string> = { 16: '0-9a-fA-F', 8: '0-7', 2: '01', 10: '0-9' };
+
+/** Two different failures deserve two different messages: a character that may
+ *  never appear here, versus a well-formed digit run with a misplaced `_`. */
+function badDigitMessage(part: string, kind: 'integer' | 'float', base: number, raw: string): string {
+	const shown = raw.slice(0, 30);
+	if (!part) return `invalid ${kind} "${shown}" — a dot needs digits on both sides`;
+	if (part.startsWith('_') || part.endsWith('_') || part.includes('__')) {
+		return `invalid ${kind} "${shown}" — underscores may only separate two digits`;
+	}
+	const odd = [...part].find((c) => new RegExp(`[^_${DIGIT_CLASS[base]!}]`).test(c));
+	if (odd !== undefined) return `invalid ${kind} "${shown}" — unexpected character "${odd}"`;
+	return `invalid ${kind} "${shown}" — underscores may only separate two digits`;
+}
+
+/** Check a float's integer and fractional parts (underscores allowed there). */
+function assertUnderscores(mant: string, raw: string): void {
+	for (const part of mant.replace(/^[+-]/, '').split('.')) {
+		if (!DIGIT_RUN[10]!.test(part)) throw new Error(badDigitMessage(part, 'float', 10, raw));
+	}
+}
+
+/** Exponent parts carry no underscores at all: `1e1_0` is not TOML. */
+function assertNoUnderscore(exp: string, raw: string): void {
+	if (exp.includes('_')) {
+		throw new Error(`invalid float "${raw.slice(0, 30)}" — underscores are not allowed in an exponent`);
+	}
+}
+
+/**
+ * Validate and convert a TOML integer literal.
+ *
+ * TOML integers are signed 64-bit; a JS `Number` is exact only inside 2^53, so
+ * both failures used to be silent — and they collapsed onto the same answer:
+ *   `9223372036854775808`  (2^63, INVALID TOML)  → 9223372036854776000
+ *   `9223372036854775807`  (2^63 − 1, valid TOML) → 9223372036854776000
+ * A legal file and an illegal one mapping to one wrong number is not a parser.
+ */
+function parseTomlInt(raw: string, base: 10 | 16 | 8 | 2): number {
+	const sign = raw[0] === '+' || raw[0] === '-' ? raw[0] : '';
+	const body = raw.slice(sign.length).replace(/^0[xob]/, '');
+	if (!DIGIT_RUN[base]!.test(body)) throw new Error(badDigitMessage(body, 'integer', base, raw));
+	// Base 10 only: `007` is not a TOML integer (0x01 is).
+	if (base === 10 && body.length > 1 && body.startsWith('0')) {
+		throw new Error(`invalid integer "${raw.slice(0, 30)}" — decimal integers may not start with a zero`);
+	}
+	// BigInt is told the radix, and the sign is kept out of the literal:
+	// `0x1A` is 26, `0b101` is 5, and `BigInt("-0x10")` is a SyntaxError.
+	const prefix = base === 16 ? '0x' : base === 8 ? '0o' : base === 2 ? '0b' : '';
+	const mag = BigInt(prefix + body.replace(/_/g, ''));
+	const negative = sign === '-';
+	const value = negative ? -mag : mag;
+	// The negative bound is one wider: −2^63 is a legal TOML integer.
+	const maxAbs = negative ? 9223372036854775808n : 9223372036854775807n;
+	if (mag > maxAbs) {
+		throw new Error(`integer "${raw.slice(0, 30)}" is outside TOML's signed 64-bit range (−9223372036854775808 … 9223372036854775807)`);
+	}
+	const n = Number(value);
+	if (!Number.isSafeInteger(n)) {
+		throw new Error(
+			`integer "${raw.slice(0, 30)}" is valid TOML but exceeds 2^53 − 1, the largest integer a JS number can hold exactly — quote it as a string instead`,
+		);
+	}
+	return n;
+}
+
 function parseValue(raw: string): unknown {
 	const s = raw.trim();
 	if (s === '') throw new Error('missing value after "="');
@@ -205,11 +291,23 @@ function parseValue(raw: string): unknown {
 	if (DATETIME_RE.test(s) || LOCAL_TIME_RE.test(s)) return s; // kept as string
 	if (/^[+-]?inf$/.test(s)) return s.startsWith('-') ? -Infinity : Infinity;
 	if (/^[+-]?nan$/.test(s)) return NaN;
-	if (/^0x[0-9a-fA-F_]+$/.test(s)) return parseInt(s.replace(/_/g, ''), 16);
-	if (/^0o[0-7_]+$/.test(s)) return parseInt(s.slice(2).replace(/_/g, ''), 8);
-	if (/^0b[01_]+$/.test(s)) return parseInt(s.slice(2).replace(/_/g, ''), 2);
-	if (/^[+-]?[0-9][0-9_]*$/.test(s)) return parseInt(s.replace(/_/g, ''), 10);
-	if (/^[+-]?[0-9][0-9_]*\.[0-9_]*([eE][+-]?[0-9_]+)?$/.test(s) || /^[+-]?[0-9][0-9_]*[eE][+-]?[0-9_]+$/.test(s)) {
+	if (/^[+-]?0x[0-9a-fA-F]/.test(s)) return parseTomlInt(s, 16);
+	if (/^[+-]?0o[0-7]/.test(s)) return parseTomlInt(s, 8);
+	if (/^[+-]?0b[01]/.test(s)) return parseTomlInt(s, 2);
+	if (/^[+-]?[0-9]/.test(s) && !/[.eE]/.test(s)) return parseTomlInt(s, 10);
+	// Underscores are legal in a float's integer and fractional parts and
+	// forbidden in its exponent: `1_0.5_0` ok, `1e1_0` not TOML.
+	if (/^[+-]?[0-9][0-9_]*\.[0-9_]*([eE][+-]?[0-9_]+)?$/.test(s)) {
+		const i = s.search(/[eE]/);
+		const mant = i === -1 ? s : s.slice(0, i);
+		assertUnderscores(mant, s);
+		if (i !== -1) assertNoUnderscore(s.slice(i + 1).replace(/^[+-]/, ''), s);
+		return Number(s.replace(/_/g, ''));
+	}
+	if (/^[+-]?[0-9][0-9_]*[eE][+-]?[0-9_]+$/.test(s)) {
+		const i = s.search(/[eE]/);
+		assertUnderscores(s.slice(0, i), s);
+		assertNoUnderscore(s.slice(i + 1).replace(/^[+-]/, ''), s);
 		return Number(s.replace(/_/g, ''));
 	}
 	// TOML has no bare strings — this is the classic YAML-habit error.
@@ -402,6 +500,21 @@ function emitString(s: string): string {
 	return JSON.stringify(s);
 }
 
+/**
+ * Write a JS number so that this parser reads it back unchanged.
+ *
+ * Only integers inside 2^53 come out as TOML integers — those are exactly the
+ * integers parseTomlInt accepts, so emitted output is always readable again.
+ * A larger integer-valued number keeps its value and gives up only its type:
+ * a TOML float literal, which must carry a dot or an exponent, and String()
+ * supplies one only from 1e21 upward, so 2^53 needs a `.0` bolted on.
+ */
+function tomlNumber(v: number): string {
+	if (Number.isSafeInteger(v)) return String(v);
+	const s = String(v);
+	return /[.eE]/.test(s) ? s : `${s}.0`;
+}
+
 function emitScalar(v: unknown): string {
 	if (typeof v === 'string') return emitString(v);
 	if (v === null) throw new Error('TOML has no null value (drop the key instead)');
@@ -409,7 +522,7 @@ function emitScalar(v: unknown): string {
 		if (Number.isNaN(v)) return 'nan';
 		if (v === Infinity) return 'inf';
 		if (v === -Infinity) return '-inf';
-		return String(v);
+		return tomlNumber(v);
 	}
 	if (typeof v === 'boolean') return String(v);
 	return JSON.stringify(v); // best effort for anything exotic

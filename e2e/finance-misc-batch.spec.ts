@@ -70,6 +70,18 @@ test('wcag contrast: 4.54 with pass and fail verdicts', async ({ page }) => {
 	await expect(results).toContainText('4.54'); // #767676 on #ffffff
 	await expect(results).toContainText('✓'); // AA normal passes
 	await expect(results).toContainText('✗'); // AAA normal fails
+	// All five requirements, not three: the UI-components/focus row was added
+	// last and would silently vanish.
+	await expect(results).toContainText(/UI components & focus indicators|界面组件与焦点指示/);
+
+	// The verdict compares the UNROUNDED ratio against 4.5, so the printed value
+	// must not round across a threshold. #006ffb on white is 4.4999…:1 — before
+	// the adaptive-precision fix the ratio cell read "4.50:1" and the AA row read
+	// "4.5:1 < 4.5:1", a screen full of self-contradiction.
+	await page.locator('#t-f-fg').fill('#006ffb');
+	await expect(results).toContainText('4.4999:1');
+	await expect(results).toContainText('4.4999:1 < 4.5:1');
+	await expect(results).not.toContainText('4.50:1');
 });
 
 test('color palette renders swatches', async ({ page }) => {
