@@ -516,6 +516,35 @@ const jsonLd = {
 					return el;
 				};
 
+				const LANG_MAP = {
+					ts: 'TypeScript',
+					typescript: 'TypeScript',
+					js: 'JavaScript',
+					javascript: 'JavaScript',
+					py: 'Python',
+					python: 'Python',
+					rs: 'Rust',
+					rust: 'Rust',
+					html: 'HTML',
+					css: 'CSS',
+					json: 'JSON',
+					sql: 'SQL',
+					bash: 'Bash',
+					sh: 'Bash',
+					zsh: 'Zsh',
+					shell: 'Shell',
+					yaml: 'YAML',
+					yml: 'YAML',
+					xml: 'XML',
+					c: 'C',
+					cpp: 'C++',
+					java: 'Java',
+					go: 'Go',
+					markdown: 'Markdown',
+					md: 'Markdown',
+					wasm: 'WebAssembly',
+				};
+
 				document.querySelectorAll('.prose pre').forEach((pre) => {
 					if (pre.parentElement && pre.parentElement.classList.contains('code-block')) return;
 
@@ -523,6 +552,18 @@ const jsonLd = {
 					wrap.className = 'code-block';
 					pre.replaceWith(wrap);
 					wrap.appendChild(pre);
+
+					const header = document.createElement('div');
+					header.className = 'code-header';
+
+					const rawLang = pre.getAttribute('data-language') || '';
+					const lang = rawLang.trim().toLowerCase();
+					if (lang && lang !== 'plaintext' && lang !== 'text') {
+						const langBadge = document.createElement('span');
+						langBadge.className = 'code-lang';
+						langBadge.textContent = LANG_MAP[lang] || lang.toUpperCase();
+						header.appendChild(langBadge);
+					}
 
 					const label = pair('code-copy-label', 'Copy', '复制');
 					const done = pair('code-copy-done', 'Copied ✓', '已复制 ✓');
@@ -532,7 +573,9 @@ const jsonLd = {
 					btn.type = 'button';
 					btn.className = 'code-copy';
 					btn.append(label, done);
-					wrap.appendChild(btn);
+					header.appendChild(btn);
+
+					wrap.appendChild(header);
 
 					let timer = 0;
 					btn.addEventListener('click', async () => {
