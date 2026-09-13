@@ -67,6 +67,31 @@ const ogImageURL = new URL(typeof image === 'string' ? image : image.src, Astro.
 		const lang = localStorage.getItem('site:lang') || (navigator.language.startsWith('zh') ? 'zh' : 'en');
 		document.documentElement.dataset.lang = lang;
 		document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+
+		try {
+			if (typeof Uint8Array !== 'undefined') {
+				if (!Uint8Array.prototype.toHex) {
+					Uint8Array.prototype.toHex = function () {
+						let s = '';
+						for (let i = 0; i < this.length; i++) s += this[i].toString(16).padStart(2, '0');
+						return s;
+					};
+				}
+				if (!Uint8Array.prototype.tohex) Uint8Array.prototype.tohex = Uint8Array.prototype.toHex;
+			}
+			if (typeof Number !== 'undefined') {
+				if (!Number.prototype.toHex) {
+					Number.prototype.toHex = function (pad = 0) { return this.toString(16).padStart(pad, '0'); };
+				}
+				if (!Number.prototype.tohex) Number.prototype.tohex = Number.prototype.toHex;
+			}
+			if (typeof BigInt !== 'undefined') {
+				if (!BigInt.prototype.toHex) {
+					BigInt.prototype.toHex = function (pad = 0) { return this.toString(16).padStart(pad, '0'); };
+				}
+				if (!BigInt.prototype.tohex) BigInt.prototype.tohex = BigInt.prototype.toHex;
+			}
+		} catch (e) {}
 	})();
 </script>
 {SEARCH_CONSOLE_VERIFICATION && (
