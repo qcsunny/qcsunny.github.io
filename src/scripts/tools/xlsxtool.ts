@@ -171,6 +171,14 @@ export async function cleanWorkbook(data: ArrayBuffer, opts: CleanOptions): Prom
 			// Remove externalLink parts from zip
 			const extFiles = zip.file(/^xl\/externalLinks\//i) ?? [];
 			extFiles.forEach((f) => zip.remove(f.name));
+
+			// Remove externalLink parts from [Content_Types].xml to prevent Excel "missing part" corruption
+			const ctFile = zip.file('[Content_Types].xml');
+			if (ctFile) {
+				let ctXml = await ctFile.async('string');
+				ctXml = ctXml.replace(/<Override\b[^>]*PartName="\/xl\/externalLinks\/[^"]*"[^>]*\/>/gi, '');
+				zip.file('[Content_Types].xml', ctXml);
+			}
 		}
 
 		if (opts.removeHiddenNames || opts.removeExternalNames) {
@@ -192,9 +200,12 @@ export async function cleanWorkbook(data: ArrayBuffer, opts: CleanOptions): Prom
 							lowerName.startsWith('print_area') ||
 							lowerName.startsWith('print_titles') ||
 							lowerName.startsWith('consolidate_area') ||
-							lowerName.startsWith('extract_data');
+							lowerName.startsWith('extract_data') ||
+							lowerName.startsWith('sheet_title');
 
-						if (opts.removeHiddenNames && isHidden && !isSystem) {
+						if (isSystem) return true;
+
+						if (opts.removeHiddenNames && isHidden) {
 							removedNames++;
 							return false;
 						}
@@ -221,6 +232,7 @@ export async function cleanWorkbook(data: ArrayBuffer, opts: CleanOptions): Prom
 		for (const f of sheets) {
 			const xml = await f.async('string');
 			for (const s of xml.matchAll(/\bs="(\d+)"/g)) used.add(s[1]!);
+			for (const s of xml.matchAll(/\bstyle="(\d+)"/g)) used.add(s[1]!);
 		}
 		if (stylesFile) {
 			const stylesXml = await stylesFile.async('string');
@@ -244,7 +256,7 @@ export async function cleanWorkbook(data: ArrayBuffer, opts: CleanOptions): Prom
 				});
 				removedStyles = xfs.length - keep.length;
 
-				// Remap worksheet cell style attributes using single-pass regex replacement
+				// Remap worksheet cell & column style attributes using single-pass regex replacement
 				void remapSheetStyles(zip, remap);
 
 				const keptXml = keep.map((i) => xfs[i]).join('');
@@ -255,8 +267,33 @@ export async function cleanWorkbook(data: ArrayBuffer, opts: CleanOptions): Prom
 	}
 
 	if (opts.removeMedia) {
+		// 1. Remove physical media files from zip
 		const media = zip.file(/^xl\/media\//i) ?? [];
 		media.forEach((f) => zip.remove(f.name));
+
+		// 2. Remove media relationships from drawings to avoid dangling target corruption
+		const drawRels = zip.file(/^xl\/drawings\/_rels\/.*\.rels$/i) ?? [];
+		for (const r of drawRels) {
+			let relsXml = await r.async('string');
+			relsXml = relsXml.replace(/<Relationship\b[^>]*Target="(?:\.\.\/)?media\/[^"]*"[^>]*\/>/gi, '');
+			zip.file(r.name, relsXml);
+		}
+
+		// 3. Remove drawing anchors embedding blip images from drawings XML
+		const drawFiles = zip.file(/^xl\/drawings\/drawing\d+\.xml$/i) ?? [];
+		for (const df of drawFiles) {
+			let dXml = await df.async('string');
+			dXml = dXml.replace(/<xdr:(?:twoCellAnchor|oneCellAnchor|absoluteAnchor)\b[^>]*>[\s\S]*?<a:blip\b[\s\S]*?<\/xdr:(?:twoCellAnchor|oneCellAnchor|absoluteAnchor)>/gi, '');
+			zip.file(df.name, dXml);
+		}
+
+		// 4. Remove media overrides from [Content_Types].xml
+		const ctFile = zip.file('[Content_Types].xml');
+		if (ctFile) {
+			let ctXml = await ctFile.async('string');
+			ctXml = ctXml.replace(/<Override\b[^>]*PartName="\/xl\/media\/[^"]*"[^>]*\/>/gi, '');
+			zip.file('[Content_Types].xml', ctXml);
+		}
 	}
 
 	const blob = await zip.generateAsync({
@@ -268,7 +305,7 @@ export async function cleanWorkbook(data: ArrayBuffer, opts: CleanOptions): Prom
 	return { blob, removedStyles, removedNames };
 }
 
-/** Remap s="old" → s="new" in every sheet after cellXfs collapse in a single pass. */
+/** Remap s="old" and style="old" in every sheet after cellXfs collapse in a single pass. */
 async function remapSheetStyles(zip: JSZip, remap: Map<string, string>): Promise<void> {
 	const sheets = zip.file(/^xl\/worksheets\/.*\.xml$/i) ?? [];
 	for (const f of sheets) {
@@ -276,6 +313,10 @@ async function remapSheetStyles(zip: JSZip, remap: Map<string, string>): Promise
 		xml = xml.replace(/\bs="(\d+)"/g, (match, oldId: string) => {
 			const newId = remap.get(oldId);
 			return newId !== undefined ? `s="${newId}"` : match;
+		});
+		xml = xml.replace(/\bstyle="(\d+)"/g, (match, oldId: string) => {
+			const newId = remap.get(oldId);
+			return newId !== undefined ? `style="${newId}"` : match;
 		});
 		zip.file(f.name, xml);
 	}

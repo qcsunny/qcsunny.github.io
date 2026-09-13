@@ -41,6 +41,7 @@ interface Props {
 const { title, titleZh, description, entry, category, redirectTo } = Astro.props;
 const kind = entry?.kind;
 const crumbName = entry ? entry.name : title;
+const isFullWidth = entry?.slug === 'markdown-preview';
 // The hub at /tools/ renders itself as the breadcrumb's leading link — "工具库 ›
 // 工具库" — because the prefix anchor always points at /tools/. When the current
 // page IS that hub, drop the self-linking prefix and keep only the current crumb.
@@ -366,6 +367,14 @@ const year = new Date().getFullYear();
 				width: min(var(--w-shell), 100% - 2em);
 				margin: 0 auto;
 				padding: 1.75em 0 3.5em;
+			}
+			.t-topbar.t-topbar-full .t-topbar-inner {
+				width: calc(100% - 2em);
+				max-width: none;
+			}
+			.t-main.t-main-full {
+				width: calc(100% - 2em);
+				max-width: none;
 			}
 			/* global.css colors every h1 near-black — override explicitly */
 			.t-title {
@@ -2010,7 +2019,7 @@ const year = new Date().getFullYear();
 }
 .t-md-textarea {
 	width: 100%;
-	height: 560px;
+	height: max(560px, calc(100vh - 280px));
 	box-sizing: border-box;
 	font-family: var(--font-mono);
 	font-size: 0.92rem;
@@ -2030,7 +2039,7 @@ const year = new Date().getFullYear();
 }
 .t-md-preview-body {
 	width: 100%;
-	height: 560px;
+	height: max(560px, calc(100vh - 280px));
 	box-sizing: border-box;
 	overflow-y: auto;
 	padding: 1.2em 1.5em;
@@ -2572,7 +2581,7 @@ const year = new Date().getFullYear();
 				</main>
 			) : (
 				<>
-					<header class="t-topbar">
+					<header class:list={['t-topbar', { 't-topbar-full': isFullWidth }]}>
 						<div class="t-topbar-inner">
 							<a class="t-site" href="/">
 								<SiteLogo size={20} />
@@ -2615,7 +2624,7 @@ const year = new Date().getFullYear();
 							</div>
 						</div>
 					</header>
-					<main class="t-main">
+					<main class:list={['t-main', { 't-main-full': isFullWidth }]}>
 						<h1 class="t-title">
 							<span class="i18n-en">{entry ? entry.name : crumbName}</span>
 							<span class="i18n-zh">{entry?.nameZh || titleZh || crumbName}</span>

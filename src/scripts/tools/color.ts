@@ -243,29 +243,9 @@ export function initColor(host: HTMLElement): void {
 
 	css.append(cssHex, cssRgb, cssHsl, cssOklch);
 
-	// --- OKLCH Gamut Card -----------------------------------------------------------
+	// --- Chromaticity & Gamut Card --------------------------------------------------
 	const gamutCard = document.createElement('div');
 	gamutCard.className = 't-gamut-card';
-
-	const gamutHeader = document.createElement('div');
-	gamutHeader.className = 't-gamut-header';
-	const gamutTitle = document.createElement('span');
-	gamutTitle.append(bilingual('OKLab / OKLCH Gamut Slice', 'OKLab / OKLCH 色域剖面'));
-	const gamutInfo = document.createElement('span');
-	gamutInfo.className = 't-gamut-info';
-	gamutHeader.append(gamutTitle, gamutInfo);
-
-	const gamutViewport = document.createElement('div');
-	gamutViewport.className = 't-gamut-viewport';
-	const gamutGl = document.createElement('canvas');
-	gamutGl.className = 't-gamut-gl';
-	gamutGl.setAttribute('aria-hidden', 'true');
-	const gamut2d = document.createElement('canvas');
-	gamut2d.className = 't-gamut-2d';
-	gamut2d.setAttribute('aria-label', 'OKLab chromaticity gamut slice');
-	gamutViewport.append(gamutGl, gamut2d);
-
-	gamutCard.append(gamutHeader, gamutViewport);
 
 	// --- WCAG contrast checker --------------------------------------------------------
 	// Two hex fields (foreground / background) over the base color's own contrast
