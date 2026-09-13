@@ -562,9 +562,14 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 				try {
 					const draft: Record<string, string> = {};
 					for (const f of config.fields) {
-			note.className = 't-note';
-			note.textContent = err instanceof Error ? err.message : 'Invalid input.';
-			host.append(note);
+						const raw = getters.get(f.id)?.();
+						if (raw !== undefined) draft[f.id] = String(raw);
+					}
+					localStorage.setItem(`tool-draft:${slug}`, JSON.stringify(draft));
+				} catch {
+					// localStorage may be disabled or quota exceeded
+				}
+			}
 		}
 	}
 
