@@ -22,11 +22,13 @@ relatedPosts: ['equation-solver-and-matrix-numeric-audit', 'complex-number-polar
 
 一个通用的线性规划问题可能包含约束条件 $\le, \ge, =$ 以及变量符号受限或无受限。要使用单纯形法求解，必须首先将其化为**标准型（Standard Form）**：
 
-$$\begin{aligned}
+$$
+\begin{aligned}
 \text{Maximize} \quad & z = \mathbf{c}^T \mathbf{x} \\
 \text{Subject to} \quad & \mathbf{A} \mathbf{x} = \mathbf{b} \\
 & \mathbf{x} \ge \mathbf{0}, \quad \mathbf{b} \ge \mathbf{0}
-\end{aligned}$$
+\end{aligned}
+$$
 
 转化规则包括：
 1. **目标函数转换**：如果是极小化问题 $\text{Minimize } z$，化为 $\text{Maximize } (-z)$；
@@ -41,7 +43,8 @@ $$\begin{aligned}
 
 假设共有 $m$ 个约束方程与 $n$ 个决策变量（包含松弛变量），且 $n > m$。单纯形表是一个 $(m+1) \times (n+1)$ 的增广矩阵：
 
-$$\begin{array}{c|cccc|c}
+$$
+\begin{array}{c|cccc|c}
 \text{基变量} & x_1 & x_2 & \dots & x_n & \text{RHS } (b) \\
 \hline
 s_1 & a_{11} & a_{12} & \dots & a_{1n} & b_1 \\
@@ -49,7 +52,8 @@ s_2 & a_{21} & a_{22} & \dots & a_{2n} & b_2 \\
 \vdots & \vdots & \vdots & \ddots & \vdots & \vdots \\
 \hline
 \text{检验数 } (\bar{c}) & c_1 & c_2 & \dots & c_n & -z
-\end{array}$$
+\end{array}
+$$
 
 ### 迭代三步法：
 1. **入基变量选择（Entering Variable）**：

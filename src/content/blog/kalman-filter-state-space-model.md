@@ -22,10 +22,12 @@ relatedPosts: ['econometrics-cross-validation-with-statsmodels', 'equation-solve
 
 一个标准的线性离散时间状态空间模型由**状态转移方程（State Equation）**与**观测方程（Measurement Equation）**共同构建：
 
-$$\begin{aligned}
+$$
+\begin{aligned}
 \mathbf{x}_k &= \mathbf{F} \mathbf{x}_{k-1} + \mathbf{B} \mathbf{u}_k + \mathbf{w}_k \quad &\text{（状态转移方程）} \\
 \mathbf{z}_k &= \mathbf{H} \mathbf{x}_k + \mathbf{v}_k \quad &\text{（观测方程）}
-\end{aligned}$$
+\end{aligned}
+$$
 
 其中：
 - $\mathbf{x}_k \in \mathbb{R}^n$：$k$ 时刻系统的隐状态向量（如 $[ \text{位置}, \text{速度} ]^T$）；
