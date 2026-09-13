@@ -280,13 +280,22 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			copyBtn.append(bilingual('📋 Copy', '📋 复制结果'));
 			copyBtn.addEventListener('click', () => {
 				const textToCopy = document.documentElement.dataset.lang === 'zh' ? row.valueZh || row.value : row.value;
-				void navigator.clipboard.writeText(textToCopy).then(() => {
-					copyBtn.textContent = document.documentElement.dataset.lang === 'zh' ? '✓ 已复制' : '✓ Copied';
-					setTimeout(() => {
-						copyBtn.innerHTML = '';
-						copyBtn.append(bilingual('📋 Copy', '📋 复制结果'));
-					}, 1500);
-				});
+				void navigator.clipboard
+					.writeText(textToCopy)
+					.then(() => {
+						copyBtn.textContent = document.documentElement.dataset.lang === 'zh' ? '✓ 已复制' : '✓ Copied';
+					})
+					.catch(() => {
+						// clipboard denied (permission / non-secure context): say so
+						// instead of an unhandled rejection and a silent no-op
+						copyBtn.textContent = document.documentElement.dataset.lang === 'zh' ? '⚠ 复制失败' : '⚠ Copy failed';
+					})
+					.finally(() => {
+						setTimeout(() => {
+							copyBtn.innerHTML = '';
+							copyBtn.append(bilingual('📋 Copy', '📋 复制结果'));
+						}, 1500);
+					});
 			});
 			header.append(copyBtn);
 		}

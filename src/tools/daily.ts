@@ -371,8 +371,10 @@ const dateConfig: FormConfig = {
 		const incl = v.bool('inclEnd');
 		const totalDays = span + (incl ? 1 : 0);
 		const { years, months, days } = calendarBreakdown(from, to);
-		const weeks = Math.floor(span / 7);
-		const remDays = span - weeks * 7;
+		// weeks/remDays must agree with totalDays, otherwise ticking inclEnd
+		// bumps 'Total days' but leaves 'Total weeks' on the unadjusted span.
+		const weeks = Math.floor(totalDays / 7);
+		const remDays = totalDays - weeks * 7;
 		return {
 			rows: [
 				{
@@ -386,8 +388,8 @@ const dateConfig: FormConfig = {
 				{ label: 'Total weeks', labelZh: '总周数', value: `${formatNumber(weeks)} weeks, ${remDays} days`, valueZh: `${formatNumber(weeks)} 周零 ${remDays} 天` },
 				{ label: 'Business days (Mon–Fri)', labelZh: '工作日天数（周一至周五）', value: formatNumber(businessDays(from, totalDays)) },
 			],
-			note: 'The breakdown counts full calendar periods and excludes the end date itself; tick the checkbox to include it in the day counts. Business days count Monday–Friday and ignore public holidays.',
-			noteZh: '年/月/日按完整日历周期计且不含结束日当天；勾选后总天数与工作日将包含结束日。工作日仅统计周一至周五，不含法定节假日。',
+			note: 'The breakdown counts full calendar periods and excludes the end date itself; tick the checkbox to include it in the day, week and business-day counts. Business days count Monday–Friday and ignore public holidays.',
+			noteZh: '年/月/日按完整日历周期计且不含结束日当天；勾选后总天数、总周数与工作日将包含结束日。工作日仅统计周一至周五，不含法定节假日。',
 		};
 	},
 };
@@ -608,9 +610,22 @@ export const DAILY_TOOLS: ToolEntry[] = [
 				const dateStr = v.str('date');
 				const timeStr = v.str('time');
 				const tm = /^(\d{1,2}):(\d{2})$/.exec(timeStr.trim());
-				if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr) || !tm)
+				const dm = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
+				if (!dm || !tm)
 					return { rows: [row('Input', '输入', '— (need a date and HH:MM time)', '—（需要日期与 HH:MM 时间）')] };
-				const wallAsUtc = Date.parse(`${dateStr}T${pad2(Number(tm[1]))}:${tm[2]}:00Z`);
+				// Reject out-of-range or rollover dates: 2026-09-31 and 2026-02-30 pass
+				// the format check but Date.parse silently rolls them into the next
+				// month, so verify the constructed date round-trips to the same day.
+				const YY = Number(dm[1]);
+				const MM = Number(dm[2]);
+				const DD = Number(dm[3]);
+				const hh = Number(tm[1]);
+				const mm = Number(tm[2]);
+				const probe = new Date(Date.UTC(YY, MM - 1, DD));
+				const rollover = probe.getUTCFullYear() !== YY || probe.getUTCMonth() !== MM - 1 || probe.getUTCDate() !== DD;
+				if (hh > 23 || mm > 59 || rollover)
+					return { rows: [row('Input', '输入', '— (the date/time is not valid)', '—（日期/时间无效）')] };
+				const wallAsUtc = Date.parse(`${dateStr}T${pad2(hh)}:${tm[2]}:00Z`);
 				if (!Number.isFinite(wallAsUtc))
 					return { rows: [row('Input', '输入', '— (the date/time is not valid)', '—（日期/时间无效）')] };
 				// wall time in `from` -> UTC: subtract the zone offset, iterating once

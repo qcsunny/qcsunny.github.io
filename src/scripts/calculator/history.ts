@@ -11,7 +11,17 @@ export function loadHistory(): HistoryEntry[] {
 	try {
 		const raw = localStorage.getItem(KEY);
 		const list = raw ? JSON.parse(raw) : [];
-		return Array.isArray(list) ? (list as HistoryEntry[]) : [];
+		if (!Array.isArray(list)) return [];
+		// user-editable storage: a blind cast used to let mangled entries flow
+		// into the render path (undefined expr/result); keep only well-formed ones
+		return list.filter(
+			(e): e is HistoryEntry =>
+				!!e &&
+				typeof e === 'object' &&
+				typeof (e as Record<string, unknown>).expr === 'string' &&
+				typeof (e as Record<string, unknown>).result === 'string' &&
+				typeof (e as Record<string, unknown>).ts === 'number',
+		);
 	} catch {
 		return [];
 	}

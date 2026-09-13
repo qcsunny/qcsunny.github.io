@@ -75,6 +75,7 @@ export function initMetaOg(host: HTMLElement): void {
 			Object.assign(document.createElement('span'), { className: 'i18n-zh', textContent: zh }),
 		);
 		const sel = document.createElement('select');
+		sel.dataset.metaKey = key; // Clear restores the select from F via this tag
 		for (const o of options) {
 			const opt = document.createElement('option');
 			opt.value = o.value;
@@ -182,7 +183,14 @@ export function initMetaOg(host: HTMLElement): void {
 		onClear: () => {
 			Object.assign(F, { title: '', desc: '', url: '', image: '', site: '', type: 'website', card: 'summary_large_image' });
 			for (const input of fieldRow.querySelectorAll('input')) input.value = '';
+			// the two selects are not <input>s — reset them from F or they keep the
+			// stale selection while the tags already say website / summary_large_image
+			for (const sel of fieldRow.querySelectorAll('select')) {
+				const key = sel.dataset.metaKey;
+				if (key === 'type' || key === 'card') sel.value = F[key];
+			}
 			render();
+			syncMirror();
 			wb.updateStatus('idle', 'Cleared', '已清空');
 		},
 		initialStatus: 'Fill the fields above — tags and the share-card preview update live.',

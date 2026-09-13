@@ -1020,24 +1020,38 @@ export function initMarkdown(host: HTMLElement): void {
 	copyHtmlBtn.className = 't-md-tool-btn t-md-btn-primary';
 	copyHtmlBtn.addEventListener('click', () => {
 		const html = parseMarkdownToHtml(editor.value, currentLang);
-		navigator.clipboard.writeText(html).then(() => {
-			copyHtmlBtn.textContent = currentLang === 'en' ? '✓ Copied HTML!' : '✓ 已复制 HTML!';
-			setTimeout(() => {
-				copyHtmlBtn.textContent = currentLang === 'en' ? '📋 Copy HTML' : '📋 复制 HTML';
-			}, 1800);
-		});
+		navigator.clipboard
+			.writeText(html)
+			.then(() => {
+				copyHtmlBtn.textContent = currentLang === 'en' ? '✓ Copied HTML!' : '✓ 已复制 HTML!';
+			})
+			.catch(() => {
+				copyHtmlBtn.textContent = currentLang === 'en' ? '⚠ Copy failed' : '⚠ 复制失败';
+			})
+			.finally(() => {
+				setTimeout(() => {
+					copyHtmlBtn.textContent = currentLang === 'en' ? '📋 Copy HTML' : '📋 复制 HTML';
+				}, 1800);
+			});
 	});
 
 	const copyMdBtn = document.createElement('button');
 	copyMdBtn.type = 'button';
 	copyMdBtn.className = 't-md-tool-btn';
 	copyMdBtn.addEventListener('click', () => {
-		navigator.clipboard.writeText(editor.value).then(() => {
-			copyMdBtn.textContent = currentLang === 'en' ? '✓ Copied MD!' : '✓ 已复制 MD!';
-			setTimeout(() => {
-				copyMdBtn.textContent = currentLang === 'en' ? '📋 Copy MD' : '📋 复制 MD';
-			}, 1800);
-		});
+		navigator.clipboard
+			.writeText(editor.value)
+			.then(() => {
+				copyMdBtn.textContent = currentLang === 'en' ? '✓ Copied MD!' : '✓ 已复制 MD!';
+			})
+			.catch(() => {
+				copyMdBtn.textContent = currentLang === 'en' ? '⚠ Copy failed' : '⚠ 复制失败';
+			})
+			.finally(() => {
+				setTimeout(() => {
+					copyMdBtn.textContent = currentLang === 'en' ? '📋 Copy MD' : '📋 复制 MD';
+				}, 1800);
+			});
 	});
 
 	const exportHtmlBtn = document.createElement('button');
@@ -1373,14 +1387,22 @@ ${body.innerHTML}
 		// Re-bind code copy buttons inside preview
 		const copyLabel = currentLang === 'en' ? 'Copy' : '复制';
 		const copiedLabel = currentLang === 'en' ? '✓ Copied' : '✓ 已复制';
+		const failedLabel = currentLang === 'en' ? '⚠ Copy failed' : '⚠ 复制失败';
 		preview.querySelectorAll<HTMLButtonElement>('.t-md-code-copy-btn').forEach((btn) => {
 			btn.addEventListener('click', () => {
 				const codeEl = btn.closest('.t-md-code-box')?.querySelector('code');
 				if (codeEl) {
-					navigator.clipboard.writeText(codeEl.textContent || '').then(() => {
-						btn.textContent = copiedLabel;
-						setTimeout(() => { btn.textContent = copyLabel; }, 1500);
-					});
+					navigator.clipboard
+						.writeText(codeEl.textContent || '')
+						.then(() => {
+							btn.textContent = copiedLabel;
+						})
+						.catch(() => {
+							btn.textContent = failedLabel;
+						})
+						.finally(() => {
+							setTimeout(() => { btn.textContent = copyLabel; }, 1500);
+						});
 				}
 			});
 		});
