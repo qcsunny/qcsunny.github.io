@@ -236,6 +236,10 @@ export async function cleanWorkbook(data: ArrayBuffer, opts: CleanOptions): Prom
 		}
 		if (stylesFile) {
 			const stylesXml = await stylesFile.async('string');
+			// remap is built inside the synchronous replace callback and
+			// consumed after it — the sheet rewrite must finish before
+			// generateAsync re-zips, or cells point at deleted style ids.
+			let remap = new Map<string, string>();
 			const rewritten = stylesXml.replace(/<cellXfs\b[^>]*>([\s\S]*?)<\/cellXfs>/gi, (_whole, body: string) => {
 				// Parse full <xf .../> or <xf ...>...</xf> elements without truncating inner nodes like <alignment>
 				const xfs: string[] = [];
@@ -246,7 +250,7 @@ export async function cleanWorkbook(data: ArrayBuffer, opts: CleanOptions): Prom
 				}
 
 				const keep: number[] = [];
-				const remap = new Map<string, string>();
+				remap = new Map<string, string>();
 				xfs.forEach((_xf, i) => {
 					const id = String(i);
 					if (i === 0 || used.has(id)) {
@@ -256,12 +260,10 @@ export async function cleanWorkbook(data: ArrayBuffer, opts: CleanOptions): Prom
 				});
 				removedStyles = xfs.length - keep.length;
 
-				// Remap worksheet cell & column style attributes using single-pass regex replacement
-				void remapSheetStyles(zip, remap);
-
 				const keptXml = keep.map((i) => xfs[i]).join('');
 				return `<cellXfs count="${keep.length}">${keptXml}</cellXfs>`;
 			});
+			await remapSheetStyles(zip, remap);
 			zip.file('xl/styles.xml', rewritten);
 		}
 	}

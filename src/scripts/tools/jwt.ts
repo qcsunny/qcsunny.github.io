@@ -152,9 +152,13 @@ export function initJwt(host: HTMLElement): void {
 		const enc = new TextEncoder();
 		const h = base64UrlEncode(enc.encode(JSON.stringify(header)));
 		const p = base64UrlEncode(enc.encode(JSON.stringify(payload)));
-		const sig = await hmacSign(('SHA-' + alg.slice(2)) as 'SHA-256' | 'SHA-384' | 'SHA-512', secret, enc.encode(`${h}.${p}`));
-		wb.outputArea.value = `${h}.${p}.${sig}`;
-		wb.updateStatus('valid', `✓ Signed with ${alg} — copy the token from the output box.`, `✓ 已用 ${alg} 签名 —— 从输出框复制 Token。`);
+		try {
+			const sig = await hmacSign(('SHA-' + alg.slice(2)) as 'SHA-256' | 'SHA-384' | 'SHA-512', secret, enc.encode(`${h}.${p}`));
+			wb.outputArea.value = `${h}.${p}.${sig}`;
+			wb.updateStatus('valid', `✓ Signed with ${alg} — copy the token from the output box.`, `✓ 已用 ${alg} 签名 —— 从输出框复制 Token。`);
+		} catch (err) {
+			wb.updateStatus('error', `✗ Signing failed: ${err instanceof Error ? err.message : 'WebCrypto unavailable'}`, `✗ 签名失败：${err instanceof Error ? err.message : '加密接口不可用'}`);
+		}
 	}
 
 	/** Verify: recompute the HMAC of header.payload with the given secret and
@@ -188,18 +192,22 @@ export function initJwt(host: HTMLElement): void {
 			wb.updateStatus('error', '✗ Enter the secret key above to verify.', '✗ 请先在上方输入密钥再验签。');
 			return;
 		}
-		const sig = await hmacSign(('SHA-' + alg.slice(2)) as 'SHA-256' | 'SHA-384' | 'SHA-512', secret, new TextEncoder().encode(`${parts[0]}.${parts[1]}`));
-		const ok = sig === parts[2];
-		if (ok) {
-			wb.outputArea.value =
-				(zh ? '✓ 签名验证通过\n\n' : '✓ Signature verified\n\n') +
-				`alg: ${alg}\n${zh ? '期望签名' : 'expected'}: ${sig}\n${zh ? '实际签名' : 'received'}: ${parts[2]}`;
-			wb.updateStatus('valid', `✓ Signature valid (${alg})`, `✓ 签名有效 (${alg})`);
-		} else {
-			wb.outputArea.value =
-				(zh ? '✗ 签名不匹配\n\n' : '✗ Signature mismatch\n\n') +
-				`alg: ${alg}\n${zh ? '期望签名' : 'expected'}: ${sig}\n${zh ? '实际签名' : 'received'}: ${parts[2]}`;
-			wb.updateStatus('error', '✗ Signature mismatch — wrong secret or tampered token.', '✗ 签名不匹配 —— 密钥错误或 Token 已被篡改。');
+		try {
+			const sig = await hmacSign(('SHA-' + alg.slice(2)) as 'SHA-256' | 'SHA-384' | 'SHA-512', secret, new TextEncoder().encode(`${parts[0]}.${parts[1]}`));
+			const ok = sig === parts[2];
+			if (ok) {
+				wb.outputArea.value =
+					(zh ? '✓ 签名验证通过\n\n' : '✓ Signature verified\n\n') +
+					`alg: ${alg}\n${zh ? '期望签名' : 'expected'}: ${sig}\n${zh ? '实际签名' : 'received'}: ${parts[2]}`;
+				wb.updateStatus('valid', `✓ Signature valid (${alg})`, `✓ 签名有效 (${alg})`);
+			} else {
+				wb.outputArea.value =
+					(zh ? '✗ 签名不匹配\n\n' : '✗ Signature mismatch\n\n') +
+					`alg: ${alg}\n${zh ? '期望签名' : 'expected'}: ${sig}\n${zh ? '实际签名' : 'received'}: ${parts[2]}`;
+				wb.updateStatus('error', '✗ Signature mismatch — wrong secret or tampered token.', '✗ 签名不匹配 —— 密钥错误或 Token 已被篡改。');
+			}
+		} catch (err) {
+			wb.updateStatus('error', `✗ Verify failed: ${err instanceof Error ? err.message : 'WebCrypto unavailable'}`, `✗ 验签失败：${err instanceof Error ? err.message : '加密接口不可用'}`);
 		}
 	}
 

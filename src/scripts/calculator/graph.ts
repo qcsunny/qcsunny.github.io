@@ -2,6 +2,7 @@ import { CalcError, compile, errorText, formatNumber, type Scope } from './engin
 import { isZh, onLang, setBilingual } from '../tools/i18n';
 import {
 	createWebGL2DGraphRenderer,
+	renderComplexCPU,
 	renderImplicitCPU,
 	renderVectorFieldCPU,
 	type WebGL2DGraphRenderer,
@@ -122,7 +123,11 @@ export function initGraph(scope: Scope): GraphController {
 		if (mode === 'complex') {
 			const targetRow = rows.find((r) => r.visible && r.expr.trim() !== '');
 			if (targetRow) {
-				glRenderer?.renderComplex(targetRow.expr, view);
+				// No row.fn here — complex mode compiles to GLSL only (row.fn
+				// is null), so without this fallback a context loss or a
+				// non-WebGL machine blanks the canvas with no error shown.
+				const ok = glRenderer?.renderComplex(targetRow.expr, view) ?? false;
+				if (!ok) renderComplexCPU(ctx!, targetRow.expr, view, cssW, cssH);
 			}
 		} else if (mode === 'vector') {
 			const targetRow = rows.find((r) => r.visible && r.expr.trim() !== '');

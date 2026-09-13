@@ -281,7 +281,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			copyBtn.addEventListener('click', () => {
 				const textToCopy = document.documentElement.dataset.lang === 'zh' ? row.valueZh || row.value : row.value;
 				void navigator.clipboard.writeText(textToCopy).then(() => {
-					copyBtn.textContent = document.documentElement.dataset.lang === 'zh' ? '✓ Copied' : '✓ Copied';
+					copyBtn.textContent = document.documentElement.dataset.lang === 'zh' ? '✓ 已复制' : '✓ Copied';
 					setTimeout(() => {
 						copyBtn.innerHTML = '';
 						copyBtn.append(bilingual('📋 Copy', '📋 复制结果'));
@@ -371,7 +371,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			inputs,
 			results: lastOut.rows.map((r) => ({
 				label: zh ? r.labelZh || r.label : r.label,
-				value: r.value,
+				value: zh ? r.valueZh || r.value : r.value,
 				emphasis: r.emphasis,
 			})),
 			table: t
@@ -537,12 +537,26 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 					})
 					.catch((err) => {
 						if (computeId !== currentComputeId) return;
-						console.error(err);
+						renderError(err);
 					});
 			} else {
 				renderResults(resOrPromise);
 			}
 		} catch (err) {
+			renderError(err);
+		}
+
+		// On compute failure, clear the stale results and surface the error
+		// instead of leaving the previous (now-wrong) numbers on screen —
+		// and null lastOut so a later PNG export can't ship the old data.
+		function renderError(err: unknown): void {
+			results.innerHTML = '';
+			host.querySelectorAll('.t-tablewrap, .t-note, .t-chartwrap').forEach((el) => el.remove());
+			lastOut = null;
+			const e = err as { message?: string; messageZh?: string };
+			const en = e?.message || String(err);
+			const zh = e?.messageZh || en;
+			results.append(bilingual(`⚠ ${en}`, `⚠ ${zh}`));
 			console.error(err);
 		}
 

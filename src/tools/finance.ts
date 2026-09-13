@@ -69,10 +69,16 @@ function amortize(
 	const totalYears = Math.ceil(months / 12);
 
 	if (i <= 0) {
-		const yearlyPrinc = principal / totalYears;
+		// Spread principal evenly across the actual months, then bucket by the
+		// same per-year month count as the interest-bearing branch below — a
+		// non-multiple term (e.g. 18 months) otherwise distorts the final year.
+		const monthlyPrinc = principal / months;
 		for (let y = 1; y <= totalYears; y++) {
-			const endBalance = Math.max(0, principal - yearlyPrinc * y);
-			out.push([String(y), money(yearlyPrinc), money(0), money(endBalance)]);
+			const mCount = y === totalYears && months % 12 !== 0 ? months % 12 : 12;
+			const principalY = monthlyPrinc * mCount;
+			const endBalance = Math.max(0, prevBalance - principalY);
+			out.push([String(y), money(principalY), money(0), money(endBalance)]);
+			prevBalance = endBalance;
 		}
 		return { rows: out, totalInterest: 0 };
 	}
@@ -166,6 +172,7 @@ const compoundInterest: FormConfig = {
 		const n = Number(v.str('n')) || 1;
 		const m = v.num('m');
 		if (!(t > 0)) return { rows: [{ label: 'Final amount', labelZh: '最终金额', value: '— (years must be > 0)', valueZh: '— (年数需大于 0)' }] };
+		if (!(r > -1)) return { rows: [{ label: 'Final amount', labelZh: '最终金额', value: '— (rate must be > −100%)', valueZh: '— (利率需大于 −100%)' }] };
 		// effective monthly rate so contributions match the compounding frequency
 		const monthlyRate = (1 + r / n) ** (n / 12) - 1;
 		const months = Math.round(t * 12);
@@ -776,7 +783,7 @@ const fireCalculator: FormConfig = {
 			yearsToFire = 0;
 		}
 
-		const retAge = yearsToFire >= 0 ? age + yearsToFire : '> 80';
+		const retAge = yearsToFire >= 0 ? age + yearsToFire : '> ' + (age + 50);
 		const yearsText =
 			yearsToFire === 0
 				? 'Already reached!'
@@ -2631,6 +2638,12 @@ const tax: FormConfig = {
 				) {
 					high *= 2;
 				}
+				// If an astronomical gross still can't clear the target net, the
+				// schedule swallows ≥100% of income (flatRate≥100%) — bailing here
+				// keeps the binary search from converging on ~1e29 garbage.
+				if (computeTaxCore({ annualGross: high, regime, annualInsurance, annualSpecialDeduction, effectiveBonus, bonusMode, flatRate }).totalNetTakeHome < targetAnnualNet) {
+					return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (target net is unreachable: tax rate ≥ 100%)', valueZh: '— (目标税后不可达：综合税率 ≥ 100%)' }] };
+				}
 				for (let iter = 0; iter < 50; iter++) {
 					const mid = (low + high) / 2;
 					const cur = computeTaxCore({
@@ -2969,6 +2982,12 @@ const rentVsBuy: FormConfig = {
 
 		if (!Number.isFinite(price) || price <= 0 || horizon <= 0 || loanYears <= 0) {
 			return { rows: [{ label: 'Error', labelZh: '错误', value: '— (invalid price or parameters)', valueZh: '— (请输入有效房屋总价与对比参数)' }] };
+		}
+		// The month-by-month rent-investment loop runs horizon*12 iterations;
+		// the field's max is only a soft hint, so an absurd horizon (typed
+		// directly) would freeze the page. Reject rather than silently clamp.
+		if (horizon > MAX_TERM_YEARS || loanYears > MAX_TERM_YEARS) {
+			return { rows: [{ label: 'Error', labelZh: '错误', value: `— (horizon/term must be ${MAX_TERM_YEARS} years or less)`, valueZh: `— (年限/期限不得超过 ${MAX_TERM_YEARS} 年)` }] };
 		}
 
 		const downPayment = price * downPct;

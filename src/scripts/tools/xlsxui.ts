@@ -172,27 +172,31 @@ export function initXlsxAnalyzer(host: HTMLElement): void {
 			}
 			void (async () => {
 				resultLine.textContent = '';
-				const { blob, removedStyles, removedNames } = await cleanWorkbook(currentBytes as ArrayBuffer, opts);
-				const url = URL.createObjectURL(blob);
-				const a = document.createElement('a');
-				a.href = url;
-				a.download = (currentReport as XlsxReport).fileName.replace(/\.(xlsx|xlsm)$/i, '') + '-cleaned.xlsx';
-				a.click();
-				setTimeout(() => URL.revokeObjectURL(url), 5000);
-				// before/after with a percentage badge: green when it shrank,
-				// dim when re-zip overhead made it grow (tiny files)
-				const delta = 1 - blob.size / (currentReport as XlsxReport).fileSize;
-				const pct = `${delta >= 0 ? '−' : '+'}${Math.abs(delta * 100).toFixed(1)}%`;
-				resultLine.append(
-					bilingual(
-						`Cleaned: ${removedStyles} styles, ${removedNames} names removed — ${fmtBytes(blob.size)} (was ${fmtBytes(currentReport.fileSize)})`,
-						`清理完成：移除 ${removedStyles} 个样式、${removedNames} 个命名区域——${fmtBytes(blob.size)}（原 ${fmtBytes(currentReport.fileSize)}）`,
-					),
-					Object.assign(document.createElement('strong'), {
-						textContent: ` ${pct}`,
-						className: delta > 0.005 ? 't-xlsx-shrunk' : 't-xlsx-grew',
-					}),
-				);
+				try {
+					const { blob, removedStyles, removedNames } = await cleanWorkbook(currentBytes as ArrayBuffer, opts);
+					const url = URL.createObjectURL(blob);
+					const a = document.createElement('a');
+					a.href = url;
+					a.download = (currentReport as XlsxReport).fileName.replace(/\.(xlsx|xlsm)$/i, '') + '-cleaned.xlsx';
+					a.click();
+					setTimeout(() => URL.revokeObjectURL(url), 5000);
+					// before/after with a percentage badge: green when it shrank,
+					// dim when re-zip overhead made it grow (tiny files)
+					const delta = 1 - blob.size / (currentReport as XlsxReport).fileSize;
+					const pct = `${delta >= 0 ? '−' : '+'}${Math.abs(delta * 100).toFixed(1)}%`;
+					resultLine.append(
+						bilingual(
+							`Cleaned: ${removedStyles} styles, ${removedNames} names removed — ${fmtBytes(blob.size)} (was ${fmtBytes(currentReport.fileSize)})`,
+							`清理完成：移除 ${removedStyles} 个样式、${removedNames} 个命名区域——${fmtBytes(blob.size)}（原 ${fmtBytes(currentReport.fileSize)}）`,
+						),
+						Object.assign(document.createElement('strong'), {
+							textContent: ` ${pct}`,
+							className: delta > 0.005 ? 't-xlsx-shrunk' : 't-xlsx-grew',
+						}),
+					);
+				} catch {
+					resultLine.append(bilingual('Cleaning failed — the workbook may be corrupt or password-protected.', '清理失败——工作簿可能已损坏或已加密。'));
+				}
 			})();
 		});
 		cleanBox.append(btn);

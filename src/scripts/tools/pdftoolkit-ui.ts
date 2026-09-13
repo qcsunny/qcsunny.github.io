@@ -61,7 +61,11 @@ export function initPdfToolkit(host: HTMLElement): void {
 	const bar = document.createElement('div');
 	bar.className = 't-pdf-tabs';
 	const panels: Record<string, HTMLElement> = {};
-	const state: { files: PdfFile[]; images: { name: string; bytes: Uint8Array; type: 'jpeg' | 'png' }[] } = { files: [], images: [] };
+	// Three independent slots so a drop in one tab cannot wipe another tab's
+	// accumulated files: `files` is the single "current PDF" shared by the
+	// single-file tabs (extract/split/rotate/watermark/compress/meta/pdf2img),
+	// `mergeFiles` is merge's multi-list, `images` is image→PDF's multi-list.
+	const state: { files: PdfFile[]; mergeFiles: PdfFile[]; images: { name: string; bytes: Uint8Array; type: 'jpeg' | 'png' }[] } = { files: [], mergeFiles: [], images: [] };
 
 	for (const tab of TABS) {
 		const btn = document.createElement('button');
@@ -90,7 +94,7 @@ export function initPdfToolkit(host: HTMLElement): void {
 		input.style.display = 'none';
 		input.addEventListener('change', () => {
 			const files = [...(input.files ?? [])];
-			if (files.length) void acceptFiles(files, multiTabs.has(tabId));
+			if (files.length) void acceptFiles(files, tabId);
 		});
 		const pick = document.createElement('button');
 		pick.type = 'button';
@@ -107,7 +111,7 @@ export function initPdfToolkit(host: HTMLElement): void {
 			e.preventDefault();
 			zone.classList.remove('t-droptarget');
 			const files = [...(e.dataTransfer?.files ?? [])];
-			if (files.length) void acceptFiles(files, multiTabs.has(tabId));
+			if (files.length) void acceptFiles(files, tabId);
 		});
 		return zone;
 	};
@@ -117,32 +121,34 @@ export function initPdfToolkit(host: HTMLElement): void {
 			const list = panel.querySelector<HTMLElement>('.t-pdf-filelist');
 			if (!list) continue;
 			list.innerHTML = '';
-			for (const f of state.files) {
+			const items: { name: string; bytes: Uint8Array }[] = id === 'merge' ? state.mergeFiles : id === 'img2pdf' ? state.images : state.files;
+			for (const f of items) {
 				const li = document.createElement('li');
 				li.textContent = `${f.name} · ${fmtBytes(f.bytes.length)}`;
 				list.append(li);
 			}
-			if (multiTabs.has(id) && state.images.length) {
-				for (const f of state.images) {
-					const li = document.createElement('li');
-					li.textContent = `${f.name} · ${fmtBytes(f.bytes.length)}`;
-					list.append(li);
-				}
-			}
 		}
 	};
 
-	const acceptFiles = async (files: File[], multi: boolean): Promise<void> => {
-		if (!multi) {
+	const acceptFiles = async (files: File[], tabId: string): Promise<void> => {
+		if (tabId === 'img2pdf') {
+			for (const f of files) {
+				const bytes = new Uint8Array(await f.arrayBuffer());
+				if (f.type === 'image/jpeg' || /\.jpe?g$/i.test(f.name)) state.images.push({ name: f.name, bytes, type: 'jpeg' });
+				else if (f.type === 'image/png' || /\.png$/i.test(f.name)) state.images.push({ name: f.name, bytes, type: 'png' });
+			}
+		} else if (tabId === 'merge') {
+			for (const f of files) {
+				const bytes = new Uint8Array(await f.arrayBuffer());
+				state.mergeFiles.push({ name: f.name, bytes });
+			}
+		} else {
 			// single-file tabs: the latest drop replaces, it does not accumulate
 			state.files = [];
-			state.images = [];
-		}
-		for (const f of files) {
-			const bytes = new Uint8Array(await f.arrayBuffer());
-			if (f.type === 'image/jpeg' || /\.jpe?g$/i.test(f.name)) state.images.push({ name: f.name, bytes, type: 'jpeg' });
-			else if (f.type === 'image/png' || /\.png$/i.test(f.name)) state.images.push({ name: f.name, bytes, type: 'png' });
-			else state.files.push({ name: f.name, bytes });
+			for (const f of files) {
+				const bytes = new Uint8Array(await f.arrayBuffer());
+				state.files.push({ name: f.name, bytes });
+			}
 		}
 		fileCount();
 	};
@@ -338,10 +344,10 @@ export function initPdfToolkit(host: HTMLElement): void {
 
 	// merge
 	const mgBtn = mkRunButton('Merge & download', '合并并下载', async () => {
-		if (state.files.length < 2) return say('merge', 'Drop at least two PDFs.', '请至少拖入两个 PDF。');
-		const out = await mergePdfs(state.files.map((f) => f.bytes));
+		if (state.mergeFiles.length < 2) return say('merge', 'Drop at least two PDFs.', '请至少拖入两个 PDF。');
+		const out = await mergePdfs(state.mergeFiles.map((f) => f.bytes));
 		download(out, 'merged.pdf');
-		say('merge', `Merged ${state.files.length} files (${(await readPdfMeta(out)).pageCount} pages).`, `已合并 ${state.files.length} 个文件（共 ${(await readPdfMeta(out)).pageCount} 页）。`);
+		say('merge', `Merged ${state.mergeFiles.length} files (${(await readPdfMeta(out)).pageCount} pages).`, `已合并 ${state.mergeFiles.length} 个文件（共 ${(await readPdfMeta(out)).pageCount} 页）。`);
 	});
 	panels.merge!.append(mgBtn);
 

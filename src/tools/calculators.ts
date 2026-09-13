@@ -3308,7 +3308,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 					const lam = v.num('lambda');
 					if (!Number.isFinite(lam) || lam < 0)
 						return { rows: [row('λ', 'λ', '— (λ must be ≥ 0)', '— (λ 需要 ≥ 0)')] };
-					pmf = (i) => Math.exp(-lam + i * Math.log(lam || 1) - lgamma(i + 1));
+					pmf = lam === 0 ? (i) => (i === 0 ? 1 : 0) : (i) => Math.exp(-lam + i * Math.log(lam) - lgamma(i + 1));
 					mean = lam;
 					variance = lam;
 				} else {
@@ -3319,9 +3319,9 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 					if (!Number.isFinite(p) || p < 0 || p > 1)
 						return { rows: [row('p', 'p', '— (p must be in [0, 1])', '— (p 需在 [0, 1] 之间)')] };
 					pmf = (i) =>
-						i > n || p === 0
-							? i === 0 && p === 0 ? 1 : 0
-							: Math.exp(lgamma(n + 1) - lgamma(i + 1) - lgamma(n - i + 1) + i * Math.log(p || 1) + (n - i) * Math.log(1 - p || 1));
+						i > n || p === 0 || p === 1
+							? p === 0 ? (i === 0 ? 1 : 0) : (i === n ? 1 : 0)
+							: Math.exp(lgamma(n + 1) - lgamma(i + 1) - lgamma(n - i + 1) + i * Math.log(p) + (n - i) * Math.log(1 - p));
 					mean = n * p;
 					variance = n * p * (1 - p);
 				}
@@ -3497,6 +3497,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						columns: ['Term', 'Estimate', 'Std. error', 't', 'p'],
 						columnsZh: ['变量', '估计值', '标准误', 't 值', 'p 值'],
 						rows: names.map((nm, i) => [nm, ecoFmt(m.beta[i] as number), ecoFmt(se[i] as number), ecoFmt(tvals[i] as number), ecoP(pvals[i] as number)]),
+						rowsZh: names.map((nm, i) => [i === 0 ? '(截距)' : nm, ecoFmt(m.beta[i] as number), ecoFmt(se[i] as number), ecoFmt(tvals[i] as number), ecoP(pvals[i] as number)]),
 					};
 					const rows = [
 						ecoRow('Observations', '观测数', String(n)),
@@ -3644,6 +3645,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						columns: ['Term', 'Estimate'],
 						columnsZh: ['变量', '估计值'],
 						rows: names.map((nm, i) => [nm, ecoFmt(fit.beta[i] as number)]),
+						rowsZh: names.map((nm, i) => [i === 0 ? '(截距)' : nm, ecoFmt(fit.beta[i] as number)]),
 					};
 					return { rows, table };
 				},
@@ -3705,6 +3707,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						columns: ['Fixed effect', 'Estimate', 'Std. error', 't', 'p'],
 						columnsZh: ['固定效应', '估计值', '标准误', 't 值', 'p 值'],
 						rows: names.map((nm, i) => [nm, ecoFmt(fit.beta[i] as number), ecoFmt(fit.se[i] as number), ecoFmt(fit.tstat[i] as number), ecoP(fit.pval[i] as number)]),
+						rowsZh: names.map((nm, i) => [i === 0 ? '(截距)' : nm, ecoFmt(fit.beta[i] as number), ecoFmt(fit.se[i] as number), ecoFmt(fit.tstat[i] as number), ecoP(fit.pval[i] as number)]),
 					};
 					const rows = [
 						ecoRow('Groups', '组数', String(fit.groupCount)),
@@ -3781,6 +3784,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						columns: ['Term', 'Estimate', 'Std. error', 'z', 'p'],
 						columnsZh: ['变量', '估计值', '标准误', 'z 值', 'p 值'],
 						rows: names.map((nm, i) => [nm, ecoFmt(fit.beta[i] as number), ecoFmt(fit.se[i] as number), ecoFmt(fit.zstat[i] as number), ecoP(fit.pval[i] as number)]),
+						rowsZh: names.map((nm, i) => [i === 0 ? '(截距)' : nm, ecoFmt(fit.beta[i] as number), ecoFmt(fit.se[i] as number), ecoFmt(fit.zstat[i] as number), ecoP(fit.pval[i] as number)]),
 					};
 					const rows: { label: string; labelZh: string; value: string; valueZh?: string }[] = [
 						ecoRow('Observations (1s / 0s)', '观测数（1 / 0）', `${n} (${y.filter((v2) => v2 === 1).length} / ${y.filter((v2) => v2 === 0).length})`),
@@ -3853,7 +3857,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						return row;
 					});
 					const rows: { label: string; labelZh: string; value: string; valueZh?: string }[] = [];
-					let table: { columns: string[]; columnsZh: string[]; rows: string[][] };
+					let table: { columns: string[]; columnsZh: string[]; rows: string[][]; rowsZh?: string[][] };
 					if (fam === 'zip' || fam === 'zinb') {
 						const count = fam === 'zip' ? 'poisson' : 'nbinom';
 						if (y.every((v2) => v2 > 0))
@@ -3864,6 +3868,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 							columns: ['Term', 'Estimate', 'Std. error', 'z', 'p'],
 							columnsZh: ['变量', '估计值', '标准误', 'z 值', 'p 值'],
 							rows: names.map((nm, i) => [nm, ecoFmt(fit.count.beta[i] as number), ecoFmt(fit.count.se[i] as number), ecoFmt(fit.count.zstat[i] as number), ecoP(fit.count.pval[i] as number)]),
+							rowsZh: names.map((nm, i) => [i === 0 ? '(截距)' : nm, ecoFmt(fit.count.beta[i] as number), ecoFmt(fit.count.se[i] as number), ecoFmt(fit.count.zstat[i] as number), ecoP(fit.count.pval[i] as number)]),
 						};
 						rows.push(ecoRow('Structural-zero probability π', '结构零概率 π', ecoFmt(fit.pi)));
 						rows.push(ecoRow('Count model', '计数部分模型', count === 'poisson' ? 'Poisson (log link)' : 'Negative binomial (log link)', count === 'poisson' ? '泊松（对数连接）' : '负二项（对数连接）'));
@@ -3878,6 +3883,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 							columns: ['Term', 'Estimate', 'Std. error', 'z', 'p'],
 							columnsZh: ['变量', '估计值', '标准误', 'z 值', 'p 值'],
 							rows: names.map((nm, i) => [nm, ecoFmt(fit.beta[i] as number), ecoFmt(fit.se[i] as number), ecoFmt(fit.zstat[i] as number), ecoP(fit.pval[i] as number)]),
+							rowsZh: names.map((nm, i) => [i === 0 ? '(截距)' : nm, ecoFmt(fit.beta[i] as number), ecoFmt(fit.se[i] as number), ecoFmt(fit.zstat[i] as number), ecoP(fit.pval[i] as number)]),
 						};
 						// overdispersion check: Pearson χ² / df under a Poisson view
 						if (fam === 'poisson') {

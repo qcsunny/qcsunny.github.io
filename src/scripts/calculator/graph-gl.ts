@@ -106,12 +106,31 @@ export function createWebGL2DGraphRenderer(canvas: HTMLCanvasElement): WebGL2DGr
 		function createProgram(vsSrc: string, fsSrc: string): WebGLProgram | null {
 			const vs = compileShader(gl!.VERTEX_SHADER, vsSrc);
 			const fs = compileShader(gl!.FRAGMENT_SHADER, fsSrc);
-			if (!vs || !fs) return null;
+			// Every failure path frees both shaders: if only one compiled,
+			// the other is orphaned; and deleteProgram detaches without
+			// freeing, so a link failure used to leak both. Each new formula
+			// recompiles, so these leaks accumulate across a session until
+			// the GL context OOMs.
+			if (!vs || !fs) {
+				if (vs) gl!.deleteShader(vs);
+				if (fs) gl!.deleteShader(fs);
+				return null;
+			}
 			const p = gl!.createProgram();
-			if (!p) return null;
+			if (!p) {
+				gl!.deleteShader(vs);
+				gl!.deleteShader(fs);
+				return null;
+			}
 			gl!.attachShader(p, vs);
 			gl!.attachShader(p, fs);
 			gl!.linkProgram(p);
+			// Once linked the program holds the compiled code; the shader
+			// objects are safe to detach and delete on both outcomes.
+			gl!.detachShader(p, vs);
+			gl!.detachShader(p, fs);
+			gl!.deleteShader(vs);
+			gl!.deleteShader(fs);
 			if (!gl!.getProgramParameter(p, gl!.LINK_STATUS)) {
 				gl!.deleteProgram(p);
 				return null;
@@ -436,7 +455,17 @@ export function renderImplicitCPU(
 		const y = view.yMin + j * dy;
 		for (let i = 0; i <= nx; i++) {
 			const x = view.xMin + i * dx;
-			grid[j * (nx + 1) + i] = fn(x, y);
+			// A thrown sample (an engine edge case at this (x,y)) must not
+			// abort the whole curve — NaN compares false in the sign tests
+			// below, so marching squares skips the cell. Mirrors the guard
+			// renderVectorFieldCPU puts around the same fn(x,y) call.
+			let v: number;
+			try {
+				v = fn(x, y);
+			} catch {
+				v = NaN;
+			}
+			grid[j * (nx + 1) + i] = v;
 		}
 	}
 
@@ -495,6 +524,272 @@ export function renderImplicitCPU(
 	}
 	ctx.stroke();
 	ctx.restore();
+}
+
+
+/** Compiles the rewritten complex expression (the same infix string the GLSL
+ *  fragment shader compiles — c_* functions, vec2(n,0) literals, z^2..5 →
+ *  c_powN) into a per-pixel evaluator. Complex mode sets row.fn = null because
+ *  the calculator engine compiles real-valued functions only, so the CPU
+ *  fallback must carry its own complex arithmetic instead of reusing row.fn.
+ *  Returns null on any token the GLSL path would also reject, so the two stay
+ *  consistent (the CPU is, if anything, slightly more lenient: ^ generalises
+ *  to c_pow and bare decimals / pi / e are accepted even though the shader
+ *  rejects them — a strictly-more-capable fallback never causes drift). */
+function buildComplexEvaluator(src: string): ((zx: number, zy: number) => [number, number]) | null {
+	type Cx = [number, number];
+	const mul = (a: Cx, b: Cx): Cx => [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]];
+	const div = (a: Cx, b: Cx): Cx => {
+		const d = b[0] * b[0] + b[1] * b[1];
+		if (d < 1e-12) return [1e6, 1e6];
+		return [(a[0] * b[0] + a[1] * b[1]) / d, (a[1] * b[0] - a[0] * b[1]) / d];
+	};
+	const pow2 = (z: Cx): Cx => [z[0] * z[0] - z[1] * z[1], 2 * z[0] * z[1]];
+	const pow3 = (z: Cx): Cx => mul(z, pow2(z));
+	const pow4 = (z: Cx): Cx => pow2(pow2(z));
+	const pow5 = (z: Cx): Cx => mul(z, pow4(z));
+	const cexp = (z: Cx): Cx => { const e = Math.exp(z[0]); return [e * Math.cos(z[1]), e * Math.sin(z[1])]; };
+	const csin = (z: Cx): Cx => {
+		const ey = Math.exp(z[1]), emy = Math.exp(-z[1]);
+		const ch = (ey + emy) * 0.5, sh = (ey - emy) * 0.5;
+		return [Math.sin(z[0]) * ch, Math.cos(z[0]) * sh];
+	};
+	const ccos = (z: Cx): Cx => {
+		const ey = Math.exp(z[1]), emy = Math.exp(-z[1]);
+		const ch = (ey + emy) * 0.5, sh = (ey - emy) * 0.5;
+		return [Math.cos(z[0]) * ch, -Math.sin(z[0]) * sh];
+	};
+	const clog = (z: Cx): Cx => [Math.log(Math.hypot(z[0], z[1]) + 1e-12), Math.atan2(z[1], z[0])];
+	const cpow = (a: Cx, b: Cx): Cx => cexp(mul(b, clog(a)));
+	const fns: Record<string, (z: Cx) => Cx> = {
+		c_pow2: pow2, c_pow3: pow3, c_pow4: pow4, c_pow5: pow5,
+		c_exp: cexp, c_sin: csin, c_cos: ccos, c_log: clog,
+	};
+
+	// --- tokenizer -------------------------------------------------------
+	const toks: string[] = [];
+	let i = 0;
+	while (i < src.length) {
+		const c = src[i];
+		if (c === ' ' || c === '\t' || c === '\n' || c === '\r') { i++; continue; }
+		if ((c >= '0' && c <= '9') || c === '.') {
+			let j = i + 1;
+			while (j < src.length && ((src[j] >= '0' && src[j] <= '9') || src[j] === '.')) j++;
+			toks.push(src.slice(i, j));
+			i = j;
+			continue;
+		}
+		if ((c >= 'a' && c <= 'z') || c === '_') {
+			let j = i + 1;
+			while (j < src.length && ((src[j] >= 'a' && src[j] <= 'z') || (src[j] >= '0' && src[j] <= '9') || src[j] === '_')) j++;
+			toks.push(src.slice(i, j));
+			i = j;
+			continue;
+		}
+		if (c === '+' || c === '-' || c === '*' || c === '/' || c === '^' || c === '(' || c === ')' || c === ',') {
+			toks.push(c);
+			i++;
+			continue;
+		}
+		return null; // a character the shader would also reject
+	}
+
+	type CEval = (zx: number, zy: number) => Cx;
+	let pos = 0;
+	const peek = (): string => toks[pos];
+	const eat = (): string => toks[pos++];
+	const expect = (t: string): boolean => { if (toks[pos] !== t) return false; pos++; return true; };
+
+	const parsePrimary = (): CEval | null => {
+		const t = peek();
+		if (t === undefined) return null;
+		if (t[0] >= '0' && t[0] <= '9') {
+			eat();
+			const n = Number(t);
+			const lit: Cx = [Number.isFinite(n) ? n : 0, 0];
+			return () => lit;
+		}
+		if (t[0] >= 'a' && t[0] <= 'z') {
+			eat();
+			if (t === 'z') return (zx, zy) => [zx, zy];
+			if (t === 'pi') { const c: Cx = [Math.PI, 0]; return () => c; }
+			if (t === 'e') { const c: Cx = [Math.E, 0]; return () => c; }
+			if (t === 'vec2') {
+				if (!expect('(')) return null;
+				const a = parseExpr();
+				if (!a || !expect(',')) return null;
+				const b = parseExpr();
+				if (!b || !expect(')')) return null;
+				return (zx, zy) => [a(zx, zy)[0], b(zx, zy)[0]];
+			}
+			if (t.startsWith('c_')) {
+				const fn = fns[t];
+				if (!fn) return null;
+				if (!expect('(')) return null;
+				const a = parseExpr();
+				if (!a || !expect(')')) return null;
+				return (zx, zy) => fn(a(zx, zy));
+			}
+			return null; // unknown identifier
+		}
+		if (t === '(') {
+			eat();
+			const inner = parseExpr();
+			if (!inner || !expect(')')) return null;
+			return inner;
+		}
+		return null;
+	};
+
+	const parseFactor = (): CEval | null => {
+		if (peek() === '-') { eat(); const a = parseFactor(); return a ? (zx, zy) => { const v = a(zx, zy); return [-v[0], -v[1]] as Cx; } : null; }
+		if (peek() === '+') { eat(); return parseFactor(); }
+		const base = parsePrimary();
+		if (!base) return null;
+		if (peek() === '^') {
+			eat();
+			const exp = parseFactor(); // right-associative
+			if (!exp) return null;
+			return (zx, zy) => cpow(base(zx, zy), exp(zx, zy));
+		}
+		return base;
+	};
+
+	const parseTerm = (): CEval | null => {
+		let left = parseFactor();
+		if (!left) return null;
+		for (;;) {
+			const op = peek();
+			if (op !== '*' && op !== '/') break;
+			eat();
+			const right = parseFactor();
+			if (!right) return null;
+			const L: CEval = left;
+			left = op === '*'
+				? (zx, zy) => mul(L(zx, zy), right(zx, zy))
+				: (zx, zy) => div(L(zx, zy), right(zx, zy));
+		}
+		return left;
+	};
+
+	const parseExpr = (): CEval | null => {
+		let left = parseTerm();
+		if (!left) return null;
+		for (;;) {
+			const op = peek();
+			if (op !== '+' && op !== '-') break;
+			eat();
+			const right = parseTerm();
+			if (!right) return null;
+			const L: CEval = left;
+			left = op === '+'
+				? (zx, zy) => { const a = L(zx, zy), b = right(zx, zy); return [a[0] + b[0], a[1] + b[1]] as Cx; }
+				: (zx, zy) => { const a = L(zx, zy), b = right(zx, zy); return [a[0] - b[0], a[1] - b[1]] as Cx; };
+		}
+		return left;
+	};
+
+	const out = parseExpr();
+	if (!out || pos !== toks.length) return null;
+	return out;
+}
+
+// Reused across renders so a non-WebGL machine panning complex mode does not
+// allocate a fresh canvas every frame.
+let complexScratch: HTMLCanvasElement | null = null;
+
+/** CPU fallback for complex domain coloring f(z). Reproduces the WebGL
+ *  fragment shader's picture (HSV phase + log2-magnitude contour rings) on a
+ *  2D canvas, so a context loss or a non-WebGL machine shows the same surface
+ *  instead of a silent blank canvas. */
+export function renderComplexCPU(
+	ctx: CanvasRenderingContext2D,
+	expr: string,
+	view: ViewBox,
+	width: number,
+	height: number,
+): void {
+	// identical textual rewrite to the GLSL path — keep the two in lockstep
+	let s = expr.trim().toLowerCase();
+	s = s.replace(/\bln\s*\(/g, 'c_log(');
+	s = s.replace(/\bsin\s*\(/g, 'c_sin(');
+	s = s.replace(/\bcos\s*\(/g, 'c_cos(');
+	s = s.replace(/\bexp\s*\(/g, 'c_exp(');
+	s = s.replace(/\bz\s*\^\s*2\b/g, 'c_pow2(z)');
+	s = s.replace(/\bz\s*\^\s*3\b/g, 'c_pow3(z)');
+	s = s.replace(/\bz\s*\^\s*4\b/g, 'c_pow4(z)');
+	s = s.replace(/\bz\s*\^\s*5\b/g, 'c_pow5(z)');
+	s = s.replace(/(?<!\.)\b(\d+)\b(?!\.)/g, 'vec2($1.0, 0.0)');
+
+	const evaluate = buildComplexEvaluator(s);
+	if (!evaluate) return; // unparseable — leave the cleared canvas (matches GLSL)
+
+	const devW = ctx.canvas.width || Math.max(2, Math.round(width));
+	const devH = ctx.canvas.height || Math.max(2, Math.round(height));
+	const cap = 1000; // bound a big-screen redraw so pan/zoom stays responsive
+	const scale = Math.min(1, cap / Math.max(devW, devH));
+	const rw = Math.max(2, Math.round(devW * scale));
+	const rh = Math.max(2, Math.round(devH * scale));
+
+	const img = ctx.createImageData(rw, rh);
+	const data = img.data;
+	const TWO_PI = 6.283185307179586;
+	const PI = Math.PI;
+	const xRange = view.xMax - view.xMin;
+	const yRange = view.yMax - view.yMin;
+
+	const hsv2rgb = (h: number, s: number, v: number): [number, number, number] => {
+		const fr = (x: number): number => x - Math.floor(x);
+		const clamp01 = (t: number): number => (t < 0 ? 0 : t > 1 ? 1 : t);
+		// Sam Hocevar's fast path, identical to the shader's hsv2rgb.
+		const px = Math.abs(fr(h) * 6 - 3);
+		const py = Math.abs(fr(h + 2 / 3) * 6 - 3);
+		const pz = Math.abs(fr(h + 1 / 3) * 6 - 3);
+		const ch = (p: number): number => 1 - s * (1 - clamp01(p - 1));
+		return [v * ch(px), v * ch(py), v * ch(pz)];
+	};
+
+	for (let r = 0; r < rh; r++) {
+		// ImageData row 0 is the top; the shader's uv.y is bottom-up, so the
+		// graph's y axis (up = +) maps row rh-1 → yMax.
+		const uvY = (rh - r - 0.5) / rh;
+		const zy = view.yMin + uvY * yRange;
+		let off = r * rw * 4;
+		for (let c = 0; c < rw; c++) {
+			const uvX = (c + 0.5) / rw;
+			const zx = view.xMin + uvX * xRange;
+			const w = evaluate(zx, zy);
+			let R = 0, G = 0, B = 0;
+			if (Number.isFinite(w[0]) && Number.isFinite(w[1])) {
+				const phase = Math.atan2(w[1], w[0]);
+				let hue = (phase + PI) / TWO_PI;
+				hue -= Math.floor(hue);
+				const mag = Math.hypot(w[0], w[1]);
+				let logMag = Math.log2(mag + 1e-6);
+				logMag -= Math.floor(logMag);
+				const rings = 0.85 + 0.15 * Math.sin(logMag * TWO_PI);
+				const rgb = hsv2rgb(hue, 0.85, rings);
+				R = rgb[0]; G = rgb[1]; B = rgb[2];
+			}
+			data[off] = R * 255;
+			data[off + 1] = G * 255;
+			data[off + 2] = B * 255;
+			data[off + 3] = 229; // alpha 0.90 → 229
+			off += 4;
+		}
+	}
+
+	// putImageData ignores the ctx transform, so blit through an offscreen
+	// canvas with drawImage (which the dpr transform scales to fill the view).
+	if (!complexScratch) complexScratch = document.createElement('canvas');
+	if (complexScratch.width !== rw || complexScratch.height !== rh) {
+		complexScratch.width = rw;
+		complexScratch.height = rh;
+	}
+	const octx = complexScratch.getContext('2d');
+	if (!octx) return;
+	octx.putImageData(img, 0, 0);
+	ctx.drawImage(complexScratch, 0, 0, rw, rh, 0, 0, width, height);
 }
 
 /** CPU fallback for Vector Field dy/dx = f(x, y) */

@@ -298,6 +298,9 @@ export function initGraph3d(scope: Scope): void {
 				const opt = engineSelect.querySelector('option[value="webgl"]') as HTMLOptionElement | null;
 				if (opt) opt.disabled = true;
 			}
+			// The CPU path needs shading; without this the surface vanishes
+			// silently after a context loss (grid is set but shading is null).
+			if (grid && !shading) shading = shadeGrid(grid);
 			render();
 		});
 	}
@@ -496,6 +499,9 @@ export function initGraph3d(scope: Scope): void {
 				console.warn('[WebGL] Render call threw an error, falling back to CPU Canvas 2D:', err);
 				engine = 'canvas2d';
 				if (engineSelect) engineSelect.value = 'canvas2d';
+				// Without this the CPU fallback below draws the floor and box
+				// but skips drawSurface — the surface blanks with no error.
+				if (grid && !shading) shading = shadeGrid(grid);
 			}
 		}
 
@@ -708,8 +714,17 @@ export function initGraph3d(scope: Scope): void {
 				const i = iFrom + ii * iStep;
 				const cell = j * N + i;
 				if (!sh.ok[cell]) continue;
-				const di = Math.min(stepMult, N - ii) * (sy > 0 ? -1 : 1);
-				const dj = Math.min(stepMult, N - jj) * (cy > 0 ? -1 : 1);
+				// A quad always spans from vertex i toward the far edge at N
+				// (di, dj >= 0), so it covers cells [i, i+di). The sign of
+				// sin(yaw) only sets paint order — iFrom/iStep walk far-to-near
+				// — not quad orientation. The old code negated di when sy>0,
+				// making the quad span [i-|di|, i]: it reached vertex -1 at the
+				// near edge (NaN -> dropped quad) and never touched vertex N at
+				// the far edge (a one-cell gap along the deep border). Clamping
+				// by N-i, the real distance to the far edge, tiles the backward
+				// walk exactly like the forward one.
+				const di = Math.min(stepMult, N - i);
+				const dj = Math.min(stepMult, N - j);
 				const k = j * stride + i;
 				const k1 = j * stride + (i + di);
 				const k2 = (j + dj) * stride + (i + di);
