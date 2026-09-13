@@ -348,11 +348,32 @@ export function initColorGamut(
 
 		// Axis labels
 		ctx.font = '11px ui-monospace, Consolas, monospace';
-		ctx.fillStyle = 'rgba(128, 128, 128, 0.75)';
-		ctx.fillText('+b (yellow)', center.x + 6, 16);
-		ctx.fillText('-b (blue)', center.x + 6, h - 8);
-		ctx.fillText('-a (green)', 8, center.y - 6);
-		ctx.fillText('+a (red)', w - 54, center.y - 6);
+		ctx.fillStyle = 'rgba(128, 128, 128, 0.8)';
+		const zh = isZh();
+		ctx.fillText(zh ? '+b (黄)' : '+b (yellow)', center.x + 6, 16);
+		ctx.fillText(zh ? '-b (蓝)' : '-b (blue)', center.x + 6, h - 8);
+		ctx.fillText(zh ? '-a (绿)' : '-a (green)', 8, center.y - 6);
+		ctx.fillText(zh ? '+a (红)' : '+a (red)', w - (zh ? 48 : 54), center.y - 6);
+
+		// sRGB Gamut boundary contour curve at current sliceL
+		ctx.save();
+		ctx.beginPath();
+		const steps = 72;
+		for (let i = 0; i <= steps; i++) {
+			const angle = (i / steps) * Math.PI * 2;
+			const cosA = Math.cos(angle);
+			const sinB = Math.sin(angle);
+			const edge = clampOklabToSrgb(sliceL, cosA * 0.4, sinB * 0.4);
+			const pt = toScreen(edge.a, edge.b, w, h);
+			if (i === 0) ctx.moveTo(pt.x, pt.y);
+			else ctx.lineTo(pt.x, pt.y);
+		}
+		ctx.closePath();
+		ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+		ctx.lineWidth = 1.5;
+		ctx.setLineDash([4, 3]);
+		ctx.stroke();
+		ctx.restore();
 
 		// Current color pointer marker
 		const curPos = toScreen(currentOklab.a, currentOklab.b, w, h);
@@ -415,7 +436,7 @@ export function initColorGamut(
 					: 'Gamut: sRGB (Standard)'
 				: zh
 					? '色域: Display P3 / 宽色域'
-					: 'Gamut: Display P3 (Wide)';
+					: 'Gamut: space: Display P3 (Wide)';
 			infoEl.textContent = `${spaceText} · L: ${(sliceL * 100).toFixed(1)}% · C: ${currentOklab.C.toFixed(3)} · h: ${currentOklab.h.toFixed(1)}°`;
 		}
 	}
@@ -428,8 +449,8 @@ export function initColorGamut(
 		const { a, b } = fromScreen(px, py, rect.width, rect.height);
 		// Out-of-gamut clicks snap to the gamut edge along the clicked hue,
 		// so the picked color always matches the direction of the click.
-		const inGamut = clampOklabToSrgb(currentOklab.L, a, b);
-		const picked = oklabToRgb(currentOklab.L, inGamut.a, inGamut.b);
+		const inGamut = clampOklabToSrgb(sliceL, a, b);
+		const picked = oklabToRgb(sliceL, inGamut.a, inGamut.b);
 		onSelectRgb({ r: picked.r, g: picked.g, b: picked.b });
 	}
 

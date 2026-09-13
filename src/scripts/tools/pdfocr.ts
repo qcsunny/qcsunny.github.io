@@ -126,8 +126,8 @@ const makeWorker = (lang: 'eng' | 'chi_sim', _onProgress: ProgressFn, _total: nu
 	loadTesseract().then((m) =>
 		m.createWorker(lang, 1, {
 			workerPath: '/tesseract/worker.min.js',
-			corePath: '/tesseract/core',
-			langPath: '/tesseract/lang',
+			corePath: '/tesseract/core/',
+			langPath: '/tesseract/lang/',
 		}),
 	);
 
