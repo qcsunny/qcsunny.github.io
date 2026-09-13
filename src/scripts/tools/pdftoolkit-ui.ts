@@ -130,14 +130,28 @@ export function initPdfToolkit(host: HTMLElement): void {
 		}
 	};
 
+	const clearStatus = (panelId?: string): void => {
+		if (panelId) {
+			const el = panels[panelId]?.querySelector<HTMLElement>('.t-pdf-runline');
+			if (el) el.textContent = '';
+		} else {
+			for (const p of Object.values(panels)) {
+				const el = p.querySelector<HTMLElement>('.t-pdf-runline');
+				if (el) el.textContent = '';
+			}
+		}
+	};
+
 	const acceptFiles = async (files: File[], tabId: string): Promise<void> => {
 		if (tabId === 'img2pdf') {
+			clearStatus('img2pdf');
 			for (const f of files) {
 				const bytes = new Uint8Array(await f.arrayBuffer());
 				if (f.type === 'image/jpeg' || /\.jpe?g$/i.test(f.name)) state.images.push({ name: f.name, bytes, type: 'jpeg' });
 				else if (f.type === 'image/png' || /\.png$/i.test(f.name)) state.images.push({ name: f.name, bytes, type: 'png' });
 			}
 		} else if (tabId === 'merge') {
+			clearStatus('merge');
 			for (const f of files) {
 				const bytes = new Uint8Array(await f.arrayBuffer());
 				state.mergeFiles.push({ name: f.name, bytes });
@@ -145,6 +159,7 @@ export function initPdfToolkit(host: HTMLElement): void {
 		} else {
 			// single-file tabs: the latest drop replaces, it does not accumulate
 			state.files = [];
+			clearStatus();
 			for (const f of files) {
 				const bytes = new Uint8Array(await f.arrayBuffer());
 				state.files.push({ name: f.name, bytes });
@@ -349,7 +364,16 @@ export function initPdfToolkit(host: HTMLElement): void {
 		download(out, 'merged.pdf');
 		say('merge', `Merged ${state.mergeFiles.length} files (${(await readPdfMeta(out)).pageCount} pages).`, `已合并 ${state.mergeFiles.length} 个文件（共 ${(await readPdfMeta(out)).pageCount} 页）。`);
 	});
-	panels.merge!.append(mgBtn);
+	const clearMergeBtn = document.createElement('button');
+	clearMergeBtn.type = 'button';
+	clearMergeBtn.className = 't-btn';
+	clearMergeBtn.append(bilingual('🗑 Clear files', '🗑 清空文件'));
+	clearMergeBtn.addEventListener('click', () => {
+		state.mergeFiles = [];
+		fileCount();
+		clearStatus('merge');
+	});
+	panels.merge!.append(mgBtn, clearMergeBtn);
 
 	// pdf → image (pdf.js)
 	const p2iScale = document.createElement('select');
@@ -420,7 +444,16 @@ export function initPdfToolkit(host: HTMLElement): void {
 		download(out, 'images.pdf');
 		say('img2pdf', `Combined ${state.images.length} images into one PDF.`, `已将 ${state.images.length} 张图片合成一个 PDF。`);
 	});
-	panels.img2pdf!.append(i2pBtn);
+	const clearImgBtn = document.createElement('button');
+	clearImgBtn.type = 'button';
+	clearImgBtn.className = 't-btn';
+	clearImgBtn.append(bilingual('🗑 Clear images', '🗑 清空图片'));
+	clearImgBtn.addEventListener('click', () => {
+		state.images = [];
+		fileCount();
+		clearStatus('img2pdf');
+	});
+	panels.img2pdf!.append(i2pBtn, clearImgBtn);
 
 	const privacy = document.createElement('p');
 	privacy.className = 't-file-privacy';
