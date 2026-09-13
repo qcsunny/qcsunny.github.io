@@ -139,20 +139,24 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 	},
 	'calculators/pi': {
 		about: [
-			'Compute the mathematical constant Pi (π) up to 2,000 decimal digits in real time directly inside your browser. Powered by Machin-like series expansion (π/4 = 4·arccot(5) − arccot(239)) and BigInt arbitrary-precision integer arithmetic, without floating-point truncation.',
-			'Along with the exact decimal digits, this tool provides ancient Milü (355/113) and Yuelü (22/7) fraction rational approximations, plus circle circumference and area calculations when radius is provided.',
+			'Compute the mathematical constant Pi (π) up to 1,000,000 decimal places in real time directly inside your browser. Powered by an adaptive Hybrid Engine (Machin formula for N < 15,000 digits; Chudnovsky algorithm with Binary Splitting & Newton-Raphson square root for N ≥ 15,000 digits) and BigInt arbitrary-precision integer arithmetic, with 14 guard digits ensuring 100% mathematical accuracy without floating-point truncation.',
+			'Along with the exact decimal output, this tool features real-time CPU benchmark timing, dynamic 4-stage progress visualization, ancient Milü (355/113) and Yuelü (22/7) rational fraction approximations, and circle geometric calculations.',
 		],
 		aboutZh: [
-			'在浏览器端实时高精度计算圆周率 π 至小数点后 2000 位。算法采用经典的梅钦级数公式（Machin formula: π/4 = 4·arccot(5) − arccot(239)）结合 JavaScript 原生 BigInt 任意精度整型递推，完全杜绝常规浮点数的尾数截断。',
-			'除了输出高精度位数值，页面还同时提供祖冲之密率（355/113，相对误差不足亿分之一）与约率（22/7）分式逼近对比，并支持输入圆半径联动验算圆周长与面积。',
+			'在浏览器端实时高精度计算圆周率 π 至小数点后 1,000,000 位。算法采用自适应分阶混合引擎（1.5 万位以内采用 Machin 梅钦公式；1.5 万位及以上自动切换为 Chudnovsky 楚德诺夫斯基超高阶级数 + 二进制拆分 Binary Splitting + 牛顿-拉夫逊平方根算法），结合原生 BigInt 任意精度整型递推与 14 位安全冗余位（guard digits），彻底消除常规浮点数截断，保证末位 100% 精确无误。',
+			'除了输出高精度位数值，页面还同时提供 CPU 性能基准测试耗时、动态 4 阶段进度条展示、祖冲之密率（355/113，相对误差不足亿分之一）与约率（22/7）分式逼近对比，并支持输入圆半径联动验算圆周长与面积。',
 		],
 		faq: [
-			{ q: 'How is Pi calculated to 2,000 digits without freezing the page?', a: 'Using Machin-like arctangent series with BigInt integer scaling, which computes 2,000 digits in tens of milliseconds.' },
+			{ q: 'How does the Hybrid Engine achieve 1,000,000 digits without page freezing?', a: 'For smaller inputs (N < 15,000), Machin arctangent series offer instant results with minimal memory footprint. For large-scale inputs (N ≥ 15,000), the Chudnovsky algorithm combined with binary splitting reduces computational time complexity from O(N²) to O(N log N³), yielding 14.18 digits per term with asynchronous progress updates.' },
+			{ q: 'Why is 15,000 digits the empirical crossover boundary between Machin and Chudnovsky?', a: 'Chudnovsky has a higher constant initialization cost due to matrix polynomial terms and tree-structured binary splitting. Below 15,000 digits, Machin simple iterative arithmetic runs faster. Above 15,000 digits, Chudnovsky divide-and-conquer binary splitting dramatically outperforms Machin.' },
+			{ q: 'What is the maximum achievable precision and browser memory limits?', a: 'The engine uses 14 guard digits to guarantee mathematical precision. The physical maximum is bounded by JavaScript V8 engine memory limits (~512MB limit per BigInt/String, corresponding to ~100M physical digits). 1,000,000 digits completes smoothly in seconds on modern browsers.' },
 			{ q: 'What is Zu Chongzhi Milü (355/113)?', a: 'Milü is a legendary rational approximation discovered in the 5th century by Chinese mathematician Zu Chongzhi, accurate to 6 decimal places.' },
 			{ q: 'Why is Pi an irrational number?', a: 'Pi cannot be written as a simple fraction of two integers, and its decimal representation never ends or repeats.' },
 		],
 		faqZh: [
-			{ q: '为什么能瞬间算出 2000 位圆周率而不卡顿？', a: '梅钦类反正切公式收敛速度极快，结合 BigInt 定点整数递推，计算 2000 位只需几十毫秒。' },
+			{ q: '混合引擎是如何在浏览器中实现 100 万位圆周率实时计算的？', a: '低位数（<15,000 位）使用经典的 Machin 梅钦反正切级数秒开；高位数（≥15,000 位）自动切换至 Chudnovsky 楚德诺夫斯基级数结合二进制拆分（Binary Splitting），将算法时间复杂度由 O(N²) 降至 O(N log N³)，每级数项提供约 14.18 位有效数字，配合 4 阶段异步分块与实时进度条。' },
+			{ q: '为什么 1.5 万位是 Machin 与 Chudnovsky 算法的实测分界点？', a: 'Chudnovsky 级数包含复杂的矩阵多项式与拆分树合并开销，在 1.5 万位以下，Machin 的简单单步递推更轻量高效；而在 1.5 万位以上，Chudnovsky 的树状分治优势全面超越 Machin。' },
+			{ q: '浏览器端计算圆周率的精度保证与物理极限是多少？', a: '算法内置 14 位安全冗余位（guard digits）确保截断后 100% 数学准确。物理上限受限于 JavaScript V8 引擎的 BigInt 与字符串约 512MB 内存分配限制（理论约 1 亿位），100 万位在桌面级浏览器中仅需数秒即可平滑完成。' },
 			{ q: '什么是祖冲之密率（355/113）？', a: '公元 5 世纪中国南北朝数学家祖冲之算出的精美有理数逼近，仅用三位数分子分母就达到了小数点后第 6 位的极高精度。' },
 			{ q: '圆周率是无理数吗？', a: '是的。π 既是无理数又是超越数，小数位无限且不循环。' },
 		],

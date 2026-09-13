@@ -866,17 +866,31 @@ export function toSentence(s: string): string {
 // convention: 零 collapsed to single, trailing 零 dropped, all-zero integer
 // part reads 零元, no fractional part reads 整, 角 present + no 分 reads e.g.
 // 伍角, and 零 bridges 元 to 分 (10.05 → 壹拾元零伍分).
-// Supports 0 ≤ amount < 10^16 with up to two decimal places.
+// Supports 0 ≤ amount < 10^16 with up to two decimal places. The comma is
+// the one character with two readings — see rmbParse, which refuses it
+// when ambiguous instead of picking thousands grouping.
 
 const RMB_DIGITS = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖'];
 const RMB_SECTIONS = ['', '拾', '佰', '仟'];
 const RMB_GROUP_UNITS = ['', '万', '亿', '万亿'];
 
-/** Convert a numeric amount into the formal Chinese uppercase amount, or null
- *  when the input is not a valid non-negative amount with ≤2 decimals. */
-export function rmbUppercase(input: string): string | null {
-	const t = input.replace(/[¥￥,，\s]/g, '');
-	if (!/^\d{1,16}(\.\d{1,2})?$/.test(t)) return null;
+/** Why rmbUppercase refused an input. 'comma' is not malformed input — it is
+ *  ambiguous: with no decimal point a trailing ",NN" is a European decimal
+ *  comma, and reading it as thousands grouping returns 100x the amount.
+ *  Converting either way would be a guess, so neither happens. */
+export type RmbProblem = 'format' | 'comma';
+
+/** Parse an amount, or refuse with a reason. The currency marks and spaces are
+ *  decoration and get dropped; the comma is the one character with two
+ *  readings, so it is judged rather than dropped along with the rest. */
+function rmbParse(input: string): { value: string } | { problem: RmbProblem } {
+	const s = input.replace(/[¥￥\s]/g, '');
+	const t = s.replace(/[,，]/g, '');
+	if (!/^\d{1,16}(\.\d{1,2})?$/.test(t)) return { problem: 'format' };
+	// "1234,56" would come out 123456 — a hundred times the European 1234.56.
+	// "1,234" and "1,234.56" stay unambiguous and pass: only a comma on the
+	// final one or two digits with no dot anywhere reads two ways.
+	if (!s.includes('.') && /[,，]\d{1,2}$/.test(s)) return { problem: 'comma' };
 	const [intRaw, dec = ''] = t.split('.');
 	const int = intRaw.replace(/^0+(?=\d)/, '');
 	const hasJiao = dec[0] !== undefined && dec[0] !== '0';
@@ -925,7 +939,7 @@ export function rmbUppercase(input: string): string | null {
 		intStr = parts.join('') + '元';
 	}
 
-	if (!hasJiao && !hasFen) return (intStr || '零元') + '整';
+	if (!hasJiao && !hasFen) return { value: (intStr || '零元') + '整' };
 	let decStr = '';
 	if (hasJiao) decStr += RMB_DIGITS[+dec[0]] + '角';
 	if (hasFen) {
@@ -934,7 +948,23 @@ export function rmbUppercase(input: string): string | null {
 		if (!hasJiao && int !== '0') decStr += '零';
 		decStr += RMB_DIGITS[+dec[1]] + '分';
 	}
-	return intStr + decStr;
+	return { value: intStr + decStr };
+}
+
+/** Convert a numeric amount into the formal Chinese uppercase amount, or null
+ *  when it is not a valid non-negative amount with ≤2 decimals, or is
+ *  ambiguous — where null is the point: the caller must not pick one reading
+ *  over the other. Batch mode marks the line ✗ instead of guessing. */
+export function rmbUppercase(input: string): string | null {
+	const r = rmbParse(input);
+	return 'value' in r ? r.value : null;
+}
+
+/** The refusal reason behind rmbUppercase's null, or null when it converted.
+ *  Separate because batch mode keeps the plain string-or-null contract. */
+export function rmbUppercaseProblem(input: string): RmbProblem | null {
+	const r = rmbParse(input);
+	return 'value' in r ? null : r.problem;
 }
 
 // --- roman numerals -------------------------------------------------------------------

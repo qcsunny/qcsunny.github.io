@@ -84,6 +84,16 @@ test('wcag contrast: 4.54 with pass and fail verdicts', async ({ page }) => {
 	await expect(results).not.toContainText('4.50:1');
 });
 
+test('color-converter preview prints a ratio that agrees with its verdicts', async ({ page }) => {
+	await page.goto('/color/color-converter/');
+	// #006ffb on white is 4.4999…:1. At two decimals the preview read
+	// "4.50:1" while the AA row read ✗ — the self-contradiction the
+	// standalone checker had, one fewer place to keep fixed.
+	await page.locator('#t-contrast-fg').fill('#006ffb');
+	await page.locator('#t-contrast-bg').fill('#ffffff');
+	await expect(page.locator('.t-contrast-ratio')).toHaveText('4.4999:1');
+});
+
 test('color palette renders swatches', async ({ page }) => {
 	await page.goto('/color/color-palette/');
 	const results = page.locator('.t-results');

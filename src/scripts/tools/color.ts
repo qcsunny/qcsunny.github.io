@@ -387,9 +387,22 @@ export function initColor(host: HTMLElement): void {
 		const l1 = relLum(fg);
 		const l2 = relLum(bg);
 		const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+		// The verdict rows below compare the UNROUNDED ratio, so the preview
+		// must not round across one of their thresholds: at two decimals
+		// #006ffb prints 4.50:1 beside a 4.5:1 ✗ — the self-contradiction
+		// the standalone checker had. Same adaptive-precision rule as that tool.
+		const cutoffs = [4.5, 3, 7];
+		let shown = ratio;
+		for (let dp = 2; dp <= 6; dp++) {
+			const n = Math.round(ratio * 10 ** dp) / 10 ** dp;
+			if (!cutoffs.some((need) => (ratio >= need) !== (n >= need))) {
+				shown = n;
+				break;
+			}
+		}
 		previewSample.style.color = rgbToHex(fg);
 		previewSample.style.background = rgbToHex(bg);
-		previewRatio.textContent = `${ratio.toFixed(2)}:1`;
+		previewRatio.textContent = `${shown}:1`;
 		const judgements: [number, HTMLElement][] = [];
 		const values = contrastRows.querySelectorAll('.t-row-value');
 		judgements.push([4.5, values[0] as HTMLElement]);

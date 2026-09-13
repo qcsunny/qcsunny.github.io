@@ -2,7 +2,7 @@
 // tables (compound interest year by year, loan amortization, mortgage prepayment, etc.).
 
 import type { FormConfig, FormResult, FormResultRow, FormTable, TextConfig, ToolEntry } from './registry';
-import { rmbUppercase, runBatch } from './textTools';
+import { rmbUppercase, rmbUppercaseProblem, runBatch } from './textTools';
 import { formatNumber } from '../scripts/calculator/engine';
 
 const money = (v: number): string => formatNumber(Math.round(v * 100) / 100);
@@ -3148,13 +3148,20 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 					run: (t) => {
 						if (!t.trim()) return { output: '', error: 'Enter an amount first.', errorZh: '请先输入金额。' };
 						const r = rmbUppercase(t);
-						return r
-							? { output: r }
-							: {
-									output: '',
-									error: 'Enter a valid amount: digits only, at most 2 decimals, below 10^16.',
-									errorZh: '请输入有效金额：纯数字、最多两位小数、小于 10^16。',
-								};
+						if (r) return { output: r };
+						// Two refusals need two messages. "Not a number" is a typo;
+						// "ambiguous comma" is a real amount read two ways, and the
+						// generic message would hide the one that costs a factor of 100.
+						const ambiguous = rmbUppercaseProblem(t) === 'comma';
+						return {
+							output: '',
+							error: ambiguous
+								? 'Ambiguous comma: with no decimal point a trailing ",NN" is a European decimal comma, not thousands grouping — "1234,56" would convert as 123456, a hundred times 1234.56. Nothing was guessed; use a dot for decimals.'
+								: 'Enter a valid amount: digits only, at most 2 decimals, below 10^16.',
+							errorZh: ambiguous
+								? '逗号歧义：没有小数点时，结尾的 ",NN" 是欧陆小数逗号，不是千位分隔——「1234,56」会被转成 123456，是 1234.56 的 100 倍。工具没有替您猜，小数请用 .。'
+								: '请输入有效金额：纯数字、最多两位小数、小于 10^16。',
+						};
 					},
 				},
 				{
