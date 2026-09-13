@@ -187,29 +187,32 @@ export function initPdfOcr(host: HTMLElement): void {
 	const copyBtn = document.createElement('button');
 	copyBtn.type = 'button';
 	copyBtn.className = 't-btn';
-	const flashCopySuccess = (btn: HTMLButtonElement): void => {
-		const oldChildren = Array.from(btn.childNodes);
-		btn.replaceChildren(bilingual('✓ Copied!', '✓ 已复制!'));
-		btn.style.color = '#10b981';
-		setTimeout(() => {
-			btn.replaceChildren(...oldChildren);
-			btn.style.color = '';
+
+	let flashTimer: ReturnType<typeof setTimeout> | undefined;
+	const resetCopyBtn = (): void => {
+		copyBtn.replaceChildren(bilingual('📋 Copy text', '📋 复制文本'));
+		copyBtn.style.color = '';
+	};
+	resetCopyBtn();
+
+	const flashFeedback = (msgEn: string, msgZh: string, color = ''): void => {
+		if (flashTimer) clearTimeout(flashTimer);
+		copyBtn.replaceChildren(bilingual(msgEn, msgZh));
+		copyBtn.style.color = color;
+		flashTimer = setTimeout(() => {
+			resetCopyBtn();
 		}, 1500);
 	};
 
 	copyBtn.addEventListener('click', async () => {
 		const text = output.textContent?.trim() ?? '';
 		if (!text) {
-			const oldChildren = Array.from(copyBtn.childNodes);
-			copyBtn.replaceChildren(bilingual('⚠ No text to copy', '⚠ 暂无文本可复制'));
-			setTimeout(() => {
-				copyBtn.replaceChildren(...oldChildren);
-			}, 1500);
+			flashFeedback('⚠ No text to copy', '⚠ 暂无文本可复制');
 			return;
 		}
 		try {
 			await navigator.clipboard.writeText(text);
-			flashCopySuccess(copyBtn);
+			flashFeedback('✓ Copied!', '✓ 已复制!', '#10b981');
 		} catch {
 			const ta = document.createElement('textarea');
 			ta.value = text;
@@ -219,7 +222,7 @@ export function initPdfOcr(host: HTMLElement): void {
 			ta.select();
 			(document as any).execCommand('copy');
 			document.body.removeChild(ta);
-			flashCopySuccess(copyBtn);
+			flashFeedback('✓ Copied!', '✓ 已复制!', '#10b981');
 		}
 	});
 
