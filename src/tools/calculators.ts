@@ -657,8 +657,8 @@ async function computePiHybrid(
 }
 
 const piCalculator: FormConfig = {
-	intro: 'Calculate Pi (π) up to 1,000,000 decimal places using a Hybrid Engine (Machin <15k & Chudnovsky >=15k + Binary Splitting) with real-time CPU benchmark timing and presets.',
-	introZh: '采用分阶混合引擎（低位数 Machin 秒开，1.5 万位以上自动切换 Chudnovsky 楚德诺夫斯基超高阶级数 + 二进制拆分）计算圆周率 π 至 1,000,000 位，包含 CPU 性能检测与分级预设。',
+	intro: 'Calculate Pi (π) up to 1,000,000+ decimal places using a Hybrid Engine (Machin <15k & Chudnovsky >=15k + Binary Splitting) with real-time CPU benchmark timing and presets.',
+	introZh: '采用分阶混合引擎（低位数 Machin 秒开，1.5 万位以上自动切换 Chudnovsky 楚德诺夫斯基超高阶级数 + 二进制拆分）计算圆周率 π 至超 100 万位（1,000,000+），包含 CPU 性能检测与分级预设。',
 	fields: [
 		{
 			id: 'digits',
@@ -669,10 +669,10 @@ const piCalculator: FormConfig = {
 			def: '200',
 			step: '1',
 			min: '1',
-			max: '1000000',
+			max: '10000000',
 			required: true,
-			hint: 'Supports 1 to 1,000,000 decimal places (Hybrid Engine: Machin & Chudnovsky).',
-			hintZh: '支持 1 到 1,000,000 位高精度计算（混合引擎：Machin + Chudnovsky）。',
+			hint: 'Supports 1 to 10,000,000+ decimal places (Hybrid Engine: Machin & Chudnovsky).',
+			hintZh: '支持 1 到 10,000,000+ 位（超 100 万位）高精度计算（混合引擎：Machin + Chudnovsky）。',
 			presets: [
 				{ label: '2,000 digits (Instant)', labelZh: '2,000 位 (极速秒开)', value: '2000' },
 				{ label: '5,000 digits (Fast)', labelZh: '5,000 位 (快速测速)', value: '5000' },
@@ -2971,10 +2971,10 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 	{
 		slug: 'pi',
 		category: 'calculators',
-		name: 'Pi Calculator (π up to 1,000,000 Digits)',
-		nameZh: '圆周率 π 计算器（精确至 100 万位）',
-		description: 'Compute Pi (π) up to 1,000,000 decimal places using a high-precision Hybrid Engine (Machin & Chudnovsky) with real-time progress and CPU benchmark presets.',
-		descriptionZh: '采用分级混合引擎（低位数 Machin 秒开，1.5 万位以上自动切换 Chudnovsky 超高阶级数与二进制拆分）实时计算圆周率 π 至 1,000,000 位。',
+		name: 'Pi Calculator (π up to 1,000,000+ Digits)',
+		nameZh: '圆周率 π 计算器（超 100 万位高精度）',
+		description: 'Compute Pi (π) up to 1,000,000+ decimal places using a high-precision Hybrid Engine (Machin & Chudnovsky) with real-time progress and CPU benchmark presets.',
+		descriptionZh: '采用分段混合引擎（低位数 Machin 秒开，1.5 万位以上自动切换 Chudnovsky 超高阶级数与二进制拆分）实时计算圆周率 π 至超 100 万位（1,000,000+）。',
 		kind: 'form',
 		config: piCalculator,
 	},
