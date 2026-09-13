@@ -373,7 +373,10 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 		};
 	}
 
+	let currentComputeId = 0;
+
 	function update(): void {
+		const computeId = ++currentComputeId;
 		results.innerHTML = '';
 		host.querySelectorAll('.t-tablewrap, .t-note, .t-chartwrap').forEach((el) => el.remove());
 
@@ -430,7 +433,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 				if (isBad) {
 					missingFields.push(f);
 					ctrl?.classList.add('t-invalid');
-					if (tip) tip.style.display = 'block';
+					if (tip) tip.style.display = '';
 				} else {
 					ctrl?.classList.remove('t-invalid');
 					if (tip) tip.style.display = 'none';
@@ -460,8 +463,81 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 		}
 
 		// 4. Compute and render results
+		let progressBarWrap: HTMLElement | null = null;
+		let progressFillEl: HTMLElement | null = null;
+		let progressTextEl: HTMLElement | null = null;
+
+		const onProgress = (pct: number, msg?: string, msgZh?: string) => {
+			if (computeId !== currentComputeId) return;
+			const clampedPct = Math.min(100, Math.max(0, Math.round(pct)));
+			if (!progressBarWrap) {
+				results.innerHTML = '';
+				const wrap = document.createElement('div');
+				wrap.className = 't-progress-wrap';
+
+				const info = document.createElement('div');
+				info.className = 't-progress-info';
+
+				progressTextEl = document.createElement('span');
+				progressTextEl.className = 't-progress-text';
+
+				const pctEl = document.createElement('span');
+				pctEl.className = 't-progress-pct';
+				pctEl.textContent = `${clampedPct}%`;
+
+				info.append(progressTextEl, pctEl);
+
+				const bar = document.createElement('div');
+				bar.className = 't-progress-bar';
+
+				progressFillEl = document.createElement('div');
+				progressFillEl.className = 't-progress-fill';
+				progressFillEl.style.width = `${clampedPct}%`;
+				bar.append(progressFillEl);
+
+				wrap.append(info, bar);
+				results.append(wrap);
+				progressBarWrap = wrap;
+			}
+
+			if (progressFillEl) progressFillEl.style.width = `${clampedPct}%`;
+			const pctSpan = progressBarWrap?.querySelector('.t-progress-pct');
+			if (pctSpan) pctSpan.textContent = `${clampedPct}%`;
+
+			if (progressTextEl) {
+				progressTextEl.innerHTML = '';
+				progressTextEl.append(
+					bilingual(
+						msg ?? 'Calculating...',
+						msgZh ?? '正在计算中...',
+					),
+				);
+			}
+		};
+
 		try {
-			const out = config.compute(values);
+			const resOrPromise = config.compute(values, onProgress);
+			if (resOrPromise instanceof Promise) {
+				resOrPromise
+					.then((out) => {
+						if (computeId !== currentComputeId) return;
+						renderResults(out);
+					})
+					.catch((err) => {
+						if (computeId !== currentComputeId) return;
+						console.error(err);
+					});
+			} else {
+				renderResults(resOrPromise);
+			}
+		} catch (err) {
+			console.error(err);
+		}
+
+		function renderResults(out: FormResult): void {
+			results.innerHTML = '';
+			host.querySelectorAll('.t-tablewrap, .t-note, .t-chartwrap').forEach((el) => el.remove());
+
 			lastOut = out;
 			for (const row of out.rows) results.append(resultRow(row));
 			if (out.chartSvg) {
@@ -484,20 +560,8 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			// Save draft to localStorage (Feature 2)
 			if (slug) {
 				try {
-					const data: Record<string, string | boolean> = {};
+					const draft: Record<string, string> = {};
 					for (const f of config.fields) {
-						const val = getters.get(f.id)?.();
-						if (val !== undefined) data[f.id] = val;
-					}
-					localStorage.setItem(`tool-draft:${slug}`, JSON.stringify(data));
-				} catch {
-					// localStorage may be disabled; silently ignore
-				}
-			}
-		} catch (err) {
-			lastOut = null;
-			exportBar.style.display = 'none';
-			const note = document.createElement('p');
 			note.className = 't-note';
 			note.textContent = err instanceof Error ? err.message : 'Invalid input.';
 			host.append(note);

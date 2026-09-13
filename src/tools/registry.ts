@@ -160,11 +160,13 @@ export interface FormValues {
 	bool(id: string): boolean;
 }
 
+export type ProgressCallback = (pct: number, msg?: string, msgZh?: string) => void;
+
 export interface FormConfig {
 	intro?: string;
 	introZh?: string;
 	fields: FormField[];
-	compute: (v: FormValues) => FormResult;
+	compute: (v: FormValues, onProgress?: ProgressCallback) => FormResult | Promise<FormResult>;
 }
 
 // --- other kinds --------------------------------------------------------------

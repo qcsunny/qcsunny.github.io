@@ -1122,6 +1122,45 @@ const year = new Date().getFullYear();
 				padding: 0.65em 0.85em;
 				user-select: text;
 			}
+			/* --- Progress bar for async computations --- */
+			.t-progress-wrap {
+				border: 1px solid var(--gridline);
+				border-radius: 10px;
+				padding: 1em 1.2em;
+				background: color-mix(in srgb, var(--fg) 2%, var(--card));
+				display: flex;
+				flex-direction: column;
+				gap: 0.6em;
+			}
+			.t-progress-info {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				font-size: 0.88rem;
+				font-weight: 500;
+				color: var(--fg);
+			}
+			.t-progress-text {
+				color: var(--dim);
+			}
+			.t-progress-pct {
+				font-weight: 600;
+				color: var(--accent);
+				font-variant-numeric: tabular-nums;
+			}
+			.t-progress-bar {
+				width: 100%;
+				height: 8px;
+				background: color-mix(in srgb, var(--fg) 10%, var(--bg));
+				border-radius: 4px;
+				overflow: hidden;
+			}
+			.t-progress-fill {
+				height: 100%;
+				background: var(--accent);
+				border-radius: 4px;
+				transition: width 0.15s ease-out;
+			}
 			.t-row.t-row-warn {
 				background: rgba(245, 158, 11, 0.08);
 				border-left: 3px solid #f59e0b;

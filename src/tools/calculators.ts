@@ -460,26 +460,48 @@ const ratio: FormConfig = {
 
 
 // --- pi calculator (Machin formula + Binary Splitting BigInt) --------
-function computePiMachin(digits: number): { piStr: string; elapsedMs: number } {
+// --- pi calculator (Machin formula + Binary Splitting BigInt) --------
+async function computePiMachin(
+	digits: number,
+	onProgress?: import('./registry').ProgressCallback,
+): Promise<{ piStr: string; elapsedMs: number }> {
 	const t0 = typeof performance !== 'undefined' ? performance.now() : Date.now();
 
 	const extra = 10;
 	const totalDigits = digits + extra;
 
+	const terms5 = Math.ceil((totalDigits * 2.302585) / (2 * Math.log(5))) + 5;
+	const terms239 = Math.ceil((totalDigits * 2.302585) / (2 * Math.log(239))) + 5;
+	const totalTerms = terms5 + terms239;
+	let completedTerms = 0;
+	let lastYield = Date.now();
+
 	// Binary Splitting arctangent computation: computes T, Q such that sum = T / Q
-	function bsArccot(xVal: bigint, nTerms: number): { P: bigint; Q: bigint; T: bigint } {
+	async function bsArccot(xVal: bigint, nTerms: number): Promise<{ P: bigint; Q: bigint; T: bigint }> {
 		const xSq = xVal * xVal;
 
-		function bs(a: number, b: number): { P: bigint; Q: bigint; T: bigint } {
+		async function bs(a: number, b: number): Promise<{ P: bigint; Q: bigint; T: bigint }> {
 			if (b - a === 1) {
+				completedTerms++;
+				const now = Date.now();
+				if (onProgress && digits >= 5000 && now - lastYield > 80) {
+					lastYield = now;
+					const pct = Math.floor((completedTerms / totalTerms) * 85);
+					onProgress(
+						pct,
+						`Computing Machin series (${completedTerms.toLocaleString()} / ${totalTerms.toLocaleString()} terms)...`,
+						`正在计算梅钦级数（${completedTerms.toLocaleString()} / ${totalTerms.toLocaleString()} 项）...`,
+					);
+					await new Promise((r) => setTimeout(r, 0));
+				}
 				const k = BigInt(a);
 				const p = a % 2 === 0 ? 1n : -1n;
 				const q = (2n * k + 1n) * (a === 0 ? xVal : xSq);
 				return { P: p, Q: q, T: p };
 			}
 			const mid = (a + b) >> 1;
-			const left = bs(a, mid);
-			const right = bs(mid, b);
+			const left = await bs(a, mid);
+			const right = await bs(mid, b);
 			return {
 				P: left.P * right.P,
 				Q: left.Q * right.Q,
@@ -490,15 +512,26 @@ function computePiMachin(digits: number): { piStr: string; elapsedMs: number } {
 		return bs(0, nTerms);
 	}
 
-	const terms5 = Math.ceil((totalDigits * 2.302585) / (2 * Math.log(5))) + 5;
-	const terms239 = Math.ceil((totalDigits * 2.302585) / (2 * Math.log(239))) + 5;
+	if (onProgress && digits >= 5000) {
+		onProgress(0, 'Initializing BigInt Binary Splitting tree...', '正在初始化 BigInt 分治二进制拆分树...');
+	}
 
-	const res5 = bsArccot(5n, terms5);
-	const res239 = bsArccot(239n, terms239);
+	const res5 = await bsArccot(5n, terms5);
+	const res239 = await bsArccot(239n, terms239);
+
+	if (onProgress && digits >= 5000) {
+		onProgress(88, 'Scaling BigInt result & performing division...', '正在进行高精度除法与位移展开...');
+		await new Promise((r) => setTimeout(r, 0));
+	}
 
 	const unity = 10n ** BigInt(totalDigits);
 	const arc5 = (res5.T * unity) / res5.Q;
 	const arc239 = (res239.T * unity) / res239.Q;
+
+	if (onProgress && digits >= 5000) {
+		onProgress(96, 'Formatting Pi string output...', '正在格式化圆周率结果...');
+		await new Promise((r) => setTimeout(r, 0));
+	}
 
 	// Machin's formula: pi/4 = 4 * arccot(5) - arccot(239)
 	const piScaled = 16n * arc5 - 4n * arc239;
@@ -508,6 +541,10 @@ function computePiMachin(digits: number): { piStr: string; elapsedMs: number } {
 
 	const t1 = typeof performance !== 'undefined' ? performance.now() : Date.now();
 	const elapsedMs = Math.max(0.1, t1 - t0);
+
+	if (onProgress && digits >= 5000) {
+		onProgress(100, 'Done!', '计算完成！');
+	}
 
 	return { piStr: result, elapsedMs };
 }
@@ -548,7 +585,7 @@ const piCalculator: FormConfig = {
 			hintZh: '输入半径可同时计算圆周长与圆面积。',
 		},
 	],
-	compute: (v) => {
+	compute: async (v, onProgress) => {
 		const d = v.num('digits');
 		if (!Number.isInteger(d) || d < 1 || d > 1000000) {
 			return {
@@ -563,7 +600,7 @@ const piCalculator: FormConfig = {
 			};
 		}
 
-		const { piStr, elapsedMs } = computePiMachin(d);
+		const { piStr, elapsedMs } = await computePiMachin(d, onProgress);
 		const sec = elapsedMs / 1000;
 		const timeFmt = elapsedMs < 1000 ? `${elapsedMs.toFixed(1)} ms` : `${sec.toFixed(2)} s (${elapsedMs.toFixed(0)} ms)`;
 		const rows: import('./registry').FormResultRow[] = [
