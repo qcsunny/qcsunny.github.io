@@ -383,6 +383,10 @@ const year = new Date().getFullYear();
 				font-weight: 700;
 				margin-bottom: 0.4em;
 			}
+			/* markdown-preview (full-width layout) hides the page title to give
+			   the editor maximum vertical space */
+			.t-main-full .t-title { display: none; }
+			.t-main-full { padding-top: 0.5rem; }
 			.t-title-zh {
 				font-size: 0.8em;
 				font-weight: 500;
@@ -2217,20 +2221,37 @@ const year = new Date().getFullYear();
 	font-style: italic;
 	text-align: center;
 }
-.t-md-task-list {
+.t-md-preview-body ul,
+.t-md-preview-body ol {
+	padding-left: 1.6em;
+	margin: 0.6em 0;
+}
+.t-md-preview-body li {
+	margin: 0.35em 0;
+	line-height: 1.75;
+}
+.t-md-preview-body ul ul,
+.t-md-preview-body ul ol,
+.t-md-preview-body ol ul,
+.t-md-preview-body ol ol {
+	margin: 0.25em 0;
+	padding-left: 1.4em;
+}
+.t-md-preview-body ul.t-md-task-list {
 	list-style: none;
-	padding-left: 0.4em;
+	padding-left: 0.2em;
 }
 .t-md-task-item {
 	display: flex;
 	align-items: center;
-	gap: 0.5em;
-	margin: 0.4em 0;
+	gap: 0.55em;
+	margin: 0.35em 0;
 }
 .t-md-checkbox {
-	width: 1.1em;
-	height: 1.1em;
+	width: 1.05em;
+	height: 1.05em;
 	cursor: default;
+	margin: 0;
 }
 .t-md-alert {
 	border-left: 4px solid;
