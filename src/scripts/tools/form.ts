@@ -8,6 +8,16 @@ import { bilingual, langAttr, langProp } from './i18n';
 // into this bundle (the module itself is imported dynamically on click).
 import type { PngExportData } from './pngExport';
 
+export function formatWithCommas(valStr: string): string {
+	const trimmed = valStr.trim();
+	if (!trimmed) return valStr;
+	const raw = trimmed.replace(/,/g, '');
+	if (isNaN(Number(raw))) return valStr;
+	const parts = raw.split('.');
+	parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+	return parts.join('.');
+}
+
 export function initForm(host: HTMLElement, config: FormConfig): void {
 	const getters = new Map<string, () => string | boolean>();
 	const controls: Array<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement> = [];
@@ -42,7 +52,8 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			if (ctrl instanceof HTMLInputElement && ctrl.type === 'checkbox') {
 				ctrl.checked = f.def === 'true';
 			} else {
-				ctrl.value = f.def ?? '';
+				const numericish = f.type === 'number' || f.type === 'bigint';
+				ctrl.value = numericish ? formatWithCommas(f.def ?? '') : (f.def ?? '');
 			}
 		}
 		if (slug) {
@@ -93,9 +104,9 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 	host.append(exportBar);
 
 	const values: FormValues = {
-		num: (id) => Number(String(getters.get(id)?.() ?? '')),
+		num: (id) => Number(String(getters.get(id)?.() ?? '').replace(/,/g, '')),
 		bigint: (id) => {
-			const raw = String(getters.get(id)?.() ?? '').trim();
+			const raw = String(getters.get(id)?.() ?? '').replace(/,/g, '').trim();
 			return /^\d+$/.test(raw) ? BigInt(raw) : null;
 		},
 		str: (id) => String(getters.get(id)?.() ?? '').trim(),
@@ -176,22 +187,17 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			getters.set(field.id, () => ta.value);
 			control = ta;
 		} else {
-			// 'number' gets a real numeric input; 'date' a native calendar picker
-			// (value is the ISO "YYYY-MM-DD" string, parsed by compute()); 'bigint'
-			// is a text input with a numeric keypad (pattern + inputmode) because
-			// values above 2^53 would be rounded if they passed through a JS Number.
 			const numericish = field.type === 'number' || field.type === 'bigint';
 			const input = document.createElement('input');
-			input.type = field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text';
-			if (field.type === 'bigint') {
-				input.inputMode = 'numeric';
-				input.pattern = '[0-9]*';
+			input.type = field.type === 'date' ? 'date' : 'text';
+			if (numericish) {
+				input.inputMode = field.step === '1' ? 'numeric' : 'decimal';
 				input.autocomplete = 'off';
 			}
 			if (field.step) input.step = field.step;
 			if (field.min) input.min = field.min;
 			if (field.max) input.max = field.max;
-			input.value = field.def ?? '';
+			input.value = numericish ? formatWithCommas(field.def ?? '') : (field.def ?? '');
 			const phEn = field.placeholder ?? (numericish ? 'Required (number)' : 'Required');
 			const phZh = field.placeholderZh ?? (field.placeholder ? undefined : numericish ? '必填数值' : '必填');
 			langProp(input, 'placeholder', phEn, phZh);
@@ -220,7 +226,12 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 		below.append(tip);
 		reqTips.set(field.id, tip);
 
-		control.addEventListener('blur', update);
+		control.addEventListener('blur', () => {
+			if ((field.type === 'number' || field.type === 'bigint') && control.value) {
+				control.value = formatWithCommas(control.value);
+			}
+			update();
+		});
 
 		if (field.hint) {
 			const hint = document.createElement('span');
@@ -238,7 +249,8 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 				btn.className = 't-preset-btn';
 				btn.append(bilingual(p.label, p.labelZh));
 				btn.addEventListener('click', () => {
-					control.value = p.value;
+					const numericish = field.type === 'number' || field.type === 'bigint';
+					control.value = numericish ? formatWithCommas(p.value) : p.value;
 					control.dispatchEvent(new Event('input', { bubbles: true }));
 				});
 				chips.append(btn);
