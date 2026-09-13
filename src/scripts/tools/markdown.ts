@@ -669,25 +669,31 @@ function parseInline(text: string): string {
 			: `<span class="t-math t-math-inline" data-tex="${tex}">${tex}</span>`,
 	);
 
+	const tags: string[] = [];
+	const stash = (html: string) => {
+		tags.push(html);
+		return `%%MDTAG${tags.length - 1}%%`;
+	};
+
 	// Images: ![alt](url "title")
-	s = s.replace(/!\[([^\]]*)\]\(([^)]+?)(?:\s+"([^"]*)")?\)/g, (_, alt, url, title) => {
+	s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+(?:"|&quot;)(.*?)(?:"|&quot;))?\s*\)/g, (_, alt, url, title) => {
 		// Scheme guard: javascript:/vbscript: have no business in an img, and
 		// data: is only ever legitimate as an embedded image.
 		const u = String(url).trim();
 		if (/^(javascript|vbscript):/i.test(u) || /^data:(?!image\/)/i.test(u)) return String(alt);
 		const t = title ? ` title="${title}"` : '';
-		return `<img src="${url}" alt="${alt}"${t} loading="lazy" class="t-md-img" />`;
+		return stash(`<img src="${url}" alt="${alt}"${t} loading="lazy" class="t-md-img" />`);
 	});
 
 	// Links: [text](url "title")
-	s = s.replace(/\[([^\]]+)\]\(([^)]+?)(?:\s+"([^"]*)")?\)/g, (_, label, url, title) => {
+	s = s.replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+(?:"|&quot;)(.*?)(?:"|&quot;))?\s*\)/g, (_, label, url, title) => {
 		// Scheme guard: [click](javascript:alert(1)) would otherwise render a
 		// live script link in the preview — everything pasted is untrusted.
 		// Dangerous schemes keep the label, lose the link.
 		const u = String(url).trim();
 		if (/^(javascript|vbscript|data):/i.test(u)) return String(label);
 		const t = title ? ` title="${title}"` : '';
-		return `<a href="${url}"${t} target="_blank" rel="noopener" class="t-md-link">${label}</a>`;
+		return stash(`<a href="${url}"${t} target="_blank" rel="noopener" class="t-md-link">${label}</a>`);
 	});
 
 	// Bold + Italic: ***text*** or ___text___
@@ -707,6 +713,9 @@ function parseInline(text: string): string {
 
 	// Keyboard keys: <kbd>key</kbd>
 	s = s.replace(/&lt;kbd&gt;(.*?)&lt;\/kbd&gt;/gi, '<kbd class="t-md-kbd">$1</kbd>');
+
+	// Stashed tags (links and images) back in, safe from autolink or formatting nesting
+	s = s.replace(/%%MDTAG(\d+)%%/g, (_, idx) => tags[Number(idx)] ?? '');
 
 	// Code spans back in, now that no rule can reach into them.
 	s = s.replace(/%%ICODE(\d+)%%/g, (_, idx) => codeSpans[Number(idx)] ?? '');
@@ -1314,7 +1323,7 @@ ${body.innerHTML}
 		document.body.appendChild(a);
 		a.click();
 		document.body.removeChild(a);
-		URL.revokeObjectURL(url);
+		setTimeout(() => URL.revokeObjectURL(url), 5000);
 	}
 
 	function updateUI() {

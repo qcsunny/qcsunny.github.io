@@ -221,7 +221,7 @@ export function createWorkbench(options: WorkbenchOptions): WorkbenchHandle {
 		a.href = url;
 		a.download = fileDefaultName;
 		a.click();
-		URL.revokeObjectURL(url);
+		setTimeout(() => URL.revokeObjectURL(url), 5000);
 	});
 	downloadBtn.style.padding = '0.25em 0.6em';
 	downloadBtn.style.fontSize = '0.8rem';

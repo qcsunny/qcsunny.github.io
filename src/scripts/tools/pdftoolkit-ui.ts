@@ -384,10 +384,10 @@ export function initPdfToolkit(host: HTMLElement): void {
 		const pdfjsUrl = '/pdfjs/build/pdf.min.mjs';
 		const pdfjs = (await import(/* @vite-ignore */ pdfjsUrl)) as unknown as {
 			GlobalWorkerOptions: { workerSrc: string };
-			getDocument: (src: { data: Uint8Array; cMapUrl: string; cMapPacked: boolean; standardFontDataUrl: string }) => { promise: PdfJsDoc };
+			getDocument: (src: { data: Uint8Array; cMapUrl: string; cMapPacked: boolean; standardFontDataUrl: string }) => { promise: Promise<PdfJsDoc> };
 		};
 		pdfjs.GlobalWorkerOptions.workerSrc = '/pdfjs/worker/pdf.worker.min.mjs';
-		const doc = pdfjs.getDocument({ data: state.files[0]!.bytes.slice(), cMapUrl: '/pdfjs/cmaps/', cMapPacked: true, standardFontDataUrl: '/pdfjs/standard_fonts/' }).promise;
+		const doc = await pdfjs.getDocument({ data: state.files[0]!.bytes.slice(), cMapUrl: '/pdfjs/cmaps/', cMapPacked: true, standardFontDataUrl: '/pdfjs/standard_fonts/' }).promise;
 		const scale = Number(p2iScale.value);
 		const fmtType = p2iFmt.value as 'png' | 'jpeg';
 		for (let i = 1; i <= doc.numPages; i++) {

@@ -60,7 +60,7 @@ export async function analyzeWorkbook(data: ArrayBuffer, name: string): Promise<
 	const parts: XlsxPart[] = [];
 	zip.forEach((path, file) => {
 		if (file.dir) return;
-		parts.push({ path, compressed: (file as unknown as { _data: { compressedSize: number } })._data.compressedSize ?? 0 });
+		parts.push({ path, compressed: (file as unknown as { _data?: { compressedSize?: number } })._data?.compressedSize ?? 0 });
 	});
 	parts.sort((a, b) => b.compressed - a.compressed);
 
@@ -243,7 +243,7 @@ export async function cleanWorkbook(data: ArrayBuffer, opts: CleanOptions): Prom
 			const rewritten = stylesXml.replace(/<cellXfs\b[^>]*>([\s\S]*?)<\/cellXfs>/gi, (_whole, body: string) => {
 				// Parse full <xf .../> or <xf ...>...</xf> elements without truncating inner nodes like <alignment>
 				const xfs: string[] = [];
-				const xfRegex = /<xf\b[\s\S]*?(?:\/>|<\/xf>)/gi;
+				const xfRegex = /<xf\b[^>]*\/>|<xf\b[^>]*>[\s\S]*?<\/xf>/gi;
 				let m: RegExpExecArray | null;
 				while ((m = xfRegex.exec(body)) !== null) {
 					xfs.push(m[0]);
@@ -281,11 +281,13 @@ export async function cleanWorkbook(data: ArrayBuffer, opts: CleanOptions): Prom
 			zip.file(r.name, relsXml);
 		}
 
-		// 3. Remove drawing anchors embedding blip images from drawings XML
+		// 3. Remove drawing anchors embedding blip images from drawings XML (scoped to single anchor)
 		const drawFiles = zip.file(/^xl\/drawings\/drawing\d+\.xml$/i) ?? [];
 		for (const df of drawFiles) {
 			let dXml = await df.async('string');
-			dXml = dXml.replace(/<xdr:(?:twoCellAnchor|oneCellAnchor|absoluteAnchor)\b[^>]*>[\s\S]*?<a:blip\b[\s\S]*?<\/xdr:(?:twoCellAnchor|oneCellAnchor|absoluteAnchor)>/gi, '');
+			dXml = dXml.replace(/<xdr:(twoCellAnchor|oneCellAnchor|absoluteAnchor)\b[\s\S]*?<\/xdr:\1>/gi, (anchor) => {
+				return anchor.includes('<a:blip') ? '' : anchor;
+			});
 			zip.file(df.name, dXml);
 		}
 

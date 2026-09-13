@@ -209,3 +209,35 @@ test('browser info scans navigator, screen and codec support', async ({ page }) 
 	await expect(output).toHaveValue(/H\.265/);
 	await expect(output).toHaveValue(/本地生成/); // the privacy line
 });
+
+test('age calculator: next birthday countdown is positive and breakdown days non-negative', async ({ page }) => {
+	await page.goto('/daily/age-calculator/');
+	const results = page.locator('.t-results');
+	// Birthday 2000-01-01 as of 2026-09-13: Next birthday must not be negative days!
+	await page.locator('#t-f-birth').fill('2000-01-01');
+	await page.locator('#t-f-asof').fill('2026-09-13');
+	const nextBdayRow = results.locator('.t-row', { hasText: /Next birthday|下次生日/ });
+	await expect(nextBdayRow).toContainText('2027-01-01');
+	const countdownRow = results.locator('.t-row', { hasText: /Days until next birthday|距下次生日/ });
+	await expect(countdownRow).not.toContainText('-');
+	await expect(countdownRow).toContainText('110');
+
+	// Jan 31 2023 to Mar 01 2023: Breakdown must have non-negative days (was -2 days)
+	await page.locator('#t-f-birth').fill('2023-01-31');
+	await page.locator('#t-f-asof').fill('2023-03-01');
+	const ageRow = results.locator('.t-row', { hasText: /Age|年龄/ });
+	await expect(ageRow).not.toContainText('-2');
+	await expect(ageRow).toContainText('1 days');
+});
+
+test('equation solver: x^2 = 0 outputs valid root not undefined', async ({ page }) => {
+	await page.goto('/calculators/equation-solver/');
+	const results = page.locator('.t-results');
+	await page.locator('#t-f-type').selectOption('quad');
+	await page.locator('#t-f-a').fill('1');
+	await page.locator('#t-f-b').fill('0');
+	await page.locator('#t-f-c').fill('0');
+	await expect(results).not.toContainText('undefined');
+	await expect(results).toContainText('0');
+});
+

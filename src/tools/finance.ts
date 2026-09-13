@@ -1782,7 +1782,7 @@ const retirementDrawdown: FormConfig = {
 			if (months % 60 === 0 || (balance <= 0 && months % 12 === 0)) {
 				const year = Math.ceil(months / 12);
 				if (year !== lastSnapshotYear) {
-					snapshots.push([String(year), money(w * 12), cash(balance).value]);
+					snapshots.push([String(year), money(w * 12), money(balance)]);
 					lastSnapshotYear = year;
 				}
 			}
@@ -3460,8 +3460,16 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 					row2(
 						'Verdict',
 						'结论',
-						diff > 0 ? `Lump sum wins by ${percent((diff / dcaFV) * 100)}%` : `DCA wins by ${percent((-diff / lumpFV) * 100)}%`,
-						diff > 0 ? `一次性投入胜出 ${percent((diff / dcaFV) * 100)}%` : `定投胜出 ${percent((-diff / lumpFV) * 100)}%`,
+						diff === 0
+							? 'Lump sum and DCA break even'
+							: diff > 0
+								? `Lump sum wins by ${percent((diff / (dcaFV || 1)) * 100)}%`
+								: `DCA wins by ${percent((-diff / (lumpFV || 1)) * 100)}%`,
+						diff === 0
+							? '一次性投入与定投打平'
+							: diff > 0
+								? `一次性投入胜出 ${percent((diff / (dcaFV || 1)) * 100)}%`
+								: `定投胜出 ${percent((-diff / (lumpFV || 1)) * 100)}%`,
 					),
 				];
 				const table: FormTable = {
@@ -3503,8 +3511,8 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 				const inf = v.num('inflation') / 100;
 				const years = Math.max(0, v.num('years') || 0);
 				const amount = v.num('amount');
-				if (inf <= -1 || !Number.isFinite(n) || !(amount > 0))
-					return { rows: [{ label: 'Result', labelZh: '结果', value: '— (inflation must be > −100%)', valueZh: '—（通胀率需大于 −100%）' }] };
+				if (inf <= -1 || n <= -1 || !Number.isFinite(n) || !(amount > 0))
+					return { rows: [{ label: 'Result', labelZh: '结果', value: '— (rates must be > −100%)', valueZh: '—（收益率与通胀率需大于 −100%）' }] };
 				const real = (1 + n) / (1 + inf) - 1;
 				const nominalFV = amount * (1 + n) ** years;
 				const realFV = amount * ((1 + n) / (1 + inf)) ** years;

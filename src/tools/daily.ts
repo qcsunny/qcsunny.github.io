@@ -112,18 +112,19 @@ const TODAY = ymdStr(todayYmd());
  *  borrow days from the month before `a`, then months from the year. */
 function calendarBreakdown(b: Ymd, a: Ymd): { years: number; months: number; days: number } {
 	let years = a.y - b.y;
-	let months = a.m - b.m;
-	let days = a.d - b.d;
-	if (days < 0) {
-		months--;
-		const pm = a.m === 1 ? 12 : a.m - 1;
-		const py = a.m === 1 ? a.y - 1 : a.y;
-		days += daysInMonth(py, pm);
-	}
-	if (months < 0) {
+	let cur = addMonths(b, years * 12).date;
+	if (dayDiff(cur, a) < 0) {
 		years--;
-		months += 12;
+		cur = addMonths(b, years * 12).date;
 	}
+	let months = 0;
+	while (months < 11) {
+		const nextMonth = addMonths(cur, 1).date;
+		if (dayDiff(nextMonth, a) < 0) break;
+		cur = nextMonth;
+		months++;
+	}
+	const days = dayDiff(cur, a);
 	return { years, months, days };
 }
 
@@ -188,7 +189,7 @@ const ageConfig: FormConfig = {
 		// A Feb 29 birthday lands on Feb 28 in common years.
 		const clampTo = (y: number): Ymd => ({ y, m: b.m, d: Math.min(b.d, daysInMonth(y, b.m)) });
 		let next = clampTo(a.y);
-		if (dayDiff(next, a) <= 0) next = clampTo(a.y + 1);
+		if (dayDiff(a, next) <= 0) next = clampTo(a.y + 1);
 		const untilNext = dayDiff(a, next);
 
 		return {

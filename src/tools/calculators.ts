@@ -1137,7 +1137,7 @@ function solveQuadratic(a: number, b: number, c: number): { x1: string; x2: stri
 		// Citardauq formulation: avoids catastrophic cancellation when b² ≫ 4ac
 		const q = -0.5 * (b + (b >= 0 ? 1 : -1) * s);
 		const x1 = q / a;
-		const x2 = c / q;
+		const x2 = q === 0 ? 0 : c / q;
 		return { x1: formatNumber(x1), x2: formatNumber(x2), delta };
 	}
 	const real = formatNumber(-b / (2 * a));
@@ -2665,10 +2665,12 @@ const anovaCalculator: FormConfig = {
 		const msb = ssb / dfb;
 		const msw = ssw / dfw;
 
-		const fStat = msw > 0 ? msb / msw : 0;
+		const fStat = msw > 0 ? msb / msw : (msb > 0 ? Infinity : 0);
 
 		let pValue = 0;
-		if (fStat > 0 && dfb > 0 && dfw > 0) {
+		if (fStat === Infinity) {
+			pValue = 0;
+		} else if (fStat > 0 && dfb > 0 && dfw > 0) {
 			const x = dfw / (dfw + dfb * fStat);
 			pValue = betaIncomplete(dfw / 2, dfb / 2, x);
 		} else {
@@ -3446,10 +3448,10 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						return ecoGuard(`too few observations (${n}) for ${k} columns`, `观测数（${n}）不足 ${k} 列`);
 					const y = parsed.cols[parsed.cols.length - 1] as number[];
 					const names = ['(intercept)'];
-					for (let j = 1; j < parsed.cols.length - 1; j++) names.push(parsed.names[j] as string);
+					for (let j = 0; j < parsed.cols.length - 1; j++) names.push(parsed.names[j] as string);
 					const X = parsed.cols[0]!.map((_, i) => {
 						const row = [1];
-						for (let j = 0; j < parsed.cols.length - 2; j++) row.push(parsed.cols[j]![i] as number);
+						for (let j = 0; j < parsed.cols.length - 1; j++) row.push(parsed.cols[j]![i] as number);
 						return row;
 					});
 					let vinv: number[][] | null = null;
@@ -3550,7 +3552,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 					const y = parsed.cols[parsed.cols.length - 1] as number[];
 					const X = parsed.cols[0]!.map((_, i) => {
 						const row = [1];
-						for (let j = 0; j < parsed.cols.length - 2; j++) row.push(parsed.cols[j]![i] as number);
+						for (let j = 0; j < parsed.cols.length - 1; j++) row.push(parsed.cols[j]![i] as number);
 						return row;
 					});
 					const m = eco.fitWGLS(X, y, null);
@@ -3626,10 +3628,10 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 						return ecoGuard(`too few observations (${n}) for ${parsed.cols.length} columns`, `观测数（${n}）不足 ${parsed.cols.length} 列`);
 					const y = parsed.cols[parsed.cols.length - 1] as number[];
 					const names = ['(intercept)'];
-					for (let j = 1; j < parsed.cols.length - 1; j++) names.push(parsed.names[j] as string);
+					for (let j = 0; j < parsed.cols.length - 1; j++) names.push(parsed.names[j] as string);
 					const X = parsed.cols[0]!.map((_, i) => {
 						const row = [1];
-						for (let j = 0; j < parsed.cols.length - 2; j++) row.push(parsed.cols[j]![i] as number);
+						for (let j = 0; j < parsed.cols.length - 1; j++) row.push(parsed.cols[j]![i] as number);
 						return row;
 					});
 					const fit = eco.rqFit(X, y, tau, names);
@@ -3694,10 +3696,10 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 					const groups = parsed.cols[0] as number[];
 					const y = parsed.cols[parsed.cols.length - 1] as number[];
 					const names = ['(intercept)'];
-					for (let j = 2; j < parsed.cols.length - 1; j++) names.push(parsed.names[j] as string);
+					for (let j = 1; j < parsed.cols.length - 1; j++) names.push(parsed.names[j] as string);
 					const X = parsed.cols[0]!.map((_, i) => {
 						const row = [1];
-						for (let j = 1; j < parsed.cols.length - 2; j++) row.push(parsed.cols[j]![i] as number);
+						for (let j = 1; j < parsed.cols.length - 1; j++) row.push(parsed.cols[j]![i] as number);
 						return row;
 					});
 					const slopeCol = v.str('slope') === 'x1' && nX >= 1 ? 1 : null;
@@ -3770,10 +3772,10 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 					if (y.every((v2) => v2 === 0) || y.every((v2) => v2 === 1))
 						return ecoGuard('the response needs both 0s and 1s', '因变量需要同时含有 0 和 1');
 					const names = ['(intercept)'];
-					for (let j = 1; j < parsed.cols.length - 1; j++) names.push(parsed.names[j] as string);
+					for (let j = 0; j < parsed.cols.length - 1; j++) names.push(parsed.names[j] as string);
 					const X = parsed.cols[0]!.map((_, i) => {
 						const row = [1];
-						for (let j = 0; j < parsed.cols.length - 2; j++) row.push(parsed.cols[j]![i] as number);
+						for (let j = 0; j < parsed.cols.length - 1; j++) row.push(parsed.cols[j]![i] as number);
 						return row;
 					});
 					const fit = eco.irls(X, y, { family: fam }, names);
@@ -3850,10 +3852,10 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 					if (y.some((v2) => v2 < 0 || !Number.isInteger(v2)))
 						return ecoGuard('the last column must be non-negative integers', '最后一列必须是非负整数');
 					const names = ['(intercept)'];
-					for (let j = 1; j < parsed.cols.length - 1; j++) names.push(parsed.names[j] as string);
+					for (let j = 0; j < parsed.cols.length - 1; j++) names.push(parsed.names[j] as string);
 					const X = parsed.cols[0]!.map((_, i) => {
 						const row = [1];
-						for (let j = 0; j < parsed.cols.length - 2; j++) row.push(parsed.cols[j]![i] as number);
+						for (let j = 0; j < parsed.cols.length - 1; j++) row.push(parsed.cols[j]![i] as number);
 						return row;
 					});
 					const rows: { label: string; labelZh: string; value: string; valueZh?: string }[] = [];

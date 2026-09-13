@@ -182,8 +182,9 @@ export function initXlsxAnalyzer(host: HTMLElement): void {
 					const { blob, removedStyles, removedNames } = await cleanWorkbook(currentBytes as ArrayBuffer, opts);
 					const url = URL.createObjectURL(blob);
 					const a = document.createElement('a');
-					a.href = url;
-					a.download = (currentReport as XlsxReport).fileName.replace(/\.(xlsx|xlsm)$/i, '') + '-cleaned.xlsx';
+					const origName = (currentReport as XlsxReport).fileName;
+					const ext = origName.match(/\.(xlsx|xlsm)$/i)?.[1]?.toLowerCase() ?? 'xlsx';
+					a.download = origName.replace(/\.(xlsx|xlsm)$/i, '') + `-cleaned.${ext}`;
 					a.click();
 					setTimeout(() => URL.revokeObjectURL(url), 5000);
 					// before/after with a percentage badge: green when it shrank,
