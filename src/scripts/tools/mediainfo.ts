@@ -571,14 +571,21 @@ export async function mediaInfo(
 	const meta = await new Promise<{ w: number; h: number; d: number } | null>((resolve) => {
 		const el = document.createElement('video');
 		const url = URL.createObjectURL(new Blob([data]));
+		let timer: ReturnType<typeof setTimeout> | null = null;
 		const done = (r: { w: number; h: number; d: number } | null): void => {
+			if (timer) {
+				clearTimeout(timer);
+				timer = null;
+			}
+			el.onloadedmetadata = null;
+			el.onerror = null;
 			URL.revokeObjectURL(url);
 			resolve(r);
 		};
 		el.preload = 'metadata';
 		el.onloadedmetadata = () => done({ w: el.videoWidth, h: el.videoHeight, d: el.duration });
 		el.onerror = () => done(null);
-		setTimeout(() => done(null), 4000);
+		timer = setTimeout(() => done(null), 4000);
 		el.src = url;
 	});
 	if (meta && (meta.w || meta.d > 0)) {

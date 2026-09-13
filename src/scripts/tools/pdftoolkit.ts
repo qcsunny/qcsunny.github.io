@@ -158,7 +158,7 @@ export function parsePageRange(expr: string, pageCount: number): number[] {
 		const m = /^(\d+)(?:\s*[-–]\s*(\d+)?)?$/.exec(t);
 		if (!m) continue;
 		const from = Math.max(1, Number(m[1]));
-		const to = m[2] === undefined ? (m[1] && t.includes('-') ? pageCount : from) : Math.min(pageCount, Number(m[2]));
+		const to = m[2] === undefined ? (m[1] && /[-–]/.test(t) ? pageCount : from) : Math.min(pageCount, Number(m[2]));
 		// Iterate min→max so an inverted expression like "5-3" yields 3,4,5
 		// rather than just page 5.
 		for (let i = Math.min(from, to); i <= Math.max(from, to); i++) if (i <= pageCount) picked.add(i - 1);
@@ -222,6 +222,9 @@ export async function watermarkPdf(bytes: Uint8Array, opts: WatermarkOptions): P
 	const font = await doc.embedFont('Helvetica-Bold');
 	const { text, opacity, angle, color, tile } = opts;
 	if (!text.trim()) throw new Error('empty watermark text');
+	if (!/^[\x00-\x7F\xA0-\xFF]*$/.test(text)) {
+		throw new Error('Watermark text contains unsupported characters (Standard fonts support Latin-1 only)');
+	}
 	// Clamp the font size to a positive minimum. A negative or zero size makes
 	// the tile step negative, producing a non-terminating loop that freezes
 	// the tab; the UI number field has no `min`, so this is the real guard.

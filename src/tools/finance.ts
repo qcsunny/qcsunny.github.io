@@ -739,8 +739,8 @@ const fireCalculator: FormConfig = {
 		const r = v.num('returnRate') / 100;
 		const swr = v.num('swr') / 100;
 
-		if (!(exp > 0) || !(swr > 0)) {
-			return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (expenses and withdrawal rate must be > 0)', valueZh: '— (年度支出与提现率需大于 0)' }] };
+		if (!(exp > 0) || !(swr > 0) || r <= -1) {
+			return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (expenses, withdrawal rate must be > 0 and return must be > −100%)', valueZh: '— (年度支出与提现率需大于 0 且年化回报需大于 −100%)' }] };
 		}
 		const targetFire = exp / swr;
 		const leanFire = targetFire * 0.75;
@@ -2090,6 +2090,9 @@ const annuityCalculator: FormConfig = {
 		}
 		const n = Math.round(years * (yearly ? 1 : 12));
 		const i = ratePct / 100 / (yearly ? 1 : 12);
+		if (i <= -1) {
+			return { rows: [{ label: 'Result', labelZh: '计算结果', value: '— (interest rate must be > −100%)', valueZh: '— (贴现率需大于 −100%)' }] };
+		}
 		// i === 0 is legal input (a 0% discount rate); the formulas degenerate
 		// to plain multiplication, which the branches below handle.
 		let pv: number;
@@ -3372,8 +3375,13 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 						const t = line.trim();
 						if (!t) continue;
 						const parts = t.split(/[,;]\s*|\s{2,}/);
+						if (parts.length < 2) {
+							bad.push(t);
+							continue;
+						}
 						const label = parts.slice(0, -1).join(',').trim() || t;
-						const amount = Number((parts.at(-1) ?? '').replace(/[^\d.-]/g, ''));
+						const rawNum = (parts.at(-1) ?? '').replace(/[^\d.-]/g, '');
+						const amount = rawNum ? Number(rawNum) : NaN;
 						if (Number.isFinite(amount)) items.push([label, amount]);
 						else bad.push(t);
 					}

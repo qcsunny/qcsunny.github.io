@@ -314,7 +314,12 @@ const dateConfig: FormConfig = {
 				};
 			}
 			const sign = v.str('op') === 'sub' ? -1 : 1;
-			const k = sign * n;
+			const k = sign * Math.round(n);
+			if (Math.abs(k) > 1000000) {
+				return {
+					rows: [{ label: 'Result date', labelZh: '结果日期', value: '— (amount exceeds supported range)', valueZh: '—（数值超出支持的日期范围）' }],
+				};
+			}
 			let result: Ymd;
 			let clamped = false;
 			switch (v.str('unit')) {

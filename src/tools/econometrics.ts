@@ -530,7 +530,7 @@ export function vinvDiag(w: Vec): Mat {
  *  appears in the full V⁻¹ cancels in β̂ = (X'V⁻¹X)⁻¹X'V⁻¹y. */
 export function vinvAr1(rho: number, n: number): Mat {
 	const m = zeros(n, n);
-	const c = 1 / (1 - rho * rho);
+	const c = 1 / Math.max(1 - rho * rho, 1e-12);
 	for (let i = 0; i < n; i++) m[i][i] = (i === 0 || i === n - 1 ? 1 : 1 + rho * rho) * c;
 	for (let i = 0; i + 1 < n; i++) { m[i][i + 1] = m[i + 1][i] = -rho * c; }
 	return m;
@@ -933,6 +933,7 @@ export function jarqueBera(e: Vec): TestResult {
 	m2 /= n;
 	m3 /= n;
 	m4 /= n;
+	if (m2 <= 1e-12) return { stat: 0, df: 2, p: 1 };
 	const g1 = m3 / Math.pow(m2, 1.5);
 	const g2 = m4 / (m2 * m2) - 3;
 	const jb = (n / 6) * (g1 * g1 + 0.25 * g2 * g2);
@@ -960,10 +961,11 @@ export function influence(m: OlsModel): Influence {
 		const h = m.h[i];
 		const oneMinusH = Math.max(1 - h, 1e-12);
 		const ei = m.wresid[i];
-		const s2i = Math.max(((n - k) * s2 - (ei * ei) / oneMinusH) / (n - k - 1), 1e-300);
+		const denom = Math.max(n - k - 1, 1);
+		const s2i = Math.max(((n - k) * s2 - (ei * ei) / oneMinusH) / denom, 1e-300);
 		const ti = ei / Math.sqrt(s2i * oneMinusH);
 		dffits.push(ti * Math.sqrt(h / oneMinusH));
-		cooks.push((ei * ei * h) / (k * s2 * oneMinusH * oneMinusH));
+		cooks.push(s2 > 0 ? (ei * ei * h) / (k * s2 * oneMinusH * oneMinusH) : 0);
 		const row = new Array<number>(k).fill(0);
 		for (let t = 0; t < k; t++) {
 			let s = 0;
@@ -1554,7 +1556,8 @@ export function arimaEstimate(y: Vec, spec: ArimaSpec): ArimaModel | null {
 	};
 	const finalize = (raw: Vec | null, eps: Vec, cnt: number, converged: boolean, iter: number): ArimaModel => {
 		const sigma2 = cnt > 0 ? eps.reduce((s, v) => s + v * v, 0) / cnt : NaN;
-		const ll = -0.5 * cnt * (Math.log(2 * Math.PI * sigma2) + 1);
+		const safeSigma2 = Math.max(sigma2, 1e-300);
+		const ll = -0.5 * cnt * (Math.log(2 * Math.PI * safeSigma2) + 1);
 		const K = np + 1;
 		const aic = -2 * ll + 2 * K;
 		const aicc = cnt - K - 1 > 0 ? aic + (2 * K * (K + 1)) / (cnt - K - 1) : NaN;

@@ -251,6 +251,9 @@ export function initJwt(host: HTMLElement): void {
 		try {
 			const headerObj = JSON.parse(base64UrlDecode(parts[0]));
 			const payloadObj = JSON.parse(base64UrlDecode(parts[1]));
+			if (!headerObj || typeof headerObj !== 'object' || !payloadObj || typeof payloadObj !== 'object') {
+				throw new Error(zh ? 'Header 或 Payload 不是有效的 JSON 对象' : 'Header or Payload is not a valid JSON object');
+			}
 
 			let timeNotice = '';
 			const nowSec = Math.floor(Date.now() / 1000);

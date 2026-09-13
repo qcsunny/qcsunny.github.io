@@ -437,6 +437,9 @@ const ratio: FormConfig = {
 		const b = v.num('b');
 		const c = v.num('c');
 		const rows: import('./registry').FormResultRow[] = [];
+		if (!Number.isFinite(a) || !Number.isFinite(b)) {
+			return { rows: [{ label: 'A:B simplified', labelZh: 'A:B 最简整数比', value: '— (enter valid numbers)', valueZh: '— (请输入有效数字)' }] };
+		}
 		if (a === 0 && b === 0) {
 			rows.push({ label: 'A:B simplified', labelZh: 'A:B 最简整数比', value: '— (both zero)', valueZh: '— (A、B 不能同时为 0)' });
 		} else {
@@ -3344,6 +3347,7 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 				};
 				let acc = 0;
 				const lo = Math.max(0, k - 2);
+				for (let i = 0; i < lo; i++) acc += pmf(i);
 				for (let i = lo; i <= k + 2; i++) {
 					acc += pmf(i);
 					table.rows.push([String(i), fmtP(pmf(i)), fmtP(Math.min(1, acc))]);

@@ -437,10 +437,19 @@ export function initPdfToolkit(host: HTMLElement): void {
 				const msg = err instanceof Error ? err.message : String(err);
 				// pdf-lib's encrypted-load error is a chance to explain honestly
 				const enc = /encrypt/i.test(msg);
+				const winAnsi = /Latin-1|WinAnsi/i.test(msg);
 				say(
 					Object.keys(panels).find((k) => panels[k]!.contains(b)) ?? 'merge',
-					enc ? 'This PDF is password-protected — decryption is not supported.' : `Failed: ${msg}`,
-					enc ? '该 PDF 有密码保护——不支持解密。' : `失败：${msg}`,
+					enc
+						? 'This PDF is password-protected — decryption is not supported.'
+						: winAnsi
+							? 'Watermark supports Latin-1 characters only (Standard PDF fonts).'
+							: `Failed: ${msg}`,
+					enc
+						? '该 PDF 有密码保护——不支持解密。'
+						: winAnsi
+							? '水印文本仅支持 Latin-1 字符（标准 PDF 字体暂不支持中文等字符）。'
+							: `失败：${msg}`,
 				);
 			});
 		});
