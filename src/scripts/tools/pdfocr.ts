@@ -187,9 +187,40 @@ export function initPdfOcr(host: HTMLElement): void {
 	const copyBtn = document.createElement('button');
 	copyBtn.type = 'button';
 	copyBtn.className = 't-btn';
-	copyBtn.append(bilingual('📋 Copy text', '📋 复制文本'));
-	copyBtn.addEventListener('click', () => {
-		void navigator.clipboard.writeText(output.textContent ?? '');
+	const flashCopySuccess = (btn: HTMLButtonElement): void => {
+		const oldChildren = Array.from(btn.childNodes);
+		btn.replaceChildren(bilingual('✓ Copied!', '✓ 已复制!'));
+		btn.style.color = '#10b981';
+		setTimeout(() => {
+			btn.replaceChildren(...oldChildren);
+			btn.style.color = '';
+		}, 1500);
+	};
+
+	copyBtn.addEventListener('click', async () => {
+		const text = output.textContent?.trim() ?? '';
+		if (!text) {
+			const oldChildren = Array.from(copyBtn.childNodes);
+			copyBtn.replaceChildren(bilingual('⚠ No text to copy', '⚠ 暂无文本可复制'));
+			setTimeout(() => {
+				copyBtn.replaceChildren(...oldChildren);
+			}, 1500);
+			return;
+		}
+		try {
+			await navigator.clipboard.writeText(text);
+			flashCopySuccess(copyBtn);
+		} catch {
+			const ta = document.createElement('textarea');
+			ta.value = text;
+			ta.style.position = 'fixed';
+			ta.style.opacity = '0';
+			document.body.appendChild(ta);
+			ta.select();
+			(document as any).execCommand('copy');
+			document.body.removeChild(ta);
+			flashCopySuccess(copyBtn);
+		}
 	});
 
 	const run = async (files: File[]): Promise<void> => {

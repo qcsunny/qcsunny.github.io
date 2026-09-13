@@ -100,10 +100,21 @@ function formatHtml(html: string, indentSize = 2): string {
 }
 
 function minifyHtml(html: string): string {
+	// Whitespace inside <pre>, <textarea>, <script> and <style> is significant:
+	// <pre>/<textarea> render it verbatim, and collapsing newlines in <script>
+	// can break automatic semicolon insertion or let a // comment eat the next
+	// statement. Stash those blocks, minify only the markup around them, then
+	// restore verbatim — and stash before comment removal so a legacy <!--
+	// ...//--> script wrapper is not half-deleted.
+	const blocks: string[] = [];
+	const stash = (m: string): string => `\u0000${blocks.push(m) - 1}\u0000`;
+	const restore = (_m: string, i: string): string => blocks[Number(i)];
 	return html
+		.replace(/<(pre|textarea|script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, stash)
 		.replace(/<!--[\s\S]*?-->/g, '') // remove comments
 		.replace(/\s+/g, ' ') // collapse whitespaces
 		.replace(/>\s+</g, '><') // remove spaces between tags
+		.replace(/\u0000(\d+)\u0000/g, restore)
 		.trim();
 }
 
