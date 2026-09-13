@@ -521,7 +521,7 @@ const piCalculator: FormConfig = {
 			label: 'Decimal places (N)',
 			labelZh: '计算小数位数 (N)',
 			type: 'number',
-			def: '2000',
+			def: '200',
 			step: '1',
 			min: '1',
 			max: '1000000',
