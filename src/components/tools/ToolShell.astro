@@ -1083,6 +1083,45 @@ const year = new Date().getFullYear();
 				color: var(--accent);
 				font-size: 1.25rem;
 			}
+			.t-row.t-row-long {
+				flex-direction: column;
+				align-items: stretch;
+				gap: 0.45em;
+			}
+			.t-row-head {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 0.5em;
+			}
+			.t-row-copy-btn {
+				font: inherit;
+				font-size: 0.78rem;
+				padding: 0.25em 0.6em;
+				border: 1px solid var(--gridline);
+				border-radius: 6px;
+				background: var(--bg);
+				color: var(--dim);
+				cursor: pointer;
+				transition: color 0.15s, border-color 0.15s;
+			}
+			.t-row-copy-btn:hover {
+				border-color: var(--accent);
+				color: var(--accent);
+			}
+			.t-row.t-row-long .t-row-value {
+				text-align: left;
+				max-height: 240px;
+				overflow-y: auto;
+				font-family: var(--font-mono);
+				font-size: 0.88rem;
+				line-height: 1.45;
+				background: color-mix(in srgb, var(--fg) 3%, var(--card));
+				border: 1px solid var(--gridline);
+				border-radius: 8px;
+				padding: 0.65em 0.85em;
+				user-select: text;
+			}
 			.t-row.t-row-warn {
 				background: rgba(245, 158, 11, 0.08);
 				border-left: 3px solid #f59e0b;

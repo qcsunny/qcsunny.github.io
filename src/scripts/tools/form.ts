@@ -250,15 +250,44 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 	}
 
 	function resultRow(row: FormResultRow): HTMLElement {
+		const isLong = row.value.length > 150 || (row.valueZh ? row.valueZh.length > 150 : false);
 		const el = document.createElement('div');
-		el.className = row.emphasis ? 't-row t-emph' : 't-row';
+		el.className = row.emphasis ? (isLong ? 't-row t-emph t-row-long' : 't-row t-emph') : isLong ? 't-row t-row-long' : 't-row';
+
+		const header = document.createElement('div');
+		header.className = 't-row-head';
 		const l = document.createElement('span');
 		l.className = 't-row-label';
 		l.append(bilingual(row.label, row.labelZh));
+		header.append(l);
+
+		if (isLong) {
+			const copyBtn = document.createElement('button');
+			copyBtn.type = 'button';
+			copyBtn.className = 't-row-copy-btn';
+			copyBtn.append(bilingual('📋 Copy', '📋 复制结果'));
+			copyBtn.addEventListener('click', () => {
+				const textToCopy = document.documentElement.dataset.lang === 'zh' ? row.valueZh || row.value : row.value;
+				void navigator.clipboard.writeText(textToCopy).then(() => {
+					copyBtn.textContent = document.documentElement.dataset.lang === 'zh' ? '✓ Copied' : '✓ Copied';
+					setTimeout(() => {
+						copyBtn.innerHTML = '';
+						copyBtn.append(bilingual('📋 Copy', '📋 复制结果'));
+					}, 1500);
+				});
+			});
+			header.append(copyBtn);
+		}
+
 		const v = document.createElement('span');
 		v.className = 't-row-value';
 		v.append(bilingual(row.value, row.valueZh));
-		el.append(l, v);
+
+		if (isLong) {
+			el.append(header, v);
+		} else {
+			el.append(l, v);
+		}
 		return el;
 	}
 
