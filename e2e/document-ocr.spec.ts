@@ -45,13 +45,14 @@ test('document ocr recognizes clear print text through the wasm pipeline', async
 	expect(out).not.toContain('⚠');
 });
 
-test('document ocr language select offers english and chinese, page stays bilingual-clean', async ({ page }) => {
+test('document ocr language select offers english, chinese, and arabic, page stays bilingual-clean', async ({ page }) => {
 	await page.goto('/office/document-ocr/');
 	await page.waitForSelector('.t-ocr-controls select');
 	const opts = page.locator('.t-ocr-controls select option');
-	expect(await opts.count()).toBe(2);
+	expect(await opts.count()).toBe(3);
 	expect(await opts.first().getAttribute('value')).toBe('eng');
 	expect(await opts.nth(1).getAttribute('value')).toBe('chi_sim');
+	expect(await opts.nth(2).getAttribute('value')).toBe('ara');
 
 	// privacy line is present in both languages
 	for (const lang of ['en', 'zh']) {
