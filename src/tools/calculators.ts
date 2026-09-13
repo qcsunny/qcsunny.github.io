@@ -460,11 +460,8 @@ const ratio: FormConfig = {
 
 
 // --- pi calculator (Machin-like formula with BigInt arbitrary precision) --------
-const PI_CACHE = new Map<number, string>();
-
-function computePiMachin(digits: number): string {
-	const cached = PI_CACHE.get(digits);
-	if (cached !== undefined) return cached;
+function computePiMachin(digits: number): { piStr: string; elapsedMs: number } {
+	const t0 = typeof performance !== 'undefined' ? performance.now() : Date.now();
 
 	const extra = 10;
 	const totalDigits = digits + extra;
@@ -491,15 +488,18 @@ function computePiMachin(digits: number): string {
 	// Machin's formula: pi/4 = 4 * arccot(5) - arccot(239)
 	const piScaled = 16n * arccot(5, unity) - 4n * arccot(239, unity);
 	const piInt = piScaled / 10n ** BigInt(extra);
-	const piStr = piInt.toString();
-	const result = piStr[0] + '.' + piStr.slice(1, digits + 1);
-	PI_CACHE.set(digits, result);
-	return result;
+	const rawStr = piInt.toString();
+	const result = rawStr[0] + '.' + rawStr.slice(1, digits + 1);
+
+	const t1 = typeof performance !== 'undefined' ? performance.now() : Date.now();
+	const elapsedMs = Math.max(0.1, t1 - t0);
+
+	return { piStr: result, elapsedMs };
 }
 
 const piCalculator: FormConfig = {
-	intro: 'Calculate Pi (π) up to 2,000 decimal places using Machin-like arbitrary-precision formula, with fraction approximations and geometry circle properties.',
-	introZh: '使用高精度梅钦类公式（Machin formula）计算圆周率 π 至小数点后 2000 位，并提供经典密率分式逼近与几何圆性质计算。',
+	intro: 'Calculate Pi (π) up to 2,000 decimal places using Machin-like arbitrary-precision formula, with real-time CPU benchmark timing, fraction approximations, and geometry circle properties.',
+	introZh: '使用高精度梅钦类公式（Machin formula）计算圆周率 π 至小数点后 2000 位，包含 CPU 实时算力耗时检测、经典密率分式逼近与几何圆性质计算。',
 	fields: [
 		{
 			id: 'digits',
@@ -541,7 +541,7 @@ const piCalculator: FormConfig = {
 			};
 		}
 
-		const piStr = computePiMachin(d);
+		const { piStr, elapsedMs } = computePiMachin(d);
 		const rows: import('./registry').FormResultRow[] = [
 			{
 				label: `Value of π (${d} decimal places)`,
@@ -549,6 +549,12 @@ const piCalculator: FormConfig = {
 				value: piStr,
 				valueZh: piStr,
 				emphasis: true,
+			},
+			{
+				label: 'Calculation Time (CPU Benchmark)',
+				labelZh: '计算耗时 (CPU 性能检测)',
+				value: `${elapsedMs < 1 ? '< 1' : elapsedMs.toFixed(2)} ms`,
+				valueZh: `${elapsedMs < 1 ? '< 1' : elapsedMs.toFixed(2)} ms`,
 			},
 			{
 				label: 'Milü fraction (355/113)',
