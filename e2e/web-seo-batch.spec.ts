@@ -88,6 +88,82 @@ test('media-info parses a dropped WAV locally', async ({ page }) => {
 	await expect(output).toHaveValue(/本地解析/);
 });
 
+test('media-info does not call a non-PCM WAV PCM', async ({ page }) => {
+	await page.goto('/media/media-info/');
+	// A LIST chunk before fmt: fmt is first by convention, not by spec, so a
+	// parser that reads fmt at a fixed offset reads the LIST payload as params.
+	const sr = 8000;
+	const dataBytes = sr;
+	const total = 24 + 8 + 16 + 8 + dataBytes;
+	const buf = new ArrayBuffer(total);
+	const dv = new DataView(buf);
+	const str = (o: number, s: string) => {
+		for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i));
+	};
+	str(0, 'RIFF');
+	dv.setUint32(4, 4 + total - 8, true);
+	str(8, 'WAVE');
+	str(12, 'LIST');
+	dv.setUint32(16, 4, true);
+	str(20, 'INFO');
+	str(24, 'fmt ');
+	dv.setUint32(28, 16, true);
+	dv.setUint16(32, 7, true); // µ-law
+	dv.setUint16(34, 1, true);
+	dv.setUint32(36, sr, true);
+	dv.setUint32(40, sr, true);
+	dv.setUint16(44, 1, true);
+	dv.setUint16(46, 8, true);
+	str(48, 'data');
+	dv.setUint32(52, dataBytes, true);
+
+	const chooser = page.waitForEvent('filechooser');
+	await page.locator('.t-file-btn').click();
+	await (await chooser).setFiles({ name: 'alaw.wav', mimeType: 'audio/wav', buffer: Buffer.from(buf) });
+	const output = page.locator('textarea[data-role="output"]');
+	await expect(output).toHaveValue(/µ-law/);
+	await expect(output).toHaveValue(/1 ch/);
+	await expect(output).toHaveValue(/8000 Hz/);
+	await expect(output).toHaveValue(/0:01\.000/);
+	await expect(output).not.toHaveValue(/PCM/);
+	// The RIFF format code is not the only one worth naming: WAVE_FORMAT_EXTENSIBLE
+	// hides the real codec in a 16-byte SubFormat GUID at fmt+18. A parser that
+	// trusts fmt's own first two bytes would report 0xfffe instead of the codec.
+	const ebuf = new ArrayBuffer(84);
+	const ed = new DataView(ebuf);
+	const estr = (o: number, s: string) => {
+		for (let i = 0; i < s.length; i++) ed.setUint8(o + i, s.charCodeAt(i));
+	};
+	const e32 = (o: number, v: number) => ed.setUint32(o, v, true);
+	const e16 = (o: number, v: number) => ed.setUint16(o, v, true);
+	estr(0, 'RIFF');
+	e32(4, 4 + ebuf.byteLength - 8);
+	estr(8, 'WAVE');
+	estr(12, 'fmt ');
+	e32(16, 40);
+	e16(20, 0xfffe); // WAVE_FORMAT_EXTENSIBLE
+	e16(22, 2);
+	e32(24, 44100);
+	e32(28, 176400);
+	e16(32, 4);
+	e16(34, 16);
+	e16(36, 22); // cbSize
+	e16(38, 3); // subformat GUID: its first two bytes carry the real codec
+	estr(60, 'data');
+	e32(64, 16);
+
+	const chooser2 = page.waitForEvent('filechooser');
+	await page.locator('.t-file-btn').click();
+	await (await chooser2).setFiles({ name: 'ext.wav', mimeType: 'audio/wav', buffer: Buffer.from(ebuf) });
+	await expect(output).toHaveValue(/WAV/);
+	await expect(output).toHaveValue(/IEEE float/);
+	await expect(output).toHaveValue(/2 ch/);
+	await expect(output).toHaveValue(/44100 Hz/);
+	await expect(output).toHaveValue(/16-bit/);
+	await expect(output).not.toHaveValue(/0xfffe/);
+	await expect(output).not.toHaveValue(/PCM/);
+});
+
 test('robots.txt: generate from DSL, lint catches typos', async ({ page }) => {
 	await page.goto('/seo/robots-txt-generator/');
 	const input = page.locator('textarea[data-role="input"]');
