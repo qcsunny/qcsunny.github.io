@@ -513,26 +513,26 @@ function computePiMachin(digits: number): { piStr: string; elapsedMs: number } {
 }
 
 const piCalculator: FormConfig = {
-	intro: 'Calculate Pi (π) up to 100,000 decimal places using Machin-like formula and Binary Splitting, with real-time CPU benchmark timing, preset chips, and circle properties.',
-	introZh: '使用高精度梅钦类公式结合分治二进制拆分（Binary Splitting）计算圆周率 π 至小数点后 100,000 位，支持 CPU 单核极限性能检测与分级预设。',
+	intro: 'Calculate Pi (π) up to 1,000,000 decimal places using Machin-like formula and Binary Splitting, with real-time CPU benchmark timing, 1M presets, and circle properties.',
+	introZh: '使用高精度梅钦类公式结合分治二进制拆分（Binary Splitting）计算圆周率 π 至小数点后 1,000,000 位（百万位），支持 CPU 单核极限性能检测与分级预设。',
 	fields: [
 		{
 			id: 'digits',
 			label: 'Decimal places (N)',
 			labelZh: '计算小数位数 (N)',
 			type: 'number',
-			def: '2000',
+			def: '10000',
 			step: '1',
 			min: '1',
-			max: '100000',
+			max: '1000000',
 			required: true,
-			hint: 'Supports 1 to 100,000 decimal places (Binary Splitting algorithm).',
-			hintZh: '支持 1 到 100,000 位高精度计算（分治二进制拆分算力测试）。',
+			hint: 'Supports 1 to 1,000,000 decimal places (Binary Splitting algorithm).',
+			hintZh: '支持 1 到 1,000,000 位高精度计算（分治二进制拆分算力压测）。',
 			presets: [
-				{ label: '2,000 digits (Fast)', labelZh: '2,000 位 (快速测速)', value: '2000' },
-				{ label: '10,000 digits (Standard)', labelZh: '10,000 位 (标准测速)', value: '10000' },
-				{ label: '50,000 digits (Stress)', labelZh: '50,000 位 (深度压测)', value: '50000' },
-				{ label: '100,000 digits (Extreme)', labelZh: '100,000 位 (极限压测)', value: '100000' },
+				{ label: '10,000 digits (Fast)', labelZh: '10,000 位 (快速测速)', value: '10000' },
+				{ label: '100,000 digits (Standard)', labelZh: '100,000 位 (标准测速)', value: '100000' },
+				{ label: '500,000 digits (Stress)', labelZh: '500,000 位 (深度压测)', value: '500000' },
+				{ label: '1,000,000 digits (1M Extreme)', labelZh: '1,000,000 位 (1M 极限压测)', value: '1000000' },
 			],
 		},
 		{
@@ -549,14 +549,14 @@ const piCalculator: FormConfig = {
 	],
 	compute: (v) => {
 		const d = v.num('digits');
-		if (!Number.isInteger(d) || d < 1 || d > 100000) {
+		if (!Number.isInteger(d) || d < 1 || d > 1000000) {
 			return {
 				rows: [
 					{
 						label: 'Result',
 						labelZh: '计算结果',
-						value: '— (enter an integer between 1 and 100000)',
-						valueZh: '— (请输入 1 到 100000 之间的整数位数)',
+						value: '— (enter an integer between 1 and 1000000)',
+						valueZh: '— (请输入 1 到 1000000 之间的整数位数)',
 					},
 				],
 			};
