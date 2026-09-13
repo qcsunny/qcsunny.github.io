@@ -7,6 +7,11 @@ import { test, expect } from '@playwright/test';
 
 test('gamut slider keeps exactly the dragged value (no round-trip snap-back)', async ({ page }) => {
 	await page.goto('/color/color-converter/');
+	// The card opens on the CIE 1931 tab; the info line only reports the slice
+	// lightness on the OKLab a-b slice tab, so switch before reading it.
+	// (Positional on the tabs bar: the labels are bilingual, and clicking the
+	// tab must also redraw the canvas — a past regression left it stale.)
+	await page.locator('.t-gamut-tabs button').nth(1).click();
 	const slider = page.locator('#t-gamut-l');
 	// Simulate a drag: several input events in sequence, each reading what the
 	// handler chain left behind. The bug: update() rewrote slider.value from the

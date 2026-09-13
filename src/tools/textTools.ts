@@ -3291,6 +3291,12 @@ export const TEXT_TOOLS: ToolEntry[] = [
 							d.a || '—',
 							d.b || '—',
 						]),
+						rowsZh: diffs.map((d) => [
+							d.path,
+							d.kind === 'added' ? '+ 新增' : d.kind === 'removed' ? '− 删除' : '~ 变更',
+							d.a || '—',
+							d.b || '—',
+						]),
 					},
 					note: capNote
 						? 'Showing the first 200 differences — the documents diverge massively.'

@@ -2,7 +2,7 @@
 // Dual-Mode: Mainstream CIE 1931 xy Chromaticity Diagram (Default) & OKLab/OKLCH a-b Constant Lightness Slice
 // Zero third-party dependencies: Canvas 2D + WebGL acceleration.
 
-import { bilingual, isZh } from './i18n';
+import { bilingual, isZh, onLang } from './i18n';
 
 export interface RgbColor {
 	r: number;
@@ -352,6 +352,7 @@ export function initColorGamut(
 		cieBtn.style.background = 'transparent';
 		cieBtn.style.color = 'var(--fg)';
 		updateHint();
+		render();
 	});
 
 	lSlider.addEventListener('input', () => {
@@ -797,6 +798,7 @@ export function initColorGamut(
 
 	new ResizeObserver(render).observe(canvas2d);
 	render();
+	onLang(render);
 
 	return {
 		update(rgb: RgbColor): void {
