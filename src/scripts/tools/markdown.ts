@@ -21,7 +21,6 @@ import { isZh, onLang } from './i18n';
 import { formatBytes } from './workbench';
 // A string, not a stylesheet: the `?url` suffix keeps KaTeX's CSS out of this
 // chunk so a document with no formula never fetches it. See renderMathIn().
-import { katexCssHref } from '../../lib/katex-css';
 
 export const SAMPLE_MARKDOWN_ZH = `# Markdown 实时渲染与编辑工具 (QCSunny Lab)
 
@@ -1208,11 +1207,7 @@ ${body.innerHTML}
 				}
 			}
 
-			if ('setRangeText' in editor) {
-				editor.setRangeText(replacement, lineStart, lineEnd, 'preserve');
-			} else {
-				editor.value = val.substring(0, lineStart) + replacement + val.substring(lineEnd);
-			}
+			editor.setRangeText(replacement, lineStart, lineEnd, 'preserve');
 
 			editor.focus({ preventScroll: true });
 			editor.setSelectionRange(selStart, selEnd);
@@ -1226,11 +1221,7 @@ ${body.innerHTML}
 		const textToWrap = selected || defaultText;
 		const replacement = prefix + textToWrap + suffix;
 
-		if ('setRangeText' in editor) {
-			editor.setRangeText(replacement, start, end, 'preserve');
-		} else {
-			editor.value = val.substring(0, start) + replacement + val.substring(end);
-		}
+		editor.setRangeText(replacement, start, end, 'preserve');
 
 		const selStart = start + prefix.length;
 		const selEnd = selStart + textToWrap.length;
@@ -1381,12 +1372,7 @@ ${body.innerHTML}
 			e.preventDefault();
 			const start = editor.selectionStart;
 			const end = editor.selectionEnd;
-			if ('setRangeText' in editor) {
-				editor.setRangeText('  ', start, end, 'end');
-			} else {
-				editor.value = editor.value.substring(0, start) + '  ' + editor.value.substring(end);
-				editor.selectionStart = editor.selectionEnd = start + 2;
-			}
+			editor.setRangeText('  ', start, end, 'end');
 			render();
 		} else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
 			e.preventDefault();

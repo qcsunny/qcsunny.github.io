@@ -3476,6 +3476,9 @@ export const TEXT_TOOLS: ToolEntry[] = [
 					run: (text: string) => ({ output: formatMarkdownTable(text, 'compact') }),
 				},
 			],
+			renderPreview: (output: string, input: string) => renderMarkdownTableToHtml(output || input),
+			previewLabel: 'Table Preview',
+			previewLabelZh: '表格实时渲染预览',
 		},
 	},
 	{
@@ -4970,5 +4973,91 @@ function formatMarkdownTable(text: string, mode: 'align' | 'compact'): string {
 		outLines[tl.index] = formattedRows[i] || '';
 	});
 	return outLines.join('\n').trim();
+}
+
+export function renderMarkdownTableToHtml(text: string): string {
+	const raw = text.trim();
+	if (!raw) {
+		return '<div class="t-table-empty"><span class="i18n-en">Enter or paste a Markdown table above to see the live rendered table.</span><span class="i18n-zh">在上方输入或粘贴 Markdown 表格即可查看实时排版效果。</span></div>';
+	}
+
+	const lines = raw.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.startsWith('|') || l.endsWith('|') || l.includes('|'));
+	if (lines.length < 2) {
+		return '<div class="t-table-empty"><span class="i18n-en">No valid Markdown table rows detected (table must contain at least a header and separator row).</span><span class="i18n-zh">未检测到有效的 Markdown 表格（表格需至少包含表头与分隔行）。</span></div>';
+	}
+
+	const splitRow = (line: string): string[] => {
+		let s = line.trim();
+		const codes: string[] = [];
+		s = s.replace(/`[^`]+`/g, (m) => {
+			codes.push(m);
+			return `\u0000CODE_${codes.length - 1}\u0000`;
+		});
+		s = s.replace(/\\\|/g, '\u0000ESCAPED_PIPE\u0000');
+		if (s.startsWith('|')) s = s.slice(1);
+		if (s.endsWith('|')) s = s.slice(0, -1);
+		return s.split('|').map((cell) => {
+			let c = cell.trim();
+			c = c.replace(/\u0000ESCAPED_PIPE\u0000/g, '|');
+			c = c.replace(/\u0000CODE_(\d+)\u0000/g, (_, idx) => codes[Number(idx)] || '');
+			return c;
+		});
+	};
+
+	const headerCells = splitRow(lines[0] || '');
+	const sepCells = splitRow(lines[1] || '');
+
+	const colCount = Math.max(headerCells.length, sepCells.length);
+	const aligns: ('left' | 'center' | 'right')[] = [];
+	for (let c = 0; c < colCount; c++) {
+		const cell = sepCells[c] || '';
+		const starts = cell.startsWith(':');
+		const ends = cell.endsWith(':');
+		if (starts && ends) aligns.push('center');
+		else if (ends) aligns.push('right');
+		else aligns.push('left');
+	}
+
+	const escapeHtml = (str: string): string => {
+		return str
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;')
+			.replace(/'/g, '&#39;');
+	};
+
+	const formatCell = (cellText: string): string => {
+		let s = escapeHtml(cellText);
+		s = s.replace(/`([^`]+)`/g, '<code class="t-inline-code">$1</code>');
+		s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+		s = s.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
+		s = s.replace(/~~([^~]+)~~/g, '<del>$1</del>');
+		s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+		return s;
+	};
+
+	let thead = '<thead><tr>';
+	for (let c = 0; c < colCount; c++) {
+		const text = headerCells[c] || '';
+		const align = aligns[c] || 'left';
+		thead += `<th style="text-align: ${align};">${formatCell(text)}</th>`;
+	}
+	thead += '</tr></thead>';
+
+	let tbody = '<tbody>';
+	for (let i = 2; i < lines.length; i++) {
+		const rowCells = splitRow(lines[i] || '');
+		tbody += '<tr>';
+		for (let c = 0; c < colCount; c++) {
+			const text = rowCells[c] || '';
+			const align = aligns[c] || 'left';
+			tbody += `<td style="text-align: ${align};">${formatCell(text)}</td>`;
+		}
+		tbody += '</tr>';
+	}
+	tbody += '</tbody>';
+
+	return `<div class="t-md-table-wrap"><table class="t-rendered-table">${thead}${tbody}</table></div>`;
 }
 

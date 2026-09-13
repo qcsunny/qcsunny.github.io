@@ -2193,6 +2193,30 @@ const year = new Date().getFullYear();
 .t-md-table-wrap tr:nth-child(even) {
 	background: color-mix(in srgb, var(--gridline) 20%, transparent);
 }
+.t-preview-label {
+	margin-top: 1.5em;
+	display: inline-block;
+}
+.t-preview-box {
+	background: var(--bg);
+	border: 1px solid var(--gridline);
+	border-radius: 8px;
+	padding: 1em 1.25em;
+	margin-top: 0.5em;
+	margin-bottom: 1.5em;
+	min-height: 80px;
+	overflow-x: auto;
+}
+.t-table-empty {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 80px;
+	color: var(--dim);
+	font-size: 0.88rem;
+	font-style: italic;
+	text-align: center;
+}
 .t-md-task-list {
 	list-style: none;
 	padding-left: 0.4em;

@@ -139,6 +139,13 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 
 	let out: HTMLTextAreaElement | null = null;
 	let errEl: HTMLElement | null = null;
+	let previewEl = host.querySelector<HTMLElement>('[data-role="preview"]');
+
+	const updatePreview = (outVal: string, inVal: string) => {
+		if (previewEl && config.renderPreview) {
+			previewEl.innerHTML = config.renderPreview(outVal, inVal);
+		}
+	};
 
 	if (config.transforms?.length) {
 		let btnRow = host.querySelector<HTMLElement>('.t-btnrow');
@@ -149,7 +156,7 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 			host.append(btnRow);
 		}
 
-		// Clear button: wipes input, output and error. Class t-clear also keeps it
+		// Clear button: wipes input, output, error and preview. Class t-clear also keeps it
 		// OUT of the pre-rendered .t-btn sequence below — those are matched to
 		// transforms by index, and the clearing button is no transform.
 		const clearBtn = document.createElement('button');
@@ -162,6 +169,7 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 			if (out) out.value = '';
 			if (errEl) errEl.textContent = '';
 			update();
+			updatePreview('', '');
 			input.focus();
 		});
 		btnRow.insertBefore(clearBtn, btnRow.firstChild);
@@ -192,6 +200,16 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 			host.append(errEl);
 		}
 
+		if (config.renderPreview && !previewEl) {
+			const previewLabel = document.createElement('span');
+			previewLabel.className = 't-label t-preview-label';
+			setBilingual(previewLabel, config.previewLabel ?? 'Table Preview', config.previewLabelZh ?? '表格实时排版预览');
+			previewEl = document.createElement('div');
+			previewEl.className = 't-preview-box t-table-preview-wrap';
+			previewEl.dataset.role = 'preview';
+			host.append(previewLabel, previewEl);
+		}
+
 		let runSeq = 0;
 		// Pending live-mode recompute, so a manual transform click can cancel it
 		// (see executeTransform).
@@ -209,6 +227,7 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 			if (input.value.length > MAX_INPUT_CHARS) {
 				out.value = '';
 				if (errEl) setBilingual(errEl, `Input exceeds 5 MB — this tool does not process files that large.`, `输入超过 5 MB —— 本工具不处理这么大的文件。`);
+				updatePreview('', input.value);
 				return;
 			}
 			const currentSeq = ++runSeq;
@@ -220,18 +239,22 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 						if (currentSeq !== runSeq || !out) return;
 						out.value = res.output;
 						if (errEl) setBilingual(errEl, res.error ?? '', res.errorZh);
+						updatePreview(res.output, input.value);
 					}).catch((err) => {
 						if (currentSeq !== runSeq || !out) return;
 						out.value = '';
 						if (errEl) setBilingual(errEl, err instanceof Error ? err.message : 'Error');
+						updatePreview('', input.value);
 					});
 				} else {
 					out.value = r.output;
 					if (errEl) setBilingual(errEl, r.error ?? '', r.errorZh);
+					updatePreview(r.output, input.value);
 				}
 			} catch (err) {
 				out.value = '';
 				if (errEl) setBilingual(errEl, err instanceof Error ? err.message : 'Error');
+				updatePreview('', input.value);
 			}
 		};
 

@@ -227,6 +227,10 @@ export interface TextConfig {
 	 *  (HMAC keys and the like). Its current value is passed to every
 	 *  transform's run() as the second argument. */
 	secretInput?: { label: string; labelZh?: string; placeholder?: string; placeholderZh?: string };
+	/** Optional live HTML preview rendered below the output */
+	renderPreview?: (output: string, input: string) => string;
+	previewLabel?: string;
+	previewLabelZh?: string;
 }
 
 // --- generator tools (password / uuid / random) ------------------------------------

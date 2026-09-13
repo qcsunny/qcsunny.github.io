@@ -118,7 +118,7 @@ test('merge combines two files in order', async ({ page }) => {
 	const b2 = toB64(await makePdf([{ label: 'b1' }], 'B'));
 	await drop(page, b1, 'a.pdf');
 	await drop(page, b2, 'b.pdf');
-	expect(await page.locator('.t-pdf-panel[data-panel="merge"] .t-pdf-filelist li').count()).toBe(2);
+	await expect(page.locator('.t-pdf-panel[data-panel="merge"] .t-pdf-filelist li')).toHaveCount(2);
 	const dl = page.waitForEvent('download');
 	await page.getByRole('button', { name: /Merge & download/ }).click();
 	const download = await dl;

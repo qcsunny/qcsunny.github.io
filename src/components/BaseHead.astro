@@ -69,35 +69,48 @@ const ogImageURL = new URL(typeof image === 'string' ? image : image.src, Astro.
 		document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
 
 		try {
+			const def = (proto, prop, fn) => {
+				try {
+					if (proto && !proto[prop]) {
+						Object.defineProperty(proto, prop, {
+							value: fn,
+							writable: true,
+							configurable: true,
+							enumerable: false
+						});
+					}
+				} catch (err) {}
+			};
+
 			const toHexBytes = function (pad = 2) {
 				const b = this instanceof ArrayBuffer ? new Uint8Array(this) : this;
 				let s = '';
 				for (let i = 0; i < b.length; i++) s += b[i].toString(16).padStart(pad, '0');
 				return s;
 			};
+			const toHexNum = function (pad = 0) {
+				return this.toString(16).padStart(pad, '0');
+			};
+
 			if (typeof Uint8Array !== 'undefined') {
-				if (!Uint8Array.prototype.toHex) Uint8Array.prototype.toHex = toHexBytes;
-				if (!Uint8Array.prototype.tohex) Uint8Array.prototype.tohex = Uint8Array.prototype.toHex;
+				def(Uint8Array.prototype, 'toHex', toHexBytes);
+				def(Uint8Array.prototype, 'tohex', toHexBytes);
 			}
 			if (typeof ArrayBuffer !== 'undefined') {
-				if (!ArrayBuffer.prototype.toHex) ArrayBuffer.prototype.toHex = toHexBytes;
-				if (!ArrayBuffer.prototype.tohex) ArrayBuffer.prototype.tohex = ArrayBuffer.prototype.toHex;
+				def(ArrayBuffer.prototype, 'toHex', toHexBytes);
+				def(ArrayBuffer.prototype, 'tohex', toHexBytes);
 			}
 			if (typeof Array !== 'undefined') {
-				if (!Array.prototype.toHex) Array.prototype.toHex = toHexBytes;
-				if (!Array.prototype.tohex) Array.prototype.tohex = Array.prototype.toHex;
+				def(Array.prototype, 'toHex', toHexBytes);
+				def(Array.prototype, 'tohex', toHexBytes);
 			}
 			if (typeof Number !== 'undefined') {
-				if (!Number.prototype.toHex) {
-					Number.prototype.toHex = function (pad = 0) { return this.toString(16).padStart(pad, '0'); };
-				}
-				if (!Number.prototype.tohex) Number.prototype.tohex = Number.prototype.toHex;
+				def(Number.prototype, 'toHex', toHexNum);
+				def(Number.prototype, 'tohex', toHexNum);
 			}
 			if (typeof BigInt !== 'undefined') {
-				if (!BigInt.prototype.toHex) {
-					BigInt.prototype.toHex = function (pad = 0) { return this.toString(16).padStart(pad, '0'); };
-				}
-				if (!BigInt.prototype.tohex) BigInt.prototype.tohex = BigInt.prototype.toHex;
+				def(BigInt.prototype, 'toHex', toHexNum);
+				def(BigInt.prototype, 'tohex', toHexNum);
 			}
 		} catch (e) {}
 	})();
