@@ -56,7 +56,7 @@ function branches(fields: { id: string; type?: string; def?: unknown; options?: 
 	return out;
 }
 
-test('every computed result row exists in both languages', () => {
+test('every computed result row exists in both languages', async () => {
 	const leaks: string[] = [];
 	for (const tool of REGISTRY) {
 		const cfg = (tool as { config?: unknown }).config as {
