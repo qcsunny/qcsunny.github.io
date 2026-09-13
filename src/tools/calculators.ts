@@ -459,34 +459,49 @@ const ratio: FormConfig = {
 };
 
 
-// --- pi calculator (Machin-like formula with BigInt arbitrary precision) --------
+// --- pi calculator (Machin formula + Binary Splitting BigInt) --------
 function computePiMachin(digits: number): { piStr: string; elapsedMs: number } {
 	const t0 = typeof performance !== 'undefined' ? performance.now() : Date.now();
 
 	const extra = 10;
 	const totalDigits = digits + extra;
-	const unity = 10n ** BigInt(totalDigits);
 
-	function arccot(xVal: number, u: bigint): bigint {
-		const x = BigInt(xVal);
-		const xSq = x * x;
-		let sum = u / x;
-		let xpower = sum;
-		let n = 3n;
-		let sign = -1n;
-		while (true) {
-			xpower = xpower / xSq;
-			const term = xpower / n;
-			if (term === 0n) break;
-			sum += sign * term;
-			sign = -sign;
-			n += 2n;
+	// Binary Splitting arctangent computation: computes T, Q such that sum = T / Q
+	function bsArccot(xVal: bigint, nTerms: number): { P: bigint; Q: bigint; T: bigint } {
+		const xSq = xVal * xVal;
+
+		function bs(a: number, b: number): { P: bigint; Q: bigint; T: bigint } {
+			if (b - a === 1) {
+				const k = BigInt(a);
+				const p = a % 2 === 0 ? 1n : -1n;
+				const q = (2n * k + 1n) * (a === 0 ? xVal : xSq);
+				return { P: p, Q: q, T: p };
+			}
+			const mid = (a + b) >> 1;
+			const left = bs(a, mid);
+			const right = bs(mid, b);
+			return {
+				P: left.P * right.P,
+				Q: left.Q * right.Q,
+				T: left.T * right.Q + left.P * right.T,
+			};
 		}
-		return sum;
+
+		return bs(0, nTerms);
 	}
 
+	const terms5 = Math.ceil((totalDigits * 2.302585) / (2 * Math.log(5))) + 5;
+	const terms239 = Math.ceil((totalDigits * 2.302585) / (2 * Math.log(239))) + 5;
+
+	const res5 = bsArccot(5n, terms5);
+	const res239 = bsArccot(239n, terms239);
+
+	const unity = 10n ** BigInt(totalDigits);
+	const arc5 = (res5.T * unity) / res5.Q;
+	const arc239 = (res239.T * unity) / res239.Q;
+
 	// Machin's formula: pi/4 = 4 * arccot(5) - arccot(239)
-	const piScaled = 16n * arccot(5, unity) - 4n * arccot(239, unity);
+	const piScaled = 16n * arc5 - 4n * arc239;
 	const piInt = piScaled / 10n ** BigInt(extra);
 	const rawStr = piInt.toString();
 	const result = rawStr[0] + '.' + rawStr.slice(1, digits + 1);
@@ -498,21 +513,27 @@ function computePiMachin(digits: number): { piStr: string; elapsedMs: number } {
 }
 
 const piCalculator: FormConfig = {
-	intro: 'Calculate Pi (π) up to 2,000 decimal places using Machin-like arbitrary-precision formula, with real-time CPU benchmark timing, fraction approximations, and geometry circle properties.',
-	introZh: '使用高精度梅钦类公式（Machin formula）计算圆周率 π 至小数点后 2000 位，包含 CPU 实时算力耗时检测、经典密率分式逼近与几何圆性质计算。',
+	intro: 'Calculate Pi (π) up to 100,000 decimal places using Machin-like formula and Binary Splitting, with real-time CPU benchmark timing, preset chips, and circle properties.',
+	introZh: '使用高精度梅钦类公式结合分治二进制拆分（Binary Splitting）计算圆周率 π 至小数点后 100,000 位，支持 CPU 单核极限性能检测与分级预设。',
 	fields: [
 		{
 			id: 'digits',
 			label: 'Decimal places (N)',
 			labelZh: '计算小数位数 (N)',
 			type: 'number',
-			def: '100',
+			def: '2000',
 			step: '1',
 			min: '1',
-			max: '2000',
+			max: '100000',
 			required: true,
-			hint: 'Integer from 1 to 2000 decimal places.',
-			hintZh: '请输入 1 到 2000 之间的整数位数。',
+			hint: 'Supports 1 to 100,000 decimal places (Binary Splitting algorithm).',
+			hintZh: '支持 1 到 100,000 位高精度计算（分治二进制拆分算力测试）。',
+			presets: [
+				{ label: '2,000 digits (Fast)', labelZh: '2,000 位 (快速测速)', value: '2000' },
+				{ label: '10,000 digits (Standard)', labelZh: '10,000 位 (标准测速)', value: '10000' },
+				{ label: '50,000 digits (Stress)', labelZh: '50,000 位 (深度压测)', value: '50000' },
+				{ label: '100,000 digits (Extreme)', labelZh: '100,000 位 (极限压测)', value: '100000' },
+			],
 		},
 		{
 			id: 'radius',
@@ -528,24 +549,26 @@ const piCalculator: FormConfig = {
 	],
 	compute: (v) => {
 		const d = v.num('digits');
-		if (!Number.isInteger(d) || d < 1 || d > 2000) {
+		if (!Number.isInteger(d) || d < 1 || d > 100000) {
 			return {
 				rows: [
 					{
 						label: 'Result',
 						labelZh: '计算结果',
-						value: '— (enter an integer between 1 and 2000)',
-						valueZh: '— (请输入 1 到 2000 之间的整数位数)',
+						value: '— (enter an integer between 1 and 100000)',
+						valueZh: '— (请输入 1 到 100000 之间的整数位数)',
 					},
 				],
 			};
 		}
 
 		const { piStr, elapsedMs } = computePiMachin(d);
+		const sec = elapsedMs / 1000;
+		const timeFmt = elapsedMs < 1000 ? `${elapsedMs.toFixed(1)} ms` : `${sec.toFixed(2)} s (${elapsedMs.toFixed(0)} ms)`;
 		const rows: import('./registry').FormResultRow[] = [
 			{
-				label: `Value of π (${d} decimal places)`,
-				labelZh: `圆周率 π（前 ${d} 位小数）`,
+				label: `Value of π (${d.toLocaleString()} decimal places)`,
+				labelZh: `圆周率 π（前 ${d.toLocaleString()} 位小数）`,
 				value: piStr,
 				valueZh: piStr,
 				emphasis: true,
@@ -553,8 +576,8 @@ const piCalculator: FormConfig = {
 			{
 				label: 'Calculation Time (CPU Benchmark)',
 				labelZh: '计算耗时 (CPU 性能检测)',
-				value: `${elapsedMs < 1 ? '< 1' : elapsedMs.toFixed(2)} ms`,
-				valueZh: `${elapsedMs < 1 ? '< 1' : elapsedMs.toFixed(2)} ms`,
+				value: timeFmt,
+				valueZh: timeFmt,
 			},
 			{
 				label: 'Milü fraction (355/113)',
