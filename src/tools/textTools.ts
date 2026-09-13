@@ -3451,9 +3451,9 @@ export const TEXT_TOOLS: ToolEntry[] = [
 		descriptionZh: '自动对齐错乱的 Markdown 表格，支持中文全角与英文字符宽度自适应计算，一键格式化完美矩形网格。',
 		kind: 'text',
 		config: {
-			def: '| Name | Role |\n| --- | --- |\n| Alice | admin |\n| Bob | dev |\n',
-			placeholder: '| Product | Category | Price | Status |\n|:---|:---:|---:|:---|\n| iPhone 16 Pro | Electronics | $999 | In Stock |\n| Mechanical Keyboard | Peripherals | $129 | Pre-order |',
-			placeholderZh: '粘贴 Markdown 表格，如：\n| 商品 | 分类 | 价格 |\n|:---|:---:|---:|\n| iPhone 16 Pro | 电子产品 | 7999元 |',
+			def: '| ID | 模块名称 / Module | 架构分类 | 核心技术栈与特性 | 响应时延 | 运行状态 | 并发能力 |\n|:---:|:---|:---:|:---|---:|:---:|---:|\n| 101 | **API Gateway** | 微服务 | OAuth2.0、`JWT` 鉴权、*多活容灾* | 12ms | 🟢 Ready | 50,000 QPS |\n| 102 | **Vector DB** | 向量库 | Milvus、HNSW 索引、混合检索 | 35ms | 🟢 Ready | 12,000 QPS |\n| 103 | **Task Scheduler** | 批处理 | 分布式分片、~~旧单机调度~~、CRON | 1,250ms | 🟡 Degraded | 1,500 Jobs/m |\n| 104 | **Document OCR** | 计算密集 | 纯 WebAssembly 离线识别、表格提取 | 480ms | 🟢 Ready | 800 Pages/m |\n| 105 | **Event Bus** | 消息中间件 | Kafka 集群、`ack=all`、Exactly-Once | 5ms | 🟢 Ready | 120,000 QPS |\n| 106 | **Cache Proxy** | 缓存层 | Redis 集群、`get | set` 批量操作、分片预热 | 2ms | 🟢 Ready | 200,000 QPS |\n',
+			placeholder: '| ID | Module | Category | Capabilities | Latency | Status |\n|:---:|:---|:---:|:---|---:|:---:|\n| 1 | API Gateway | Microservice | OAuth2, JWT | 12ms | Ready |',
+			placeholderZh: '粘贴 Markdown 表格，如：\n| 编号 | 模块名称 | 分类 | 核心技术栈 | 响应时延 | 状态 |\n|:---:|:---|:---:|:---|---:|:---:|\n| 1 | API 网关 | 微服务 | OAuth2、JWT 鉴权 | 12ms | 正常 |',
 			mono: true,
 			live: true,
 			stats: (text: string) => {
@@ -4871,6 +4871,24 @@ function getVisualWidth(str: string): number {
 	return len;
 }
 
+function splitMarkdownTableRow(line: string, unescapePipe = false): string[] {
+	let s = line.trim();
+	const codes: string[] = [];
+	s = s.replace(/`[^`]+`/g, (m) => {
+		codes.push(m);
+		return `\u0000CODE_${codes.length - 1}\u0000`;
+	});
+	s = s.replace(/\\\|/g, '\u0000ESCAPED_PIPE\u0000');
+	if (s.startsWith('|')) s = s.slice(1);
+	if (s.endsWith('|')) s = s.slice(0, -1);
+	return s.split('|').map((cell) => {
+		let c = cell.trim();
+		c = c.replace(/\u0000ESCAPED_PIPE\u0000/g, unescapePipe ? '|' : '\\|');
+		c = c.replace(/\u0000CODE_(\d+)\u0000/g, (_, idx) => codes[Number(idx)] || '');
+		return c;
+	});
+}
+
 function formatMarkdownTable(text: string, mode: 'align' | 'compact'): string {
 	const lines = text.split(/\r?\n/);
 	const tableLines: { index: number; line: string }[] = [];
@@ -4885,12 +4903,7 @@ function formatMarkdownTable(text: string, mode: 'align' | 'compact'): string {
 		return text.trim();
 	}
 
-	const parsedRows = tableLines.map((tl) => {
-		let raw = tl.line;
-		if (raw.startsWith('|')) raw = raw.slice(1);
-		if (raw.endsWith('|')) raw = raw.slice(0, -1);
-		return raw.split('|').map((cell) => cell.trim());
-	});
+	const parsedRows = tableLines.map((tl) => splitMarkdownTableRow(tl.line, false));
 
 	const colCount = Math.max(...parsedRows.map((r) => r.length));
 
@@ -4986,26 +4999,8 @@ export function renderMarkdownTableToHtml(text: string): string {
 		return '<div class="t-table-empty"><span class="i18n-en">No valid Markdown table rows detected (table must contain at least a header and separator row).</span><span class="i18n-zh">未检测到有效的 Markdown 表格（表格需至少包含表头与分隔行）。</span></div>';
 	}
 
-	const splitRow = (line: string): string[] => {
-		let s = line.trim();
-		const codes: string[] = [];
-		s = s.replace(/`[^`]+`/g, (m) => {
-			codes.push(m);
-			return `\u0000CODE_${codes.length - 1}\u0000`;
-		});
-		s = s.replace(/\\\|/g, '\u0000ESCAPED_PIPE\u0000');
-		if (s.startsWith('|')) s = s.slice(1);
-		if (s.endsWith('|')) s = s.slice(0, -1);
-		return s.split('|').map((cell) => {
-			let c = cell.trim();
-			c = c.replace(/\u0000ESCAPED_PIPE\u0000/g, '|');
-			c = c.replace(/\u0000CODE_(\d+)\u0000/g, (_, idx) => codes[Number(idx)] || '');
-			return c;
-		});
-	};
-
-	const headerCells = splitRow(lines[0] || '');
-	const sepCells = splitRow(lines[1] || '');
+	const headerCells = splitMarkdownTableRow(lines[0] || '', true);
+	const sepCells = splitMarkdownTableRow(lines[1] || '', true);
 
 	const colCount = Math.max(headerCells.length, sepCells.length);
 	const aligns: ('left' | 'center' | 'right')[] = [];
@@ -5047,7 +5042,7 @@ export function renderMarkdownTableToHtml(text: string): string {
 
 	let tbody = '<tbody>';
 	for (let i = 2; i < lines.length; i++) {
-		const rowCells = splitRow(lines[i] || '');
+		const rowCells = splitMarkdownTableRow(lines[i] || '', true);
 		tbody += '<tr>';
 		for (let c = 0; c < colCount; c++) {
 			const text = rowCells[c] || '';

@@ -222,6 +222,24 @@ function slugify(text: string): string {
 		.replace(/^-+|-+$/g, '') || 'heading';
 }
 
+function splitTableRow(line: string): string[] {
+	let s = line.trim();
+	const codes: string[] = [];
+	s = s.replace(/`[^`]+`/g, (m) => {
+		codes.push(m);
+		return `\u0000CODE_${codes.length - 1}\u0000`;
+	});
+	s = s.replace(/\\\|/g, '\u0000ESCAPED_PIPE\u0000');
+	if (s.startsWith('|')) s = s.slice(1);
+	if (s.endsWith('|')) s = s.slice(0, -1);
+	return s.split('|').map((cell) => {
+		let c = cell.trim();
+		c = c.replace(/\u0000ESCAPED_PIPE\u0000/g, '|');
+		c = c.replace(/\u0000CODE_(\d+)\u0000/g, (_, idx) => codes[Number(idx)] || '');
+		return c;
+	});
+}
+
 // Core Markdown Parser (Zero-dependency GFM implementation)
 export function parseMarkdownToHtml(markdown: string, lang: 'zh' | 'en' = 'zh'): string {
 	const codeBlocks: string[] = [];
@@ -377,11 +395,7 @@ export function parseMarkdownToHtml(markdown: string, lang: 'zh' | 'en' = 'zh'):
 				inTable = true;
 				// Pop previous line as table header
 				output.pop();
-				const headerCells = prevLine.split('|').map((s) => s.trim()).filter((s, idx, arr) => {
-					if (idx === 0 && prevLine.startsWith('|') && s === '') return false;
-					if (idx === arr.length - 1 && prevLine.endsWith('|') && s === '') return false;
-					return true;
-				});
+				const headerCells = splitTableRow(prevLine);
 
 				tableAligns = trimmed.split('|').map((s) => s.trim()).filter((s, idx, arr) => {
 					if (idx === 0 && trimmed.startsWith('|') && s === '') return false;
@@ -410,11 +424,7 @@ export function parseMarkdownToHtml(markdown: string, lang: 'zh' | 'en' = 'zh'):
 		// Table body rows
 		if (inTable) {
 			if (trimmed.includes('|')) {
-				const cells = trimmed.split('|').map((s) => s.trim()).filter((s, idx, arr) => {
-					if (idx === 0 && trimmed.startsWith('|') && s === '') return false;
-					if (idx === arr.length - 1 && trimmed.endsWith('|') && s === '') return false;
-					return true;
-				});
+				const cells = splitTableRow(trimmed);
 				let rowHtml = '<tr>';
 				cells.forEach((cell, idx) => {
 					const align = tableAligns[idx] || 'left';

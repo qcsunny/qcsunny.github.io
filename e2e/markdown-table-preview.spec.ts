@@ -13,13 +13,14 @@ test('markdown table formatter renders live table preview on load and updates on
 	await expect(table).toBeVisible();
 
 	const headers = await table.locator('th').allTextContents();
-	expect(headers).toEqual(['Name', 'Role']);
+	expect(headers).toEqual(['ID', '模块名称 / Module', '架构分类', '核心技术栈与特性', '响应时延', '运行状态', '并发能力']);
 
 	const rows = table.locator('tbody tr');
-	await expect(rows).toHaveCount(2);
+	await expect(rows).toHaveCount(6);
 
 	const firstRowCells = await rows.first().locator('td').allTextContents();
-	expect(firstRowCells).toEqual(['Alice', 'admin']);
+	expect(firstRowCells[0]).toBe('101');
+	expect(firstRowCells[1]).toBe('API Gateway');
 
 	// Test clearing
 	const clearBtn = page.getByRole('button', { name: /Clear|清空/i });
