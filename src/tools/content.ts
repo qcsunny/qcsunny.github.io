@@ -144,7 +144,7 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 		],
 		aboutZh: [
 			'在浏览器端实时高精度计算圆周率 π 至小数点后超 100 万位（1,000,000+）。算法采用自适应分阶混合引擎（1.5 万位以内采用 Machin 梅钦公式；1.5 万位及以上自动切换为 Chudnovsky 楚德诺夫斯基超高阶级数 + 二进制拆分 Binary Splitting + 牛顿-拉夫逊平方根算法），结合原生 BigInt 任意精度整型递推与 14 位安全冗余位（guard digits），彻底消除常规浮点数截断，保证末位 100% 精确无误。',
-			'除了输出高精度位数值，页面还同时提供 CPU 性能基准测试耗时、动态 4 阶段进度条展示、祖冲之密率（355/113，相对误差不足亿分之一）与约率（22/7）分式逼近对比，并支持输入圆半径联动验算圆周长与面积。',
+			'除了输出高精度位数值，页面还同时提供 CPU 性能基准测试耗时、动态 4 阶段进度条展示、祖冲之密率（355/113，相对误差不足千万分之一）与约率（22/7）分式逼近对比，并支持输入圆半径联动验算圆周长与面积。',
 		],
 		faq: [
 			{ q: 'How does the Hybrid Engine achieve 1,000,000+ digits without page freezing?', a: 'For smaller inputs (N < 15,000), Machin arctangent series offer instant results with minimal memory footprint. For large-scale inputs (N ≥ 15,000), the Chudnovsky algorithm combined with binary splitting reduces computational time complexity from O(N²) to O(N log N³), yielding 14.18 digits per term with asynchronous progress updates.' },
@@ -192,12 +192,12 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 		],
 		faq: [
 			{ q: 'Can it solve quadratic equations with negative discriminant (Δ < 0)?', a: 'Yes. When Δ < 0, it computes both complex conjugate roots in the standard format u ± vi.' },
-			{ q: 'How does it solve indeterminate limits like sin(x)/x as x → 0?', a: 'Direct substitution gives 0/0 (NaN). The solver samples decreasing perturbations h = 10⁻¹ ... 10⁻⁶ around x₀ and applies Richardson extrapolation (4·f(h/10) - f(h))/3 to eliminate first-order truncation error and cleanly converge to 1.' },
+			{ q: 'How does it solve indeterminate limits like sin(x)/x as x → 0?', a: 'Direct substitution gives 0/0 (NaN). The solver samples decreasing perturbations h = 10⁻¹ ... 10⁻⁶ around x₀ and applies Richardson extrapolation (10·f(h/10) - f(h))/9 to eliminate first-order truncation error and cleanly converge to 1.' },
 			{ q: 'How is the definite integral computed?', a: 'It uses Adaptive Simpson Quadrature with recursive sub-interval refinement (tolerance 1e-9), adjusting sample density where curvature is high while computing smooth intervals in fractions of a millisecond.' },
 		],
 		faqZh: [
 			{ q: '判别式 Δ < 0 时能求解虚根吗？', a: '可以。当 Δ < 0 时，计算器会自动输出共轭复数解 u ± vi。' },
-			{ q: '如何求解像 sin(x)/x 在 x 趋向 0 这样的 0/0 不定式极限？', a: '直接代入会产生 0/0 无法求值。求解器在趋近点附近按几何递减步长 h = 10⁻¹ ... 10⁻⁶ 采样，并通过理查森外推公式 (4·f(h/10) - f(h))/3 消除主导截断误差，稳定消除浮点抖动并精确收敛至极限值 1。' },
+			{ q: '如何求解像 sin(x)/x 在 x 趋向 0 这样的 0/0 不定式极限？', a: '直接代入会产生 0/0 无法求值。求解器在趋近点附近按几何递减步长 h = 10⁻¹ ... 10⁻⁶ 采样，并通过理查森外推公式 (10·f(h/10) - f(h))/9 消除主导截断误差，稳定消除浮点抖动并精确收敛至极限值 1。' },
 			{ q: '定积分是如何计算的？', a: '基于自适应辛普森积分法（Adaptive Simpson Quadrature），递归评估局部误差（容差 1e-9），在平滑区域只需十余次计算即可完成，在剧烈振荡区域自动加密网格，兼顾极高精度与毫秒级速度。' },
 		],
 	},
@@ -571,20 +571,20 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 	},
 	'text/word-counter': {
 		about: [
-			'Get live word, character, sentence and paragraph counts as you type. Words are counted by whitespace and punctuation boundaries; characters both with and without spaces are reported alongside reading time (at 200 words per minute) and speaking time (at 130 wpm).',
+			'Get live word, character, sentence and paragraph counts as you type. Words are counted by whitespace and punctuation boundaries; characters both with and without spaces are reported alongside reading time (about 220 Latin words per minute, about 400 CJK characters per minute).',
 			'Everything computes in your browser as you type — no text is ever sent to a server. Handy for essays, articles, blog posts and social media character limits.',
 		],
 		aboutZh: [
-			'边输入边实时统计单词数、字符数、句子数与段落数。单词按空白与标点边界切分；同时提供含空格与不含空格的字符数，以及预估阅读时长（按每分钟 200 词）和朗读时长（按每分钟 130 词）。',
+			'边输入边实时统计单词数、字符数、句子数与段落数。单词按空白与标点边界切分；同时提供含空格与不含空格的字符数，以及预估阅读时长（西文约每分钟 220 词、中文约每分钟 400 字）。',
 			'所有计算均在浏览器本地实时完成——文本绝不上传服务器。适合文章写作、论文、博客草稿与社交平台字数限制检查。',
 		],
 		faq: [
-			{ q: 'How is reading time calculated?', a: 'Based on the average adult reading speed of 200 words per minute (wpm).' },
+			{ q: 'How is reading time calculated?', a: 'About 220 Latin words per minute, or about 400 CJK characters per minute.' },
 			{ q: 'Does this count Chinese characters as words?', a: 'In Chinese text, each character is counted as a separate unit so the word count reflects character-based length accurately.' },
 			{ q: 'Is there a limit on text length?', a: 'No practical limit — everything runs in memory in your browser and handles tens of thousands of words smoothly.' },
 		],
 		faqZh: [
-			{ q: '阅读时间是怎么估算的？', a: '按成年人平均阅读速度每分钟 200 词计算。' },
+			{ q: '阅读时间是怎么估算的？', a: '按西文每分钟约 220 词、中文每分钟约 400 字估算。' },
 			{ q: '中文字符算作词还是字？', a: '在中文文本中，每个汉字独立计入词数与字数，贴合中文的阅读与字数统计习惯。' },
 			{ q: '输入文本有长度限制吗？', a: '没有实际限制——全部在浏览器内存中本地运算，轻松应对数万字长文。' },
 		],
@@ -592,11 +592,11 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 	'text/character-counter': {
 		about: [
 			'Break a text down by character type: total characters, characters without spaces, words, letters, digits, spaces, symbols and the exact UTF-8 byte size — the number that matters for SMS, tweets and database fields.',
-			'Each counter is live. The UTF-8 byte count uses a real encoder, so Chinese characters count as 3 bytes and emoji as 4, matching what servers and length-limited APIs actually see.',
+			'Each counter is live. The UTF-8 byte count uses a real encoder, so a Chinese character counts as 3 bytes and a typical emoji as 4, matching what servers and length-limited APIs actually see.',
 		],
 		aboutZh: [
 			'按字符类型拆解文本：总字符数、不含空格的字符数、词数、字母数、数字数、空格数、符号数，以及精确的 UTF-8 字节数——后者才是短信、推文和数据库字段真正受限的数字。',
-			'所有计数实时更新。UTF-8 字节数由真实编码器计算：一个汉字占 3 字节、一个 emoji 占 4 字节，与服务器和有长度限制的 API 的实际行为一致。',
+			'所有计数实时更新。UTF-8 字节数由真实编码器计算：一个汉字占 3 字节、一个 emoji 通常占 4 字节，与服务器和有长度限制的 API 的实际行为一致。',
 		],
 		faq: [
 			{ q: 'How many characters fit in one SMS?', a: '160 in the default encoding; if any character needs Unicode (like Chinese), the limit drops to 70 per segment.' },
@@ -1145,11 +1145,11 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 	},
 	'calculators/calculus': {
 		about: [
-			'Numerical calculus on any f(x) the site expression engine understands: derivatives via central differences (with the second derivative), definite integrals via composite Simpson with a doubling-based error estimate, and two-sided limits probed with shrinking steps.',
+			'Numerical calculus on any f(x) the site expression engine understands: derivatives via central differences (with the second derivative), definite integrals via composite Gauss–Legendre quadrature with a same-budget two-rules error estimate, and two-sided limits probed with shrinking steps.',
 			'Everything is numeric — no symbolic rewriting — which is exactly right for checking a model or sanity-checking homework: fast, honest about error, and never claims an exact form it cannot prove.',
 		],
 		aboutZh: [
-			'对站内表达式引擎支持的任意 f(x) 做数值微积分：中心差分求导（含二阶导）、复合辛普森法定积分（附倍增误差估计）、递减步长探测双侧极限。',
+			'对站内表达式引擎支持的任意 f(x) 做数值微积分：中心差分求导（含二阶导）、复合高斯-勒让德求积（附同预算双规则误差估计）、递减步长探测双侧极限。',
 			'全部为数值方法——不做符号改写——恰好适合检验模型或核对作业：快、对误差诚实，绝不冒称求出了无法证明的解析形式。',
 		],
 		faq: [
@@ -2168,11 +2168,11 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 	'calculators/anova-calculator': {
 		about: [
 			'One-way analysis of variance: paste each group\'s numbers, get the between/within decomposition, the F statistic and its exact p-value from the F distribution.',
-			'ANOVA answers "are all group means equal" in one test. Doing it with repeated t tests inflates the false-positive rate — three groups need three comparisons (14% chance of at least one spurious "significance" at α = 0.05), ten groups push it past 40%.',
+			'ANOVA answers "are all group means equal" in one test. Doing it with repeated t tests inflates the false-positive rate — three groups need three comparisons (14% chance of at least one spurious "significance" at α = 0.05), ten groups push it past 90%.',
 		],
 		aboutZh: [
 			'单因素方差分析：逐组粘贴数据，得到组间/组内变异分解、F 统计量与来自 F 分布的精确 p 值。',
-			'ANOVA 用一个检验回答“各组均值是否全相等”。反复做 t 检验会放大假阳性——三组要比较三次（α = 0.05 下至少一次假“显著”的概率约 14%），十组超过 40%。',
+			'ANOVA 用一个检验回答“各组均值是否全相等”。反复做 t 检验会放大假阳性——三组要比较三次（α = 0.05 下至少一次假“显著”的概率约 14%），十组超过 90%。',
 		],
 		faq: [
 			{ q: 'What if the groups have very different variances?', a: 'Classical ANOVA assumes roughly equal variances. With clearly unequal spreads, a Welch-type ANOVA (or a non-parametric alternative) is safer; comparing the group standard deviations in the output table is the first check.' },

@@ -119,12 +119,17 @@ function calendarBreakdown(b: Ymd, a: Ymd): { years: number; months: number; day
 	}
 	let months = 0;
 	while (months < 11) {
-		const nextMonth = addMonths(cur, 1).date;
+		// Probe each month from the original birth date `b`, not from `cur`:
+		// a 31st-born clamp to the 28th of a short month would otherwise bleed
+		// into every following probe (1/31→2/28, then 3/28, 4/28…), leaving the
+		// day remainder up to 3 too large. Re-deriving from `b` keeps the
+		// day-of-month stable across the whole walk.
+		const nextMonth = addMonths(b, years * 12 + months + 1).date;
 		if (dayDiff(nextMonth, a) < 0) break;
-		cur = nextMonth;
 		months++;
 	}
-	const days = dayDiff(cur, a);
+	const base = addMonths(b, years * 12 + months).date;
+	const days = dayDiff(base, a);
 	return { years, months, days };
 }
 

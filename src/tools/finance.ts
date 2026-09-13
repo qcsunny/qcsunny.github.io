@@ -308,7 +308,23 @@ const mortgagePrepayment: FormConfig = {
 			}
 			const monthsSaved = Math.max(remainingMonthsOrig - newMonths, 0);
 			const yearsSaved = (monthsSaved / 12).toFixed(1);
-			const newTotalPay = origPayment * newMonths;
+			// The ceil'd newMonths is the first month the balance goes to <= 0, so the
+			// final payment is a partial balloon, not a full origPayment. Charging a
+			// full month for that partial final period ("末期整期计息") overstates
+			// newRemainingInterest and understates interestSaved. Compute the exact
+			// balance remaining after (newMonths-1) full payments, grow it one month,
+			// and cap at a normal payment (float safety; newMonths is the ceil so the
+			// true final payment never exceeds origPayment).
+			const growFactor = i <= 0 ? 1 : (1 + i);
+			let remainingAfterFull: number;
+			if (i <= 0) {
+				remainingAfterFull = Math.max(0, balanceAfter - origPayment * (newMonths - 1));
+			} else {
+				const powM = (1 + i) ** (newMonths - 1);
+				remainingAfterFull = Math.max(0, balanceAfter * powM - origPayment * ((powM - 1) / i));
+			}
+			const finalPayment = Math.min(remainingAfterFull * growFactor, origPayment);
+			const newTotalPay = origPayment * (newMonths - 1) + finalPayment;
 			const newRemainingInterest = Math.max(newTotalPay - balanceAfter, 0);
 			const interestSaved = Math.max(origRemainingInterest - newRemainingInterest, 0);
 
@@ -2192,15 +2208,16 @@ interface BonusPitfall {
 	rate: number;
 	quick: number;
 	prevRate: number;
+	prevQuick: number;
 }
 
 const CN_BONUS_PITFALLS: BonusPitfall[] = [
-	{ threshold: 36000, minPitfall: 36001, maxPitfall: 38566.67, rate: 0.10, quick: 210, prevRate: 0.03 },
-	{ threshold: 144000, minPitfall: 144001, maxPitfall: 160500, rate: 0.20, quick: 1410, prevRate: 0.10 },
-	{ threshold: 300000, minPitfall: 300001, maxPitfall: 318333.33, rate: 0.25, quick: 2660, prevRate: 0.20 },
-	{ threshold: 420000, minPitfall: 420001, maxPitfall: 447500, rate: 0.30, quick: 4410, prevRate: 0.25 },
-	{ threshold: 660000, minPitfall: 660001, maxPitfall: 706538.46, rate: 0.35, quick: 7160, prevRate: 0.30 },
-	{ threshold: 960000, minPitfall: 960001, maxPitfall: 1120000, rate: 0.45, quick: 15160, prevRate: 0.35 },
+	{ threshold: 36000, minPitfall: 36001, maxPitfall: 38566.67, rate: 0.10, quick: 210, prevRate: 0.03, prevQuick: 0 },
+	{ threshold: 144000, minPitfall: 144001, maxPitfall: 160500, rate: 0.20, quick: 1410, prevRate: 0.10, prevQuick: 210 },
+	{ threshold: 300000, minPitfall: 300001, maxPitfall: 318333.33, rate: 0.25, quick: 2660, prevRate: 0.20, prevQuick: 1410 },
+	{ threshold: 420000, minPitfall: 420001, maxPitfall: 447500, rate: 0.30, quick: 4410, prevRate: 0.25, prevQuick: 2660 },
+	{ threshold: 660000, minPitfall: 660001, maxPitfall: 706538.46, rate: 0.35, quick: 7160, prevRate: 0.30, prevQuick: 4410 },
+	{ threshold: 960000, minPitfall: 960001, maxPitfall: 1120000, rate: 0.45, quick: 15160, prevRate: 0.35, prevQuick: 7160 },
 ];
 
 function calcCnTax(taxableIncome: number): { tax: number; marginalRate: number; rows: string[][] } {
@@ -2339,7 +2356,12 @@ function computeTaxCore(input: TaxCoreInput): TaxCoreOutput {
 		if (effectiveBonus > 0 && !isCombinedActive && bonusTaxableForSeparate > 0) {
 			for (const p of CN_BONUS_PITFALLS) {
 				if (bonusTaxableForSeparate > p.threshold && bonusTaxableForSeparate <= p.maxPitfall) {
-					const safeTax = p.threshold * p.prevRate;
+					// Tax at the threshold uses the LOWER bracket (prevRate), which carries its own
+							// quick-deduction prevQuick (= the previous row's quick). Omitting it
+							// overstates safeTax, so lost comes out too small -- and for the upper
+							// half of each trap zone (e.g. bonus 700000 in 660001..706538) lost dips
+							// below 0 and the whole warning silently vanishes.
+							const safeTax = p.threshold * p.prevRate - p.prevQuick;
 					const currTax = bonusTaxableForSeparate * p.rate - p.quick;
 					const lost = (p.threshold - safeTax) - (bonusTaxableForSeparate - currTax);
 					if (lost > 0) {
@@ -3374,16 +3396,21 @@ export const FINANCE_TOOLS: ToolEntry[] = [
 					for (const line of text.split('\n')) {
 						const t = line.trim();
 						if (!t) continue;
-						const parts = t.split(/[,;]\s*|\s{2,}/);
-						if (parts.length < 2) {
-							bad.push(t);
-							continue;
-						}
-						const label = parts.slice(0, -1).join(',').trim() || t;
-						const rawNum = (parts.at(-1) ?? '').replace(/[^\d.-]/g, '');
-						const amount = rawNum ? Number(rawNum) : NaN;
-						if (Number.isFinite(amount)) items.push([label, amount]);
-						else bad.push(t);
+						// Extract a trailing amount (allowing thousands-grouped commas like
+						// "1,200,000") instead of splitting the whole line on commas. The old
+						// t.split(/[,;]\s*|\s{2,}/) shattered thousands-grouped amounts into
+						// ['House','1','200','000'], took only the last fragment ('000' -> 0),
+						// and silently zeroed the asset ("thousands-merge-to-zero"). The
+						// separator is comma/semicolon only -- matching the field hint
+						// "label, amount per line" -- so a single space stays a non-separator
+						// and a label like "Apartment 3" is rejected rather than misparsed as
+						// amount 3.
+						const m = t.match(/[,;]\s*([+-]?\d{1,3}(?:,\d{3})+(?:\.\d+)?|[+-]?\d+(?:\.\d+)?)\s*$/);
+						if (!m) { bad.push(t); continue; }
+						const label = t.slice(0, m.index).trim();
+						const amount = Number(m[1].replace(/,/g, ''));
+						if (!label || !Number.isFinite(amount)) { bad.push(t); continue; }
+						items.push([label, amount]);
 					}
 					return { items, bad };
 				};

@@ -497,8 +497,13 @@ async function computePiMachin(
 					await new Promise((r) => setTimeout(r, 0));
 				}
 				const k = BigInt(a);
-				const p = a % 2 === 0 ? 1n : -1n;
-				const q = (2n * k + 1n) * (a === 0 ? xVal : xSq);
+				// Leaf term t_k = (-1)^k·x^(2k+1)/(2k+1). The binary-splitting term
+				// ratio P_k/Q_k of consecutive terms has numerator -(2k-1) for k≥1,
+				// NOT the sign (-1)^k — the sign is already carried by the ratio
+				// itself, so the leaf P must be -(2k-1), anchored to 1 at k=0. Using
+				// (-1)^a here makes the series converge to 3.14025… instead of π.
+				const p = k === 0n ? 1n : -(2n * k - 1n);
+				const q = k === 0n ? xVal : (2n * k + 1n) * xSq;
 				return { P: p, Q: q, T: p };
 			}
 			const mid = (a + b) >> 1;
@@ -1438,6 +1443,33 @@ const equationSolver: FormConfig = {
 				const ca1 = clean(a1);
 				const ca0 = clean(a0);
 
+				// Degree-overflow guard: the 5-point symmetric fit above uniquely
+				// determines a polynomial of degree ≤ 4. A true degree-≥5 polynomial
+				// is invisible to those five samples — the x⁵ term leaves no trace,
+				// so the derived coefficients and any roots would be silently wrong
+				// (e.g. x⁵−1 mis-read as 5x³−4x−1). Validate against one out-of-sample
+				// point before trusting the fit.
+				{
+					const cx = 3;
+					const actual = p(cx);
+					const fitted = ca4 * cx ** 4 + ca3 * cx ** 3 + ca2 * cx ** 2 + ca1 * cx + ca0;
+					if (Number.isFinite(actual) && Math.abs(actual - fitted) > 1e-6 * (1 + Math.abs(actual))) {
+						rows.push({
+							label: 'Identified Problem Type',
+							labelZh: '识别问题类型',
+							value: 'Polynomial Degree > 4 (unsupported)',
+							valueZh: '多项式次数 > 4（不支持）',
+						});
+						rows.push({
+							label: 'Note',
+							labelZh: '说明',
+							value: 'The input evaluates to a polynomial of degree 5 or higher. Only degrees ≤ 4 can be solved here; derived coefficients and roots would be unreliable.',
+							valueZh: '输入求值为 5 次或更高次多项式。本工具仅支持 ≤ 4 次，此处推导的系数与根均不可信。',
+						});
+						return { rows };
+					}
+				}
+
 				// Quartic equation (degree 4) — solve numerically via companion-matrix eigenvalue
 				// or, for now, report standard form and note that analytical solution is complex.
 				if (Math.abs(ca4) > 1e-9) {
@@ -1465,7 +1497,11 @@ const equationSolver: FormConfig = {
 					for (let i = 1; i <= SCAN; i++) {
 						const xMid = lo + (hi - lo) * i / SCAN;
 						const cur = evalP(xMid);
-						if (Number.isFinite(prev) && Number.isFinite(cur) && prev * cur < 0) {
+						// <= 0 (not strict < 0) so a root landing exactly on the scan grid
+						// — where p(xMid) === 0 — is still caught. With strict < 0 the
+						// quartic x⁴−5x²+4 (roots ±1, ±2, all on the 0.5-step grid)
+						// reported "No real roots found".
+						if (Number.isFinite(prev) && Number.isFinite(cur) && prev * cur <= 0) {
 							// Bisection refine
 							let lo2 = xMid - (hi - lo) / SCAN, hi2 = xMid;
 							for (let j = 0; j < 50; j++) {
@@ -2622,11 +2658,15 @@ const anovaCalculator: FormConfig = {
 		{ id: 'g4', label: 'Group 4 Data (optional)', labelZh: '第 4 组样本数据 (可选)', type: 'text', def: '' },
 	],
 	compute: (v) => {
-		const parseData = (str: string) =>
-			str
+		const parseData = (str: string) => {
+			const t = str.trim();
+			if (!t) return [];
+			return t
 				.split(/[\s,]+/)
-				.map((x) => Number(x.trim()))
+				.filter(Boolean)
+				.map((x) => Number(x))
 				.filter((x) => Number.isFinite(x));
+		};
 
 		const groups = [parseData(v.str('g1')), parseData(v.str('g2')), parseData(v.str('g3')), parseData(v.str('g4'))].filter(
 			(g) => g.length > 0,
@@ -3072,8 +3112,8 @@ export const CALCULATOR_TOOLS: ToolEntry[] = [
 		descriptionZh: '对任意 f(x) 求某点的数值导数、区间定积分与双侧极限——由站内表达式引擎驱动。',
 		kind: 'form',
 		config: {
-			intro: 'One f(x), three modes. Derivatives use central differences; integrals use composite Simpson; limits probe both sides with shrinking steps.',
-			introZh: '一个 f(x)，三种模式：导数用中心差分，定积分用复合辛普森法，极限从两侧以递减步长探测。',
+			intro: 'One f(x), three modes. Derivatives use central differences; integrals use composite Gauss–Legendre quadrature; limits probe both sides with shrinking steps.',
+			introZh: '一个 f(x)，三种模式：导数用中心差分，定积分用复合高斯-勒让德求积，极限从两侧以递减步长探测。',
 			fields: [
 				{ id: 'fx', label: 'f(x)', labelZh: 'f(x)', type: 'text', def: 'x^2 * sin(x)', placeholder: 'e.g. x^2 * sin(x)', placeholderZh: '例如 x^2 * sin(x)', required: true },
 				{

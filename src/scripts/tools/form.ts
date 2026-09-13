@@ -103,14 +103,21 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 	host.append(results);
 	host.append(exportBar);
 
+	// Visibility guard: a field hidden by showIf must read as a neutral default,
+	// not the raw value sitting in its (still-mounted) <input>. Otherwise compute()
+	// leaks inputs from a branch the user didn't take — e.g. finance tax tables behind
+	// a disabled toggle still feeding the brackets. collectExportData() already
+	// skips hidden fields for PNG export; this makes compute() match.
+	const hidden = (id: string) => fieldWraps.get(id)?.style.display === 'none';
 	const values: FormValues = {
-		num: (id) => Number(String(getters.get(id)?.() ?? '').replace(/,/g, '')),
+		num: (id) => (hidden(id) ? 0 : Number(String(getters.get(id)?.() ?? '').replace(/,/g, ''))),
 		bigint: (id) => {
+			if (hidden(id)) return null;
 			const raw = String(getters.get(id)?.() ?? '').replace(/,/g, '').trim();
 			return /^\d+$/.test(raw) ? BigInt(raw) : null;
 		},
-		str: (id) => String(getters.get(id)?.() ?? '').trim(),
-		bool: (id) => getters.get(id)?.() === true,
+		str: (id) => (hidden(id) ? '' : String(getters.get(id)?.() ?? '').trim()),
+		bool: (id) => (hidden(id) ? false : getters.get(id)?.() === true),
 	};
 
 	// Last successful compute(), so the PNG export renders exactly what is on
