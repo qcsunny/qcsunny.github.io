@@ -114,6 +114,7 @@ export default defineConfig({
 	],
 	vite: {
 		build: {
+			target: 'es2022',
 			// Vite inlines any asset under 4 KB as a base64 data URI, which is the
 			// wrong trade for a webfont. KaTeX_Size3-Regular.woff2 is 3,624 bytes,
 			// so it was ending up inside katex.css as 4,840 bytes of base64 (+33%
