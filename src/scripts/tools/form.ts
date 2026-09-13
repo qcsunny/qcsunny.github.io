@@ -437,7 +437,7 @@ export function initForm(host: HTMLElement, config: FormConfig): void {
 			if (star) star.style.display = isReq ? '' : 'none';
 
 			if (isReq) {
-				const raw = String(getters.get(f.id)?.() ?? '').trim();
+				const raw = String(getters.get(f.id)?.() ?? '').replace(/,/g, '').trim();
 				const isBad =
 					raw === '' ||
 					(f.type === 'number' && !Number.isFinite(Number(raw))) ||

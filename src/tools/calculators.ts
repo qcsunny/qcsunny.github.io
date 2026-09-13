@@ -577,6 +577,7 @@ const piCalculator: FormConfig = {
 			label: 'Decimal places (N)',
 			labelZh: '计算小数位数 (N)',
 			type: 'number',
+			wide: true,
 			def: '200',
 			step: '1',
 			min: '1',

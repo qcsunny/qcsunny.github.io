@@ -438,17 +438,20 @@ const year = new Date().getFullYear();
 			.t-presets {
 				display: flex;
 				flex-wrap: wrap;
-				gap: 0.4em;
-				margin-top: 0.4em;
+				align-items: center;
+				gap: 0.45em;
+				margin-top: 0.45em;
+				width: 100%;
 			}
 			.t-preset-btn {
 				background: var(--chip-bg, rgba(128, 128, 128, 0.08));
 				color: var(--fg);
 				border: 1px solid var(--gridline);
 				border-radius: 6px;
-				padding: 0.22em 0.55em;
+				padding: 0.25em 0.6em;
 				font-size: 0.78rem;
-				font-family: ui-monospace, Consolas, monospace;
+				font-family: inherit;
+				white-space: nowrap;
 				cursor: pointer;
 				transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 			}
