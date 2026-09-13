@@ -138,3 +138,33 @@ test('renders complex tables with alignments, CJK and formatting correctly', asy
 	await expect(row6Cells.nth(5)).toHaveCSS('text-align', 'center');
 });
 
+test('auto-saves draft to localStorage and restores content after page reload (F5)', async ({ page }) => {
+	await page.goto(TOOL);
+	const editor = page.locator('.t-md-textarea');
+
+	const myDoc = '# Project Design Document\n\nThis content should not be lost when refreshed.';
+	await editor.fill(myDoc);
+
+	// Wait for debounce save (200ms)
+	await page.waitForTimeout(300);
+
+	// Reload the page (simulating F5)
+	await page.reload();
+
+	// Editor should have restored user content
+	await expect(page.locator('.t-md-textarea')).toHaveValue(myDoc);
+
+	// Preview should render the restored content
+	await expect(page.locator('.t-md-preview-body h1')).toHaveText('Project Design Document');
+
+	// Clicking sample button should reset to sample and clear custom draft
+	const sampleBtn = page.getByRole('button', { name: /Sample Document|示例文档/i });
+	await sampleBtn.click();
+	await expect(page.locator('.t-md-textarea')).not.toHaveValue(myDoc);
+
+	// Reload again to verify sample persists rather than stale custom draft
+	await page.reload();
+	await expect(page.locator('.t-md-textarea')).not.toHaveValue(myDoc);
+});
+
+

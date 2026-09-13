@@ -1009,6 +1009,9 @@ export function initMarkdown(host: HTMLElement): void {
 		editor.value = currentLang === 'en' ? SAMPLE_MARKDOWN_EN : SAMPLE_MARKDOWN_ZH;
 		editor.setSelectionRange(0, 0);
 		editor.scrollTop = 0;
+		try {
+			localStorage.removeItem(DRAFT_KEY);
+		} catch {}
 		render();
 	});
 
@@ -1105,6 +1108,9 @@ ${body.innerHTML}
 	clearBtn.className = 't-md-tool-btn';
 	clearBtn.addEventListener('click', () => {
 		editor.value = '';
+		try {
+			localStorage.setItem(DRAFT_KEY, '');
+		} catch {}
 		render();
 		editor.focus();
 	});
@@ -1123,15 +1129,43 @@ ${body.innerHTML}
 	const editorHead = document.createElement('div');
 	editorHead.className = 't-md-panel-head';
 
+	const DRAFT_KEY = 'tool-draft:markdown-preview';
+
+	let savedDraft: string | null = null;
+	try {
+		savedDraft = localStorage.getItem(DRAFT_KEY);
+	} catch {}
+
+	const defaultSample = currentLang === 'en' ? SAMPLE_MARKDOWN_EN : SAMPLE_MARKDOWN_ZH;
+
 	const editor = document.createElement('textarea');
 	editor.className = 't-md-textarea';
 	editor.dataset.role = 'input';
 	editor.spellcheck = false;
-	editor.value = currentLang === 'en' ? SAMPLE_MARKDOWN_EN : SAMPLE_MARKDOWN_ZH;
+	editor.value = savedDraft !== null && savedDraft !== undefined ? savedDraft : defaultSample;
 	editor.setSelectionRange(0, 0);
 	editor.scrollTop = 0;
 
 	editorPanel.append(editorHead, editor);
+
+	let saveTimer: ReturnType<typeof setTimeout> | null = null;
+	function saveDraftNow() {
+		try {
+			const val = editor.value;
+			if (val === SAMPLE_MARKDOWN_ZH || val === SAMPLE_MARKDOWN_EN) {
+				localStorage.removeItem(DRAFT_KEY);
+			} else {
+				localStorage.setItem(DRAFT_KEY, val);
+			}
+		} catch {}
+	}
+
+	function scheduleSaveDraft() {
+		if (saveTimer) clearTimeout(saveTimer);
+		saveTimer = setTimeout(saveDraftNow, 200);
+	}
+
+	window.addEventListener('beforeunload', saveDraftNow);
 
 	// Right: Preview Panel
 	const previewPanel = document.createElement('div');
@@ -1351,6 +1385,8 @@ ${body.innerHTML}
 			});
 		});
 
+		scheduleSaveDraft();
+
 		// Update Stats
 		const stats = calculateStats(raw);
 		if (currentLang === 'en') {
@@ -1362,7 +1398,7 @@ ${body.innerHTML}
 				<span>File Size: <strong>${formatBytes(stats.byteSize)}</strong></span>
 				<span>Est. Reading: <strong>~${stats.readingMinutes} min</strong></span>
 			`;
-			engineInfo.innerHTML = `✓ Rendered in: <strong>${dt}ms</strong> · Local Engine · 100% Client Privacy`;
+			engineInfo.innerHTML = `✓ Rendered in: <strong>${dt}ms</strong> · Local Engine · Auto-saved locally`;
 		} else {
 			statsEl.innerHTML = `
 				<span>总字符数: <strong>${stats.totalChars.toLocaleString()}</strong></span>
@@ -1372,7 +1408,7 @@ ${body.innerHTML}
 				<span>文件大小: <strong>${formatBytes(stats.byteSize)}</strong></span>
 				<span>预估阅读: <strong>~${stats.readingMinutes} 分钟</strong></span>
 			`;
-			engineInfo.innerHTML = `✓ 渲染耗时: <strong>${dt}ms</strong> · 本地引擎 · 100% 浏览器隐私保护`;
+			engineInfo.innerHTML = `✓ 渲染耗时: <strong>${dt}ms</strong> · 本地引擎 · 自动保存本地草稿`;
 		}
 	}
 
@@ -1428,6 +1464,9 @@ ${body.innerHTML}
 				editor.value = nextLang === 'en' ? SAMPLE_MARKDOWN_EN : SAMPLE_MARKDOWN_ZH;
 				editor.setSelectionRange(0, 0);
 				editor.scrollTop = 0;
+				try {
+					localStorage.removeItem(DRAFT_KEY);
+				} catch {}
 			}
 		}
 

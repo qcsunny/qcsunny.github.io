@@ -37,7 +37,7 @@ void (async () => {
 				initConverter(host, entry.config);
 				break;
 			case 'text':
-				await import('./text').then((m) => m.initText(host, entry.config));
+				await import('./text').then((m) => m.initText(host, entry.config, slug));
 				break;
 			case 'generator':
 				await import('./generators').then((m) => m.initGenerator(host, entry.config));

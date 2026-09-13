@@ -13,7 +13,8 @@ import { bilingual, langAttr, langProp, setBilingual } from './i18n';
  *  which is worse than a visible error. */
 const MAX_INPUT_CHARS = 5 * 1024 * 1024;
 
-export function initText(host: HTMLElement, config: TextConfig): void {
+export function initText(host: HTMLElement, config: TextConfig, slug?: string): void {
+	const draftKey = slug ? `tool-draft:${slug}` : null;
 	let input = host.querySelector<HTMLTextAreaElement>('textarea[data-role="input"]');
 	if (!input) {
 		input = document.createElement('textarea');
@@ -25,9 +26,33 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 	}
 	langProp(input, 'placeholder', config.placeholder ?? '', config.placeholderZh);
 	langAttr(input, 'aria-label', 'Text input', '文本输入');
+
+	if (draftKey) {
+		try {
+			const saved = localStorage.getItem(draftKey);
+			if (saved !== null && saved !== undefined) {
+				input.value = saved;
+			}
+		} catch {}
+	}
 	// Sample content: prefilled only when the box is still empty, so a page
 	// reload never clobbers what the visitor typed.
 	if (config.def && !input.value) input.value = config.def;
+
+	const saveDraft = () => {
+		if (!draftKey || !input) return;
+		try {
+			if (input.value === (config.def ?? '')) {
+				localStorage.removeItem(draftKey);
+			} else {
+				localStorage.setItem(draftKey, input.value);
+			}
+		} catch {}
+	};
+	if (draftKey) {
+		input.addEventListener('input', saveDraft);
+		window.addEventListener('beforeunload', saveDraft);
+	}
 
 	let statsHost = host.querySelector<HTMLElement>('.t-results');
 	if (config.stats && !statsHost) {
@@ -168,6 +193,11 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 			input.value = '';
 			if (out) out.value = '';
 			if (errEl) errEl.textContent = '';
+			if (draftKey) {
+				try {
+					localStorage.removeItem(draftKey);
+				} catch {}
+			}
 			update();
 			updatePreview('', '');
 			input.focus();
@@ -312,6 +342,11 @@ export function initText(host: HTMLElement, config: TextConfig): void {
 		clearBtn.addEventListener('click', () => {
 			if (!input) return;
 			input.value = '';
+			if (draftKey) {
+				try {
+					localStorage.removeItem(draftKey);
+				} catch {}
+			}
 			update();
 			input.focus();
 		});
