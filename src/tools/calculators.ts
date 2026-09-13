@@ -459,82 +459,90 @@ const ratio: FormConfig = {
 };
 
 
-// --- pi calculator (Machin formula + Binary Splitting BigInt) --------
-// --- pi calculator (Machin formula + Binary Splitting BigInt) --------
-async function computePiMachin(
+// --- Helper: BigInt Square Root (Newton-Raphson) ---
+function bigintSqrt(value: bigint): bigint {
+	if (value < 0n) throw new Error('Square root of negative number');
+	if (value === 0n) return 0n;
+	let x0 = 1n << (BigInt(value.toString(2).length + 1) >> 1n);
+	while (true) {
+		const x1 = (x0 + value / x0) >> 1n;
+		if (x1 >= x0) return x0;
+		x0 = x1;
+	}
+}
+
+// --- Chudnovsky formula + Binary Splitting BigInt ---
+async function computePiChudnovsky(
 	digits: number,
 	onProgress?: import('./registry').ProgressCallback,
 ): Promise<{ piStr: string; elapsedMs: number }> {
 	const t0 = typeof performance !== 'undefined' ? performance.now() : Date.now();
 
-	const extra = 10;
+	const extra = 14;
 	const totalDigits = digits + extra;
 
-	const terms5 = Math.ceil((totalDigits * 2.302585) / (2 * Math.log(5))) + 5;
-	const terms239 = Math.ceil((totalDigits * 2.302585) / (2 * Math.log(239))) + 5;
-	const totalTerms = terms5 + terms239;
+	const A = 13591409n;
+	const B = 545140134n;
+	const C = 640320n;
+	const C3_OVER_24 = (C ** 3n) / 24n;
+
+	const totalTerms = Math.ceil(totalDigits / 14.181647462725477) + 1;
 	let completedTerms = 0;
 	let lastYield = Date.now();
 
-	// Binary Splitting arctangent computation: computes T, Q such that sum = T / Q
-	async function bsArccot(xVal: bigint, nTerms: number): Promise<{ P: bigint; Q: bigint; T: bigint }> {
-		const xSq = xVal * xVal;
-
-		async function bs(a: number, b: number): Promise<{ P: bigint; Q: bigint; T: bigint }> {
-			if (b - a === 1) {
-				completedTerms++;
-				const now = Date.now();
-				if (onProgress && digits >= 5000 && now - lastYield > 80) {
-					lastYield = now;
-					const pct = Math.floor((completedTerms / totalTerms) * 85);
-					onProgress(
-						pct,
-						`Computing Machin series (${completedTerms.toLocaleString()} / ${totalTerms.toLocaleString()} terms)...`,
-						`正在计算梅钦级数（${completedTerms.toLocaleString()} / ${totalTerms.toLocaleString()} 项）...`,
-					);
-					await new Promise((r) => setTimeout(r, 0));
-				}
-				const k = BigInt(a);
-				const p = a % 2 === 0 ? 1n : -1n;
-				const q = (2n * k + 1n) * (a === 0 ? xVal : xSq);
-				return { P: p, Q: q, T: p };
+	async function bsChudnovsky(a: number, b: number): Promise<{ P: bigint; Q: bigint; T: bigint }> {
+		if (b - a === 1) {
+			completedTerms++;
+			const now = Date.now();
+			if (onProgress && now - lastYield > 80) {
+				lastYield = now;
+				const pct = Math.floor((completedTerms / totalTerms) * 75);
+				onProgress(
+					pct,
+					`Computing Chudnovsky series (${completedTerms.toLocaleString()} / ${totalTerms.toLocaleString()} terms)...`,
+					`正在计算楚德诺夫斯基级数（${completedTerms.toLocaleString()} / ${totalTerms.toLocaleString()} 项）...`,
+				);
+				await new Promise((r) => setTimeout(r, 0));
 			}
-			const mid = (a + b) >> 1;
-			const left = await bs(a, mid);
-			const right = await bs(mid, b);
-			return {
-				P: left.P * right.P,
-				Q: left.Q * right.Q,
-				T: left.T * right.Q + left.P * right.T,
-			};
+			const k = BigInt(a);
+			if (k === 0n) {
+				return { P: 1n, Q: 1n, T: A };
+			}
+			const p = (6n * k - 5n) * (2n * k - 1n) * (6n * k - 1n);
+			const q = k * k * k * C3_OVER_24;
+			const t = p * (A + B * k);
+			return { P: p, Q: q, T: a % 2 === 1 ? -t : t };
 		}
-
-		return bs(0, nTerms);
+		const mid = (a + b) >> 1;
+		const left = await bsChudnovsky(a, mid);
+		const right = await bsChudnovsky(mid, b);
+		return {
+			P: left.P * right.P,
+			Q: left.Q * right.Q,
+			T: left.T * right.Q + left.P * right.T,
+		};
 	}
 
-	if (onProgress && digits >= 5000) {
-		onProgress(0, 'Initializing BigInt Binary Splitting tree...', '正在初始化 BigInt 分治二进制拆分树...');
+	if (onProgress) {
+		onProgress(0, 'Initializing Chudnovsky Binary Splitting tree...', '正在初始化楚德诺夫斯基分治树...');
 	}
 
-	const res5 = await bsArccot(5n, terms5);
-	const res239 = await bsArccot(239n, terms239);
+	const { Q, T } = await bsChudnovsky(0, totalTerms);
 
-	if (onProgress && digits >= 5000) {
-		onProgress(88, 'Scaling BigInt result & performing division...', '正在进行高精度除法与位移展开...');
+	if (onProgress) {
+		onProgress(78, 'Computing BigInt square root of 10005...', '正在使用牛顿迭代计算 10005 的高精度平方根...');
 		await new Promise((r) => setTimeout(r, 0));
 	}
 
-	const unity = 10n ** BigInt(totalDigits);
-	const arc5 = (res5.T * unity) / res5.Q;
-	const arc239 = (res239.T * unity) / res239.Q;
+	const sqrtVal = bigintSqrt(10005n * 10n ** (2n * BigInt(totalDigits)));
 
-	if (onProgress && digits >= 5000) {
-		onProgress(96, 'Formatting Pi string output...', '正在格式化圆周率结果...');
+	if (onProgress) {
+		onProgress(92, 'Performing final BigInt division & scaling...', '正在进行高精度位移除法与缩放...');
 		await new Promise((r) => setTimeout(r, 0));
 	}
 
-	// Machin's formula: pi/4 = 4 * arccot(5) - arccot(239)
-	const piScaled = 16n * arc5 - 4n * arc239;
+	const C_VAL = 426880n * sqrtVal;
+	const piScaled = (C_VAL * Q) / T;
 	const piInt = piScaled / 10n ** BigInt(extra);
 	const rawStr = piInt.toString();
 	const result = rawStr[0] + '.' + rawStr.slice(1, digits + 1);
@@ -542,16 +550,27 @@ async function computePiMachin(
 	const t1 = typeof performance !== 'undefined' ? performance.now() : Date.now();
 	const elapsedMs = Math.max(0.1, t1 - t0);
 
-	if (onProgress && digits >= 5000) {
+	if (onProgress) {
 		onProgress(100, 'Done!', '计算完成！');
 	}
 
 	return { piStr: result, elapsedMs };
 }
 
+// --- Hybrid Pi Engine: Machin (<15k) vs Chudnovsky (>=15k) ---
+async function computePiHybrid(
+	digits: number,
+	onProgress?: import('./registry').ProgressCallback,
+): Promise<{ piStr: string; elapsedMs: number }> {
+	if (digits < 15000) {
+		return computePiMachin(digits, onProgress);
+	}
+	return computePiChudnovsky(digits, onProgress);
+}
+
 const piCalculator: FormConfig = {
-	intro: 'Calculate Pi (π) up to 1,000,000 decimal places using Machin-like formula and Binary Splitting, with real-time CPU benchmark timing, 1M presets, and circle properties.',
-	introZh: '使用高精度梅钦类公式结合分治二进制拆分（Binary Splitting）计算圆周率 π 至小数点后 1,000,000 位（百万位），支持 CPU 单核极限性能检测与分级预设。',
+	intro: 'Calculate Pi (π) up to 1,000,000 decimal places using a Hybrid Engine (Machin <15k & Chudnovsky >=15k + Binary Splitting) with real-time CPU benchmark timing and presets.',
+	introZh: '采用分阶混合引擎（低位数 Machin 秒开，1.5 万位以上自动切换 Chudnovsky 楚德诺夫斯基超高阶级数 + 二进制拆分）计算圆周率 π 至 1,000,000 位，包含 CPU 性能检测与分级预设。',
 	fields: [
 		{
 			id: 'digits',
@@ -563,8 +582,8 @@ const piCalculator: FormConfig = {
 			min: '1',
 			max: '1000000',
 			required: true,
-			hint: 'Supports 1 to 1,000,000 decimal places (Binary Splitting algorithm).',
-			hintZh: '支持 1 到 1,000,000 位高精度计算（分治二进制拆分算力压测）。',
+			hint: 'Supports 1 to 1,000,000 decimal places (Hybrid Engine: Machin & Chudnovsky).',
+			hintZh: '支持 1 到 1,000,000 位高精度计算（混合引擎：Machin + Chudnovsky）。',
 			presets: [
 				{ label: '2,000 digits (Instant)', labelZh: '2,000 位 (极速秒开)', value: '2000' },
 				{ label: '5,000 digits (Fast)', labelZh: '5,000 位 (快速测速)', value: '5000' },
@@ -600,7 +619,7 @@ const piCalculator: FormConfig = {
 			};
 		}
 
-		const { piStr, elapsedMs } = await computePiMachin(d, onProgress);
+		const { piStr, elapsedMs } = await computePiHybrid(d, onProgress);
 		const sec = elapsedMs / 1000;
 		const timeFmt = elapsedMs < 1000 ? `${elapsedMs.toFixed(1)} ms` : `${sec.toFixed(2)} s (${elapsedMs.toFixed(0)} ms)`;
 		const rows: import('./registry').FormResultRow[] = [
