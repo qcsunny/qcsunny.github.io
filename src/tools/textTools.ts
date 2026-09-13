@@ -2638,11 +2638,86 @@ export const SECURITY_TEXT_TOOLS: ToolEntry[] = [
 							deviceMemory?: number;
 							connection?: { effectiveType?: string; downlink?: number; rtt?: number };
 							userAgentData?: { platform?: string };
+							getBattery?: () => Promise<{ level: number; charging: boolean }>;
 						};
 						const L = (label: string, value: string): string => `${label.padEnd(30)} ${value}`;
 						const lines: string[] = [];
-						// --- browser / engine (reuse the UA parser) ---
+
+						// --- Helper: Measure Screen Refresh Rate (Hz) ---
+						const getHz = (): Promise<string> =>
+							new Promise((resolve) => {
+								let frames = 0;
+								let start = 0;
+								const check = (time: number) => {
+									if (!start) start = time;
+									frames++;
+									if (time - start >= 200) {
+										const fps = Math.round((frames * 1000) / (time - start));
+										const hz = fps > 200 ? 240 : fps > 130 ? 144 : fps > 105 ? 120 : fps > 80 ? 90 : fps > 50 ? 60 : fps;
+										resolve(`~${hz} Hz (${fps} FPS measured)`);
+									} else {
+										requestAnimationFrame(check);
+									}
+								};
+								if (typeof requestAnimationFrame !== 'undefined') {
+									requestAnimationFrame(check);
+									setTimeout(() => resolve('—'), 400);
+								} else {
+									resolve('—');
+								}
+							});
+
+						// --- Helper: WebRTC ICE Candidate IP Probe ---
+						const getRtcIps = (): Promise<string[]> =>
+							new Promise((resolve) => {
+								const ips: string[] = [];
+								if (typeof RTCPeerConnection === 'undefined') return resolve(ips);
+								try {
+									const rtc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+									rtc.createDataChannel('');
+									rtc.createOffer().then((o) => rtc.setLocalDescription(o)).catch(() => {});
+									rtc.onicecandidate = (e) => {
+										if (!e.candidate) {
+											rtc.close();
+											resolve(ips);
+											return;
+										}
+										const match = /([0-9]{1,3}(\.[0-9]{1,3}){3})/.exec(e.candidate.candidate);
+										if (match && !ips.includes(match[1])) {
+											ips.push(match[1]);
+										}
+									};
+									setTimeout(() => {
+										try { rtc.close(); } catch {}
+										resolve(ips);
+									}, 500);
+								} catch {
+									resolve(ips);
+								}
+							});
+
+						// --- Helper: High Entropy OS & Hardware Values ---
+						const getSysDetails = async (): Promise<{ arch?: string; bitness?: string; model?: string; platformVer?: string }> => {
+							try {
+								const uad = (nav as any).userAgentData;
+								if (uad?.getHighEntropyValues) {
+									const res = await uad.getHighEntropyValues(['architecture', 'bitness', 'model', 'platformVersion']);
+									return {
+										arch: res.architecture,
+										bitness: res.bitness,
+										model: res.model,
+										platformVer: res.platformVersion,
+									};
+								}
+							} catch {}
+							return {};
+						};
+
+						// --- 1. Browser & System ---
 						const ua = parseUa(nav.userAgent);
+						const sysDetails = await getSysDetails();
+
+						lines.push('--- System & OS 操作系统与系统环境 ---');
 						if (ua) {
 							lines.push(L('Browser 浏览器', `${ua.browser} / ${ua.browserZh}${ua.version ? ` · v${ua.version}` : ''}`));
 							lines.push(L('Engine 引擎', `${ua.engine} / ${ua.engineZh}`));
@@ -2650,18 +2725,25 @@ export const SECURITY_TEXT_TOOLS: ToolEntry[] = [
 							lines.push(L('Device 设备', `${ua.device} / ${ua.deviceZh}`));
 						}
 						lines.push(L('Platform 平台', nav.userAgentData?.platform ?? nav.platform ?? '—'));
+						if (sysDetails.arch) {
+							lines.push(L('CPU Architecture 架构位数', `${sysDetails.arch}${sysDetails.bitness ? ` (${sysDetails.bitness}-bit)` : ''}`));
+						}
+						if (sysDetails.platformVer) {
+							lines.push(L('OS Version 系统版本', `${sysDetails.platformVer}`));
+						}
+						if (sysDetails.model) {
+							lines.push(L('Device Model 设备型号', `${sysDetails.model}`));
+						}
 						lines.push(L('Languages 语言', nav.languages?.join(', ') ?? nav.language));
 						lines.push(L('Time zone 时区', Intl.DateTimeFormat().resolvedOptions().timeZone ?? '—'));
-						// --- hardware ---
+						lines.push(L('Online Status 连网状态', nav.onLine ? 'Online 在线 ✓' : 'Offline 离线 ✗'));
+						lines.push(L('Cookies Enabled 允许 Cookie', nav.cookieEnabled ? 'Enabled 允许 ✓' : 'Disabled 拒绝 ✗'));
+						lines.push(L('PDF Viewer 支持 PDF 预览', 'pdfViewerEnabled' in nav ? ((nav as any).pdfViewerEnabled ? 'Supported 支持 ✓' : 'Disabled 禁用 ✗') : '—'));
+
+						// --- 2. Hardware & GPU ---
+						lines.push('', '--- Hardware 硬件层 ---');
 						lines.push(L('CPU cores 逻辑核心', String(nav.hardwareConcurrency ?? '—')));
 						lines.push(L('Device memory 设备内存', nav.deviceMemory ? `~${nav.deviceMemory} GB (browser caps at 8)` : '— (not exposed)'));
-						lines.push(L('Touch points 触控点', String(nav.maxTouchPoints ?? 0)));
-						// --- screen ---
-						const s = screen;
-						lines.push(L('Screen 屏幕', `${s.width}×${s.height} @ ${s.colorDepth}-bit`));
-						lines.push(L('Available 可用区域', `${s.availWidth}×${s.availHeight}`));
-						lines.push(L('Pixel ratio 像素比', String(window.devicePixelRatio)));
-						// --- GPU via WebGL ---
 						try {
 							const canvas = document.createElement('canvas');
 							const gl = (canvas.getContext('webgl2') ?? canvas.getContext('webgl')) as WebGLRenderingContext | null;
@@ -2673,19 +2755,63 @@ export const SECURITY_TEXT_TOOLS: ToolEntry[] = [
 						} catch {
 							lines.push(L('GPU 显卡', '— (WebGL blocked)'));
 						}
-						// --- network ---
+						lines.push(L('WebGPU 支持', 'gpu' in nav ? 'Supported ✓' : 'Not supported ✗'));
+						lines.push(L('Refresh rate 刷新率', await getHz()));
+						lines.push(L('Touch points 触控点', String(nav.maxTouchPoints ?? 0)));
+
+						// --- 3. Display & Color ---
+						lines.push('', '--- Display & Color 显示与色彩 ---');
+						const s = screen;
+						lines.push(L('Screen 屏幕', `${s.width}×${s.height} @ ${s.colorDepth}-bit`));
+						lines.push(L('Available 可用区域', `${s.availWidth}×${s.availHeight}`));
+						lines.push(L('Pixel ratio 像素比', String(window.devicePixelRatio)));
+						const p3 = matchMedia('(color-gamut: p3)').matches;
+						const rec2020 = matchMedia('(color-gamut: rec2020)').matches;
+						lines.push(L('Color gamut 色域', rec2020 ? 'Rec.2020 (Ultra Wide)' : p3 ? 'Display P3 (Wide Gamut)' : 'sRGB'));
+						const hdr = matchMedia('(dynamic-range: high)').matches;
+						lines.push(L('Dynamic range 动态范围', hdr ? 'HDR Supported ✓' : 'SDR'));
+
+						// --- 4. Network & Privacy ---
+						lines.push('', '--- Network & Privacy 网络与隐私 ---');
 						const conn = nav.connection;
 						if (conn) lines.push(L('Network 网络', `${conn.effectiveType ?? '—'}${conn.downlink ? ` · ~${conn.downlink} Mbps` : ''}${conn.rtt ? ` · ${conn.rtt} ms RTT` : ''}`));
 						else lines.push(L('Network 网络', '— (not exposed)'));
-						// --- storage ---
+
+						const rtcIps = await getRtcIps();
+						lines.push(L('WebRTC IPs 探测 IP', rtcIps.length ? rtcIps.join(', ') : '— (No leak / WebRTC blocked)'));
+
 						try {
 							const est = await navigator.storage.estimate();
 							if (est.quota) lines.push(L('Storage quota 存储配额', `${(est.quota / 1024 ** 3).toFixed(1)} GB (used ${((est.usage ?? 0) / 1024 ** 2).toFixed(0)} MB)`));
-						} catch { /* API absent — skip silently */ }
-						// --- preferences ---
+						} catch { /* API absent */ }
+
+						// --- 5. Media & Battery ---
+						lines.push('', '--- Media & Battery 多媒体与电源 ---');
+						try {
+							if (nav.mediaDevices?.enumerateDevices) {
+								const devs = await nav.mediaDevices.enumerateDevices();
+								const cams = devs.filter((d) => d.kind === 'videoinput').length;
+								const mics = devs.filter((d) => d.kind === 'audioinput').length;
+								const spks = devs.filter((d) => d.kind === 'audiooutput').length;
+								lines.push(L('Media devices 媒体外设', `${cams} Camera(s), ${mics} Mic(s), ${spks} Speaker(s)`));
+							}
+						} catch { /* MediaDevices restricted */ }
+
+						try {
+							if (nav.getBattery) {
+								const batt = await nav.getBattery();
+								lines.push(L('Battery 电池状态', `${Math.round(batt.level * 100)}% · ${batt.charging ? 'Plugged in (AC)' : 'On battery (DC)'}`));
+							}
+						} catch { /* Battery API restricted */ }
+
+						// --- 6. Preferences & APIs ---
+						lines.push('', '--- Preferences & APIs 偏好与内核支持 ---');
 						lines.push(L('Color scheme 配色偏好', matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
 						lines.push(L('Reduced motion 减少动效', matchMedia('(prefers-reduced-motion: reduce)').matches ? 'yes' : 'no'));
-						// --- codec support: the honest answer for "can my browser play HEVC?" ---
+						lines.push(L('SharedArrayBuffer', typeof SharedArrayBuffer !== 'undefined' ? 'Supported ✓ (Cross-Origin Isolated)' : 'Disabled / Not isolated'));
+						lines.push(L('WebAssembly', typeof WebAssembly !== 'undefined' ? 'Supported ✓' : 'Not supported ✗'));
+
+						// --- 7. Codecs ---
 						const v = document.createElement('video');
 						const a = document.createElement('audio');
 						const can = (el: HTMLMediaElement, type: string): string => {
@@ -2707,6 +2833,7 @@ export const SECURITY_TEXT_TOOLS: ToolEntry[] = [
 							const el = name === 'MP3' || name === 'AAC' || name === 'Opus' || name === 'FLAC' ? a : v;
 							lines.push(L(name, can(el, type)));
 						}
+
 						lines.push('', '🔒 Everything above was read locally 报告完全本地生成，未向任何服务器发送。');
 						return { output: lines.join('\n') };
 					},
