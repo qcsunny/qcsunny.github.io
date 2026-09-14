@@ -59,7 +59,7 @@ function unescapeBasic(body: string): string {
 		else if (c === 'u' || c === 'U') {
 			const width = c === 'u' ? 4 : 8;
 			const hex = body.slice(i + 2, i + 2 + width);
-			if (hex.length < width) throw new Error(`incomplete \\${c} escape`);
+			if (hex.length !== width || /[^0-9a-fA-F]/.test(hex)) {				throw new Error(`\\${c} escape needs ${width} hexadecimal digits`);			}
 			out += String.fromCodePoint(parseInt(hex, 16));
 			i += 1 + width;
 			continue;
@@ -74,6 +74,92 @@ function unescapeBasic(body: string): string {
 		i++;
 	}
 	return out;
+}
+
+/** Raw control characters are not allowed inside a TOML string: only TAB, and a
+ *  newline inside a triple-quoted one, may appear unescaped. This catches a string
+ *  written across physical lines - "a<CR><LF>b" - which tomllib refuses with
+ *  "Illegal character" rather than folding the line break into the value. */
+function assertLegalChars(body: string, multiline: boolean): void {
+	for (let i = 0; i < body.length; i++) {
+		const code = body.charCodeAt(i);
+		if (code === 9) continue;
+		if (multiline && code === 10) continue;
+		if (code < 32 || code === 127) {
+			throw new Error(`illegal character ${JSON.stringify(body[i])} in a string`);
+		}
+	}
+}
+
+/** Index just past the end of the single-line string starting at i, or -1 when
+ *  it does not close on this line. Basic strings honour " escapes; literal
+ *  strings do not, so a backslash never escapes their closing quote. */
+function skipString(s: string, i: number): number {
+	const q = s[i];
+	let j = i + 1;
+	while (j < s.length) {
+		if (q === '"' && s[j] === '\\') j += 2;
+		else if (s[j] === q) return j + 1;
+		else j++;
+	}
+	return -1;
+}
+
+/** Index just past the closing delimiter of the triple-quoted string opened at
+ *  i, or -1 when it never closes.
+ *
+ *  Both forms share one rule: the first run of THREE or more of the quote
+ *  character closes the string, and a run of four or five carries one or two
+ *  content quotes - a multiline basic string may hold at most two consecutive
+ *  quotes, so """x"""" reads x" and """x""""" reads x"". Six or more in a row
+ *  never close: tomllib takes the first three as the delimiter and then rejects
+ *  the leftover text, so -1 is right and the caller reports it as unterminated.
+ *  Literal strings have no escapes, but they obey the same run rule. */
+function closeTriple(s: string, i: number): number {
+	const q = s[i];
+	const n = s.length;
+	let j = i + 3;
+	while (j < n) {
+		if (s[j] !== q) { j++; continue; }
+		let k = 0;
+		while (j + k < n && s[j + k] === q) k++;
+		if (k < 3) { j += k; continue; }
+		return k > 5 ? -1 : j + k;
+	}
+	return -1;
+}
+/** Index just past the quoted string opening at s[i]; -1 when it is left open. */
+function skipQuoted(s: string, i: number): number {
+	if (s.startsWith('"""', i) || s.startsWith("'''", i)) return closeTriple(s, i);
+	return skipString(s, i);
+}
+
+/** Scan the value part of a line for the two constructs that continue onto a
+ *  later physical line: a triple-quoted string still missing its closing
+ *  delimiter, and an array still missing its "]". Quote-aware, so brackets
+ *  and "#" inside strings are ignored, and it stops at a "#" outside them.
+ *  Inline tables are deliberately NOT counted - TOML 1.0 keeps them on one
+ *  line and tomllib refuses a "{" here, so counting one would accept input
+ *  no other reader reads. */
+function scanSpan(s: string, from: number): { openQuote: string | null; depth: number } {
+	const n = s.length;
+	let i = from;
+	let depth = 0;
+	while (i < n) {
+		const ch = s[i];
+		if (ch === '#') return { openQuote: null, depth };
+		if (ch === '"' || ch === "'") {
+			const delim = s.startsWith('"""', i) || s.startsWith("'''", i) ? s.slice(i, i + 3) : ch;
+			const next = skipQuoted(s, i);
+			if (next === -1) return { openQuote: delim, depth };
+			i = next;
+			continue;
+		}
+		if (ch === '[') depth++;
+		else if (ch === ']') depth--;
+		i++;
+	}
+	return { openQuote: null, depth };
 }
 
 /** Join multiline strings and multiline arrays into single logical lines.
@@ -91,125 +177,96 @@ function logicalLines(text: string): LogicalLine[] {
 			i++;
 			continue;
 		}
-		// A multiline string opens when """ or ''' appears; join lines until the
-		// matching triple closes. The value must be on the right of "=".
-		const openIdx = findMultilineOpen(line);
-		if (openIdx !== -1) {
-			const delim = line.slice(openIdx, openIdx + 3);
-			const closeAt = line.indexOf(delim, openIdx + 3);
-			if (closeAt !== -1) {
-				// Opens and closes on this one physical line - collapse to the same
-				// single-line placeholder the multiline branch uses. Skipping here
-				// dropped the whole "key = value" from the parsed document.
-				const inner = line.slice(openIdx + 3, closeAt);
-				const value = delim === '"""' ? unescapeBasic(inner) : inner;
-				// Anything left after the closer besides a comment means the inner """
-				// was an unescaped early terminator, not part of the value - reject
-				// instead of silently truncating. A bare trailing quote is kept lenient:
-				// an even-length run ("""a"""" = escaped "" plus the closer) is genuinely
-				// ambiguous for indexOf, and rejecting valid TOML would be the worse call.
-				const tail = stripComment(line.slice(closeAt + 3)).trim();
-				if (tail && !/^["'\s]+$/u.test(tail)) {
-					throw new Error(`line ${lineNo}: unexpected content after multiline string`);
-				}
-				line = line.slice(0, openIdx) + JSON.stringify(value);
-				out.push({ text: line, lineNo });
-				i++;
-				continue;
-			}
-			let body = line.slice(openIdx + 3);
-			let closed = false;
-			while (i + 1 < phys.length && !closed) {
-				const next = phys[i + 1];
-				const end = next.indexOf(delim);
-				if (end !== -1) {
-					body += '\n' + next.slice(0, end);
-					// Keep any trailing content (e.g. a comment) after the closer.
-					line = line.slice(0, openIdx) + next.slice(end + 3);
-					closed = true;
-				} else {
-					body += '\n' + next;
-				}
-				i++;
-			}
-			if (!closed) throw new Error(`line ${lineNo}: unterminated multiline string ${delim}`);
-			// Rebuild: "key = " + a single-line quoted placeholder.
-			const value =
-				delim === '"""'
-					? unescapeBasic(body.replace(/^\n/, ''))
-					: body.replace(/^\n/, '');
-			line = line.slice(0, openIdx) + JSON.stringify(value);
+		// A table header and a comment-only line are emitted raw: the brackets
+		// of "[a]" must not be mistaken for an array spanning the next line.
+		const lead = line.trimStart();
+		if (lead[0] === '[' || lead[0] === '#') {
 			out.push({ text: line, lineNo });
 			i++;
 			continue;
 		}
-		// An array whose brackets are still open swallows following lines. A
-		// comment is stripped from each physical line as we go: left in the joined
-		// text it would hide the continuation (the later stripComment would cut
-		// the line at the "#"), and a "]" inside one could lie about the depth.
-		if (openArrayDepth(stripComment(line)) > 0) {
-			let joined = stripComment(line);
-			while (i + 1 < phys.length && openArrayDepth(joined) > 0) {
-				i++;
-				const cont = stripComment(phys[i].trim());
-				if (!cont) continue;
-				joined += ' ' + cont;
+		// One physical line per key = value, unless the value spans several.
+		// Inside an open triple string the next line is appended VERBATIM - it is
+		// string content, so blank lines and newlines must survive. Outside it an
+		// array is joined with a space, which is how "[\n1,\n2]" reads.
+		let joined = line;
+		let j = i;
+		for (;;) {
+			const eq = joined.indexOf('=');
+			const span = scanSpan(joined, eq === -1 ? 0 : eq + 1);
+			if (!span.openQuote && span.depth === 0) break;
+			if (j + 1 >= phys.length) {
+				throw new Error(
+					span.openQuote
+						? `line ${lineNo}: the opening ${span.openQuote} is left unterminated`
+						: `line ${lineNo}: array is missing its closing "]"`,
+				);
 			}
-			if (openArrayDepth(joined) > 0) throw new Error(`line ${lineNo}: array is missing its closing "]"`);
-			line = joined;
+			j++;
+			const cont = phys[j];
+			if (span.openQuote) joined += '\n' + cont;
+			else if (cont.trim()) joined += ' ' + stripComment(cont).trim();
 		}
+		line = flattenTriple(joined);
 		out.push({ text: line, lineNo });
+		i = j + 1;
+	}
+	return out;
+}
+
+/** Replace every triple-quoted string by the JSON string of its value, so the
+ *  single-line value parsers below never have to understand triple quotes
+ *  at all: parseValue would otherwise read """x""" as the
+ *  four-character string ""x"". JSON keeps the escapes, so parseValue's own
+ *  unescapeBasic then decodes them exactly once. TOML trims one leading line
+ *  break from a multiline string - a same-line one never has it, so the test
+ *  cannot misfire. */
+function flattenTriple(line: string): string {
+	let out = '';
+	let i = 0;
+	while (i < line.length) {
+		const ch = line[i];
+		if (ch === '#') return out + line.slice(i); // a comment is kept verbatim
+		if (ch === '"' || ch === "'") {
+			if (line.startsWith('"""', i) || line.startsWith("'''", i)) {
+				const delim = line.slice(i, i + 3);
+				const close = closeTriple(line, i);
+				if (close === -1) return out + line.slice(i);
+				let inner = line.slice(i + 3, close - 3);
+				if (inner.startsWith('\r\n')) inner = inner.slice(2);
+				else if (inner.startsWith('\n')) inner = inner.slice(1);
+				assertLegalChars(inner, true);
+				out += delim === '"""' ? JSON.stringify(unescapeBasic(inner)) : JSON.stringify(inner);
+				i = close;
+				continue;
+			}
+			const next = skipQuoted(line, i);
+			if (next === -1) return out + line.slice(i);
+			out += line.slice(i, next);
+			i = next;
+			continue;
+		}
+		out += ch;
 		i++;
 	}
 	return out;
 }
 
-/** Position of a """ or ''' that starts a VALUE (i.e. after "="), or -1.
- *  Quotes inside an already-closed single-line string must not count. */
-function findMultilineOpen(line: string): number {
-	const eq = line.indexOf('=');
-	if (eq === -1) return -1;
-	const after = line.slice(eq + 1);
-	const rel = after.search(/"""|'''/);
-	if (rel === -1) return -1;
-	const abs = eq + 1 + rel;
-	// The triple must be preceded only by whitespace since the "=".
-	if (line.slice(eq + 1, abs).trim() !== '') return -1;
-	return abs;
-}
-
-/** Net bracket depth of a line, ignoring brackets inside quoted strings.
- *  Only "[" beyond the first value "[" counts, so the key part is safe. */
-function openArrayDepth(line: string): number {
-	const eq = line.indexOf('=');
-	if (eq === -1) return 0;
-	let depth = 0;
-	let i = eq + 1;
-	while (i < line.length) {
-		const ch = line[i];
-		if (ch === '"' || ch === "'") {
-			const close = line.indexOf(ch, i + 1);
-			if (close === -1) return depth; // unterminated quote: let the value parser report it
-			i = close + 1;
-			continue;
-		}
-		if (ch === '[') depth++;
-		else if (ch === ']') depth--;
-		i++;
-	}
-	return depth;
-}
-
-/** Remove a trailing # comment that sits outside quotes; only called on the
- *  value part of a line (never on the key side, where # can be a quoted char). */
+/** Remove a trailing "#" comment that sits outside quotes; only called on the
+ *  value part of a line (never on the key side, where # can be a quoted char).
+ *  Strings are skipped by walking them rather than toggling flags - "x\#y"
+ *  must keep its escaped quote and its "#", and a """ span may hold any "#". */
 function stripComment(s: string): string {
-	let inS = false;
-	let inD = false;
 	for (let i = 0; i < s.length; i++) {
 		const ch = s[i];
-		if (ch === "'" && !inD) inS = !inS;
-		else if (ch === '"' && !inS) inD = !inD;
-		else if (ch === '#' && !inS && !inD) return s.slice(0, i);
+		if (ch === '#') return s.slice(0, i);
+		if (ch === '"' || ch === "'") {
+			const end = skipQuoted(s, i);
+			if (end === -1) return s; // left open - the value parsers report it
+			// end is one past the closing quote, so -1 lets the loop's own i++ land
+			// on the very next character - a "#" there is the comment start.
+			i = end - 1;
+		}
 	}
 	return s;
 }
@@ -298,13 +355,11 @@ function parseTomlInt(raw: string, base: 10 | 16 | 8 | 2): number {
 function parseValue(raw: string): unknown {
 	const s = raw.trim();
 	if (s === '') throw new Error('missing value after "="');
-	if (s.startsWith('"')) {
-		if (!s.endsWith('"') || s.length < 2) throw new Error(`unterminated basic string ${s.slice(0, 30)}`);
-		return unescapeBasic(s.slice(1, -1));
-	}
-	if (s.startsWith("'")) {
-		if (!s.endsWith("'") || s.length < 2) throw new Error(`unterminated literal string ${s.slice(0, 30)}`);
-		return s.slice(1, -1);
+	if (s[0] === '"' || s[0] === "'") {
+		const [value, end] = parseQuoted(s);
+		const rest = s.slice(end).trim();
+		if (rest) throw new Error(`unexpected content after the string: "${rest.slice(0, 30)}"`);
+		return value;
 	}
 	if (s.startsWith('[')) return parseArray(s);
 	if (s.startsWith('{')) return parseInlineTable(s);
@@ -336,6 +391,22 @@ function parseValue(raw: string): unknown {
 	throw new Error(`invalid value "${s.slice(0, 30)}" (unquoted strings are not valid TOML — use "quotes")`);
 }
 
+/** Read a quoted TOML string starting at s[0]. Returns the decoded value and
+ *  the index just past the closing quote.
+ *
+ *  A basic string must escape every internal quotation mark, and a literal
+ *  string has no escapes at all - in both cases an unescaped quote CLOSES the
+ *  string, so what follows is trailing junk rather than content. The old check
+ *  ("starts with a quote and ends with a quote") accepted "a"b"c" as a"b"c,
+ *  which tomllib refuses with "Expected newline or end of document". */
+function parseQuoted(s: string): [unknown, number] {
+	const end = skipString(s, 0);
+	if (end === -1) throw new Error(`unterminated ${s[0] === '"' ? 'basic' : 'literal'} string`);
+	const body = s.slice(1, end - 1);
+	assertLegalChars(body, false);
+	return s[0] === "'" ? [body, end] : [unescapeBasic(body), end];
+}
+
 /** Split an array / inline-table body on top-level commas. */
 function splitFlow(s: string): string[] {
 	const parts: string[] = [];
@@ -344,8 +415,13 @@ function splitFlow(s: string): string[] {
 	while (i < s.length) {
 		const ch = s[i];
 		if (ch === '"' || ch === "'") {
-			const close = s.indexOf(ch, i + 1);
-			i = close === -1 ? s.length : close + 1;
+			// skipString honours escapes, so [ "a\\"b" ] is ONE
+			// item. indexOf would stop at the escaped quote and split it in two.
+			const end = skipString(s, i);
+			if (end === -1) {
+				throw new Error(`${ch === '"' ? 'basic' : 'literal'} string is left unterminated in an array or inline table`);
+			}
+			i = end;
 			continue;
 		}
 		if (ch === '[' || ch === '{') depth++;
@@ -389,10 +465,10 @@ function parseKeyPath(s: string): string[] {
 	let i = 0;
 	while (i < s.length) {
 		if (s[i] === '"' || s[i] === "'") {
-			const close = s.indexOf(s[i], i + 1);
+			const close = skipString(s, i);
 			if (close === -1) throw new Error(`unterminated quoted key ${s.slice(0, 30)}`);
-			keys.push(s[i] === '"' ? unescapeBasic(s.slice(i + 1, close)) : s.slice(i + 1, close));
-			i = close + 1;
+			keys.push(s[i] === '"' ? unescapeBasic(s.slice(i + 1, close - 1)) : s.slice(i + 1, close - 1));
+			i = close;
 		} else {
 			const m = /^[A-Za-z0-9_-]+/.exec(s.slice(i));
 			if (!m) throw new Error(`invalid key "${s.slice(0, 30).trim()}"`);
@@ -406,8 +482,23 @@ function parseKeyPath(s: string): string[] {
 	return keys;
 }
 
+/** Index of the "=" separating key from value, skipping quoted keys such as
+ *  "a=b" - a bare indexOf would return the "=" sitting inside the quotes. */
+function findEquals(s: string): number {
+	const n = s.length;
+	for (let i = 0; i < n; i++) {
+		if (s[i] === '"' || s[i] === "'") {
+			const next = skipQuoted(s, i);
+			if (next === -1) return -1;
+			i = next;
+		}
+		if (s[i] === '=') return i;
+	}
+	return -1;
+}
+
 function parseKeyValue(s: string): { keys: string[]; value: unknown } {
-	const eq = s.indexOf('=');
+	const eq = findEquals(s);
 	if (eq === -1) throw new Error(`expected "key = value", got "${s.slice(0, 30).trim()}"`);
 	const keyPart = s.slice(0, eq).trim();
 	const valuePart = stripComment(s.slice(eq + 1)).trim();
