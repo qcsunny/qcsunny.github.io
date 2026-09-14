@@ -466,7 +466,7 @@ export const UNIT_CATEGORIES: UnitCategory[] = [
 		defaultSource: 'deg',
 		units: {
 			deg: lin('degree (°)', 1, '度 (°)', '°'),
-			rad: lin('radian (rad)', Math.PI / 180, '弧度 (rad，微积分与编程三角函数标准)', 'rad'),
+			rad: lin('radian (rad)', 180 / Math.PI, '弧度 (rad，微积分与编程三角函数标准)', 'rad'),
 			grad: lin('gradian (grad / gon)', 0.9, '百分度 (grad / 冈，测绘常用)', 'grad'),
 			turn: lin('turn / revolution', 360, '转数 (1 turn = 360°)', 'turn', '转'),
 			arcmin: lin('arcminute (′)', 1 / 60, '角分 (′，1° = 60′)', '′'),

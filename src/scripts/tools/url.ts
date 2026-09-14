@@ -9,6 +9,12 @@
 import { isZh, onLang } from './i18n';
 import { createWorkbench } from './workbench';
 
+/** True when obj has an own property named key. `in` walks the prototype chain,
+ *  so "constructor" would otherwise count as present on every object. */
+function hasOwn(obj: object, key: string): boolean {
+	return Object.prototype.hasOwnProperty.call(obj, key);
+}
+
 const SAMPLE_URL =
 	'https://qcsunny.org/blog/guide?utm_source=google&utm_medium=cpc&utm_campaign=summer_promo&category=%E6%8A%80%E6%9C%AF%E5%8D%9A%E5%AE%A2&sort=desc&page=1&ref=developer_tools#section-faq';
 
@@ -26,19 +32,32 @@ const TRACKING_PARAMS = [
 	'_hsmi'
 ];
 
+/** A real host carries a dot, a colon (port or IPv6), or is localhost. */
+function isHostLike(host: string): boolean {
+	return host === 'localhost' || host.includes('.') || host.includes(':');
+}
+
 function tryParseUrl(input: string): URL | null {
 	const raw = input.trim();
 	if (!raw) return null;
+	let u: URL;
 	try {
-		return new URL(raw);
+		u = new URL(raw);
 	} catch {
-		// If input has no protocol, try adding https://
+		// No scheme: try adding https://
 		try {
-			return new URL('https://' + raw);
+			u = new URL('https://' + raw);
 		} catch {
 			return null;
 		}
+		// Prefixing a bare query string yields the hostname "a=1&b=2" and drops
+		// every parameter - require actual host material before calling it a URL.
+		if (!isHostLike(u.hostname)) return null;
 	}
+	// An empty host means the input's scheme was a drive letter ("C:\foo" parses
+	// as scheme "c:") or an opaque reference, so there is no host, origin or path
+	// to report. This also refuses "javascript:…" and "mailto:…" inputs.
+	return u.hostname ? u : null;
 }
 
 export function initUrl(host: HTMLElement): void {
@@ -129,12 +148,17 @@ export function initUrl(host: HTMLElement): void {
 			return;
 		}
 
+		// Keep every occurrence for the list but first-wins for the JSON export,
+		// matching URLSearchParams.get(). Last-wins made ?a=1&a=2 report "2"
+		// where the spec says "1", and Object.keys() made the count disagree with
+		// the list it sat above.
+		const entries: [string, string][] = [];
 		const paramsObj: Record<string, string> = {};
 		parsed.searchParams.forEach((val, key) => {
-			paramsObj[key] = val;
+			entries.push([key, val]);
+			if (!hasOwn(paramsObj, key)) paramsObj[key] = val;
 		});
-
-		const paramCount = Object.keys(paramsObj).length;
+		const paramCount = entries.length;
 
 		// One label column, padded to the same width in both languages so the
 		// values still line up.
@@ -161,12 +185,12 @@ export function initUrl(host: HTMLElement): void {
 			out += zh ? `(该 URL 无任何查询参数)\n` : `(this URL carries no query parameters)\n`;
 		} else {
 			let i = 1;
-			parsed.searchParams.forEach((val, key) => {
+			for (const [key, val] of entries) {
 				// searchParams already percent-decodes the value; decoding again
 				// throws on a literal '%' (e.g. `?q=100%25`) and rewrites a value
 				// like `%41` into `A`. Use it as-is, matching paramsObj above.
 				out += `${i++}. ${key} = ${val}\n`;
-			});
+			}
 		}
 
 		wb.outputArea.value = out;
@@ -182,11 +206,12 @@ export function initUrl(host: HTMLElement): void {
 		const parsed = tryParseUrl(raw);
 		if (!parsed) return;
 
+		// First value wins, as in doParse - so ?a=1&a=2 exports "1", not "2".
 		const paramsObj: Record<string, string> = {};
 		parsed.searchParams.forEach((val, key) => {
 			// Already percent-decoded by URLSearchParams; a second decode corrupts
 			// a literal '%' (see doParse) and was only masked by the try/catch.
-			paramsObj[key] = val;
+			if (!hasOwn(paramsObj, key)) paramsObj[key] = val;
 		});
 
 		wb.outputArea.value = JSON.stringify(paramsObj, null, 2);

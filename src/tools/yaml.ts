@@ -10,7 +10,12 @@
 // | and folded > blocks, tags (!!str), multiple documents, or complex keys.
 // A block scalar indicator in a block position is rejected outright rather
 // than read as the string "|" — that silent fallback is what made
-// "text: |" at the end of a document parse as a literal pipe character.
+// "text: |" at the end of a document parse as a literal pipe character. The same
+// principle covers every indicator that cannot open a plain scalar: "- - x",
+// "a: - 1", "- : x" and "a: b: c" would each be swallowed as ordinary text and
+// report a wrong value, so all of them error instead. Duplicate keys are rejected
+// too — a repeat silently drops the earlier value, which in a formatter means
+// data loss with no warning.
 // Every unsupported construct produces a precise error rather than a guess.
 
 export interface YamlError {
@@ -54,6 +59,12 @@ function lexLines(text: string): Line[] {
 	for (let i = 0; i < lines.length; i++) {
 		const raw = lines[i];
 		if (!raw.trim()) continue;
+		// A tab inside the leading whitespace sets the indentation column, and
+		// 0x09 is not a legal indent character - accepting it makes
+		// "a:\n\tb: 1" parse as a nested map at a column no reader can see.
+		if (raw.slice(0, raw.length - raw.trimStart().length).includes('\t')) {
+			throw new Error(`line ${i + 1}: tabs cannot be used for indentation`);
+		}
 		if (/^---\s*$/.test(raw.trim()) && out.length === 0) continue; // leading document separator
 		if (/^\.\.\.\s*$/.test(raw.trim())) continue; // document end
 		const indent = raw.length - raw.trimStart().length;
@@ -94,28 +105,43 @@ const SCALAR_MAP: Record<string, unknown> = {
 };
 
 /** Parse a scalar token: quoted strings, flow collections, numbers, bool/null. */
-function parseScalar(tok: string): unknown {
+function parseScalar(tok: string, lineNo = 0): unknown {
 	const t = tok.trim();
+	const where = lineNo ? `line ${lineNo}: ` : '';
 	if (t === '') return null;
 	if (t.startsWith('"') || t.startsWith("'")) {
 		const q = t[0];
 		if (!(t.endsWith(q) && t.length >= 2)) {
-			throw new Error(`multi-line quoted scalars are not supported ("${t.slice(0, 30)}" is left unterminated)`);
+			throw new Error(`${where}a quoted scalar is left unterminated ("${t.slice(0, 30)}")`);
 		}
 	}
 	if (t.startsWith('"') && t.length >= 2) {
-		// Double-quoted: \" \\ \n \t escapes; anything else is kept verbatim.
+		// Double-quoted: every escape YAML defines. \xXX, \uXXXX and \UXXXXXXXX
+		// must be DECODED - keeping them verbatim reports the wrong string.
+		const SIMPLE: Record<string, string> = {
+			0: '\0', a: '\x07', b: '\b', t: '\t', n: '\n', v: '\x0b', f: '\f', r: '\r',
+			e: '\x1b', '"': '"', '\\': '\\', '/': '/',
+			N: '\u0085', _: '\u00a0', L: '\u2028', P: '\u2029',
+		};
+		const HEX: Record<string, number> = { x: 2, u: 4, U: 8 };
 		let out = '';
 		for (let i = 1; i < t.length - 1; i++) {
-			if (t[i] === '\\' && i + 1 < t.length - 1) {
-				const c = t[i + 1];
-				if (c === '"') out += '"';
-				else if (c === '\\') out += '\\';
-				else if (c === 'n') out += '\n';
-				else if (c === 't') out += '\t';
-				else out += '\\' + c;
-				i++;
-			} else out += t[i];
+			if (t[i] !== '\\') { out += t[i]; continue; }
+			i++;
+			const c = t[i];
+			if (c === undefined) throw new Error(`${where}a backslash ends the string`);
+			if (Object.prototype.hasOwnProperty.call(SIMPLE, c)) { out += SIMPLE[c]!; continue; }
+			const n = HEX[c];
+			if (n !== undefined) {
+				const hex = t.slice(i + 1, i + 1 + n);
+				if (!new RegExp(`^[0-9a-fA-F]{${n}}$`).test(hex)) {
+					throw new Error(`${where}escape "\\${c}" needs ${n} hex digits`);
+				}
+				out += String.fromCodePoint(parseInt(hex, 16));
+				i += n;
+				continue;
+			}
+			throw new Error(`${where}unsupported escape "\\${c}"`);
 		}
 		return out;
 	}
@@ -132,6 +158,63 @@ function parseScalar(tok: string): unknown {
 	if (/^0x[0-9a-fA-F]+$/.test(t)) return parseInt(t, 16);
 	if (/^0o[0-7]+$/.test(t)) return parseInt(t.slice(2), 8);
 	return t; // plain string
+}
+
+// Indicators that may not OPEN a plain scalar in YAML. Each of these would
+// otherwise be swallowed as ordinary text - "- - x" reading as the string "- x"
+// is the silent misparse this exists to stop. Anchors, aliases, tags and explicit
+// keys are unsupported by this parser on purpose, so they error instead of being
+// parsed as words.
+function rejectIndicators(line: Line, tok: string): void {
+	const t = tok.trim();
+	if (!t) return;
+	const c = t[0];
+	const next = t.length === 1 ? '' : t[1];
+	if ((c === ':' || c === '?') && (next === '' || /\s/.test(next))) {
+		throw new Error(
+			`line ${line.lineNo}: ${c === ':' ? 'an empty key' : 'explicit "? key" syntax'} is not allowed`,
+		);
+	}
+	if ('*&!@`'.includes(c)) {
+		throw new Error(`line ${line.lineNo}: anchors, aliases, tags and reserved indicators (${c}) are not supported`);
+	}
+}
+
+/** A block value may not continue a collection or open a second "key: " pair. */
+function checkBlockValue(line: Line, rest: string): void {
+	const t = rest.trim();
+	if (t === '-' || t.startsWith('- ')) {
+		throw new Error(`line ${line.lineNo}: a "- " sequence item cannot be a block value on the same line`);
+	}
+	// A closed quoted scalar or a balanced flow collection may contain
+	// anything; only a plain scalar is subject to the indicator and "second
+	// colon" rules - "a: {k: v, k: w}" must not trip the colon check.
+	const q = t[0];
+	const quoted = t.length >= 2 && (q === '"' || q === "'") && t[t.length - 1] === q;
+	if (!quoted && !isBalancedFlow(t)) {
+		rejectIndicators(line, t);
+		if (/:(\s|$)/.test(t)) {
+			throw new Error(`line ${line.lineNo}: only one "key: value" pair per line`);
+		}
+	}
+}
+
+/** Is t a flow collection ("{…}" / "[…]") whose brackets balance? */
+function isBalancedFlow(t: string): boolean {
+	if (!(t[0] === '{' || t[0] === '[')) return false;
+	let depth = 0;
+	let inS = false;
+	let inD = false;
+	for (let i = 0; i < t.length; i++) {
+		const c = t[i];
+		if (c === "'" && !inD) inS = !inS;
+		else if (c === '"' && !inS) inD = !inD;
+		else if (!inS && !inD) {
+			if (c === '{' || c === '[') depth++;
+			else if (c === '}' || c === ']') depth--;
+		}
+	}
+	return depth === 0 && !inS && !inD;
 }
 
 /** Split a flow collection body on top-level commas. */
@@ -177,11 +260,16 @@ function parseFlowMap(t: string): Record<string, unknown> {
 	if (!t.endsWith('}')) throw new Error(`flow map is missing its closing "}"`);
 	const body = t.slice(1, -1).trim();
 	const out: Record<string, unknown> = {};
+	// A repeat silently discards the earlier value - reject, as the block parser
+	// does for the same case.
+	const seen = new Set<string>();
 	for (const part of splitFlow(body)) {
 		const colon = part.indexOf(':');
 		if (colon === -1) throw new Error(`flow map item "${part.trim()}" has no ':'`);
-		const key = parseScalar(part.slice(0, colon));
-		setKey(out, String(key), parseScalar(part.slice(colon + 1)));
+		const key = String(parseScalar(part.slice(0, colon)));
+		if (seen.has(key)) throw new Error(`duplicate key "${key}" in a flow map`);
+		seen.add(key);
+		setKey(out, key, parseScalar(part.slice(colon + 1)));
 	}
 	return out;
 }
@@ -215,6 +303,18 @@ function splitKey(content: string): { key: string; rest: string } | null {
 	return null;
 }
 
+/** A re-parsed block must swallow every line it was handed. Anything left over
+ *  is a line whose indent sits between the item's indent and the nested block's
+ *  - "- a: 1\n b: 2" - and dropping it would report a wrong value. */
+function assertBlockConsumed(block: Line[], consumed: number, expected: number): void {
+	const left = block[consumed];
+	if (left) {
+		throw new Error(
+			`line ${left.lineNo}: unexpected indent (expected ${expected}, got ${left.indent})`,
+		);
+	}
+}
+
 /** Parse a block node at lines[pos] with the given minimum indent.
  *  Returns [value, nextPos] or throws on malformed input. */
 function parseBlock(lines: Line[], pos: number, minIndent: number): [unknown, number] {
@@ -229,7 +329,8 @@ function parseBlock(lines: Line[], pos: number, minIndent: number): [unknown, nu
 	if (kv) return parseBlockMap(lines, pos, line.indent);
 	// A single scalar at document level.
 	assertNotBlockScalar(line, line.content);
-	return [parseScalar(line.content), pos + 1];
+	rejectIndicators(line, line.content);
+	return [parseScalar(line.content, line.lineNo), pos + 1];
 }
 
 function parseBlockSeq(lines: Line[], pos: number, indent: number): [unknown[], number] {
@@ -242,14 +343,31 @@ function parseBlockSeq(lines: Line[], pos: number, indent: number): [unknown[], 
 			throw new Error(`line ${line.lineNo}: unexpected indent (expected ${indent}, got ${line.indent})`);
 		}
 		if (!(line.content.startsWith('- ') || line.content === '-')) {
-			throw new Error(`line ${line.lineNo}: expected a "- " item or a deeper/mapping line, got "${line.content.slice(0, 30)}"`);
+			// A same-indent line that is not an item ENDS the sequence - it belongs
+			// to the enclosing block. Returning rather than throwing lets "a:\n- 1\nb: 3"
+			// parse, and lets the caller report what is actually wrong (a duplicate
+			// key, a stray line at document root) instead of "expected a dash".
+			break;
 		}
 		const itemBody = line.content === '-' ? '' : line.content.slice(2);
+		if (itemBody === '-' || itemBody.startsWith('- ')) {
+			// "- - …" is a sequence nested two columns inside this item. Same
+			// virtual-line trick as the compact map below: rewrite the first line
+			// at indent + 2 so it reads as an item, and collect the rest of this
+			// item's lines as-is. Irregular nesting ("- - 1\n   - 2") surfaces as
+			// an indent error - never as a misread scalar.
+			const nested: Line[] = [{ indent: indent + 2, content: itemBody, raw: line.raw, lineNo: line.lineNo }];
+			let j = i + 1;
+			while (j < lines.length && lines[j].indent > indent) j++;
+			nested.push(...lines.slice(i + 1, j));
+			const [val, consumed] = parseBlockSeq(nested, 0, indent + 2);
+			assertBlockConsumed(nested, consumed, indent + 2);
+			items.push(val);
+			i = j;
+			continue;
+		}
 		// Compact nested map: "- key: value" — the key starts 2 columns in.
 		const kv = splitKey(itemBody);
-		if (kv && itemBody.startsWith('- ')) {
-			throw new Error(`line ${line.lineNo}: nested "- -" is not supported`);
-		}
 		if (kv) {
 			// Inline map entry inside the item: continue as a map at indent + 2.
 			const virtual: Line[] = [{ indent: indent + 2, content: itemBody, raw: line.raw, lineNo: line.lineNo }];
@@ -257,7 +375,8 @@ function parseBlockSeq(lines: Line[], pos: number, indent: number): [unknown[], 
 			let j = i + 1;
 			while (j < lines.length && lines[j].indent > indent) j++;
 			virtual.push(...lines.slice(i + 1, j));
-			const [val] = parseBlockMap(virtual, 0, indent + 2);
+			const [val, consumed] = parseBlockMap(virtual, 0, indent + 2);
+			assertBlockConsumed(virtual, consumed, indent + 2);
 			items.push(val);
 			i = j;
 			continue;
@@ -270,8 +389,11 @@ function parseBlockSeq(lines: Line[], pos: number, indent: number): [unknown[], 
 			continue;
 		}
 		// Plain scalar / flow item.
-		if (itemBody.trim()) assertNotBlockScalar(line, itemBody);
-		items.push(parseScalar(itemBody));
+		if (itemBody.trim()) {
+			assertNotBlockScalar(line, itemBody);
+			rejectIndicators(line, itemBody);
+		}
+		items.push(parseScalar(itemBody, line.lineNo));
 		i++;
 	}
 	return [items, i];
@@ -279,6 +401,8 @@ function parseBlockSeq(lines: Line[], pos: number, indent: number): [unknown[], 
 
 function parseBlockMap(lines: Line[], pos: number, indent: number): [Record<string, unknown>, number] {
 	const map: Record<string, unknown> = {};
+	// A repeat silently drops the earlier value - reject instead of last-wins.
+	const seenKeys = new Set<string>();
 	let i = pos;
 	while (i < lines.length) {
 		const line = lines[i];
@@ -290,6 +414,10 @@ function parseBlockMap(lines: Line[], pos: number, indent: number): [Record<stri
 		if (!kv) {
 			throw new Error(`line ${line.lineNo}: expected "key: value", got "${line.content.slice(0, 30)}"`);
 		}
+		if (seenKeys.has(kv.key)) {
+			throw new Error(`line ${line.lineNo}: duplicate key "${kv.key}"`);
+		}
+		seenKeys.add(kv.key);
 		if (line.content.startsWith('- ')) {
 			throw new Error(`line ${line.lineNo}: sequence item where a mapping key was expected`);
 		}
@@ -307,16 +435,18 @@ function parseBlockMap(lines: Line[], pos: number, indent: number): [Record<stri
 			let j = i + 1;
 			while (j < lines.length && lines[j].indent > indent) j++;
 			if (j > i + 1) {
-				const [val] = parseBlock(lines, i + 1, indent + 1);
+				const [val, p] = parseBlock(lines, i + 1, indent + 1);
 				setKey(map, kv.key, val);
+				i = p;
 			} else {
 				setKey(map, kv.key, null);
+				i = j;
 			}
-			i = j;
 			continue;
 		}
 		assertNotBlockScalar(line, kv.rest);
-		setKey(map, kv.key, parseScalar(kv.rest));
+		checkBlockValue(line, kv.rest);
+		setKey(map, kv.key, parseScalar(kv.rest, line.lineNo));
 		i++;
 	}
 	return [map, i];
@@ -359,7 +489,17 @@ function emitScalar(v: unknown, strict = false): string {
 }
 
 function isPlainKey(k: string): boolean {
-	return KEY_RE.test(k) && !/^(true|false|null|~|yes|no|on|off)$/i.test(k);
+	// KEY_RE already excludes every character that cannot open a plain scalar,
+	// the bool/null list keeps YAML 1.1 readers (PyYAML) from reading "yes" as
+	// true, and the identity check is the exact round-trip condition. It catches
+	// keys KEY_RE alone lets through: "1e3" and "0o17" are legal plain scalars,
+	// so emitting them bare makes the parser read back 1000 and 15 instead of
+	// the strings "1e3" and "0o17" - and object keys are always strings.
+	return (
+		KEY_RE.test(k) &&
+		!/^(true|false|null|~|yes|no|on|off)$/i.test(k) &&
+		String(parseScalar(k)) === k
+	);
 }
 
 /**

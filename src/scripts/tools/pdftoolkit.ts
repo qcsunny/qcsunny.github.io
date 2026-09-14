@@ -149,9 +149,11 @@ export async function mergePdfs(files: Uint8Array[]): Promise<Uint8Array> {
 }
 
 /** Parse a page-range expression: "1-3,5,8-" (1-based, open end allowed,
- *  out-of-range clamps). Returns a sorted unique 0-based index list. */
+ *  out-of-range clamps). Returns a deduplicated 0-based index list, in the
+ *  order the pages were written — the sort deliberately does not happen here. */
 export function parsePageRange(expr: string, pageCount: number): number[] {
 	const picked = new Set<number>();
+	const ordered: number[] = [];
 	for (const part of expr.split(/[,，]/)) {
 		const t = part.trim();
 		if (!t) continue;
@@ -161,9 +163,16 @@ export function parsePageRange(expr: string, pageCount: number): number[] {
 		const to = m[2] === undefined ? (m[1] && /[-–]/.test(t) ? pageCount : from) : Math.min(pageCount, Number(m[2]));
 		// Iterate min→max so an inverted expression like "5-3" yields 3,4,5
 		// rather than just page 5.
-		for (let i = Math.min(from, to); i <= Math.max(from, to); i++) if (i <= pageCount) picked.add(i - 1);
+		for (let i = Math.min(from, to); i <= Math.max(from, to); i++) {
+			if (i > pageCount) continue;
+			const idx = i - 1;
+			if (!picked.has(idx)) {
+				picked.add(idx);
+				ordered.push(idx);
+			}
+		}
 	}
-	return [...picked].sort((a, b) => a - b);
+	return ordered;
 }
 
 /** Extract the selected pages (order as written in the expression) into a

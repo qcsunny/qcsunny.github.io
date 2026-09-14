@@ -35,8 +35,16 @@ function formatXml(xml: string, indentSize = 2): string {
 	let formatted = '';
 	let pad = 0;
 
-	// Normalize spaces
+	// CDATA sections carry code or text whose whitespace is significant
+	// (SVG/XSLT scripts, embedded payloads). Stash them before the > < split and
+	// the per-line trim/indent run, or those steps rewrite the content inside
+	// <![CDATA[...]]> - injecting newlines between > and <, stripping significant
+	// leading spaces, and prepending indent to every line of the block.
+	const blocks: string[] = [];
+	const stash = (m: string): string => `\u0000${blocks.push(m) - 1}\u0000`;
+	const restore = (_m: string, i: string): string => blocks[Number(i)];
 	const clean = xml
+		.replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, stash)
 		.replace(/(>)\s*(<)/g, '$1\n$2')
 		.replace(/<!--[\s\S]*?-->/g, (m) => m.replace(/\n/g, ' '))
 		.trim();
@@ -65,7 +73,7 @@ function formatXml(xml: string, indentSize = 2): string {
 		}
 	}
 
-	return formatted.trim();
+	return formatted.replace(/\u0000(\d+)\u0000/g, restore).trim();
 }
 
 function minifyXml(xml: string): string {
@@ -190,3 +198,6 @@ export function initXml(host: HTMLElement): void {
 		initialStatusZh: '准备就绪：输入或粘贴 XML / SVG 报文后将自动通过 DOMParser 校验并排版。'
 	});
 }
+
+
+

@@ -1162,14 +1162,21 @@ function glmLogLik(fam: GlmFamily, alpha: number, y: Vec, mu: Vec, pw: Vec | nul
 }
 
 function glmDeviance(fam: GlmFamily, alpha: number, y: Vec, mu: Vec, pw: Vec | null): number {
+	// Deviance D = 2·Σ per-obs term. The binomial term is −log μ / −log(1−μ)
+	// (saturated logL = 0 for y∈{0,1}); the Poisson/NB terms are
+	// y·log(y/μ) − (y−μ) and y·log(y/μ) − (y+r)·log((y+r)/(μ+r)). Every branch
+	// below accumulates +D/2, then we return 2·d. The old code mixed logL
+	// (negative D/2) for binomial with +D/2 for Poisson/NB and returned −2·d,
+	// which left Poisson/NB deviance negative. The field is unused downstream
+	// today but fix the sign so a future display inherits a correct deviance.
 	let d = 0;
 	for (let i = 0; i < y.length; i++) {
 		const w0 = pw ? pw[i] : 1;
 		const yi = y[i];
 		const mi = Math.max(mu[i], 1e-300);
 		if (fam === 'logit' || fam === 'probit') {
-			if (yi === 1) d += w0 * Math.log(mi);
-			else d += w0 * Math.log(Math.max(1 - mi, 1e-300));
+			if (yi === 1) d += w0 * -Math.log(mi);
+			else d += w0 * -Math.log(Math.max(1 - mi, 1e-300));
 		} else if (fam === 'poisson') {
 			d += w0 * (yi > 0 ? yi * Math.log(yi / mi) - (yi - mi) : mi);
 		} else {
@@ -1178,7 +1185,7 @@ function glmDeviance(fam: GlmFamily, alpha: number, y: Vec, mu: Vec, pw: Vec | n
 				- w0 * (yi + r) * Math.log((yi + r) / (mi + r));
 		}
 	}
-	return -2 * d;
+	return 2 * d;
 }
 
 /** Profile-likelihood estimate of the NB2 dispersion: coarse grid over ln α
@@ -1633,7 +1640,7 @@ export function arimaForecast(mod: ArimaModel, hist: Vec, h: number): ArimaForec
 	// ψ weights of the MA(∞) representation, for forecast variances
 	const psi: Vec = [1];
 	for (let j = 1; j < h; j++) {
-		let v = d[j] ?? 0;
+		let v = d[j - 1] ?? 0;
 		for (let i = 1; i <= Math.min(j, c.length); i++) v += c[i - 1] * (psi[j - i] ?? 0);
 		psi.push(v);
 	}
