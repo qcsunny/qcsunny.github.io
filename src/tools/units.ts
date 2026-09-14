@@ -368,7 +368,7 @@ export const UNIT_CATEGORIES: UnitCategory[] = [
 			quarter: lin('quarter', 7889400, '季度 (3 个月 ≈ 91.31 天)', 'qtr', '季度'),
 			yr: lin('year (yr, 365d)', 31536000, '平年 (365 天)', 'yr', '年'),
 			leap_yr: lin('leap year (366d)', 31622400, '闰年 (366 天)', 'leap yr', '闰年'),
-			century: lin('century', 3155760000, '世纪 (100 年)', 'century', '世纪'),
+			century: lin('century (36525d)', 3155760000, '世纪 (36525 天)', 'century', '世纪'),
 		},
 	},
 	{
