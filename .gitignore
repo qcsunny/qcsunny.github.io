@@ -39,10 +39,8 @@ test-results/
 # Python bytecode from scripts/ (build-katex-css.py, subset-fonts.py)
 __pycache__/
 
-# Claude Code machine-local files (settings override + ephemeral worktree bookkeeping)
-.claude/settings.local.json
-.claude/settings.local.json.tmp.*
-.claude/worktrees/
+# Claude Code machine-local state (settings override, ephemeral worktrees, job scratch)
+.claude/
 
 # throwaway browser-probe scripts (kept out of accidental `git add -A`)
 /probe-*.mjs
