@@ -98,8 +98,24 @@ function logicalLines(text: string): LogicalLine[] {
 			const delim = line.slice(openIdx, openIdx + 3);
 			const closeAt = line.indexOf(delim, openIdx + 3);
 			if (closeAt !== -1) {
+				// Opens and closes on this one physical line - collapse to the same
+				// single-line placeholder the multiline branch uses. Skipping here
+				// dropped the whole "key = value" from the parsed document.
+				const inner = line.slice(openIdx + 3, closeAt);
+				const value = delim === '"""' ? unescapeBasic(inner) : inner;
+				// Anything left after the closer besides a comment means the inner """
+				// was an unescaped early terminator, not part of the value - reject
+				// instead of silently truncating. A bare trailing quote is kept lenient:
+				// an even-length run ("""a"""" = escaped "" plus the closer) is genuinely
+				// ambiguous for indexOf, and rejecting valid TOML would be the worse call.
+				const tail = stripComment(line.slice(closeAt + 3)).trim();
+				if (tail && !/^["'\s]+$/u.test(tail)) {
+					throw new Error(`line ${lineNo}: unexpected content after multiline string`);
+				}
+				line = line.slice(0, openIdx) + JSON.stringify(value);
+				out.push({ text: line, lineNo });
 				i++;
-				continue; // opens and closes on the same physical line
+				continue;
 			}
 			let body = line.slice(openIdx + 3);
 			let closed = false;
@@ -435,8 +451,10 @@ export function parseToml(text: string): Record<string, unknown> {
 	// Current table = the path of the last [header]; "defined" marks tables that
 	// were written explicitly, so a repeated [header] can be rejected.
 	let current: Record<string, unknown> = root;
-	const definedTables = new Set<string>();
-	const arrayTables = new Set<string>();
+	// Keyed by the table OBJECT, not its path string: [fruits.physical] written once
+	// per [[fruits]] item is legal TOML, and each occurrence is a DIFFERENT object
+	// at the same path. String keys collided on the path and rejected valid docs.
+	const definedTables = new Map<Record<string, unknown>, string>();
 
 	/** Walk/insert a table path; marks it as explicitly defined. */
 	function enterTable(path: string[], kind: 'table' | 'array'): Record<string, unknown> {
@@ -448,7 +466,6 @@ export function parseToml(text: string): Record<string, unknown> {
 				if (!hasOwn(cur, k)) {
 					arr = [];
 					setKey(cur, k, arr);
-					arrayTables.add(path.join('.'));
 				} else if (!Array.isArray(arr)) {
 					throw new Error(`"${path.join('.')}" is already defined as a table, cannot redefine as array of tables`);
 				}
@@ -461,6 +478,12 @@ export function parseToml(text: string): Record<string, unknown> {
 				sub = {};
 				setKey(cur, k, sub);
 			} else if (Array.isArray(sub)) {
+				// [a] right after [[a]]: the name is already an array of tables, so
+				// a [table] header at that name duplicates it - reject rather than
+				// silently appending into the last array item.
+				if (i === path.length - 1 && kind === 'table') {
+					throw new Error(`table [${path.join('.')}] is defined more than once`);
+				}
 				// Continuing a path THROUGH an array of tables targets its last item.
 				if (!sub.length || typeof sub[sub.length - 1] !== 'object') {
 					throw new Error(`"${path.slice(0, i + 1).join('.')}" is not a table`);
@@ -473,9 +496,10 @@ export function parseToml(text: string): Record<string, unknown> {
 			cur = sub as Record<string, unknown>;
 		}
 		if (kind === 'table') {
-			const key = path.join('.');
-			if (definedTables.has(key)) throw new Error(`table [${key}] is defined more than once`);
-			definedTables.add(key);
+			if (definedTables.has(cur)) {
+				throw new Error(`table [${definedTables.get(cur)}] is defined more than once`);
+			}
+			definedTables.set(cur, path.join('.'));
 		}
 		return cur;
 	}

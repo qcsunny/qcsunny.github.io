@@ -4967,10 +4967,11 @@ function formatGraphQL(code: string, mode: 'beautify' | 'minify'): string {
 }
 
 /** East Asian Width "W" and "F" ranges - the characters terminals and monospace
- *  fonts render two cells wide. The spans are deliberately narrow: an old
- *  `0x2e80 <= c <= 0xa4cf` version swept in all of Greek (0x0370), Cyrillic
- *  (0x0400), Hebrew (0x0590), Arabic (0x0600) and Devanagari (0x0900), padding
- *  them as if they were CJK and mis-aligning every table containing them. */
+ *  fonts render two cells wide. The spans are deliberately narrow: the old
+ *  `0x2e80 <= c <= 0xa4cf` covered only that one span, so emoji (0x1f300-0x1faff)
+ *  and CJK Extension B+ (0x20000-0x323af) were never counted as wide and every
+ *  table containing one rendered 3 cells off. Greek, Cyrillic, Hebrew, Arabic and
+ *  Devanagari all sit below 0x2e80 and were never affected. */
 function isWide(ch: string): boolean {
 	const code = ch.codePointAt(0) || 0;
 	return (
