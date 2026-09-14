@@ -5,6 +5,9 @@
 // - One-click clipboard copy with feedback
 // - 100% responsive bilingual support (pure English in EN mode, pure Chinese in ZH mode)
 // - Runs 100% in-browser with zero tracking.
+// - Number precision is the JS engine's: the parser turns every number
+//   into an IEEE 754 double, so the loss happens before formatting can
+//   see it. Said so in the UI (.t-cap-note) rather than left to be found.
 
 import { bilingual, langAttr, langProp } from './i18n';
 import { formatBytes } from './workbench';
@@ -18,31 +21,47 @@ const SAMPLE_JSON = {
 		tracking: false,
 		dataUploaded: false
 	},
-	categories: ['calculators', 'converters', 'finance', 'tools'],
-	toolsCount: 49,
+	features: ['format', 'minify', 'validate'],
 	verified: true
 };
 
 function countKeys(obj: unknown): number {
-	if (obj === null || typeof obj !== 'object') return 0;
 	let count = 0;
-	if (Array.isArray(obj)) {
-		for (const item of obj) count += countKeys(item);
-	} else {
-		const keys = Object.keys(obj as Record<string, unknown>);
-		count += keys.length;
-		for (const k of keys) {
-			count += countKeys((obj as Record<string, unknown>)[k]);
+	// Iterative: the recursive walk threw RangeError well past a few thousand
+	// nesting levels, and it ran *after* the formatted output had already been
+	// written - so a valid document came back labelled a syntax error.
+	const stack: unknown[] = [obj];
+	while (stack.length > 0) {
+		const cur = stack.pop()!;
+		if (cur === null || typeof cur !== 'object') continue;
+		if (Array.isArray(cur)) {
+			for (const item of cur) stack.push(item);
+		} else {
+			const keys = Object.keys(cur as Record<string, unknown>);
+			count += keys.length;
+			for (const k of keys) stack.push((cur as Record<string, unknown>)[k]);
 		}
 	}
 	return count;
 }
 
-function getErrorPosition(errorMsg: string, text: string): { line?: number; col?: number } {
+/** Map a parse error onto a line/column.
+ *
+ *  prefix is how many characters were trimmed off the front of the editor
+ *  text before parsing: the engine reports an index into the *trimmed*
+ *  string, so without it every line number after a leading blank line is
+ *  off by one. `text` must be the full editor value for the line count
+ *  itself to be right.
+ */
+function getErrorPosition(
+	errorMsg: string,
+	text: string,
+	prefix = 0,
+): { line?: number; col?: number } {
 	const posMatch = errorMsg.match(/position\s+(\d+)/i);
 	if (posMatch) {
-		const pos = parseInt(posMatch[1], 10);
-		const lines = text.slice(0, pos).split('\n');
+		const at = prefix + parseInt(posMatch[1], 10);
+		const lines = text.slice(0, at).split('\n');
 		return { line: lines.length, col: lines[lines.length - 1].length + 1 };
 	}
 	const lineColMatch = errorMsg.match(/line\s+(\d+)\s+column\s+(\d+)/i);
@@ -143,7 +162,20 @@ export function initJson(host: HTMLElement): void {
 	inputArea.dataset.role = 'input';
 	langAttr(inputArea, 'aria-label', 'JSON input', 'JSON 输入');
 
-	leftPanel.append(leftHead, inputArea);
+	// JSON numbers are IEEE 754 doubles, so three kinds of loss cannot be
+	// undone here: -0 becomes 0, an integer outside the safe range can round
+	// to a neighbouring value, and anything beyond ±1e308 becomes null. All
+	// three happen at JSON.parse, before formatting can look at the digits, so
+	// no fix on the formatting side could recover them - only a disclosure.
+	// Number.MAX_SAFE_INTEGER is interpolated, never typed in: a 16-digit
+	// literal here would be easy to get wrong and nothing would flag it.
+	const capNote = document.createElement('span');
+	capNote.className = 't-cap-note';
+	capNote.append(
+		Object.assign(document.createElement('span'), { className: 'i18n-en', textContent: `JSON numbers are IEEE 754 doubles: -0 becomes 0, integers beyond ${Number.MAX_SAFE_INTEGER} can round to a neighbouring value, and values outside ±1e308 become null. The digits are lost when the document is parsed, before formatting can see them.` }),
+		Object.assign(document.createElement('span'), { className: 'i18n-zh', textContent: `JSON 数值均为 IEEE 754 双精度浮点：-0 变为 0，超过 ${Number.MAX_SAFE_INTEGER} 的整数可能取整到邻近值，超出 ±1e308 的数值变为 null。数字在解析阶段就已丢失，格式化无从恢复。` }),
+	);
+	leftPanel.append(leftHead, inputArea, capNote);
 
 	// Right: Output
 	const rightPanel = document.createElement('div');
@@ -197,6 +229,27 @@ export function initJson(host: HTMLElement): void {
 
 	// --- Logic implementations ---
 
+	// Stringify a parsed document. Indented output costs 2 x depth^2 bytes,
+	// so a document nested thousands deep overflows the engine's number
+	// formatting - a RangeError thrown out of a document that PARSED FINE,
+	// which the caller used to report as a syntax error. Minified output
+	// has no per-level cost and survives any depth, so it is the fallback
+	// rather than a dead end. Null only for a real parse failure.
+	function stringifyJson(
+		parsed: unknown,
+		indent: number,
+	): { text: string; indented: boolean } | null {
+		try {
+			return { text: JSON.stringify(parsed, null, indent), indented: true };
+		} catch {
+			try {
+				return { text: JSON.stringify(parsed), indented: false };
+			} catch {
+				return null;
+			}
+		}
+	}
+
 	function updateStatus(type: 'idle' | 'valid' | 'error', msgEn: string, msgZh?: string) {
 		status.className = 't-json-status';
 		if (type === 'valid') status.classList.add('is-valid');
@@ -205,7 +258,9 @@ export function initJson(host: HTMLElement): void {
 	}
 
 	function doFormat(indent: number) {
-		const raw = inputArea.value.trim();
+		// Kept untrimmed so the error position maps onto what the reader sees.
+		const original = inputArea.value;
+		const raw = original.trim();
 		if (!raw) {
 			outputArea.value = '';
 			updateStatus(
@@ -216,25 +271,15 @@ export function initJson(host: HTMLElement): void {
 			return;
 		}
 
+		let parsed: unknown;
 		try {
-			const parsed = JSON.parse(raw);
-			const formatted = JSON.stringify(parsed, null, indent);
-			outputArea.value = formatted;
-
-			const keyCount = countKeys(parsed);
-			const byteLen = new TextEncoder().encode(raw).length;
-			const fmtLen = new TextEncoder().encode(formatted).length;
-			updateStatus(
-				'valid',
-				`✓ Valid JSON · Keys: ${keyCount} · Raw size: ${formatBytes(byteLen)} · Formatted: ${formatBytes(fmtLen)}`,
-				`✓ JSON 格式有效 · 键值数量: ${keyCount} · 原始大小: ${formatBytes(byteLen)} · 格式化后: ${formatBytes(fmtLen)}`
-			);
+			parsed = JSON.parse(raw);
 		} catch (err) {
 			// V8's own SyntaxError text ("Unexpected token } ... at position 42").
 			// It is English in every locale and there is no structured form of it,
 			// so both views quote it verbatim after a translated prefix.
 			const msg = err instanceof Error ? err.message : 'JSON parse failed';
-			const pos = getErrorPosition(msg, raw);
+			const pos = getErrorPosition(msg, original, original.length - raw.length);
 			const whereEn = pos.line ? ` [line ${pos.line}, col ${pos.col}]` : '';
 			const whereZh = pos.line ? ` [第 ${pos.line} 行, 第 ${pos.col} 列]` : '';
 			updateStatus(
@@ -242,15 +287,39 @@ export function initJson(host: HTMLElement): void {
 				`✗ Syntax error${whereEn}: ${msg}`,
 				`✗ 语法错误${whereZh}: ${msg}`
 			);
+			// Must stop here: falling out of this catch would reach the success
+			// path with `parsed` still undefined, which formats as an empty
+			// document and reports it valid - a syntax error read as success.
+			// Load-bearing, not dead code.
+			return;
 		}
+
+		const out = stringifyJson(parsed, indent);
+		if (out === null) return;
+		const formatted = out.text;
+		outputArea.value = formatted;
+
+		const keyCount = countKeys(parsed);
+		const byteLen = new TextEncoder().encode(raw).length;
+		const fmtLen = new TextEncoder().encode(formatted).length;
+		// The indented path is the only one that can overflow, so name it.
+		const depthTag = out.indented ? '' : ' · nested too deep to indent - shown minified';
+		const depthTagZh = out.indented ? '' : ' · 嵌套过深无法缩进，已按单行输出';
+		updateStatus(
+			'valid',
+			`✓ Valid JSON${depthTag} · Keys: ${keyCount} · Raw size: ${formatBytes(byteLen)} · Formatted: ${formatBytes(fmtLen)}`,
+			`✓ JSON 格式有效${depthTagZh} · 键值数量: ${keyCount} · 原始大小: ${formatBytes(byteLen)} · 格式化后: ${formatBytes(fmtLen)}`
+		);
 	}
 
 	function doMinify() {
-		const raw = inputArea.value.trim();
+		const original = inputArea.value;
+		const raw = original.trim();
 		if (!raw) return;
 		try {
 			const parsed = JSON.parse(raw);
-			const minified = JSON.stringify(parsed);
+			// No indent, so this cannot trip the depth limit the indented path can.
+			const minified = stringifyJson(parsed, 0)!.text;
 			outputArea.value = minified;
 			const originalLen = new TextEncoder().encode(raw).length;
 			const minLen = new TextEncoder().encode(minified).length;
@@ -261,8 +330,15 @@ export function initJson(host: HTMLElement): void {
 				`✓ 已压缩为单行 · 体积从 ${formatBytes(originalLen)} 缩小至 ${formatBytes(minLen)} (节省 ${saved}%)`
 			);
 		} catch (err) {
-			const msg = err instanceof Error ? err.message : 'Minification failed';
-			updateStatus('error', `✗ Minification failed: ${msg}`, `✗ 压缩失败: ${msg}`);
+			const msg = err instanceof Error ? err.message : 'JSON parse failed';
+			const pos = getErrorPosition(msg, original, original.length - raw.length);
+			const whereEn = pos.line ? ` [line ${pos.line}, col ${pos.col}]` : '';
+			const whereZh = pos.line ? ` [第 ${pos.line} 行, 第 ${pos.col} 列]` : '';
+			updateStatus(
+				'error',
+				`✗ Syntax error${whereEn}: ${msg}`,
+				`✗ 语法错误${whereZh}: ${msg}`
+			);
 		}
 	}
 
@@ -279,22 +355,46 @@ export function initJson(host: HTMLElement): void {
 	}
 
 	function doUnescape() {
+		// The only unescaping this tool can do for certain is decode a JSON string
+		// literal - the case where a document was copied as text inside quotes. A
+		// blind replace of \" and \\ is the wrong tool: \n and \t are real
+		// escapes the replace never decodes, while the quotes of a document that
+		// is ALREADY valid JSON get stripped, turning it into something broken
+		// and reporting success on top of it.
 		const raw = inputArea.value.trim();
 		if (!raw) return;
+		let parsed: unknown;
 		try {
-			if (raw.startsWith('"') && raw.endsWith('"')) {
-				const unescaped = JSON.parse(raw);
-				outputArea.value = typeof unescaped === 'string' ? unescaped : JSON.stringify(unescaped, null, 2);
-				updateStatus('valid', '✓ Unescaped string literal and restored content', '✓ 已去除字符串转义符并还原内容');
-			} else {
-				const replaced = raw.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
-				outputArea.value = replaced;
-				updateStatus('valid', '✓ Unescaped \\" backslashes', '✓ 已去除 \\" 反斜杠转义');
-			}
+			parsed = JSON.parse(raw);
 		} catch (err) {
-			const msg = err instanceof Error ? err.message : 'Unescape failed';
-			updateStatus('error', `✗ Unescape failed: ${msg}`, `✗ 去转义失败: ${msg}`);
+			const msg = err instanceof Error ? err.message : 'JSON parse failed';
+			outputArea.value = '';
+			updateStatus(
+				'error',
+				`✗ Not a JSON string literal: ${msg} · Wrap the text in double quotes and try again.`,
+				`✗ 不是 JSON 字符串字面量: ${msg} · 请用双引号包裹文本后重试。`
+			);
+			// The same trap: falling through would hit the already-valid-JSON
+			// branch with `parsed` undefined and print the word "undefined" as a
+			// formatted result.
+			return;
 		}
+
+		if (typeof parsed === 'string') {
+			// A quoted literal always decodes to a string, so there is no other case.
+			outputArea.value = parsed;
+			updateStatus('valid', '✓ Unescaped string literal and restored content', '✓ 已去除字符串转义符并还原内容');
+			return;
+		}
+		// Parses, but is not a literal - it was already valid JSON. Formatting it
+		// says that plainly; deleting its quotes would have hidden the mistake.
+		const formatted = stringifyJson(parsed, 2)?.text ?? JSON.stringify(parsed);
+		outputArea.value = formatted;
+		updateStatus(
+			'valid',
+			'✓ Already valid JSON - no string escaping to remove. Formatted instead.',
+			'✓ 这已经是合法 JSON，无需去转义。已改为格式化。'
+		);
 	}
 
 	function loadSample() {

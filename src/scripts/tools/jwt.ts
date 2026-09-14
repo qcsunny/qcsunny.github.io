@@ -59,6 +59,10 @@ function decodeFailure(err: unknown, zh: boolean): string {
 
 function formatTimestamp(ts: number): string {
 	const d = new Date(ts * 1000);
+	// An epoch outside the representable range (exp: 1e300, or a
+	// hand-typed year) turns every date field into NaN, so the old
+	// build printed "NaN-NaN-NaN NaN:NaN:NaN" as if that were a date.
+	if (Number.isNaN(d.getTime())) return 'undefined (epoch out of range)';
 	const p = (n: number): string => String(n).padStart(2, '0');
 	return (
 		`${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ` +
@@ -86,6 +90,52 @@ async function hmacSign(algSha: 'SHA-256' | 'SHA-384' | 'SHA-512', secret: strin
 	);
 	const sig = await crypto.subtle.sign('HMAC', key, data as unknown as ArrayBuffer);
 	return base64UrlEncode(new Uint8Array(sig));
+}
+
+/** RFC 7519 §4.1.3 / §4.1.4: seconds of clock skew most verifiers allow
+ *  before rejecting. Without it, a token expiring mid-verification fails on a
+ *  server two seconds slow, which reads as the secret being wrong.
+ *  `iat` gets none - a token minted in the future is simply wrong. */
+const CLOCK_SKEW_SEC = 60;
+
+/** The time-based registered claims. Verified AFTER the signature: a claim
+ *  that does not hold is not a forgery, but reporting it green anyway makes
+ *  a dead token look usable, which is the same trap with a wider blast radius.
+ *  `aud` and `iss` are deliberately absent - this tool takes no expected
+ *  values for them, so it only names the value it saw and leaves the decision
+ *  to the reader. */
+function checkClaims(payloadObj: unknown): { code: string; msgEn: string; msgZh: string } | null {
+	const nowSec = Math.floor(Date.now() / 1000);
+	if (!payloadObj || typeof payloadObj !== 'object') return null;
+	const c = payloadObj as Record<string, unknown>;
+	if (typeof c.exp === 'number' && c.exp + CLOCK_SKEW_SEC < nowSec) {
+		const age = nowSec - c.exp;
+		const days = Math.floor(age / 86400);
+		const hours = Math.floor((age % 86400) / 3600);
+		return {
+			code: 'expired',
+			msgEn: `Token expired at ${formatTimestamp(c.exp)}, about ${days}d ${hours}h ago (clock skew of up to ${CLOCK_SKEW_SEC}s ignored)`,
+			msgZh: `Token 已于 ${formatTimestamp(c.exp)} 过期，约 ${days} 天 ${hours} 小时前（已忽略最多 ${CLOCK_SKEW_SEC}s 时钟偏移）`,
+		};
+	}
+	if (typeof c.nbf === 'number' && c.nbf - CLOCK_SKEW_SEC > nowSec) {
+		const wait = c.nbf - nowSec;
+		const days = Math.floor(wait / 86400);
+		const hours = Math.floor((wait % 86400) / 3600);
+		return {
+			code: 'notbefore',
+			msgEn: `Token not valid until ${formatTimestamp(c.nbf)}, about ${days}d ${hours}h away (clock skew of up to ${CLOCK_SKEW_SEC}s ignored)`,
+			msgZh: `Token 尚未生效，有效期至 ${formatTimestamp(c.nbf)} 才开始，还有约 ${days} 天 ${hours} 小时（已忽略最多 ${CLOCK_SKEW_SEC}s 时钟偏移）`,
+		};
+	}
+	if (typeof c.iat === 'number' && c.iat > nowSec) {
+		return {
+			code: 'issued',
+			msgEn: `Token says it was issued at ${formatTimestamp(c.iat)}, which is in the future`,
+			msgZh: `Token 声明的签发时间 ${formatTimestamp(c.iat)} 晚于当前时间`,
+		};
+	}
+	return null;
 }
 
 export function initJwt(host: HTMLElement): void {
@@ -162,7 +212,8 @@ export function initJwt(host: HTMLElement): void {
 	}
 
 	/** Verify: recompute the HMAC of header.payload with the given secret and
-	 *  compare against the token's third segment. Only HS256/384/512 — the
+	 *  compare against the token's third segment, then apply the time-based
+	 *  registered claims (exp, nbf, iat) to what it signed. Only HS256/384/512 — the
 	 *  asymmetric algorithms need a public key this tool does not take. */
 	async function doVerify(): Promise<void> {
 		const zh = isZh();
@@ -195,11 +246,33 @@ export function initJwt(host: HTMLElement): void {
 		try {
 			const sig = await hmacSign(('SHA-' + alg.slice(2)) as 'SHA-256' | 'SHA-384' | 'SHA-512', secret, new TextEncoder().encode(`${parts[0]}.${parts[1]}`));
 			const ok = sig === parts[2];
+			let claimFail: ReturnType<typeof checkClaims> = null;
 			if (ok) {
+				try {
+					claimFail = checkClaims(JSON.parse(base64UrlDecode(parts[1])));
+				} catch {
+					// A signature over a payload that is not a JSON object: nothing to
+					// check, and the decode button reports the reason itself.
+				}
+			}
+			if (ok && !claimFail) {
 				wb.outputArea.value =
 					(zh ? '✓ 签名验证通过\n\n' : '✓ Signature verified\n\n') +
-					`alg: ${alg}\n${zh ? '期望签名' : 'expected'}: ${sig}\n${zh ? '实际签名' : 'received'}: ${parts[2]}`;
+					`alg: ${alg}\n${zh ? '期望签名' : 'expected'}: ${sig}\n${zh ? '实际签名' : 'received'}: ${parts[2]}\n\n` +
+					(zh ? '未校验：' : 'Not checked: ') +
+					(zh ? 'aud、iss、sub — 本工具不接收它们的预期值，签名有效不等于可授权使用。' : 'aud, iss, sub — this tool takes no expected values for them; a valid signature is not permission to use.');
 				wb.updateStatus('valid', `✓ Signature valid (${alg})`, `✓ 签名有效 (${alg})`);
+			} else if (ok && claimFail) {
+				// The signature is fine and the token is dead: say both, in that
+				// order, so nobody mistakes a correctly-signed expiry for a
+				// forgery, or a forgery for an expired token.
+				wb.outputArea.value =
+					(zh ? '⚠ 签名有效，但 Token 已失效\n\n' : '⚠ Signature valid, but the token is dead\n\n') +
+					`alg: ${alg}\n${zh ? '期望签名' : 'expected'}: ${sig}\n${zh ? '实际签名' : 'received'}: ${parts[2]}\n\n` +
+					(zh ? claimFail.msgZh : claimFail.msgEn) + '\n\n' +
+					(zh ? '未校验：' : 'Not checked: ') +
+					(zh ? 'aud、iss、sub — 本工具不接收它们的预期值。' : 'aud, iss, sub — this tool takes no expected values for them.');
+				wb.updateStatus('error', `⚠ Signature valid (${alg}), but: ${claimFail.msgEn}`, `⚠ 签名有效 (${alg})，但：${claimFail.msgZh}`);
 			} else {
 				wb.outputArea.value =
 					(zh ? '✗ 签名不匹配\n\n' : '✗ Signature mismatch\n\n') +
@@ -341,15 +414,37 @@ export function initJwt(host: HTMLElement): void {
 				labelZh: '只复制 Payload JSON',
 				primary: false,
 				onClick: async () => {
-					const raw = wb.inputArea.value.trim();
+					// doDecode and doVerify both strip the Bearer prefix; this one
+					// would not, so a pasted "Bearer eyJ..." fell into the >= 2
+					// segment check on the wrong string and silently copied nothing.
+					const raw = wb.inputArea.value.trim().replace(/^Bearer\s+/i, '');
 					const parts = raw.split('.');
-					if (parts.length >= 2) {
-						try {
-							const payload = JSON.stringify(JSON.parse(base64UrlDecode(parts[1])), null, 2);
-							await navigator.clipboard.writeText(payload);
-							wb.updateStatus('valid', '✓ Payload JSON copied to clipboard!', '✓ 已成功将 Payload JSON 复制到剪贴板！');
-						} catch {}
+					if (!raw) return;
+					if (parts.length < 2) {
+						wb.updateStatus('error', '✗ Nothing to copy: paste a JWT first.', '✗ 无可复制内容：请先贴上 JWT。');
+						return;
 					}
+					let payload: string;
+					try {
+						payload = JSON.stringify(JSON.parse(base64UrlDecode(parts[1])), null, 2);
+					} catch {
+						// The Decode button reports the underlying reason; the copy
+						// attempt would have thrown on the same line.
+						doDecode();
+						return;
+					}
+					try {
+						await navigator.clipboard.writeText(payload);
+					} catch {
+						// Clipboard API rejects in a non-secure context. Fallback mirrors
+						// the workbench's own copy button: show the payload, select it,
+						// execCommand. The old bare catch swallowed the failure, so a
+						// rejected write left the reader with neither payload nor news.
+						wb.outputArea.value = payload;
+						wb.outputArea.select();
+						(document as any).execCommand('copy');
+					}
+					wb.updateStatus('valid', '✓ Payload JSON copied to clipboard!', '✓ 已成功将 Payload JSON 复制到剪贴板！');
 				}
 			}
 		],

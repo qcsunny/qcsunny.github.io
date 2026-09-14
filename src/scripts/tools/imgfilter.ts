@@ -19,7 +19,11 @@ export function initImgFilter(host: HTMLElement): void {
 
 	const VERT = 'attribute vec2 p; varying vec2 vUv; void main() { vUv = p * 0.5 + 0.5; gl_Position = vec4(p, 0.0, 1.0); }';
 	const FRAG = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
 precision mediump float;
+#endif
 varying vec2 vUv;
 uniform sampler2D uImg;
 uniform vec2 uTexel;   // 1/width, 1/height
@@ -37,7 +41,13 @@ void main() {
 		texture2D(uImg, vUv + uTexel * vec2(-1.0, -1.0)).rgb * uKernel[0][2] +
 		texture2D(uImg, vUv + uTexel * vec2( 0.0, -1.0)).rgb * uKernel[1][2] +
 		texture2D(uImg, vUv + uTexel * vec2( 1.0, -1.0)).rgb * uKernel[2][2];
-	gl_FragColor = vec4(sum / uDivisor + uOffset, 1.0);
+	// Alpha comes from the centre tap: the 3x3 only convolves .rgb, so
+	// flattening the output to 1.0 turned a PNG's transparent pixels into
+	// opaque noise. Only .rgb is convolved, so a transparent pixel still
+	// carries rgb (0,0,0) and can darken a blurred neighbour - right for a
+	// live preview, not for a pixel-accurate export.
+	float tapA = texture2D(uImg, vUv).a;
+	gl_FragColor = vec4(sum / uDivisor + uOffset, tapA);
 }`;
 
 	function compile(type: number, src: string): WebGLShader {
@@ -144,6 +154,16 @@ void main() {
 		a.click();
 	});
 	controls.append(saveBtn);
+	// The export is whatever the canvas holds and the canvas is capped at
+	// 1024 px, so say so - otherwise a 24 MP photo silently comes back as a
+	// 1024 px thumbnail and the loss is invisible.
+	const capNote = document.createElement('span');
+	capNote.className = 't-cap-note';
+	capNote.append(
+		Object.assign(document.createElement('span'), { className: 'i18n-en', textContent: 'Preview and PNG export are capped at 1024 px on the longest side.' }),
+		Object.assign(document.createElement('span'), { className: 'i18n-zh', textContent: '预览与 PNG 导出的最长边均上限 1024 像素。' }),
+	);
+	controls.append(capNote);
 
 	const privacy = document.createElement('span');
 	privacy.className = 't-file-privacy';
@@ -198,6 +218,13 @@ void main() {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+		// Flip rows at upload. Unflipped, t=0 is the image's TOP row, so the
+		// vertex at vUv=(0,0) - the canvas' bottom-left - sampled the top row
+		// and the whole image drew upside down. Flipped, t=0 is the bottom row:
+		// the image sits right side up, and the shader's +y taps land on rows
+		// ABOVE centre, which is what the kernel grid's top row promises. Sobel
+		// and Emboss are not vertically symmetric, so the direction shows.
+		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
 		hasImage = true;
 		render();
