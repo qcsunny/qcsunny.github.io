@@ -111,6 +111,25 @@ test('color-converter preview prints a ratio that agrees with its verdicts', asy
 	await expect(page.locator('.t-contrast-ratio')).toHaveText('4.4999:1');
 });
 
+test('color-converter rounds grayscale HSL lightness and correctly classifies sRGB primaries in gamut', async ({ page }) => {
+	await page.goto('/color/color-converter/');
+	// 1. Grayscale colors (#222222 -> rgb(34,34,34)) must round L to an integer (13), not 13.333333333333334
+	await page.locator('#t-hex').fill('#222222');
+	await expect(page.locator('#t-hsl-l')).toHaveValue('13');
+	await expect(page.locator('.t-results')).toContainText('hsl(0, 0%, 13%)');
+
+	// 2. Pure sRGB red (#ff0000) must be classified as sRGB in both CIE 1931 and OKLab modes
+	await page.locator('#t-hex').fill('#ff0000');
+	const infoEl = page.locator('.t-gamut-card').first().locator('.t-gamut-info');
+	await expect(infoEl).toContainText('sRGB');
+	await expect(infoEl).not.toContainText('Display P3');
+
+	// Switch to OKLab tab
+	await page.locator('.t-gamut-tabs button').nth(1).click();
+	await expect(infoEl).toContainText('sRGB');
+	await expect(infoEl).not.toContainText('Display P3');
+});
+
 test('color palette renders swatches', async ({ page }) => {
 	await page.goto('/color/color-palette/');
 	const results = page.locator('.t-results');

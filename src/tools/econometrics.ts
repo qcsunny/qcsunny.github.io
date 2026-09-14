@@ -244,7 +244,11 @@ const LG_C = [
 ];
 
 export function lgamma(z: number): number {
-	if (z < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * z)) - lgamma(1 - z);
+	// Reflection: ln|Gamma(z)| = ln|pi/sin(pi z)| - ln|Gamma(1-z)|. The abs is
+	// the point -- for negative z the sine is negative and the log was NaN.
+	// Keep this in step with the private lgamma in ./calculators.ts.
+	if (z < 0.5)
+		return Math.log(Math.abs(Math.PI / Math.sin(Math.PI * z))) - lgamma(1 - z);
 	z -= 1;
 	let x = LG_C[0];
 	for (let i = 1; i < 9; i++) x += LG_C[i] / (z + i);

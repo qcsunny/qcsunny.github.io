@@ -16,7 +16,10 @@ const LG_C = [
 	1.5056327351493116e-7,
 ];
 function lgamma(z: number): number {
-	if (z < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * z)) - lgamma(1 - z);
+	// Reflection: ln|Gamma(z)| = ln|pi/sin(pi z)| - ln|Gamma(1-z)|. The abs is the
+	// point — for negative z the sine is negative and the log was NaN.
+	if (z < 0.5)
+		return Math.log(Math.abs(Math.PI / Math.sin(Math.PI * z))) - lgamma(1 - z);
 	z -= 1;
 	let x = LG_C[0] as number;
 	for (let i = 1; i < 9; i++) x += LG_C[i] as number / (z + i);
@@ -223,6 +226,10 @@ const SMALL_PRIMES: bigint[] = [
  *  with exponents and τ(n) = Π(eᵢ+1). Everything stays in BigInt after the
  *  input parse, so a factor above 2^53 is never rounded through a Number. */
 function factorWhole(n: bigint): { factors: Array<{ f: bigint; e: number }>; divisors: number } {
+	// 1 has no prime factors and 0 has infinitely many divisors. Both sit outside
+	// the documented range, but the trailing-zero peel below shifts 0n into 0n
+	// forever, so settle here rather than trusting the caller's guard.
+	if (n <= 1n) return { factors: [], divisors: n === 1n ? 1 : 0 };
 	if (isPrime(n)) {
 		return { factors: [{ f: n, e: 1 }], divisors: 2 };
 	}
@@ -353,11 +360,63 @@ const percentageIncrease: FormConfig = {
 
 // --- fraction ---------------------------------------------------------------------
 
-function gcd(a: number, b: number): number {
-	a = Math.abs(a);
-	b = Math.abs(b);
-	while (b > 0) [a, b] = [b, a % b];
-	return a;
+/**
+ * value → (digits, exponent), so that value = Number(digits) × 10^exponent and
+ * `digits` has no leading zero. Read from the string form on purpose: 0.3 is the
+ * integer 3 at 10^-1, never the float's 5404319552844595/18014398509481984.
+ * reducePair divides both operands by one exact divisor, so these have to be the
+ * user's decimal digits and not the binary fraction underneath them.
+ */
+function gcdParts(value: number): { d: string; e: number } {
+	let s = Math.abs(value).toString();
+	let e = 0;
+	const exp = s.indexOf('e');
+	if (exp >= 0) {
+		e = Number(s.slice(exp + 1));
+		s = s.slice(0, exp);
+	}
+	const dot = s.indexOf('.');
+	if (dot >= 0) {
+		e -= s.length - dot - 1;
+		s = s.slice(0, dot) + s.slice(dot + 1);
+	}
+	return { d: s.replace(/^0+/, '') || '0', e };
+}
+
+function gcdBig(x: bigint, y: bigint): bigint {
+	while (y > 0n) [x, y] = [y, x % y];
+	return x;
+}
+
+/**
+ * Two decimal numbers -> the integer pair they stand in for with no common
+ * factor: x and y such that a * g = x and b * g = y for one exact divisor g.
+ * Same 10^-k lattice as gcdParts, so the whole reduction is exact integer
+ * arithmetic.
+ *
+ * The pair -- not the divisor -- is what both callers render, and it has to be
+ * exact: dividing through a float `g` is how 0.3 / 0.1 became
+ * 2.9999999999999996. Strings rather than numbers on the way out so a 17-digit
+ * numerator is never rounded back through a double.
+ *
+ * Signs go on the integers, since a pair reads as "a to b" and the caller knows
+ * how to present a negative side. Null only for non-finite input, which the
+ * callers already guard and assert with `!`. 0 : 0 reduces to "0 : 0" and
+ * 0 : n to "0 : 1" rather than NaN : NaN.
+ */
+function reducePair(a: number, b: number): { x: string; y: string } | null {
+	if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+	const A = gcdParts(a),
+		B = gcdParts(b);
+	const k = Math.max(0, -A.e, -B.e);
+	const X = BigInt(A.d) * 10n ** BigInt(k + A.e),
+		Y = BigInt(B.d) * 10n ** BigInt(k + B.e);
+	const g = gcdBig(X, Y);
+	const d = g === 0n ? 1n : g;
+	return {
+		x: (a < 0 ? '-' : '') + (X / d).toString(),
+		y: (b < 0 ? '-' : '') + (Y / d).toString()
+	};
 }
 
 /** Decimal → fraction via continued fractions; null when no exact match within maxDenom. */
@@ -395,8 +454,8 @@ const fraction: FormConfig = {
 		const a = v.num('a');
 		const b = v.num('b');
 		if (Number.isFinite(a) && Number.isFinite(b) && b !== 0) {
-			const g = gcd(a, b) || 1;
-			rows.push({ label: `a/b simplified`, labelZh: 'a/b 最简分数', value: `${a / g} / ${b / g}`, emphasis: true });
+			const p = reducePair(a, b)!;
+			rows.push({ label: `a/b simplified`, labelZh: 'a/b 最简分数', value: `${p.x} / ${p.y}`, emphasis: true });
 			rows.push({ label: 'a/b as decimal', labelZh: '对应小数值', value: formatNumber(a / b) });
 			rows.push({ label: 'a/b as percent', labelZh: '对应百分比', value: pct((a / b) * 100) });
 		} else if (Number.isFinite(b) && b === 0) {
@@ -443,8 +502,8 @@ const ratio: FormConfig = {
 		if (a === 0 && b === 0) {
 			rows.push({ label: 'A:B simplified', labelZh: 'A:B 最简整数比', value: '— (both zero)', valueZh: '— (A、B 不能同时为 0)' });
 		} else {
-			const g = gcd(a, b) || 1;
-			rows.push({ label: 'A:B simplified', labelZh: 'A:B 最简整数比', value: `${a / g} : ${b / g}`, emphasis: true });
+			const p = reducePair(a, b)!;
+			rows.push({ label: 'A:B simplified', labelZh: 'A:B 最简整数比', value: `${p.x} : ${p.y}`, emphasis: true });
 			rows.push({
 				label: 'A ÷ B',
 				labelZh: 'A ÷ B 的商',

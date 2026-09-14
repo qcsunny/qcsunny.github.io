@@ -51,14 +51,14 @@ function rgbToHsl({ r, g, b }: Rgb): Hsl {
 	const max = Math.max(rn, gn, bn);
 	const min = Math.min(rn, gn, bn);
 	const l = (max + min) / 2;
-	if (max === min) return { h: 0, s: 0, l: l * 100 };
+	if (max === min) return { h: 0, s: 0, l: Math.round(l * 100) };
 	const d = max - min;
 	const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
 	let h: number;
 	if (max === rn) h = ((gn - bn) / d + (gn < bn ? 6 : 0)) / 6;
 	else if (max === gn) h = ((bn - rn) / d + 2) / 6;
 	else h = ((rn - gn) / d + 4) / 6;
-	return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
+	return { h: Math.round(h * 360) % 360, s: Math.round(s * 100), l: Math.round(l * 100) };
 }
 
 function hslToRgb({ h, s, l }: Hsl): Rgb {
@@ -302,7 +302,7 @@ export function initColor(host: HTMLElement): void {
 	contrastCard.append(previewRow);
 
 	const contrastRows = document.createElement('div');
-	contrastRows.className = 't-css';
+	contrastRows.className = 't-contrast-rows';
 	// Same five thresholds as the standalone /color/wcag-contrast/ checker:
 	// the UI-components row (3:1) is where focus rings and borders live, and
 	// dropping it here made the two checkers answer different questions.
@@ -419,7 +419,12 @@ export function initColor(host: HTMLElement): void {
 		lastRgb = rgb;
 		const hex = rgbToHex(rgb);
 		const hsl = rgbToHsl(rgb);
-		base.style.background = hex;
+		if (alpha < 1) {
+			const col = `rgba(${Math.round(rgb.r)}, ${Math.round(rgb.g)}, ${Math.round(rgb.b)}, ${alpha})`;
+			base.style.background = `linear-gradient(${col}, ${col}), repeating-conic-gradient(#80808033 0% 25%, transparent 0% 50%) 50% / 12px 12px`;
+		} else {
+			base.style.background = hex;
+		}
 		comp.style.background = rgbToHex(hslToRgb({ h: (hsl.h + 180) % 360, s: hsl.s, l: hsl.l }));
 		if (source !== 'hex') {
 			// 8-digit hex whenever there is real transparency to convey

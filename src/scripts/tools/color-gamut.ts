@@ -100,7 +100,7 @@ export function oklabToRgb(L: number, a: number, b: number): { r: number; g: num
 	const lg = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s;
 	const lb = -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s;
 
-	const inSrgb = lr >= 0 && lr <= 1 && lg >= 0 && lg <= 1 && lb >= 0 && lb <= 1;
+	const inSrgb = lr >= -0.001 && lr <= 1.001 && lg >= -0.001 && lg <= 1.001 && lb >= -0.001 && lb <= 1.001;
 	const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
 	return {
@@ -123,42 +123,66 @@ export function clampOklabToSrgb(L: number, a: number, b: number): { a: number; 
 	return { a: a * lo, b: b * lo };
 }
 
-// 2D Point-in-Triangle test (cross products)
-function pointInTriangle(px: number, py: number, ax: number, ay: number, bx: number, by: number, cx: number, cy: number): boolean {
+// 2D Point-in-Triangle test (cross products) with floating-point tolerance
+function pointInTriangle(px: number, py: number, ax: number, ay: number, bx: number, by: number, cx: number, cy: number, eps = 1e-5): boolean {
 	const d1 = (px - bx) * (ay - by) - (ax - bx) * (py - by);
 	const d2 = (px - cx) * (by - cy) - (bx - cx) * (py - cy);
 	const d3 = (px - ax) * (cy - ay) - (cx - ax) * (py - ay);
-	const hasNeg = d1 < 0 || d2 < 0 || d3 < 0;
-	const hasPos = d1 > 0 || d2 > 0 || d3 > 0;
+	const hasNeg = d1 < -eps || d2 < -eps || d3 < -eps;
+	const hasPos = d1 > eps || d2 > eps || d3 > eps;
 	return !(hasNeg && hasPos);
 }
 
 // Standard CIE 1931 Spectrum Locus (380nm - 700nm, 2° observer)
 const CIE_SPECTRUM_LOCUS: [number, number, number][] = [
 	[380, 0.1741, 0.0050],
+	[390, 0.1738, 0.0049],
 	[400, 0.1733, 0.0048],
+	[410, 0.1726, 0.0048],
 	[420, 0.1689, 0.0069],
+	[430, 0.1644, 0.0109],
 	[440, 0.1566, 0.0177],
+	[450, 0.1510, 0.0227],
 	[460, 0.1440, 0.0297],
 	[470, 0.1241, 0.0578],
+	[475, 0.1096, 0.0868],
 	[480, 0.0913, 0.1327],
+	[485, 0.0687, 0.2007],
 	[490, 0.0454, 0.2950],
+	[495, 0.0235, 0.4127],
 	[500, 0.0082, 0.5384],
+	[505, 0.0039, 0.6548],
 	[510, 0.0139, 0.7502],
+	[515, 0.0389, 0.8120],
 	[520, 0.0743, 0.8338],
+	[525, 0.1142, 0.8262],
 	[530, 0.1547, 0.8059],
+	[535, 0.1929, 0.7816],
 	[540, 0.2296, 0.7543],
+	[545, 0.2658, 0.7243],
 	[550, 0.3016, 0.6923],
+	[555, 0.3373, 0.6589],
 	[560, 0.3731, 0.6245],
+	[565, 0.4087, 0.5896],
 	[570, 0.4441, 0.5547],
+	[575, 0.4787, 0.5202],
 	[580, 0.5125, 0.4866],
+	[585, 0.5448, 0.4544],
 	[590, 0.5752, 0.4242],
+	[595, 0.6029, 0.3965],
 	[600, 0.6270, 0.3725],
+	[605, 0.6482, 0.3514],
 	[610, 0.6658, 0.3340],
+	[615, 0.6801, 0.3197],
 	[620, 0.6915, 0.3083],
+	[625, 0.7006, 0.2993],
 	[630, 0.7079, 0.2920],
 	[640, 0.7190, 0.2809],
+	[650, 0.7260, 0.2740],
 	[660, 0.7300, 0.2700],
+	[670, 0.7320, 0.2680],
+	[680, 0.7334, 0.2666],
+	[690, 0.7344, 0.2656],
 	[700, 0.7347, 0.2653],
 ];
 
@@ -260,11 +284,11 @@ export function initColorGamut(
 	canvas2d.setAttribute('aria-label', 'CIE 1931 chromaticity diagram and color gamut');
 	viewport.append(canvas2d);
 
-	// Lightness controls row with Default & Reset button
+	// Lightness controls row with Default & Reset button (for OKLab slice mode)
 	const DEFAULT_LIGHTNESS = 0.65;
 	const controlsRow = document.createElement('div');
 	controlsRow.className = 't-gamut-controls';
-	controlsRow.style.display = 'flex';
+	controlsRow.style.display = 'none';
 	controlsRow.style.alignItems = 'center';
 	controlsRow.style.gap = '0.6em';
 
@@ -315,12 +339,17 @@ export function initColorGamut(
 
 	function updateHint(): void {
 		hintEl.innerHTML = '';
+		const zh = isZh();
 		if (mode === 'cie') {
 			hintEl.append(
 				bilingual(
 					'CIE 1931 xy Chromaticity Diagram: Shows the full visible spectral horseshoe (380–700 nm). The solid white triangle is standard sRGB; the dashed line is Display P3 wide gamut. Click or drag inside the gamut to pick colors.',
 					'CIE 1931 xy 色度图（行业主流标准）：展现完整的可见光谱马蹄形轮廓（380–700 nm）。白色实线三角为标准 sRGB，虚线三角为 Display P3 广色域。点击或拖拽即可在色域空间内精准拾色。',
 				),
+			);
+			canvas2d.setAttribute(
+				'aria-label',
+				zh ? 'CIE 1931 xy 色度图与色域分析' : 'CIE 1931 chromaticity diagram and color gamut',
 			);
 		} else {
 			hintEl.append(
@@ -329,6 +358,10 @@ export function initColorGamut(
 					'OKLab a-b 等亮度切片：显示当前亮度下的感知均匀色度分布。注：由于黄色固有明度极高（L > 0.9），在较低亮度下物理上不存在饱和黄色，上方 (+b) 自然为空白；如需查看完整色域全貌请切换至【CIE 1931 xy】。',
 				),
 			);
+			canvas2d.setAttribute(
+				'aria-label',
+				zh ? 'OKLab 色度等明度切片与色域分析' : 'OKLab chromaticity gamut slice',
+			);
 		}
 	}
 	updateHint();
@@ -336,10 +369,13 @@ export function initColorGamut(
 	cieBtn.addEventListener('click', () => {
 		if (mode === 'cie') return;
 		mode = 'cie';
+		cieBtn.classList.add('is-active');
+		oklabBtn.classList.remove('is-active');
 		cieBtn.style.background = 'var(--accent)';
 		cieBtn.style.color = '#fff';
 		oklabBtn.style.background = 'transparent';
 		oklabBtn.style.color = 'var(--fg)';
+		controlsRow.style.display = 'none';
 		updateHint();
 		render();
 	});
@@ -347,10 +383,13 @@ export function initColorGamut(
 	oklabBtn.addEventListener('click', () => {
 		if (mode === 'oklab') return;
 		mode = 'oklab';
+		oklabBtn.classList.add('is-active');
+		cieBtn.classList.remove('is-active');
 		oklabBtn.style.background = 'var(--accent)';
 		oklabBtn.style.color = '#fff';
 		cieBtn.style.background = 'transparent';
 		cieBtn.style.color = 'var(--fg)';
+		controlsRow.style.display = 'flex';
 		updateHint();
 		render();
 	});
@@ -455,6 +494,91 @@ export function initColorGamut(
 		cachedBgW = w;
 		cachedBgH = h;
 		return offscreen;
+	}
+
+	function drawPointerReticle(
+		targetCtx: CanvasRenderingContext2D,
+		x: number,
+		y: number,
+		rgb: RgbColor,
+		label: string,
+		canvasW: number,
+		canvasH: number,
+	): void {
+		targetCtx.save();
+
+		// 1. Crosshairs with dual stroke (dark halo backing + crisp light core)
+		const arm = 14;
+		const gap = 5;
+
+		// Dark backing for crosshairs (guarantees visibility over pure white/light gradients)
+		targetCtx.lineWidth = 3.5;
+		targetCtx.strokeStyle = 'rgba(0, 0, 0, 0.75)';
+		targetCtx.beginPath();
+		targetCtx.moveTo(x - arm, y); targetCtx.lineTo(x - gap, y);
+		targetCtx.moveTo(x + gap, y); targetCtx.lineTo(x + arm, y);
+		targetCtx.moveTo(x, y - arm); targetCtx.lineTo(x, y - gap);
+		targetCtx.moveTo(x, y + gap); targetCtx.lineTo(x, y + arm);
+		targetCtx.stroke();
+
+		// Bright white core crosshairs
+		targetCtx.lineWidth = 1.5;
+		targetCtx.strokeStyle = '#ffffff';
+		targetCtx.stroke();
+
+		// 2. Focus ring (radius 11) with dark drop shadow
+		targetCtx.beginPath();
+		targetCtx.arc(x, y, 11, 0, Math.PI * 2);
+		targetCtx.lineWidth = 1;
+		targetCtx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+		targetCtx.stroke();
+
+		// 3. Main pointer circle (radius 6.5) with dual border (dark outer + white inner)
+		targetCtx.beginPath();
+		targetCtx.arc(x, y, 6.5, 0, Math.PI * 2);
+		targetCtx.fillStyle = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+		targetCtx.fill();
+
+		// Outer dark border so white fill on white background doesn't camouflage
+		targetCtx.lineWidth = 4;
+		targetCtx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+		targetCtx.stroke();
+
+		// Inner crisp white ring
+		targetCtx.lineWidth = 2;
+		targetCtx.strokeStyle = '#ffffff';
+		targetCtx.stroke();
+
+		// 4. Floating coordinates badge pill
+		targetCtx.font = '10px ui-monospace, Consolas, monospace';
+		const textW = targetCtx.measureText(label).width;
+		const pad = 5;
+		const badgeW = textW + pad * 2;
+		const badgeH = 16;
+
+		let bx = x + 10;
+		let by = y - badgeH - 6;
+		if (bx + badgeW > canvasW - 8) bx = x - badgeW - 10;
+		if (by < 8) by = y + 10;
+		if (by + badgeH > canvasH - 8) by = canvasH - 8 - badgeH;
+
+		targetCtx.fillStyle = 'rgba(15, 18, 24, 0.88)';
+		targetCtx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+		targetCtx.lineWidth = 1;
+		targetCtx.beginPath();
+		if (typeof targetCtx.roundRect === 'function') {
+			targetCtx.roundRect(bx, by, badgeW, badgeH, 3);
+		} else {
+			targetCtx.rect(bx, by, badgeW, badgeH);
+		}
+		targetCtx.fill();
+		targetCtx.stroke();
+
+		targetCtx.fillStyle = '#ffffff';
+		targetCtx.textBaseline = 'middle';
+		targetCtx.fillText(label, bx + pad, by + badgeH / 2);
+
+		targetCtx.restore();
 	}
 
 	function renderCie1931(w: number, h: number): void {
@@ -582,29 +706,15 @@ export function initColorGamut(
 
 		// 7. Draw Current Color Pointer (Target Reticle)
 		const curPt = cieToScreen(currentCieXy.x, currentCieXy.y, w, h);
-
-		// Reticle crosshair lines
-		ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-		ctx.lineWidth = 1;
-		ctx.beginPath();
-		ctx.moveTo(curPt.x - 12, curPt.y);
-		ctx.lineTo(curPt.x - 4, curPt.y);
-		ctx.moveTo(curPt.x + 4, curPt.y);
-		ctx.lineTo(curPt.x + 12, curPt.y);
-		ctx.moveTo(curPt.x, curPt.y - 12);
-		ctx.lineTo(curPt.x, curPt.y - 4);
-		ctx.moveTo(curPt.x, curPt.y + 4);
-		ctx.lineTo(curPt.x, curPt.y + 12);
-		ctx.stroke();
-
-		// Target rings
-		ctx.beginPath();
-		ctx.arc(curPt.x, curPt.y, 6.5, 0, Math.PI * 2);
-		ctx.fillStyle = `rgb(${currentRgb.r}, ${currentRgb.g}, ${currentRgb.b})`;
-		ctx.fill();
-		ctx.lineWidth = 2.5;
-		ctx.strokeStyle = '#ffffff';
-		ctx.stroke();
+		drawPointerReticle(
+			ctx,
+			curPt.x,
+			curPt.y,
+			currentRgb,
+			`xy: (${currentCieXy.x.toFixed(3)}, ${currentCieXy.y.toFixed(3)})`,
+			w,
+			h,
+		);
 
 		ctx.restore();
 
@@ -703,7 +813,7 @@ export function initColorGamut(
 		ctx.fillText(zh ? '+b (黄)' : '+b (yellow)', center.x + 6, 16);
 		ctx.fillText(zh ? '-b (蓝)' : '-b (blue)', center.x + 6, h - 8);
 		ctx.fillText(zh ? '-a (绿)' : '-a (green)', 8, center.y - 6);
-		ctx.fillText(zh ? '+a (红)' : '+a (red)', w - (zh ? 48 : 54), center.y - 6);
+		ctx.fillText(zh ? '+a (红)' : '+a (red)', w - (zh ? 52 : 62), center.y - 6);
 
 		// Gamut contour
 		ctx.save();
@@ -725,13 +835,15 @@ export function initColorGamut(
 
 		// Color Pointer
 		const curPos = oklabToScreen(currentOklab.a, currentOklab.b, w, h);
-		ctx.beginPath();
-		ctx.arc(curPos.x, curPos.y, 6.5, 0, Math.PI * 2);
-		ctx.fillStyle = `rgb(${currentRgb.r}, ${currentRgb.g}, ${currentRgb.b})`;
-		ctx.fill();
-		ctx.lineWidth = 2.5;
-		ctx.strokeStyle = '#ffffff';
-		ctx.stroke();
+		drawPointerReticle(
+			ctx,
+			curPos.x,
+			curPos.y,
+			currentRgb,
+			`ab: (${currentOklab.a >= 0 ? '+' : ''}${currentOklab.a.toFixed(2)}, ${currentOklab.b >= 0 ? '+' : ''}${currentOklab.b.toFixed(2)})`,
+			w,
+			h,
+		);
 
 		// Info header
 		const test = oklabToRgb(sliceL, currentOklab.a, currentOklab.b);
@@ -769,7 +881,7 @@ export function initColorGamut(
 		if (mode === 'cie') {
 			const { x, y } = screenToCie(px, py, rect.width, rect.height);
 			// Sample color at chromaticity (x, y) with current relative luminance
-			const picked = cieXyToRgb(x, y, Math.max(0.2, currentCieXy.Y || 0.5));
+			const picked = cieXyToRgb(x, y, Math.max(0.05, currentCieXy.Y || 0.5));
 			onSelectRgb({ r: picked.r, g: picked.g, b: picked.b });
 		} else {
 			const { a, b } = screenToOklab(px, py, rect.width, rect.height);
@@ -798,7 +910,10 @@ export function initColorGamut(
 
 	new ResizeObserver(render).observe(canvas2d);
 	render();
-	onLang(render);
+	onLang(() => {
+		updateHint();
+		render();
+	});
 
 	return {
 		update(rgb: RgbColor): void {
