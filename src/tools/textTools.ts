@@ -50,14 +50,25 @@ export function runBatch(text: string, f: (line: string) => string | null): { ou
 // --- text extractor / slug helpers -----------------------------------------------------
 
 /** URLs: absolute http(s) links and www.-prefixed hosts, up to the first
- *  whitespace or closing bracket/quote. Bare domains ("example.com" without a
+ *  whitespace, closing bracket or quote. Bare domains ("example.com" without a
  *  scheme) are deliberately NOT matched — filenames and version strings
- *  ("utils-1.2.3.js") false-positive far too often. */
-const URL_RE_G = /(?:https?:\/\/|www\.)[^\s<>"'）)\]}]+/giu;
+ *  ("utils-1.2.3.js") false-positive far too often.
+ *  Fullwidth and CJK sentence stops (，。、；：！？…) are in the exclusion class,
+ *  not trimmed off the tail, so "https://a.com、https://b.com" yields TWO urls
+ *  instead of one merged blob. The ASCII stops (.,;:!?)) stay in the class and
+ *  are stripped by extractUrls - a bare "." is also a domain separator, so it
+ *  cannot be excluded up front. */
+const URL_RE_G = /(?:https?:\/\/|www\.)[^\s<>"'）)】】》》」」』』}，。、；：！？…—～]+/giu;
+const URL_TAIL_PUNCT_RE = /[.,;:!?)+]+$/u;
 const EMAIL_RE_G = /[a-z0-9._%+-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)+/giu;
 
+/** Every URL in the text, with trailing sentence punctuation removed. */
+function extractUrls(text: string): string[] {
+	return (text.match(URL_RE_G) ?? []).map((u) => u.replace(URL_TAIL_PUNCT_RE, ''));
+}
+
 function extractMatches(text: string, re: RegExp, what: 'URL' | 'Email'): { output: string; error?: string; errorZh?: string } {
-	const found = text.match(re) ?? [];
+	const found = what === 'URL' ? extractUrls(text) : text.match(re) ?? [];
 	if (!found.length)
 		return { output: '', error: `No ${what.toLowerCase()}s found in the text.`, errorZh: `文本中没有找到${what === 'URL' ? '网址' : '邮箱'}。` };
 	return { output: found.join('\n') };
@@ -219,7 +230,11 @@ function escXml(s: string): string {
 }
 
 function humanCount(n: number): string {
-	return n < 1024 ? `${n} B` : `${(n / 1024).toFixed(1)} KB`;
+	// B, then KB, then MB - a workbook can easily exceed 1 MiB, and 1024.0 KB
+	// is harder to read than 1.0 MB.
+	if (n < 1024) return `${n} B`;
+	if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+	return `${(n / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 // --- word counter ---------------------------------------------------------------------
@@ -232,10 +247,22 @@ function wordStats(text: string) {
 	const latinMatches = text.match(LATIN_WORD_RE) ?? [];
 	// Standard international bilingual rule: 1 CJK char = 1 word + Latin space-delimited words
 	const totalWords = cjkMatches.length + latinMatches.length;
-	const sentences = (text.match(/[^.!?…\n。！？]+[.!?…\n。！？]+(\s|$)/gu) ?? []).length || (text.trim() ? 1 : 0);
+	// A sentence is a run ending in . ! ? … 。 ！？ or a newline. A trailing run
+	// with no terminator still counts - "One. Two. Three" is three sentences,
+	// not two - so the unterminated tail is added separately instead of relying
+	// on a fallback that only fires when nothing is terminated at all.
+	const sentRe = /[^.!?…\n。！？]+[.!?…\n。！？]+/gu;
+	let terminated = 0;
+	let sentEnd = 0;
+	for (let m = sentRe.exec(text); m; m = sentRe.exec(text)) {
+		terminated++;
+		sentEnd = m.index + m[0].length;
+	}
+	const sentences = terminated + (text.slice(sentEnd).trim() ? 1 : 0);
 	const paragraphs = text.split(/\n\s*\n/).filter((p) => p.trim()).length;
 	const lines = text ? text.split('\n').length : 0;
-	const letters = [...text].length;
+	// [...text] iterates code points, so a surrogate-pair emoji is one character.
+	const totalChars = [...text].length;
 
 	// Reading time: ~220 Latin words/min, ~400 CJK characters/min
 	const minutes = latinMatches.length / 220 + cjkMatches.length / 400;
@@ -245,7 +272,7 @@ function wordStats(text: string) {
 		{ label: 'Total Words (Bilingual)', labelZh: '综合总字数 (中英双语标准)', value: String(totalWords) },
 		{ label: 'Chinese / CJK Characters', labelZh: '中文字数 / 汉字数', value: String(cjkMatches.length) },
 		{ label: 'English / Latin Words', labelZh: '英文 / 西文单词数', value: String(latinMatches.length) },
-		{ label: 'Characters (with spaces)', labelZh: '总字符数 (含空格与换行)', value: String(letters) },
+		{ label: 'Characters (with spaces)', labelZh: '总字符数 (含空格与换行)', value: String(totalChars) },
 		{ label: 'Characters (no spaces)', labelZh: '有效字符数 (不含空格)', value: String([...text.replace(/\s/g, '')].length) },
 		{ label: 'Sentences', labelZh: '句子数', value: String(sentences) },
 		{ label: 'Paragraphs', labelZh: '段落数', value: String(paragraphs) },
@@ -264,7 +291,7 @@ function charStats(text: string) {
 	let symbols = 0;
 	for (const ch of text) {
 		if (/\s/.test(ch)) spaces++;
-		else if (/\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}/u.test(ch)) cjk++;
+		else if (/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(ch)) cjk++;
 		else if (/[a-zA-Z]/u.test(ch)) latin++;
 		else if (/\p{N}/u.test(ch)) digits++;
 		else symbols++;
@@ -865,8 +892,11 @@ export function toTitle(s: string): string {
 		.join(' ');
 }
 export function toSentence(s: string): string {
+	// Capitalise only the first word; the rest of the sentence stays lowercase.
+	// w.length >= 2 guard keeps a single word from picking up a trailing space.
 	const w = splitWords(s).map((x) => x.toLowerCase());
-	return w.length ? cap(w[0]) + ' ' + w.slice(1).join(' ') : '';
+	if (!w.length) return '';
+	return cap(w[0]) + (w.length > 1 ? ' ' + w.slice(1).join(' ') : '');
 }
 
 // --- RMB uppercase (人民币大写金额) --------------------------------------------------
@@ -1149,8 +1179,20 @@ export function parseCsv(text: string): string[][] | null {
 	return rows;
 }
 
+/** Cells beginning with = + @ (or a tab) are executed as FORMULAS when a
+ *  spreadsheet opens the file: paste arbitrary text, export it as CSV, open it
+ *  in Excel, and `=cmd|...` runs on load. Prefix such cells with an apostrophe
+ *  - Excel's mark-as-text convention - then quote if the cell needs quoting.
+ *  The apostrophe goes on FIRST, so a cell that is both formula-ish and quote-
+ *  needing ("=SUM(A1,B2)" with a comma in it) is still protected. A plain
+ *  number like "-5" is exempt: Excel reads it as negative five, not a formula. */
+const CSV_FORMULA_FIRST = /^[=+@\t]/;
+const CSV_NUMERIC = /^[+-]?[\d.]+$/;
+
 function csvCell(v: string): string {
-	return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+	const literal = CSV_FORMULA_FIRST.test(v) && !CSV_NUMERIC.test(v);
+	const safe = literal ? `'${v}` : v;
+	return /[",\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
 }
 
 /** CSV text → JSON text. First row is the header; ragged rows are an error. */
@@ -2010,6 +2052,17 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 					const ms = new Date(Number(y), Number(mo) - 1, Number(d), Number(h ?? 0), Number(mi ?? 0)).getTime();
 					return Number.isFinite(ms) ? Math.floor(ms / 1000) : null;
 				};
+				// Date's representable window is +/-8.64e15 ms (~275760-01-01). Beyond
+				// it, new Date(ms) is "Invalid Date" and toISOString() throws
+				// RangeError - which is what a 19-digit nanosecond paste used to do.
+				const TS_MAX_MS = 8640000000000000;
+				const tsToSec = (line: string): number | null => {
+					// 13-digit values are milliseconds; a bare number is seconds.
+					let sec = Number(line);
+					if (!Number.isFinite(sec) || sec < 0) return null;
+					if (/^\d{13}$/.test(line)) sec = sec / 1000;
+					return Math.abs(sec * 1000) > TS_MAX_MS ? null : sec;
+				};
 				// Batch: one entry per line → one row each, direction per line.
 				if (lines.length > 1) {
 					const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -2030,10 +2083,8 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 								// a date line runs the reverse direction
 								const rev = dateToSec(line);
 								if (rev !== null) return [line, String(rev), stamp(rev * 1000, localTz, false), stamp(rev * 1000, 'UTC', false)];
-								// 13-digit values are milliseconds; a bare number is seconds.
-								let sec = Number(line);
-								if (!Number.isFinite(sec) || sec < 0) return [line, '—', '—', '—'];
-								if (/^\d{13}$/.test(line)) sec = sec / 1000;
+								const sec = tsToSec(line);
+								if (sec === null) return [line, '—', '—', '—'];
 								const ms = Math.round(sec * 1000);
 								return [line, String(Math.round(sec)), stamp(ms, localTz, false), stamp(ms, 'UTC', false)];
 							}),
@@ -2073,11 +2124,8 @@ export const DEVTOOLS_TEXT_TOOLS: ToolEntry[] = [
 						],
 					};
 				}
-				let sec = Number(raw);
-				// 13 digits are milliseconds, exactly like the batch table above - without
-				// this the single-line view would land a thousand years in the future.
-				if (/^\d{13}$/.test(raw.trim())) sec = sec / 1000;
-				if (!Number.isFinite(sec) || sec < 0) {
+				const sec = tsToSec(raw.trim());
+				if (sec === null) {
 					return {
 						rows: [
 							{
@@ -3216,7 +3264,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 			placeholderZh: '粘贴包含网址或邮箱的文本…',
 			mono: true,
 			stats: (text: string) => [
-				{ label: 'URLs found', labelZh: '网址数', value: String((text.match(URL_RE_G) ?? []).length) },
+				{ label: 'URLs found', labelZh: '网址数', value: String(extractUrls(text).length) },
 				{ label: 'Emails found', labelZh: '邮箱数', value: String((text.match(EMAIL_RE_G) ?? []).length) },
 				{ label: 'Characters', labelZh: '字符数', value: String(text.length) },
 			],
@@ -3240,7 +3288,7 @@ export const TEXT_TOOLS: ToolEntry[] = [
 					// Combined pass, deduped across both kinds — the "give me every
 					// contact point in this dump" button.
 					run: (t) => {
-						const urls = t.match(URL_RE_G) ?? [];
+						const urls = extractUrls(t);
 						const emails = t.match(EMAIL_RE_G) ?? [];
 						const all = [...urls, ...emails];
 						if (!all.length) return { output: '', error: 'No URLs or emails found in the text.', errorZh: '文本中没有找到网址或邮箱。' };
@@ -3781,9 +3829,17 @@ export const COLOR_TEXT_TOOLS: ToolEntry[] = [
 					return { rows: [row('Result', '结果', '— (max viewport must exceed min viewport)', '—（最大视口需大于最小视口）')] };
 				const slope = (maxSize - minSize) / (maxVw - minVw);
 				const px = `clamp(${minSize}px, calc(${(minSize - slope * minVw).toFixed(2)}px + ${(slope * 100).toFixed(4)}vw), ${maxSize}px)`;
+				// toFixed(4) never emits exponent notation, so stripping trailing
+				// zeros can't produce an empty string; "0.0000" becomes "0".
 				const rem16 = (n: number): string => (n / 16).toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
 				const rem = `clamp(${rem16(minSize)}rem, calc(${rem16(minSize)}rem + ${(rem16(maxSize - minSize))} * (100vw - ${minVw}px) / ${maxVw - minVw}), ${rem16(maxSize)}rem)`;
-				const at = (vw: number): string => `${Math.round(minSize + slope * (vw - minVw))}px @ ${vw}px`;
+				// The sample sizes are what clamp() would really render, so they
+				// clamp to [minSize, maxSize] too - the raw linear fit overshoots
+				// outside the viewport range.
+				const at = (vw: number): string => {
+					const size = Math.round(Math.min(Math.max(minSize + slope * (vw - minVw), minSize), maxSize));
+					return `${size}px @ ${vw}px`;
+				};
 				return {
 					rows: [
 						row('At 320px', '320px 时', at(320)),
@@ -4328,7 +4384,10 @@ function parseCurl(cmd: string): ParsedCurl {
 				headers[key] = val;
 			}
 		} else if (t === '-d' || t === '--data' || t === '--data-raw' || t === '--data-binary') {
-			body = tokens[++i] || '';
+			const chunk = tokens[++i] || '';
+			// curl joins repeated -d flags with '&'; keeping only the last one
+			// would silently drop the earlier part of the payload.
+			body = body ? `${body}&${chunk}` : chunk;
 			if (!method) method = 'POST';
 		} else if (t === '-u' || t === '--user') {
 			const userPass = tokens[++i] || '';
@@ -4342,37 +4401,65 @@ function parseCurl(cmd: string): ParsedCurl {
 		}
 	}
 	if (!method) method = 'GET';
+	// The method becomes an attribute name in the Python output, so restrict it to
+	// letters - "curl -X 'GET; rm -rf ~'" must not be able to smuggle code out.
+	if (!/^[A-Z]+$/.test(method)) method = 'GET';
 	return { url: url || 'https://api.example.com/data', method, headers, body };
 }
 
+/** Quote user text as a Python single-quoted literal on one line. Backslashes go
+ *  first so a later pass cannot re-interpret what we just escaped. */
+function pyQuote(v: string): string {
+	const one = v.replace(/\\/g, '\\\\').replace(/'/g, "\\\'")
+		.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+	return `'${one}'`;
+}
+
+/** A JSON body must parse as an OBJECT or ARRAY - a bare `"evil"` is valid JSON
+ *  and would produce `json_data = "evil"`, which requests sends as a string. */
+function jsonBody(v: string): string | null {
+	if (!v || (v[0] !== '{' && v[0] !== '[')) return null;
+	try {
+		const obj = JSON.parse(v);
+		return obj && typeof obj === 'object' ? v : null;
+	} catch {
+		return null;
+	}
+}
+
 function curlToJsFetch(parsed: ParsedCurl): string {
-	const opts: string[] = [`method: '${parsed.method}'`];
+	// Every value is user-supplied, so all of them go through JSON.stringify -
+	// a header named "x': <newline>alert(1)" must not break out of its literal.
+	const opts: string[] = [`method: ${JSON.stringify(parsed.method)}`];
 	if (Object.keys(parsed.headers).length > 0) {
-		const hLines = Object.entries(parsed.headers).map(([k, v]) => `    '${k}': '${v}'`);
+		const hLines = Object.entries(parsed.headers).map(([k, v]) => `    ${JSON.stringify(k)}: ${JSON.stringify(v)}`);
 		opts.push(`headers: {\n${hLines.join(',\n')}\n  }`);
 	}
 	if (parsed.body) {
-		opts.push(`body: JSON.stringify(${parsed.body.startsWith('{') ? parsed.body : JSON.stringify(parsed.body)})`);
+		const json = jsonBody(parsed.body);
+		opts.push(json ? `body: ${json}` : `body: ${JSON.stringify(parsed.body)}`);
 	}
-	return `fetch('${parsed.url}', {\n  ${opts.join(',\n  ')}\n})\n  .then(res => res.json())\n  .then(data => console.log(data))\n  .catch(err => console.error(err));`;
+	return `fetch(${JSON.stringify(parsed.url)}, {\n  ${opts.join(',\n  ')}\n})\n  .then(res => res.json())\n  .then(data => console.log(data))\n  .catch(err => console.error(err));`;
 }
 
 function curlToPython(parsed: ParsedCurl): string {
-	let code = `import requests\n\nurl = '${parsed.url}'\n`;
+	const method = parsed.method.toLowerCase();
+	let code = `import json\nimport requests\n\nurl = ${pyQuote(parsed.url)}\n`;
 	if (Object.keys(parsed.headers).length > 0) {
-		const hLines = Object.entries(parsed.headers).map(([k, v]) => `    '${k}': '${v}'`);
+		const hLines = Object.entries(parsed.headers).map(([k, v]) => `    ${pyQuote(k)}: ${pyQuote(v)}`);
 		code += `headers = {\n${hLines.join(',\n')}\n}\n`;
 	} else {
 		code += `headers = {}\n`;
 	}
-	if (parsed.body) {
-		if (parsed.body.startsWith('{')) {
-			code += `json_data = ${parsed.body}\nresponse = requests.${parsed.method.toLowerCase()}(url, headers=headers, json=json_data)\n`;
-		} else {
-			code += `data = '''${parsed.body}'''\nresponse = requests.${parsed.method.toLowerCase()}(url, headers=headers, data=data)\n`;
-		}
+	const json = jsonBody(parsed.body);
+	if (json !== null) {
+		// Hand the text to Python's own parser: JSON's true/false/null are not
+		// valid Python literals, so embedding the curl text verbatim mis-parses.
+		code += `json_data = json.loads(${pyQuote(json)})\nresponse = requests.${method}(url, headers=headers, json=json_data)\n`;
+	} else if (parsed.body) {
+		code += `data = ${pyQuote(parsed.body)}\nresponse = requests.${method}(url, headers=headers, data=data)\n`;
 	} else {
-		code += `response = requests.${parsed.method.toLowerCase()}(url, headers=headers)\n`;
+		code += `response = requests.${method}(url, headers=headers)\n`;
 	}
 	code += `print(response.status_code)\nprint(response.json())`;
 	return code;
@@ -4879,26 +4966,36 @@ function formatGraphQL(code: string, mode: 'beautify' | 'minify'): string {
 	return out.replace(/\n\s*\n/g, '\n').trim();
 }
 
+/** East Asian Width "W" and "F" ranges - the characters terminals and monospace
+ *  fonts render two cells wide. The spans are deliberately narrow: an old
+ *  `0x2e80 <= c <= 0xa4cf` version swept in all of Greek (0x0370), Cyrillic
+ *  (0x0400), Hebrew (0x0590), Arabic (0x0600) and Devanagari (0x0900), padding
+ *  them as if they were CJK and mis-aligning every table containing them. */
+function isWide(ch: string): boolean {
+	const code = ch.codePointAt(0) || 0;
+	return (
+		(code >= 0x1100 && code <= 0x115f) ||   // Hangul Jamo
+		(code >= 0x2e80 && code <= 0x303e) ||   // Radicals, Kangxi, CJK Symbols and Punctuation
+		(code >= 0x3040 && code <= 0x33ff) ||   // Hiragana, Katakana, Hangul Compatibility, Enclosed CJK
+		(code >= 0x3400 && code <= 0x4dbf) ||   // CJK Ext A
+		(code >= 0x4e00 && code <= 0x9fff) ||   // CJK Unified Ideographs
+		(code >= 0xa000 && code <= 0xa4cf) ||   // Yi
+		(code >= 0xac00 && code <= 0xd7a3) ||   // Hangul Syllables
+		(code >= 0xf900 && code <= 0xfaff) ||   // CJK Compatibility Ideographs
+		(code >= 0xfe10 && code <= 0xfe19) ||   // Vertical forms
+		(code >= 0xfe30 && code <= 0xfe6f) ||   // CJK Compatibility Forms
+		(code >= 0xff00 && code <= 0xff60) ||   // Halfwidth and Fullwidth Forms
+		(code >= 0xffe0 && code <= 0xffe6) ||
+		(code >= 0x1f300 && code <= 0x1faff) ||  // Emoji
+		(code >= 0x20000 && code <= 0x323af)    // CJK Ext B-F
+	);
+}
+
 function getVisualWidth(str: string): number {
 	let len = 0;
-	for (const ch of str) {
-		const code = ch.codePointAt(0) || 0;
-		if (
-			(code >= 0x1100 && code <= 0x115f) ||
-			(code >= 0x2e80 && code <= 0xa4cf) ||
-			(code >= 0xac00 && code <= 0xd7a3) ||
-			(code >= 0xf900 && code <= 0xfaff) ||
-			(code >= 0xfe10 && code <= 0xfe19) ||
-			(code >= 0xfe30 && code <= 0xfe6f) ||
-			(code >= 0xff00 && code <= 0xff60) ||
-			(code >= 0xffe0 && code <= 0xffe6) ||
-			(code >= 0x20000 && code <= 0x323af)
-		) {
-			len += 2;
-		} else {
-			len += 1;
-		}
-	}
+	// Iterating code points, not UTF-16 code units, so an astral character is one
+	// cell (or two) rather than a surrogate pair miscounted as two narrow ones.
+	for (const ch of str) len += isWide(ch) ? 2 : 1;
 	return len;
 }
 
