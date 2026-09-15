@@ -591,11 +591,11 @@ export const TOOL_CONTENT: Record<string, ToolContent> = {
 	},
 	'text/character-counter': {
 		about: [
-			'Break a text down by character type: total characters, characters without spaces, words, letters, digits, spaces, symbols and the exact UTF-8 byte size — the number that matters for SMS, tweets and database fields.',
+			'Break a text down by character type: total characters, characters without spaces, Chinese / CJK characters, Latin letters, digits, punctuation & symbols, spaces & line breaks and the exact UTF-8 byte size — the number that matters for SMS, tweets and database fields.',
 			'Each counter is live. The UTF-8 byte count uses a real encoder, so a Chinese character counts as 3 bytes and a typical emoji as 4, matching what servers and length-limited APIs actually see.',
 		],
 		aboutZh: [
-			'按字符类型拆解文本：总字符数、不含空格的字符数、词数、字母数、数字数、空格数、符号数，以及精确的 UTF-8 字节数——后者才是短信、推文和数据库字段真正受限的数字。',
+			'按字符类型拆解文本：总字符数、不含空格的字符数、汉字字符数、英文字母数、阿拉伯数字数、标点与特殊符号数、空格与换行符数，以及精确的 UTF-8 字节数——后者才是短信、推文和数据库字段真正受限的数字。',
 			'所有计数实时更新。UTF-8 字节数由真实编码器计算：一个汉字占 3 字节、一个 emoji 通常占 4 字节，与服务器和有长度限制的 API 的实际行为一致。',
 		],
 		faq: [

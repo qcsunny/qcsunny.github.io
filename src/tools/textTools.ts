@@ -4653,64 +4653,161 @@ function parseCidrCalc(input: string) {
 function formatJsTsCode(code: string, mode: 'beautify' | 'minify'): string {
 	if (!code.trim()) return '';
 	if (mode === 'minify') {
+		// One scanner: string, then a comment or regex opener at each '/'.
+		//
+		// The old branch had no regex state, so `/`-pairs inside a regex literal
+		// opened a comment that was then silently dropped, and a regex after a
+		// division merged with the operator. Whitespace was collapsed by a rule
+		// that only fired between two identifier characters, so `a - -b` became
+		// `a--b`: parse error, or, when it parses, a different program.
+		//
+		// Spacing is decided ONLY at whitespace boundaries, by comparing the
+		// previous significant char in `out` to the next significant char in
+		// `code`. Comparing consecutive emitted characters instead would fire
+		// for every letter inside a single identifier (`c`→`o`→`n` all look
+		// like two separate words), producing `c o n s t`.
 		let out = '';
 		let inStr = false;
 		let strChar = '';
-		let inComment = false;
-		let inBlockComment = false;
+		// Escapes are tracked, not inferred from the previous byte: `code[p-1]
+		// !== '\\'` is wrong for an escaped backslash: in `"a\\"` the final quote closes the
+		// string and would otherwise swallow the rest of the file.
+		let strEsc = false;
 
-		for (let i = 0; i < code.length; i++) {
-			const ch = code[i]!;
-			const next = code[i + 1] || '';
+		// Last non-whitespace char in `out`, or '' if none.
+		const lastSig = (): string => {
+			let k = out.length - 1;
+			while (k >= 0 && /\s/.test(out[k]!)) k--;
+			return k >= 0 ? out[k]! : '';
+		};
+		// Word ending at the last significant char in `out`, or '' if none.
+		// Used for regex detection: `new /x/` and `return /x/` are regexes,
+		// but `x / 2` is a division.
+		const lastWord = (): string => {
+			let k = out.length - 1;
+			while (k >= 0 && /\s/.test(out[k]!)) k--;
+			if (k < 0) return '';
+			const ch = out[k]!;
+			if (!/[a-zA-Z0-9_$]/.test(ch)) return '';
+			let s = k;
+			while (s >= 0 && /[a-zA-Z0-9_$]/.test(out[s]!)) s--;
+			return out.slice(s + 1, k + 1);
+		};
 
-			if (inComment) {
-				if (ch === '\n') inComment = false;
-				continue;
-			}
-			if (inBlockComment) {
-				if (ch === '*' && next === '/') {
-					inBlockComment = false;
-					i++;
-				}
-				continue;
-			}
+		for (let p = 0; p < code.length; p++) {
+			const ch = code[p]!;
+			const next = code[p + 1] || '';
+
 			if (inStr) {
 				out += ch;
-				if (ch === strChar && code[i - 1] !== '\\') {
-					inStr = false;
-				}
+				if (strEsc) { strEsc = false; continue; }
+				if (ch === '\\') { strEsc = true; continue; }
+				if (ch === strChar) inStr = false;
 				continue;
 			}
+
 			if (ch === '/' && next === '/') {
-				inComment = true;
-				i++;
+				// Line comment: drop it, and land back on the '\n' that follows so
+				// the whitespace branch still gets to apply the ASI rule to it.
+				const eol = code.indexOf('\n', p + 1);
+				if (eol < 0) break;
+				p = eol - 1;
 				continue;
 			}
 			if (ch === '/' && next === '*') {
-				inBlockComment = true;
-				i++;
+				// Block comment: drop it, resume from the byte after '*/'.
+				const end = code.indexOf('*/', p + 2);
+				if (end < 0) break;
+				p = end + 1;
 				continue;
 			}
 			if (ch === "'" || ch === '"' || ch === '`') {
-				inStr = true;
-				strChar = ch;
-				out += ch;
+				inStr = true; strChar = ch; out += ch; continue;
+			}
+
+			// Whitespace: the ONLY place spacing is decided.
+			if (/\s/.test(ch)) {
+				// Walk the whole whitespace RUN. A run containing a newline is a
+				// statement separator even when it opens with a space — `foo(a) \n
+				// bar(b)` — so test the run, not its first character.
+				let q = p;
+				let hasNewline = false;
+				while (q < code.length && /\s/.test(code[q]!)) {
+					if (code[q] === '\n' || code[q] === '\r') hasNewline = true;
+					q++;
+				}
+				const nx = q < code.length ? code[q]! : '';
+				if (hasNewline) {
+					// Keep it a newline: a newline is an unambiguous separator
+					// everywhere, and rewriting it as `;` would add a
+					// SemicolonToken the ASI-reliant source doesn't have.
+					out += '\n';
+				} else {
+					const prev = lastSig();
+					// Preserve a space iff dropping it would fuse two tokens:
+					// two word chars (identifier fusion), two of `-+<>` (which fuse
+					// into `--`, `++`, `<<`, `>>`), or a `/` followed by `/` or `*`
+					// (which would open a comment).
+					const prevWord = /[a-zA-Z0-9_$]/.test(prev);
+					const nextWord = /[a-zA-Z0-9_$]/.test(nx);
+					const prevShift = /[-+<>]/.test(prev);
+					const nextShift = /[-+<>]/.test(nx);
+					const keep = (prevWord && nextWord)
+						|| (prevShift && nextShift)
+						|| (prev === '/' && (nx === '/' || nx === '*'));
+					if (keep && prev && nx) out += ' ';
+				}
+				p = q - 1;
 				continue;
 			}
 
-			if (/\s/.test(ch)) {
-				const lastChar = out.slice(-1);
-				if (lastChar && /[a-zA-Z0-9_$]/.test(lastChar) && /[a-zA-Z0-9_$]/.test(next)) {
-					out += ' ';
+			// Regex literal: `/` starts a regex when the previous significant emitted
+			// char cannot end an expression — nothing at all, an operator, or one of
+			// the keywords that expect an expression. `)` and `]` can end an
+			// expression, so `/` after them is a division.
+			if (ch === '/') {
+				const prev = lastSig();
+				let isRegexp: boolean;
+				if (!prev) isRegexp = true;
+				else if (/[a-zA-Z0-9_$]/.test(prev)) {
+					isRegexp = ['new','delete','return','case','typeof','in','instanceof','throw','void','do','else','of','yield','await'].indexOf(lastWord()) >= 0;
 				}
-				continue;
+				else if (prev === ')' || prev === ']') isRegexp = false;
+				else if (/[({,:;=!&|?+*~^%<>\/-]/.test(prev)) isRegexp = true;
+				else isRegexp = false;
+				if (isRegexp) {
+					// Escape state as a tracked flag, never inferred from the previous
+					// byte. The old form, code[q-1] !== '\\', refuses to close on a '/'
+					// preceded by ANY backslash - including one that is itself escaped -
+					// so with an even run of backslashes the real closer looks escaped
+					// and the scan overshoots it, stopping at the NEXT bare '/' and
+					// swallowing everything in between. That run is emitted verbatim, so
+					// the defect only bites when a following STRING contains a '/': the
+					// slice eats that string's opening quote, this loop is no longer in
+					// string state, and the space inside the string gets collapsed -
+					// "a/ b" silently becomes "a/b".
+					let q = p + 1;
+					let reEsc = false;
+					while (q < code.length) {
+						const c = code[q]!;
+						if (reEsc) { reEsc = false; q++; continue; }
+						if (c === '\\') { reEsc = true; q++; continue; }
+						if (c === '/') { q++; break; }
+						if (c === '\n') break;
+						q++;
+					}
+					while (q < code.length && /[a-z]/i.test(code[q]!)) q++;
+					out += code.slice(p, q);
+					p = q - 1;
+					continue;
+				}
 			}
 
 			out += ch;
 		}
+
 		return out.trim();
 	}
-
 	let indent = 0;
 	let out = '';
 	let inStr = false;

@@ -176,6 +176,34 @@ test('sql minify does not glue tokens across a dropped comment', async ({ page }
 	await expect(output).toHaveValue(/SELECT 1/);
 });
 
+// A regex immediately followed by a newline, then a statement. The old spacing rule
+// kept a space only when BOTH neighbours were identifier characters, so the newline
+// became a space and `b` fused onto the previous statement. Newlines are now their own
+// output token, so `b` stays its own statement; and the literal's escaped backslash
+// survives, so it still matches a backslash, not a slash.
+test('js minify keeps a regex literal and the statement after it', async ({ page }) => {
+	await page.goto('/devtools/js-formatter/');
+
+	await page.locator('[data-role="input"]').fill('const re = /\\\\/g\nconst b = 2;');
+	await page.getByRole('button', { name: /^(Minify Code|单行压缩)$/ }).click();
+
+	const output = page.locator('[data-role="output"]');
+	// exact minified form — a stale or re-run pass would leave spaces around '='
+	await expect(output).toHaveValue('const re=/\\\\/g\nconst b=2;');
+
+	// Behaviour, not just text: the body is an escaped backslash, so testing a
+	// backslash must be true, and b must still be its own statement. The escape
+	// is built with fromCharCode so this file never has to spell one out.
+	const ok = await output.evaluate((el: HTMLTextAreaElement) => {
+		try {
+			return new Function(el.value + '\nreturn [re.test(String.fromCharCode(92)), typeof b];')();
+		} catch (e) {
+			return 'threw ' + (e instanceof Error ? e.constructor.name + ': ' + e.message : String(e));
+		}
+	});
+	expect(ok).toEqual([true, 'number']);
+});
+
 // A minifier that collapses whitespace inside <pre>/<textarea> would change
 // rendered text, and collapsing newlines inside <script> lets a // comment eat
 // the next statement or breaks automatic semicolon insertion. These blocks
