@@ -81,6 +81,23 @@ test('polynomial regression recovers a quadratic', async ({ page }) => {
 	expect(text).toMatch(/x\^2/);
 });
 
+test('pi calculator renders through the async compute path and guards out of range', async ({ page }) => {
+	await page.goto('/calculators/pi/');
+	const results = page.locator('.t-results');
+
+	// pi-calculator is the registry's only async compute(): form.ts renders the
+	// rows in a .then() off the main flow, so the result is written on a later
+	// task. Every read here must auto-wait — a synchronous innerText() would hit
+	// the same empty-window race the toml bases assertion did.
+	await expect(results).toContainText('3.14159265358979323846264338327950288419716939937510');
+	await expect(results).toContainText(/Calculation Time|计算耗时/);
+
+	// The stale-compute guard: a superseded compute must not overwrite the row
+	// the current input produced.
+	await page.fill('#t-f-digits', '0');
+	await expect(results).toContainText(/enter an integer between 1 and 1000000|请输入 1 到 1000000/);
+});
+
 test('probability distribution: binomial and poisson closed forms', async ({ page }) => {
 	await page.goto('/calculators/probability-distribution/');
 	const results = page.locator('.t-results');

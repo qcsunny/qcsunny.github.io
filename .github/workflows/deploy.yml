@@ -9,6 +9,10 @@ on:
 
 permissions:
   contents: read
+  # The gate below asks the Checks API whether the PR head's build job was green;
+  # an unlisted scope is granted as `none` and the call returns 403, which the
+  # gate treats as "unreadable" and fails closed by running the suite anyway.
+  checks: read
   pages: write
   id-token: write
 
@@ -40,8 +44,29 @@ jobs:
             echo "PR run — this IS the gate, always running the full suite."
           elif PR_HEAD=$(git rev-parse --verify HEAD^2 2>/dev/null); then
             if git diff --quiet "$PR_HEAD" HEAD; then
-              echo "skip=true" >> "$GITHUB_OUTPUT"
-              echo "Tree identical to PR head $PR_HEAD — E2E gated there already, skipping the duplicate run."
+              # A matching tree says the PR job ran against this exact content, but
+              # that job's conclusion is not visible from here. PR #60's head built
+              # red (build: FAILURE, run 34933387261) and its merge still skipped
+              # E2E — deploy only failed to ship because `deploy` needs `build`, so
+              # the red side was hidden by that dependency and the skip side never
+              # checked. Ask the Checks API for the PR head's job instead.
+              # Check-runs are keyed on the PR head sha, not the merge sha, and the
+              # job check-run is the only github-actions entry named `build` (the
+              # other is cloudflare-workers-and-pages) — its conclusion covers the
+              # whole job, including the E2E step. Every pull_request run executes
+              # the suite, since that branch sets no skip, so green means it ran.
+              # Fail closed twice over: `curl -fsS` exits non-zero on 403, 404 or a
+              # network error, and all() is true over an empty array, so a missing
+              # or unreadable record makes the test false and the suite runs.
+              if curl -fsS -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+                   -H "Accept: application/vnd.github+json" \
+                   "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/commits/${PR_HEAD}/check-runs?per_page=100" \
+                | jq -e '([.check_runs[]? | select(.app.slug == "github-actions" and .name == "build")] | (length > 0) and all(.conclusion == "success"))'; then
+                echo "skip=true" >> "$GITHUB_OUTPUT"
+                echo "Tree identical to PR head $PR_HEAD and its build job is green — E2E gated there already, skipping the duplicate run."
+              else
+                echo "Tree matches PR head $PR_HEAD but its build job is not green (or unreadable) — running the full suite."
+              fi
             else
               echo "Merge changed the tree (concurrent merge or conflict resolution) — running the full suite."
             fi

@@ -184,6 +184,7 @@ export function initXlsxAnalyzer(host: HTMLElement): void {
 					const a = document.createElement('a');
 					const origName = (currentReport as XlsxReport).fileName;
 					const ext = origName.match(/\.(xlsx|xlsm)$/i)?.[1]?.toLowerCase() ?? 'xlsx';
+					a.href = url;
 					a.download = origName.replace(/\.(xlsx|xlsm)$/i, '') + `-cleaned.${ext}`;
 					a.click();
 					setTimeout(() => URL.revokeObjectURL(url), 5000);

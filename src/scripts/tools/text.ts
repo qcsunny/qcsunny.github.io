@@ -4,7 +4,7 @@
 // and the average/statistics calculator.
 
 import type { TextConfig, TextStat, TextTransform } from '../../tools/registry';
-import { bilingual, langAttr, langProp, setBilingual } from './i18n';
+import { bilingual, isZh, langAttr, langProp, onLang, setBilingual } from './i18n';
 
 /** Input size cap for every text tool. Live transforms run on every keystroke
  *  and several parses are O(n·lookahead) — a multi-megabyte paste would freeze
@@ -27,6 +27,16 @@ export function initText(host: HTMLElement, config: TextConfig, slug?: string): 
 	langProp(input, 'placeholder', config.placeholder ?? '', config.placeholderZh);
 	langAttr(input, 'aria-label', 'Text input', '文本输入');
 
+	// def / defZh is a pair: the English prefill and its Chinese half. A tool
+	// with no defZh has a language-neutral sample that never needs to move.
+	const enSample = config.def ?? '';
+	const zhSample = config.defZh ?? config.def ?? '';
+	const sampleFor = (lang: 'en' | 'zh') => (lang === 'zh' ? zhSample : enSample);
+	// Neither half counts as the visitor's own text, so an untouched sample is
+	// dropped from the draft instead of being saved and resurrected later.
+	const isSample = (v: string) => v === '' || v === enSample || v === zhSample;
+	let currentLang: 'en' | 'zh' = isZh() ? 'zh' : 'en';
+
 	if (draftKey) {
 		try {
 			const saved = localStorage.getItem(draftKey);
@@ -37,12 +47,13 @@ export function initText(host: HTMLElement, config: TextConfig, slug?: string): 
 	}
 	// Sample content: prefilled only when the box is still empty, so a page
 	// reload never clobbers what the visitor typed.
-	if (config.def && !input.value) input.value = config.def;
+	const initial = sampleFor(currentLang);
+	if (initial && !input.value) input.value = initial;
 
 	const saveDraft = () => {
 		if (!draftKey || !input) return;
 		try {
-			if (input.value === (config.def ?? '')) {
+			if (isSample(input.value)) {
 				localStorage.removeItem(draftKey);
 			} else {
 				localStorage.setItem(draftKey, input.value);
@@ -390,4 +401,21 @@ export function initText(host: HTMLElement, config: TextConfig, slug?: string): 
 
 	input.addEventListener('input', update);
 	update();
+
+	// A prefill is script-written text, so the global CSS cannot translate it:
+	// watch the switch and move the sample along while the visitor has left it
+	// untouched. Same rule markdown.ts applies to its own sample document, and
+	// the clear button's empty box is left empty — the visitor asked for that.
+	if (config.defZh !== undefined) {
+		onLang((zh) => {
+			const nextLang: 'en' | 'zh' = zh ? 'zh' : 'en';
+			if (nextLang === currentLang) return;
+			const prev = currentLang;
+			currentLang = nextLang;
+			if (input.value.trim() !== sampleFor(prev).trim()) return;
+			input.value = sampleFor(nextLang);
+			// the live preview, the statistics rows and saveDraft all listen to 'input'
+			input.dispatchEvent(new Event('input', { bubbles: true }));
+		});
+	}
 }

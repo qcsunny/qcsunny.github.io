@@ -157,9 +157,10 @@ test('json minify is not overwritten by the pending auto-format', async ({ page 
 
 	await page.locator('[data-role="input"]').fill('{"a":1,"b":[1,2,3]}');
 	await page.getByRole('button', { name: /^Minify$/ }).click();
-	// Give any lingering debounced auto-format a chance to fire and clobber.
-	await page.waitForTimeout(450);
 
+	// No settling sleep here: json.ts's createBtn calls cancelAutoRun() before
+	// the handler, so the 300ms debounced auto-format queued by the fill above
+	// is cancelled the instant Minify is clicked and cannot clobber the result.
 	await expect(page.locator('[data-role="output"]')).toHaveValue('{"a":1,"b":[1,2,3]}');
 });
 
@@ -496,8 +497,18 @@ test('toml formatter enforces the integer grammar, then the numeric bounds', asy
 	// as 101.
 	await input.fill('a = 0x1A\nb = 0b101\nc = 0o77\nd = 0xFF_FF');
 	await page.getByRole('button', { name: /TOML → JSON/ }).click();
-	const json = await output.inputValue();
-	expect(JSON.parse(json)).toEqual({ a: 26, b: 5, c: 63, d: 65535 });
+	// TOML → JSON is async: it awaits the toml module before writing the box, so
+	// a bare inputValue() right after the click races that write and reads the
+	// empty string left by the previous case — JSON.parse('') then threw
+	// "Unexpected end of JSON input" on a tool returning {a:26,b:5,c:63,d:65535}.
+	// Poll through the empty window; every other assertion in this test already
+	// uses an auto-waiting matcher.
+	await expect
+		.poll(async () => {
+			const raw = await output.inputValue();
+			return raw ? JSON.parse(raw) : undefined;
+		})
+		.toEqual({ a: 26, b: 5, c: 63, d: 65535 });
 
 	// Above 2^53 the JSON emitter keeps the VALUE and gives up the TYPE: it
 	// emits a float literal (TOML requires a dot or exponent), which this
