@@ -13,7 +13,11 @@ test('markdown table formatter renders live table preview on load and updates on
 	await expect(table).toBeVisible();
 
 	const headers = await table.locator('th').allTextContents();
-	expect(headers).toEqual(['ID', '模块名称 / Module', '架构分类', '核心技术栈与特性', '响应时延', '运行状态', '并发能力']);
+	// The prefilled sample follows the language: this context has no data-lang,
+	// and global.css hides .i18n-zh when the attribute is absent, so the sample's
+	// English half is what renders. This used to pin the Chinese half — which is
+	// exactly how the 26-leak regression shipped unseen.
+	expect(headers).toEqual(['ID', 'Module', 'Category', 'Core technology & features', 'Latency', 'Status', 'Concurrency']);
 
 	const rows = table.locator('tbody tr');
 	await expect(rows).toHaveCount(6);

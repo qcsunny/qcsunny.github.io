@@ -244,17 +244,15 @@ test('2D grapher supports implicit curves, complex domain coloring, and vector f
 	// 1. Cartesian with implicit curve x^2 + y^2 = 25
 	const input = page.locator('.graph-row input[type="text"]').first();
 	await input.fill('x^2 + y^2 = 25');
-	await page.waitForTimeout(200);
+	// graph.ts redraws synchronously on input/change, and toBeEmpty auto-waits.
 	await expect(page.locator('.row-error')).toBeEmpty();
 
 	// 2. Switch to Complex Domain
 	await modeSelect.selectOption('complex');
-	await page.waitForTimeout(200);
 	await expect(modeSelect).toHaveValue('complex');
 
 	// 3. Switch to Vector Field
 	await modeSelect.selectOption('vector');
-	await page.waitForTimeout(200);
 	await expect(modeSelect).toHaveValue('vector');
 });
 

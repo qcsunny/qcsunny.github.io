@@ -316,6 +316,18 @@ const PROBES: {
 		read: (page) => page.inputValue('textarea[data-role="input"]'),
 	},
 	{
+		// All 26 of the leaks CI reported came from this page: the prefilled
+		// sample table and its live preview. A prefill is script-written
+		// textarea text, so the global CSS cannot translate it and only a
+		// watched swap can — markdown.ts already moves its own sample document,
+		// and text.ts now does the same for tools that declare a defZh half.
+		// markdown-preview's sample carries the identical Chinese rows, which is
+		// why the rest of the site looked clean while this page did not.
+		route: '/text/markdown-table-formatter/',
+		what: 'the prefilled sample table in the input <textarea>',
+		read: (page) => page.inputValue('textarea[data-role="input"]'),
+	},
+	{
 		route: '/finance/loan-payment/',
 		what: 'the <option> labels of the direction select',
 		read: (page) => optionText(page, '#t-f-calcMode'),

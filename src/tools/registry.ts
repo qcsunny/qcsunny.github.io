@@ -201,8 +201,15 @@ export interface TextTransform {
 export interface TextConfig {
 	/** sample content prefilled into the input on first load — use clearly
 	 *  fictional data (example.com, placeholder names), never anything that
-	 *  could read as a real person's information */
+	 *  could read as a real person's information. English half of the pair: the
+	 *  prefill is script-written text, so CSS cannot translate it and only
+	 *  defZh can (see markdown.ts's SAMPLE_MARKDOWN_EN / _ZH). */
 	def?: string;
+	/** Chinese half of the prefill. Present only on tools whose sample carries
+	 *  prose; text.ts then follows the language switch while the visitor has
+	 *  left the sample untouched, and never writes an untouched sample to the
+	 *  draft. */
+	defZh?: string;
 	placeholder?: string;
 	placeholderZh?: string;
 	/** live per-input statistics rows */

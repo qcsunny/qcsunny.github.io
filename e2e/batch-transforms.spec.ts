@@ -7,6 +7,9 @@
 
 import { test, expect } from '@playwright/test';
 
+// Form tools re-render synchronously on the input event (form.ts wires update()
+// straight to input/change), so the reads below need no settling wait — asserting
+// immediately also keeps these tests honest if a debounce is ever introduced.
 const fillAndRun = async (page: import('@playwright/test').Page, cat: string, slug: string, input: string, btn: string | RegExp) => {
 	await page.goto(`/${cat}/${slug}/`);
 	const input$ = page.locator('textarea[data-role="input"]');
@@ -91,7 +94,6 @@ test('cny uppercase batch converts per line, ambiguous commas marked', async ({ 
 test('unix timestamp accepts a date and converts to epoch (reverse direction)', async ({ page }) => {
 	await page.goto('/devtools/unix-timestamp/');
 	await page.locator('textarea').first().fill('2026-09-11 14:30');
-	await page.waitForTimeout(400);
 	const rows = await page.locator('.t-results').innerText();
 	expect(rows).toContain('date → timestamp');
 	// zone-dependent on the runner: assert the round trip instead — the
@@ -109,7 +111,6 @@ test('unix timestamp accepts a date and converts to epoch (reverse direction)', 
 test('unix timestamp batch mixes directions per line', async ({ page }) => {
 	await page.goto('/devtools/unix-timestamp/');
 	await page.locator('textarea').first().fill('1760000000\n2026-09-11 14:30');
-	await page.waitForTimeout(400);
 	// form tables append to #t-root (outside .t-results), so read the table body.
 	// The date row's epoch is zone-dependent on the runner — pin its UTC mirror
 	// (2026-09-11 14:30 local → 14:30Z when the runner IS UTC) and the timestamp row.
@@ -121,7 +122,6 @@ test('unix timestamp batch mixes directions per line', async ({ page }) => {
 test('px-rem honors a unit typed into the size field over the select', async ({ page }) => {
 	await page.goto('/color/css-px-rem-converter/');
 	await page.locator('#t-f-value').fill('1.5rem');
-	await page.waitForTimeout(400);
 	// the values themselves are language-neutral numbers — read the whole
 	// results area: 1.5rem at root 16 must give px 24 and rem 1.5
 	const rows = await page.locator('.t-results').innerText();
@@ -129,7 +129,6 @@ test('px-rem honors a unit typed into the size field over the select', async ({ 
 	expect(rows).toContain('1.5');
 
 	await page.locator('#t-f-value').fill('24px');
-	await page.waitForTimeout(400);
 	// 24px and 1.5rem are the same size at root=16 — mirrored conversion
 	const rows2 = await page.locator('.t-results').innerText();
 	expect(rows2).toContain('1.5');
@@ -140,13 +139,11 @@ test('number base respects 0x/0b/0o prefixes over the selected base', async ({ p
 	await page.goto('/devtools/number-base-converter/');
 	// source base select stays at its default (16); the prefix must override
 	await page.locator('textarea').first().fill('0b1010');
-	await page.waitForTimeout(400);
 	let rows = await page.locator('.t-results').innerText();
 	expect(rows).toContain('10'); // decimal
 	expect(rows).toContain('0xa'); // hex (10 = 0xa)
 
 	await page.locator('textarea').first().fill('0xff\n0b11\n255');
-	await page.waitForTimeout(400);
 	// batch rows land in the table (appended to #t-root): input 0xff → decimal 255, 0b11 → 3
 	const cells = await page.locator('.t-table tbody tr').allInnerTexts();
 	expect(cells.some((r) => r.replace(/\s+/g, ' ').includes('0xff 11111111 377 255 0xff'))).toBeTruthy();
