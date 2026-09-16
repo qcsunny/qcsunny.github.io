@@ -64,8 +64,8 @@ test('the shared tool bundle stays inside its brotli budget', () => {
 });
 
 // Every page carrying the search modal inlines the index its button searches —
-// the 63 tools (bilingual names plus search aliases) on most pages, the blog
-// collection on the blog list and article pages — so the first keystroke has
+// the 135 tool rows (bilingual names plus search aliases) on most pages, the
+// 68 blog rows on the blog list and article pages — so the first keystroke has
 // data and search keeps working offline. That is a deliberate trade: inline
 // The search index used to be inlined into every page's HTML via define:vars
 // — 17.2 KB brotli on the worst page at 84 tools, re-downloaded on every

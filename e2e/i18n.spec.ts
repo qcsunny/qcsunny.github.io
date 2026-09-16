@@ -347,7 +347,7 @@ const PROBES: {
 	},
 	{
 		// The theme button's tooltip printed "Auto theme (follows browser) / 跟随系统"
-		// on all 53 shell pages. aria-label and title hold plain text, so a span
+		// on every shell page. aria-label and title hold plain text, so a span
 		// pair cannot help: the MutationObserver on data-lang re-runs syncThemeUI.
 		route: '/devtools/json-formatter/',
 		what: 'the theme button tooltip (an attribute, so no span pair can hold it)',
