@@ -519,3 +519,201 @@ test('toml formatter enforces the integer grammar, then the numeric bounds', asy
 	await expect(output).toHaveValue(/a = 9007199254740992\.0/);
 	await expect(output).toHaveValue(/d = 42/);
 });
+
+// The three converters below were the last devtools transforms with no e2e at
+// all: each is `kind: 'text'` with an async run() that awaits a separate module
+// import before writing the output box, so a stale read silently reports
+// success or throws JSON.parse('') with no clue why. They are also the only
+// text tools that can LOSE information in a round trip, which is what these
+// tests pin down explicitly rather than a plain "it produced something".
+//
+// Two reading rules the suite now relies on, both deliberate:
+//   * json-to-typescript and env-json-converter set `live: true`, so filling the
+//     box schedules a 40 ms debounce on the FIRST transform, and the tool also
+//     runs that first transform once on mount against the sample. Never sleep
+//     to wait for it - the auto-waiting matchers and expect.poll below cross the
+//     window, and clicking the second button cancels the pending debounce
+//     (executeTransform clears liveDebounceTimer), so the manual result wins.
+//   * The parse message in an error banner is the module's own, shared by both
+//     views - errToEn wraps it in "- (…)" and errToZh in "-（…）" - so a
+//     message assertion matches in whichever language is rendered.
+test('json to typescript merges array keys into one interface with optional members', async ({ page }) => {
+	await page.goto('/devtools/json-to-typescript/');
+
+	const input = page.locator('[data-role="input"]');
+	const output = page.locator('[data-role="output"]');
+	const err = () => page.locator('.t-error');
+	// labelZh differs, so the button carries a span pair; the Chinese half is
+	// display:none in the default view, but both are listed like the rest of the
+	// suite in case the language ever flips.
+	const gen = () => page.getByRole('button', { name: /Generate interfaces|生成 TypeScript 接口/ }).click();
+
+	// `live: true` runs the first transform once on mount against the prefilled
+	// sample, so the box is already filled before anything is clicked. The
+	// headline feature is the array merge: only one of the two `orders` elements
+	// carries `shipped`, so it must come back OPTIONAL - dropping it would be a
+	// silent wrong type, exactly the class of bug these tests exist for.
+	await expect(output).toHaveValue(/export interface Root \{[\s\S]*export interface Orders \{[\s\S]*export interface Address \{/);
+	await expect(output).toHaveValue(/orders: Orders\[\];/);
+	await expect(output).toHaveValue(/shipped\?: boolean;/);
+	await expect(output).toHaveValue(/address: Address;/);
+	await expect(output).toHaveValue(/age: number;/);
+	await expect(err()).toHaveText('');
+
+	// Empty array: the element type cannot be guessed, so it must not invent one.
+	await input.fill('{"a": null, "b": false, "c": []}');
+	await gen();
+	await expect(output).toHaveValue(/export interface Root \{/);
+	await expect(output).toHaveValue(/c: unknown\[\];/);
+	await expect(output).toHaveValue(/a: null;/);
+	await expect(output).toHaveValue(/b: boolean;/);
+	await expect(err()).toHaveText('');
+
+	// A non-object root is a bare type alias, not an interface.
+	await input.fill('42');
+	await gen();
+	await expect(output).toHaveValue('export type Root = number;\n');
+	await expect(err()).toHaveText('');
+
+	// The banner: the parse message is V8's and its phrasing has changed between
+	// versions (this Chromium prints "line 1 column 2", the Node V8 that
+	// generates the fixtures prints "line 1, column 2"), so only the stable
+	// position fragment is asserted.
+	await input.fill('{oops');
+	await gen();
+	await expect(output).toHaveValue('');
+	await expect(err()).toContainText(/in JSON at position 1/);
+
+	// The guard is on trim, not on empty: whitespace-only input must hit the
+	// friendly "enter something first" path, not surface as a JSON syntax error.
+	await input.fill('  \n\t  ');
+	await gen();
+	await expect(output).toHaveValue('');
+	await expect(err()).toContainText(/Enter JSON first|请先输入 JSON/);
+});
+
+test('xml json converter maps attributes and text, and keeps the arrow one way', async ({ page }) => {
+	await page.goto('/devtools/xml-json-converter/');
+
+	const input = page.locator('[data-role="input"]');
+	const output = page.locator('[data-role="output"]');
+	const err = () => page.locator('.t-error');
+	const x2j = () => page.getByRole('button', { name: /XML → JSON/ }).click();
+	const j2x = () => page.getByRole('button', { name: /JSON → XML/ }).click();
+
+	// Not live, so the box is empty until a transform runs. XML → JSON is the
+	// lossless direction: attributes become @keys, element text becomes #text,
+	// and repeated siblings become an array. Every value stays a STRING - there
+	// is no type inference, so "false" is not a boolean. That is intended: the
+	// JSON document is a faithful structural image of the XML, not a retype of
+	// it, and guessing types would invent information the XML did not carry.
+	await x2j();
+	await expect
+		.poll(async () => {
+			const raw = await output.inputValue();
+			return raw ? JSON.parse(raw).library : undefined;
+		})
+		.toEqual({
+			'@name': 'city',
+			book: [{ '@id': '1', '#text': 'Dune' }, { '@id': '2', '#text': 'Hyperion' }],
+			open: 'false',
+		});
+	await expect(err()).toHaveText('');
+
+	// Character references decode; entities are XML syntax, not content.
+	await input.fill('<a attr="x &amp; y">1 &lt;b&gt;</a>');
+	await x2j();
+	await expect
+		.poll(async () => {
+			const raw = await output.inputValue();
+			return raw ? JSON.parse(raw).a : undefined;
+		})
+		.toEqual({ '@attr': 'x & y', '#text': '1 <b>' });
+	await expect(err()).toHaveText('');
+
+	// Mismatched nesting is a structural error, and the hand-written parser names
+	// both tags, so it is asserted verbatim.
+	await input.fill('<a><b></a>');
+	await x2j();
+	await expect(output).toHaveValue('');
+	await expect(err()).toContainText(/closing tag <\/a> does not match <b>/);
+
+	// JSON → XML. The arrow is NOT symmetric: @keys turn back into ordinary
+	// child elements, so @id is emitted as <id> and the round trip is not
+	// shape-lossless. Pinning that here is deliberate - a future "fix" that made
+	// jsonToXml emit real attributes would change the document's shape, and the
+	// asymmetry deserves a test to notice it.
+	await input.fill(
+		'{"library":{"name":"city","book":[{"id":"1","#text":"Dune"},{"id":"2","#text":"Hyperion"}],"open":false}}'
+	);
+	await j2x();
+	await expect(output).toHaveValue(/<\?xml version="1\.0" encoding="UTF-8"\?>/);
+	await expect(output).toHaveValue(/<library>\n  <name>city<\/name>/);
+	await expect(output).toHaveValue(/<book>Dune\n    <id>1<\/id>/);
+	await expect(output).toHaveValue(/<open>false<\/open>/);
+	await expect(output).not.toHaveValue(/<library name=/);
+	await expect(err()).toHaveText('');
+
+	// Non-object roots cannot be expressed as a single XML element.
+	await input.fill('"hello"');
+	await j2x();
+	await expect(output).toHaveValue('');
+	await expect(err()).toContainText(/the JSON root must be an object/);
+});
+
+test('env json converter strips quotes and prefixes without coercing values', async ({ page }) => {
+	await page.goto('/devtools/env-json-converter/');
+
+	const input = page.locator('[data-role="input"]');
+	const output = page.locator('[data-role="output"]');
+	const err = () => page.locator('.t-error');
+	const e2j = () => page.getByRole('button', { name: /\.env → JSON/ }).click();
+	const j2e = () => page.getByRole('button', { name: /JSON → .env/ }).click();
+
+	// `live: true` runs .env → JSON once on mount against the sample. The
+	// quoted value loses its quotes; "8080" and "false" stay STRINGS. That is
+	// dotenv semantics - the file is data about an environment, not a typed
+	// record - and json2env accepts numbers fine, so the pair is not
+	// round-trip lossless either. A future coercion here would silently change
+	// what every consumer of the JSON sees.
+	await expect
+		.poll(async () => {
+			const raw = await output.inputValue();
+			return raw ? JSON.parse(raw) : undefined;
+		})
+		.toEqual({ HOST: 'example.com', PORT: '8080', DEBUG: 'false', API_KEY: 'your-key-here' });
+	await expect(err()).toHaveText('');
+
+	// The four .env features in one input: an `export` prefix, an inline comment,
+	// single quotes, and an empty value. Each used to be guesswork.
+	await input.fill("export A=1\nB=two # trailing comment\n\nC='single quoted'\nEMPTY=\n");
+	await e2j();
+	await expect
+		.poll(async () => {
+			const raw = await output.inputValue();
+			return raw ? JSON.parse(raw) : undefined;
+		})
+		.toEqual({ A: '1', B: 'two', C: 'single quoted', EMPTY: '' });
+	await expect(err()).toHaveText('');
+
+	// A comment-only file is valid and yields an empty object, not an error.
+	await input.fill('# just a comment');
+	await e2j();
+	await expect(output).toHaveValue('{}\n');
+	await expect(err()).toHaveText('');
+
+	// A line with no "=" is unparseable as a definition. The message names the
+	// offending line, so it is asserted verbatim.
+	await input.fill('NOEQUALSHERE');
+	await e2j();
+	await expect(output).toHaveValue('');
+	await expect(err()).toContainText(/line is missing "="/);
+
+	// JSON → .env: values are emitted as bare literals, so numbers stay numbers
+	// and booleans stay booleans - there is no quoting to unwrap on the way back
+	// in. Asserting the exact lines also pins the newline-terminated shape.
+	await input.fill('{"PORT":8080,"RATE":3.5,"NAME":"acme"}');
+	await j2e();
+	await expect(output).toHaveValue('PORT=8080\nRATE=3.5\nNAME=acme\n');
+	await expect(err()).toHaveText('');
+});
