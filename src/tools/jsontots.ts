@@ -96,13 +96,17 @@ export function jsonToTypescript(jsonText: string, rootName = 'Root'): string {
 	namer.reserve(usedRoot);
 	if (Array.isArray(data)) {
 		if (data.length && data.every((x) => x && typeof x === 'object' && !Array.isArray(x))) {
-			const itemName = namer.unique('Item');
+			// mergedTypeOfArray claims the name AND emits the interface, so it has to run
+			// before the line that references it. Pre-claiming 'Item' here only made the
+			// merge fall through to 'Item2', and every array-of-objects root - this
+			// tool's most common input - came back with a patch-up alias:
+			//   export interface Item2 { ... }
+			//   export type Root = Item[];
+			//   export type Item = Item2;
+			// Letting the merge name itself also puts Root first, matching what
+			// emitInterface does for an object root.
+			const itemName = mergedTypeOfArray(data as Record<string, unknown>[], 'Item', namer, out);
 			out.push(`export type ${usedRoot} = ${itemName}[];`);
-			const merged = mergedTypeOfArray(data as Record<string, unknown>[], 'Item', namer, out);
-			if (merged !== itemName) {
-				// merge generated its own name; alias it
-				out.unshift(`export type ${itemName} = ${merged};`);
-			}
 		} else {
 			// typeOf already returns an array type for an array root, so no
 			// trailing `[]` here - appending one was double-wrapping every

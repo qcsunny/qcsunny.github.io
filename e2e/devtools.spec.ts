@@ -605,6 +605,28 @@ test('json to typescript merges array keys into one interface with optional memb
 	await expect(output).toHaveValue('export type Root = number[][];\n');
 	await expect(err()).toHaveText('');
 
+	// A root array of OBJECTS is this tool's headline case, and it used to come back
+	// as `export interface Item2` plus a patch-up `export type Item = Item2;` - the
+	// merge was handed a name the caller had already claimed for it. Exact match, so
+	// this pins the whole document: no Item2, no alias line, Root first.
+	await input.fill('[{"a": 1}, {"b": 2}]');
+	await gen();
+	await expect(output).toHaveValue(
+		'export type Root = Item[];\nexport interface Item {\n  a?: number;\n  b?: number;\n}\n',
+	);
+	await expect(err()).toHaveText('');
+
+	// Item2 must still be minted where it really is a second, DIFFERENT shape.
+	// That is what separates "stopped inventing a throwaway alias" from "stopped
+	// uniquifying names at all" - a blanket name-collapse would pass the case
+	// above and fail this one.
+	await input.fill('[{"a": 1}, [{"b": 2}]]');
+	await gen();
+	await expect(output).toHaveValue(
+		'export type Root = (Item | Item2[])[];\nexport interface Item2 {\n  b: number;\n}\nexport interface Item {\n  a: number;\n}\n',
+	);
+	await expect(err()).toHaveText('');
+
 	// The banner: the parse message is V8's and its phrasing has changed between
 	// versions (this Chromium prints "line 1 column 2", the Node V8 that
 	// generates the fixtures prints "line 1, column 2"), so only the stable
