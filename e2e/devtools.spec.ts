@@ -575,6 +575,36 @@ test('json to typescript merges array keys into one interface with optional memb
 	await expect(output).toHaveValue('export type Root = number;\n');
 	await expect(err()).toHaveText('');
 
+	// toHaveValue with a string is an EXACT match, so every assertion below
+	// also pins the absence of an extra `[]` or a misnamed type.
+
+	// `null` is the one value where `typeof` lies: `typeof null === 'object'`.
+	// Before the fix a null document printed `export type Root = object;`, while
+	// a NESTED null already came out right (see `a: null;` above) because typeOf
+	// checks `v === null` before `typeof`. The page copy promises "nulls map to
+	// null" and it held inside objects but not at the root.
+	await input.fill('null');
+	await gen();
+	await expect(output).toHaveValue('export type Root = null;\n');
+	await expect(err()).toHaveText('');
+
+	// An array root: typeOf already returns an array type for an array, so the
+	// caller must not append `[]`. That suffix was double-wrapping EVERY
+	// non-object root array, so [1, 2] shipped as number[][] and [[1]] as
+	// number[][][].
+	await input.fill('[1, 2]');
+	await gen();
+	await expect(output).toHaveValue('export type Root = number[];\n');
+	await expect(err()).toHaveText('');
+
+	// But real nesting must still nest: [[1]] is number[][], not number[]. This
+	// is what proves the fix stopped ADDING a bracket rather than stripping
+	// array-ness outright.
+	await input.fill('[[1]]');
+	await gen();
+	await expect(output).toHaveValue('export type Root = number[][];\n');
+	await expect(err()).toHaveText('');
+
 	// The banner: the parse message is V8's and its phrasing has changed between
 	// versions (this Chromium prints "line 1 column 2", the Node V8 that
 	// generates the fixtures prints "line 1, column 2"), so only the stable
