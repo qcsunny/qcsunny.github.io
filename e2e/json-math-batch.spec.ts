@@ -96,6 +96,25 @@ test('pi calculator renders through the async compute path and guards out of ran
 	// the current input produced.
 	await page.fill('#t-f-digits', '0');
 	await expect(results).toContainText(/enter an integer between 1 and 1000000|请输入 1 到 1000000/);
+
+	// Every advertised number on this page must agree with that guard. The field's
+	// max attribute, the hint in BOTH languages and the top preset all say
+	// 1,000,000, and nothing claims more. Before this the copy said "10,000,000+"
+	// in fifteen places across calculators.ts and content.ts while the engine
+	// rejected d > 1000000 and the presets stopped at 1,000,000, so typing
+	// 5,000,000 threw an error against a field advertising ten million - and no
+	// test asserted any of the fifteen, so it could never have been noticed.
+	// Pin both halves of each bilingual span: toHaveText reads textContent, so the
+	// display:none half is still checked and the assertion survives a lang flip.
+	const digitsField = page.locator('.t-field', { has: page.locator('#t-f-digits') });
+	await expect(page.locator('#t-f-digits')).toHaveAttribute('max', '1000000');
+	await expect(digitsField.locator('.t-hint')).toHaveText(/1 to 1,000,000/);
+	await expect(digitsField.locator('.t-hint')).toHaveText(/支持 1 到 1,000,000 位/);
+	await expect(digitsField.locator('.t-presets')).toHaveText(/1,000,000 digits \(1M Extreme\)/);
+	// The positive toContainText below also anchors this: a negative assertion
+	// alone could pass on an empty body, so prove the copy is there first.
+	await expect(page.locator('body')).toContainText(/1,000,000 decimal places/);
+	await expect(page.locator('body')).not.toContainText(/10,000,000|1,000,000\+|超 100 万位/);
 });
 
 test('probability distribution: binomial and poisson closed forms', async ({ page }) => {
