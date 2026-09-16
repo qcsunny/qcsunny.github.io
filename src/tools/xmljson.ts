@@ -10,6 +10,8 @@
 // Repeated elements become arrays; a child that is pure text with no
 // attributes collapses to that text string.
 
+import { setKey } from '../scripts/tools/object';
+
 export interface XmlNode {
 	tag: string;
 	attrs: Record<string, string>;
@@ -87,7 +89,7 @@ function parseElement(ctx: ParseContext): XmlNode {
 		if (quote !== '"' && quote !== "'") throw new Error(`${ctx.where()}: attribute value must be quoted`);
 		const close = ctx.src.indexOf(quote, ctx.pos + 1);
 		if (close === -1) throw new Error(`${ctx.where()}: attribute value is missing its closing quote`);
-		attrs[attrName] = decodeEntities(ctx.src.slice(ctx.pos + 1, close));
+		setKey(attrs, attrName, decodeEntities(ctx.src.slice(ctx.pos + 1, close)));
 		ctx.advance(close + 1 - ctx.pos);
 	}
 	// children until the matching close tag
@@ -186,7 +188,7 @@ function nodeValue(node: XmlNode): unknown {
 		grouped.set(child.tag, list);
 	}
 	for (const [tag, list] of grouped) {
-		out[tag] = list.length === 1 ? nodeValue(list[0]!) : list.map(nodeValue);
+		setKey(out, tag, list.length === 1 ? nodeValue(list[0]!) : list.map(nodeValue));
 	}
 	if (node.text.trim() || node.children.length === 0) out['#text'] = node.text.trim();
 	return out;

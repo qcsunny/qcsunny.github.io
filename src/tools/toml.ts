@@ -20,6 +20,8 @@
 //     is always readable again by the parser above; a larger integer-valued
 //     number keeps its value and comes out as a float literal instead.
 
+
+import { setKey } from '../scripts/tools/object';
 export interface TomlError {
 	error: string;
 	errorZh: string;
@@ -508,13 +510,6 @@ function parseKeyValue(s: string): { keys: string[]; value: unknown } {
 /** True when obj has an own property named key (Object.prototype keys are not). */
 function hasOwn(obj: object, key: string): boolean {
 	return Object.prototype.hasOwnProperty.call(obj, key);
-}
-
-/** Record a parsed key as a real own property. Bracket assignment would reach
- *  Object.prototype.__proto__ for a "__proto__" key and change the prototype
- *  instead of storing the key, so defineProperty keeps the value. */
-function setKey(obj: Record<string, unknown>, key: string, value: unknown): void {
-	Object.defineProperty(obj, key, { value, enumerable: true, writable: true, configurable: true });
 }
 
 /** Set keys[...last] = value inside obj, creating intermediate tables.

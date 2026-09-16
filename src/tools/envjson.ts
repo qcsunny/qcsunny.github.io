@@ -2,10 +2,7 @@
 // .env values are untyped strings — numbers and booleans stay strings on the
 // JSON side so the round trip is lossless.
 
-/** True when obj has an own property named key (Object.prototype keys are not). */
-function hasOwn(obj: object, key: string): boolean {
-	return Object.prototype.hasOwnProperty.call(obj, key);
-}
+import { hasOwn, setKey } from '../scripts/tools/object';
 
 /** .env text → JSON text (2-space pretty). Understands:
  *  KEY=VALUE, export KEY=VALUE, "quoted"/'quoted' values (single-line),
@@ -55,7 +52,7 @@ export function envToJson(env: string): string {
 			if (hash !== -1) value = value.slice(0, hash).trimEnd();
 		}
 		if (hasOwn(out, key)) throw new Error(`duplicate key "${key}"`);
-		out[key] = value;
+		setKey(out, key, value);
 	}
 	return JSON.stringify(out, null, 2) + '\n';
 }
