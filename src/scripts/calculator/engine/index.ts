@@ -1,6 +1,7 @@
 import { compileNode, evalNode, formatNumber, toFraction } from './eval';
 import { CONSTANTS, FUNCTIONS, type Scope } from './functions';
 import { parse } from './parser';
+import { hasOwn, setKey } from '../../tools/object';
 
 export { CalcError, errorText } from './errors';
 export type { Scope } from './functions';
@@ -28,7 +29,11 @@ export function tryAssign(src: string, scope: Scope): string | null {
 	const m = ASSIGN_RE.exec(src);
 	if (!m) return null;
 	const name = m[1] as string;
-	if (name in CONSTANTS || name in FUNCTIONS) return null; // let normal eval report it
-	scope.vars[name] = evaluate(m[2] as string, scope);
+	// Own-property check: `in` also matches Object.prototype members, so `in`
+	// would reject every assignment named `constructor` or `__proto__`.
+	if (hasOwn(CONSTANTS, name) || hasOwn(FUNCTIONS, name)) return null; // let normal eval report it
+	// setKey, not `scope.vars[name] =`: a bare write of the key "__proto__" hits
+	// the Object.prototype setter and the value is dropped instead of stored.
+	setKey(scope.vars, name, evaluate(m[2] as string, scope));
 	return name;
 }
