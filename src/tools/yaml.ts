@@ -18,6 +18,8 @@
 // data loss with no warning.
 // Every unsupported construct produces a precise error rather than a guess.
 
+
+import { setKey } from '../scripts/tools/object';
 export interface YamlError {
 	error: string;
 	errorZh: string;
@@ -247,13 +249,6 @@ function parseFlowSeq(t: string): unknown[] {
 	if (!t.endsWith(']')) throw new Error(`flow sequence is missing its closing "]"`);
 	const body = t.slice(1, -1).trim();
 	return splitFlow(body).map((p) => parseScalar(p));
-}
-
-// Record a parsed key as a real own property. Bracket assignment would reach
-// Object.prototype.__proto__ for a "__proto__" key and silently change the
-// prototype instead of storing the key, so defineProperty keeps the value.
-function setKey(obj: Record<string, unknown>, key: string, value: unknown): void {
-	Object.defineProperty(obj, key, { value, enumerable: true, writable: true, configurable: true });
 }
 
 function parseFlowMap(t: string): Record<string, unknown> {

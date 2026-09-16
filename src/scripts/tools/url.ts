@@ -8,6 +8,7 @@
 
 import { isZh, onLang } from './i18n';
 import { createWorkbench } from './workbench';
+import { setKey } from './object';
 
 /** True when obj has an own property named key. `in` walks the prototype chain,
  *  so "constructor" would otherwise count as present on every object. */
@@ -156,7 +157,7 @@ export function initUrl(host: HTMLElement): void {
 		const paramsObj: Record<string, string> = {};
 		parsed.searchParams.forEach((val, key) => {
 			entries.push([key, val]);
-			if (!hasOwn(paramsObj, key)) paramsObj[key] = val;
+			if (!hasOwn(paramsObj, key)) setKey(paramsObj, key, val);
 		});
 		const paramCount = entries.length;
 
@@ -211,7 +212,7 @@ export function initUrl(host: HTMLElement): void {
 		parsed.searchParams.forEach((val, key) => {
 			// Already percent-decoded by URLSearchParams; a second decode corrupts
 			// a literal '%' (see doParse) and was only masked by the try/catch.
-			if (!hasOwn(paramsObj, key)) paramsObj[key] = val;
+			if (!hasOwn(paramsObj, key)) setKey(paramsObj, key, val);
 		});
 
 		wb.outputArea.value = JSON.stringify(paramsObj, null, 2);

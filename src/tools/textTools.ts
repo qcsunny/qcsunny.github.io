@@ -15,6 +15,7 @@ import { HTTP_STATUSES } from './httpStatus';
 import { MIME_MAP } from './mimeTypes';
 import { parseUa } from './useragent';
 import { PORTS } from './ports';
+import { setKey } from '../scripts/tools/object';
 
 /** YAML transforms share the same bilingual error shape: the parser throws
  *  Error("line N: message"), which we surface verbatim in both views. */
@@ -1216,7 +1217,7 @@ export function csvToJson(text: string): { output: string; error?: string; error
 			};
 		}
 		const obj: Record<string, string> = {};
-		header.forEach((h, c) => (obj[h] = rows[r][c]));
+		header.forEach((h, c) => setKey(obj, h, rows[r][c]!));
 		objs.push(obj);
 	}
 	return { output: JSON.stringify(objs, null, 2) };
@@ -4382,7 +4383,7 @@ function parseCurl(cmd: string): ParsedCurl {
 			if (colonIdx > 0) {
 				const key = headerLine.slice(0, colonIdx).trim();
 				const val = headerLine.slice(colonIdx + 1).trim();
-				headers[key] = val;
+				setKey(headers, key, val);
 			}
 		} else if (t === '-d' || t === '--data' || t === '--data-raw' || t === '--data-binary') {
 			const chunk = tokens[++i] || '';

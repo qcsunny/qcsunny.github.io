@@ -769,3 +769,79 @@ test('env json converter strips quotes and prefixes without coercing values', as
 	await expect(output).toHaveValue('PORT=8080\nRATE=3.5\nNAME=acme\n');
 	await expect(err()).toHaveText('');
 });
+
+// --- __proto__ key-loss regressions ----------------------------------------
+// A bare `out[key] = value` is wrong when key is "__proto__": it reassigns
+// the prototype instead of storing the key, so the value disappears. The
+// parsers that fed a user-controlled key straight into bracket assignment
+// each silently lost one field on any document containing that key. setKey
+// (Object.defineProperty) keeps it as a real own property.
+//
+// toEqual cannot be used here: the `__proto__` accessor on Object.prototype
+// makes an object literal `{ '__proto__': 1 }` set the prototype rather than
+// create an own property, so the expected value never matches. String
+// assertions on the raw JSON output are the robust way to pin this.
+
+test('env json converter keeps a __proto__ key instead of dropping it', async ({ page }) => {
+	await page.goto('/devtools/env-json-converter/');
+	await page.locator('[data-role="input"]').fill('__proto__=1\nb=2\n');
+	await page.getByRole('button', { name: /\.env → JSON/ }).click();
+	const output = page.locator('[data-role="output"]');
+	await expect(output).toHaveValue(/"__proto__"\s*:\s*"1"/);
+	await expect(output).toHaveValue(/"b"\s*:\s*"2"/);
+});
+
+test('xml json converter keeps __proto__ tags and attributes', async ({ page }) => {
+	await page.goto('/devtools/xml-json-converter/');
+	const input = page.locator('[data-role="input"]');
+	const output = page.locator('[data-role="output"]');
+	const x2j = () => page.getByRole('button', { name: /XML → JSON/ }).click();
+
+	// An attribute named __proto__ used to vanish entirely.
+	await input.fill('<r __proto__="1"/>');
+	await x2j();
+	await expect(output).toHaveValue(/"@__proto__"\s*:\s*"1"/);
+
+	// A child element named __proto__ used to collapse the parent to {}.
+	await input.fill('<r><__proto__>1</__proto__></r>');
+	await x2j();
+	await expect(output).toHaveValue(/"__proto__"\s*:\s*"1"/);
+});
+
+test('csv json converter keeps a __proto__ header', async ({ page }) => {
+	await page.goto('/text/csv-json-converter/');
+	await page.locator('[data-role="input"]').fill('__proto__,b\n1,2\n');
+	await page.getByRole('button', { name: /CSV → JSON/ }).click();
+	const output = page.locator('[data-role="output"]');
+	await expect(output).toHaveValue(/"__proto__"\s*:\s*"1"/);
+	await expect(output).toHaveValue(/"b"\s*:\s*"2"/);
+});
+
+test('curl to code keeps a __proto__ header', async ({ page }) => {
+	await page.goto('/devtools/curl-to-code/');
+	await page.locator('[data-role="input"]').fill(
+		'curl -X POST "https://example.com/api" -H "__proto__: abc" -H "x-ok: yes"'
+	);
+	// live: true auto-runs the first transform (JS fetch) on input.
+	await expect(page.locator('[data-role="output"]')).toHaveValue(/"__proto__": "abc"/);
+	await expect(page.locator('[data-role="output"]')).toHaveValue(/"x-ok": "yes"/);
+});
+
+test('json schema generator keeps a __proto__ key in properties', async ({ page }) => {
+	await page.goto('/devtools/json-schema/');
+	await page.locator('[data-role="input"]').fill('{"__proto__": 1, "b": 2}');
+	await page.getByRole('button', { name: /Generate Schema|生成 Schema/ }).click();
+	const output = page.locator('[data-role="output"]');
+	await expect(output).toHaveValue(/"__proto__"\s*:\s*\{[^}]*"type"\s*:\s*"integer"/);
+	await expect(output).toHaveValue(/"b"\s*:\s*\{[^}]*"type"\s*:\s*"integer"/);
+});
+
+test('url parser keeps a __proto__ query parameter in JSON export', async ({ page }) => {
+	await page.goto('/devtools/url-parser/');
+	await page.locator('[data-role="input"]').fill('https://example.com/?__proto__=1&b=2');
+	await page.getByRole('button', { name: /Parse URL|结构化解析/ }).click();
+	await page.getByRole('button', { name: /Export JSON|转为 JSON/ }).click();
+	const output = page.locator('[data-role="output"]');
+	await expect(output).toHaveValue(/"__proto__"\s*:\s*"1"/);
+	await expect(output).toHaveValue(/"b"\s*:\s*"2"/);
+});

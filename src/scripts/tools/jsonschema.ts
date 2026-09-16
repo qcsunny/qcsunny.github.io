@@ -6,6 +6,7 @@
 
 import { isZh, onLang } from './i18n';
 import { createWorkbench } from './workbench';
+import { setKey } from './object';
 
 /** True when obj has an own property named key. The `in` operator walks the
  *  prototype chain, so "constructor" would count as present on every object. */
@@ -45,7 +46,7 @@ function inferSchema(v: unknown, depth = 0): Schema {
 	}
 	const properties: Record<string, unknown> = {};
 	for (const key of Object.keys(v as object).sort()) {
-		properties[key] = inferSchema((v as Record<string, unknown>)[key], depth + 1);
+		setKey(properties, key, inferSchema((v as Record<string, unknown>)[key], depth + 1));
 	}
 	// A single sample cannot prove a key optional, so every observed key is
 	// required — the honest reading of "the document looks like this".
@@ -72,7 +73,7 @@ function mergeSchemas(a: Schema, b: Schema, depth = 0): Schema {
 	if (ta === 'object') {
 		const properties: Record<string, unknown> = { ...((a.properties as Record<string, unknown>) ?? {}) };
 		for (const [k, s] of Object.entries((b.properties as Record<string, unknown>) ?? {})) {
-			properties[k] = properties[k] ? mergeSchemas(properties[k] as Schema, s as Schema, depth + 1) : s;
+			setKey(properties, k, properties[k] ? mergeSchemas(properties[k] as Schema, s as Schema, depth + 1) : s);
 		}
 		const reqA = (a.required as string[]) ?? [];
 		const reqB = new Set((b.required as string[]) ?? []);
