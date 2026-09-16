@@ -104,11 +104,22 @@ export function jsonToTypescript(jsonText: string, rootName = 'Root'): string {
 				out.unshift(`export type ${itemName} = ${merged};`);
 			}
 		} else {
-			const t = typeOf(data, 'Root', namer, out);
-			out.push(`export type ${usedRoot} = ${t}[];`);
+			// typeOf already returns an array type for an array root, so no
+			// trailing `[]` here - appending one was double-wrapping every
+			// non-object root array, so [1, 2] shipped as number[][] and [[1]]
+			// as number[][][]. 'Item' matches the branch above; 'Root' would
+			// collide with the reserved root name and print as Root2.
+			out.push(`export type ${usedRoot} = ${typeOf(data, 'Item', namer, out)};`);
 		}
 	} else if (data && typeof data === 'object') {
 		emitInterface(data as Record<string, unknown>, usedRoot, namer, out);
+	} else if (data === null) {
+		// typeof null === 'object', so the bare typeof below would print
+		// "object" for a null document - the one value where the shorthand
+		// lies. Nested nulls are already right: typeOf checks `v === null`
+		// before typeof, which is why the page copy promises "nulls map to
+		// null" and it holds inside objects.
+		out.push(`export type ${usedRoot} = null;`);
 	} else {
 		out.push(`export type ${usedRoot} = ${typeof data};`);
 	}
