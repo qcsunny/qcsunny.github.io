@@ -297,3 +297,59 @@ test('/ fraction button works on keypad and renders fraction preview', async ({ 
 	await expect(page.locator('#calc-preview')).toHaveText(/3\/4 = 0\.75/);
 });
 
+
+// --- own-property lookups on a reader-typed identifier ----------------------
+// A variable name is reader input, so `scope.vars[name]` and `name in scope.vars`
+// reached into Object.prototype too: typing `__proto__` handed the engine
+// Object.prototype itself and `constructor` handed it the native Object
+// constructor. Both are non-finite, so the display reported a numeric overflow
+// on an expression containing no numbers, and `constructor()` threw a TypeError
+// that errorText collapsed into a generic "Invalid expression". Reads now use
+// hasOwn, and the assignment write uses setKey so a name of "__proto__" is
+// stored as a real own property instead of hitting the Object.prototype setter
+// and disappearing.
+//
+// These pin the text the display actually paints: the value in question is an
+// object, so there is nothing worth comparing with toEqual.
+
+test('an identifier that exists only on Object.prototype is reported as unknown', async ({ page }) => {
+	await page.goto('/calculators/standard/');
+
+	const display = page.locator('#calc-display');
+	const preview = page.locator('#calc-preview');
+
+	await display.fill('__proto__');
+	await display.press('Enter');
+	await expect(preview).toHaveClass(/err/);
+	await expect(preview).toHaveText(`Unknown variable '__proto__'`, { useInnerText: true });
+
+	// The call form used to hand the native constructor to checkArity.
+	await display.fill('constructor()');
+	await display.press('Enter');
+	await expect(preview).toHaveText(`Unknown function 'constructor'`, { useInnerText: true });
+});
+
+test('assigning the name __proto__ stores a real variable', async ({ page }) => {
+	await page.goto('/calculators/standard/');
+
+	const display = page.locator('#calc-display');
+	const preview = page.locator('#calc-preview');
+	const chip = page.locator('#calc-vars .chip', { hasText: '__proto__ = 7' });
+
+	await display.fill('__proto__ = 7');
+	await display.press('Enter');
+	await expect(preview).toHaveText('__proto__ = 7');
+	// A value dropped by the Object.prototype setter would leave both the chip
+	// and the follow-up read empty.
+	await expect(chip).toHaveCount(1);
+	await display.fill('__proto__');
+	await display.press('Enter');
+	await expect(preview).toHaveText('__proto__ = 7');
+
+	// The reserved-name guard must not have been widened to inherit Object.keys.
+	await display.fill('pi = 7');
+	await display.press('Enter');
+	await expect(preview).toHaveClass(/err/);
+	await expect(page.locator('#calc-vars .chip', { hasText: 'pi = 7' })).toHaveCount(0);
+});
+

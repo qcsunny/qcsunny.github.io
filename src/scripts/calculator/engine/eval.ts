@@ -1,6 +1,14 @@
 import { CalcError } from './errors';
 import { CONSTANTS, factorial, FUNCTIONS, type Scope } from './functions';
 import type { Node } from './parser';
+import { hasOwn } from '../../tools/object';
+
+/** Own-property read of a record keyed by user input.
+ *  A bare `TABLE[name]` also returns Object.prototype members — `name` is
+ *  reader input, so `constructor` and `__proto__` resolve to native values. */
+function own<T>(table: Record<string, T>, key: string): T | undefined {
+	return hasOwn(table, key) ? table[key] : undefined;
+}
 
 /** Interpret an AST against a scope. Non-finite results (Overflow/NaN) are returned as-is. */
 export function evalNode(node: Node, scope: Scope): number {
@@ -10,7 +18,7 @@ export function evalNode(node: Node, scope: Scope): number {
 		case 'var':
 			return lookupVar(node.name, scope, node.pos);
 		case 'call': {
-			const def = FUNCTIONS[node.name];
+			const def = own(FUNCTIONS, node.name);
 			if (!def) {
 				throw new CalcError(`Unknown function '${node.name}'`, `未知函数 '${node.name}'`, node.pos);
 			}
@@ -35,10 +43,10 @@ export function evalNode(node: Node, scope: Scope): number {
 }
 
 function lookupVar(name: string, scope: Scope, pos: number): number {
-	const c = CONSTANTS[name];
+	const c = own(CONSTANTS, name);
 	if (c !== undefined) return c;
-	if (name in scope.vars) return scope.vars[name] as number;
-	if (name in FUNCTIONS) {
+	if (hasOwn(scope.vars, name)) return scope.vars[name] as number;
+	if (hasOwn(FUNCTIONS, name)) {
 		throw new CalcError(
 			`'${name}' is a function — use ${name}(x)`,
 			`'${name}' 是函数，应写成 ${name}(x)`,
@@ -90,12 +98,11 @@ export function compileNode(node: Node): (scope: Scope) => number {
 		}
 		case 'var': {
 			const { name } = node;
-			const c = CONSTANTS[name];
+			const c = own(CONSTANTS, name);
 			if (c !== undefined) return () => c;
 			return (scope) => {
-				const v = scope.vars[name];
-				if (v !== undefined) return v;
-				if (name in FUNCTIONS) {
+				if (hasOwn(scope.vars, name)) return scope.vars[name] as number;
+				if (hasOwn(FUNCTIONS, name)) {
 					throw new CalcError(
 						`'${name}' is a function — use ${name}(x)`,
 						`'${name}' 是函数，应写成 ${name}(x)`,
@@ -105,7 +112,7 @@ export function compileNode(node: Node): (scope: Scope) => number {
 			};
 		}
 		case 'call': {
-			const def = FUNCTIONS[node.name];
+			const def = own(FUNCTIONS, node.name);
 			if (!def) {
 				return () => {
 					throw new CalcError(`Unknown function '${node.name}'`, `未知函数 '${node.name}'`);
